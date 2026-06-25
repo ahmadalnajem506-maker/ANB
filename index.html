@@ -971,8 +971,11 @@ async function cloudPull(){
 function mergeArraysById(localArr,cloudArr){
   localArr=localArr||[];cloudArr=cloudArr||[];
   const map=new Map();
-  cloudArr.forEach(it=>{if(it&&it.id)map.set(it.id,it);});
-  localArr.forEach(it=>{if(it&&it.id)map.set(it.id,it);}); // local copy wins on same-id (assume most recently edited locally)
+  cloudArr.forEach(it=>{if(it&&it.id&&!it.deleted)map.set(it.id,it);});
+  localArr.forEach(it=>{if(it&&it.id){
+    if(it.deleted)map.delete(it.id); // Remove deleted items
+    else map.set(it.id,it); // Local copy wins on same-id
+  }});
   return Array.from(map.values());
 }
 
@@ -1544,7 +1547,7 @@ function rClientDash(el,cid){
 function rInvoices(el,cid){
   cid=cid||S.currentClient;
   const c=S.clients.find(c=>c.id===cid);
-  const inv=S.invoices.filter(i=>i.cid===cid);
+  const inv=S.invoices.filter(i=>i.cid===cid&&!i.deleted); // Filter out deleted items
   const paid=inv.filter(i=>i.status==='Betaald').reduce((s,i)=>s+i.total,0);
   const open=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).reduce((s,i)=>s+i.total,0);
   el.innerHTML=`
@@ -1648,7 +1651,7 @@ function rDebtors(el,cid){
 function rExpenses(el,cid){
   cid=cid||S.currentClient;
   const c=S.clients.find(c=>c.id===cid);
-  const exp=S.expenses.filter(e=>e.cid===cid);
+  const exp=S.expenses.filter(e=>e.cid===cid&&!e.deleted); // Filter out deleted items
   const tot=exp.reduce((s,e)=>s+(e.amount||0),0);
   const bIn=exp.reduce((s,e)=>s+(e.btw||0),0);
   el.innerHTML=`
@@ -1678,7 +1681,7 @@ function rExpenses(el,cid){
 function rHours(el,cid){
   cid=cid||S.currentClient;
   const c=S.clients.find(c=>c.id===cid);
-  const hrs=S.hours.filter(h=>h.cid===cid);
+  const hrs=S.hours.filter(h=>h.cid===cid&&!h.deleted);
   const totH=hrs.reduce((s,h)=>s+h.hrs,0);
   const totV=hrs.reduce((s,h)=>s+h.hrs*(h.rate||0),0);
   const tmr=S.timer;
@@ -2125,8 +2128,10 @@ function rMessages(el,cid){
 
 function rContacts(el){
   if(!S.contacts)S.contacts=[];
-  const debtors=S.contacts.filter(c=>c.type==='debtor');
-  const creditors=S.contacts.filter(c=>c.type==='creditor');
+  const cid=S.currentClient;
+  const clientContacts=S.contacts.filter(c=>c.cid===cid); // Filter by client
+  const debtors=clientContacts.filter(c=>c.type==='debtor');
+  const creditors=clientContacts.filter(c=>c.type==='creditor');
   el.innerHTML=`
     <div style="display:flex;gap:12px;margin-bottom:16px">
       <button onclick="openContactModal(null,'debtor')" class="btn btn-gold" style="flex:1">+ Debtor</button>
@@ -2182,9 +2187,10 @@ function rContacts(el){
 }
 
 function openContactModal(id, forceType){
-  const cont=S.contacts.find(c=>c.id===id);
+  const cid=S.currentClient;
+  const cont=S.contacts.find(c=>c.id===id&&c.cid===cid); // Filter by cid too
   const isNew=!cont;
-  const lockedType=forceType||cont?.type||'debtor'; // forceType locks the type
+  const lockedType=forceType||cont?.type||'debtor';
   
   // Only show type dropdown for edits (not for new) if no forceType
   const showTypeDropdown=!isNew && !forceType;
@@ -2214,13 +2220,14 @@ function openContactModal(id, forceType){
     // If type changed, recalculate account number
     let accNum=cont?.accountNumber;
     if(isNew||selectedType!==existingType){
-      const contactsOfType=S.contacts.filter(c=>c.type===selectedType);
+      const contactsOfType=S.contacts.filter(c=>c.type===selectedType&&c.cid===cid);
       const baseNum=selectedType==='debtor'?4100:3100;
       accNum=baseNum+contactsOfType.length;
     }
     
     const nc={
       id:cont?.id||UID(),
+      cid, // ← Add cid to link contact to client
       name:document.getElementById('cm-name').value,
       type:selectedType,
       accountNumber:accNum.toString(),
@@ -2244,7 +2251,8 @@ function openContactModal(id, forceType){
 function updateAccNum(typeOverride){
   const typeDropdown=document.getElementById('cm-type');
   const type=typeOverride || typeDropdown?.value || 'debtor';
-  const contacts=S.contacts.filter(c=>c.type===type);
+  const cid=S.currentClient;
+  const contacts=S.contacts.filter(c=>c.type===type&&c.cid===cid); // Filter by type AND cid
   const baseNum=type==='debtor'?4100:3100;
   const nextNum=baseNum+contacts.length;
   const accField=document.getElementById('cm-acc');
@@ -2253,7 +2261,8 @@ function updateAccNum(typeOverride){
 
 function delContact(id){
   if(!confirm('Delete this contact? (Ledger entries will not be deleted)'))return;
-  S.contacts=S.contacts.filter(c=>c.id!==id);
+  const cid=S.currentClient;
+  S.contacts=S.contacts.filter(c=>!(c.id===id&&c.cid===cid)); // Delete only this client's contact
   sv();renderContent();toast('Contact deleted ✓','ti-check');
 }
 
@@ -2491,9 +2500,25 @@ function markPaid(id){
   i.status='Betaald';sv();renderContent();toast('✓ '+t('btn_mark_paid'));
 }
 
-function delInvoice(id){if(confirm('Delete?')){S.invoices=S.invoices.filter(i=>i.id!==id);sv();renderContent();}}
-function delExpense(id){if(confirm('Delete?')){S.expenses=S.expenses.filter(e=>e.id!==id);sv();renderContent();}}
-function delHours(id){if(confirm('Delete?')){S.hours=S.hours.filter(h=>h.id!==id);sv();renderContent();}}
+function delInvoice(id){
+  if(confirm('Delete?')){
+    // Mark as deleted instead of removing (for cloud sync)
+    S.invoices=S.invoices.map(i=>i.id===id?{...i,deleted:true}:i);
+    sv();renderContent();
+  }
+}
+function delExpense(id){
+  if(confirm('Delete?')){
+    S.expenses=S.expenses.map(e=>e.id===id?{...e,deleted:true}:e);
+    sv();renderContent();
+  }
+}
+function delHours(id){
+  if(confirm('Delete?')){
+    S.hours=S.hours.map(h=>h.id===id?{...h,deleted:true}:h);
+    sv();renderContent();
+  }
+}
 function delDoc(id){if(confirm('Delete?')){S.docs=S.docs.filter(d=>d.id!==id);sv();renderContent();}}
 function delClient(id){
   if(!confirm('Remove this client and ALL their data?'))return;
@@ -2733,8 +2758,8 @@ function openInvoiceModal(inv){
   const isN=!inv;const cid=S.currentClient;
   const isClientPortal=S.role==='client';
   
-  // Use S.contacts for bill-to options (not S.clients)
-  const contacts=S.contacts||[];
+  // Filter contacts by current client ID
+  const contacts=(S.contacts||[]).filter(c=>c.cid===cid);
   const billToOptions=contacts.map(c=>`<option value="${c.id}" data-name="${c.name}"${inv?.billToId===c.id?'selected':''}>${c.name} (${c.type})</option>`).join('');
   showModal(isN?t('btn_new_invoice').replace('+ ',''):t('edit')+' '+t('tab_invoices').slice(0,-1),`
     <div class="fg"><label>Bill to (Customer) *</label>
