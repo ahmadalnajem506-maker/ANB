@@ -3059,40 +3059,25 @@ function exportPDF(id){
 
   // ── Embed logo image (only for admin portal)
   if(!isClientPortal){
-    const logoImgs=document.querySelectorAll('img[alt="ANB Financial Services"]');
-    if(logoImgs.length>0){
-      try{
-        const canvas=document.createElement('canvas');
-        canvas.width=logoImgs[0].naturalWidth||300;
-        canvas.height=logoImgs[0].naturalHeight||300;
-        const ctx=canvas.getContext('2d');
-        ctx.drawImage(logoImgs[0],0,0,canvas.width,canvas.height);
-        const imgData=canvas.toDataURL('image/png');
-        // Draw logo on left side of header (square, 38mm)
-        doc.addImage(imgData,'PNG',M,4,38,38);
-      }catch(e){
-        // Fallback: text logo
-        doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(200,144,16);
-        doc.text('ANB',M,22);
-      }
-    }
+    // Logo NOT shown for admin (per Ahmad's requirements)
+    // Logo is only embedded for client portal if needed
   }
 
   // ── Company info (offset right of logo, or from left if no logo)
   doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(255,255,255);
-  // If client portal, show client name as issuer; otherwise show ANB name
-  const issuerName=isClientPortal?c.name:co.companyName;
-  const logoOffset=isClientPortal?0:42;
+  // Always show client name as issuer (not ANB)
+  const issuerName=c.name;
+  const logoOffset=0; // No logo, so start from left
   doc.text(issuerName,M+logoOffset,16);
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(180,180,180);
-  const issuerAddr=isClientPortal?(c.address||co.address):co.address;
-  doc.text(issuerAddr,M+logoOffset,22);
-  const issuerEmail=isClientPortal?c.email:co.email;
-  if(issuerEmail)doc.text(issuerEmail,M+logoOffset,27);
-  const issuerPhone=isClientPortal?c.phone:co.phone;
-  if(issuerPhone)doc.text(issuerPhone,M+logoOffset,32);
-  const issuerBTW=isClientPortal?c.btw:co.btw;
-  if(issuerBTW)doc.text('BTW: '+issuerBTW,M+logoOffset,37);
+  const issuerAddr=c.address||'';
+  if(issuerAddr)doc.text(issuerAddr,M+logoOffset,22);
+  const issuerEmail=c.email||'';
+  if(issuerEmail)doc.text(issuerEmail,M+logoOffset,issuerAddr?28:22);
+  const issuerPhone=c.phone||'';
+  if(issuerPhone)doc.text(issuerPhone,M+logoOffset,issuerAddr?(issuerEmail?34:28):issuerEmail?28:22);
+  const issuerBTW=c.btw||'';
+  if(issuerBTW)doc.text('BTW: '+issuerBTW,M+logoOffset,issuerAddr?(issuerEmail?(issuerPhone?40:34):issuerPhone?34:28):issuerEmail?(issuerPhone?34:28):issuerPhone?28:22);
 
   // ── INVOICE label top right
   doc.setFont('helvetica','bold');doc.setFontSize(26);doc.setTextColor(200,144,16);
@@ -3165,12 +3150,9 @@ function exportPDF(id){
   doc.setFillColor(10,34,24);doc.rect(0,275,W,22,'F');
   doc.setFillColor(200,144,16);doc.rect(0,275,W,1.5,'F');
   doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(160,160,160);
-  if(isClientPortal){
-    doc.text('Issued by ANB Financial Services',W/2,283,{align:'center'});
-  }else{
-    doc.text(co.companyName+' · '+co.address,W/2,283,{align:'center'});
-  }
-  doc.text(co.tagline,W/2,289,{align:'center'});
+  // Always show only ANB reference in footer (not full company details)
+  doc.text('Issued by ANB Financial Services',W/2,283,{align:'center'});
+  if(co.tagline)doc.text(co.tagline,W/2,289,{align:'center'});
   doc.save(`${i.num}.pdf`);
   toast('PDF ✓','ti-download');
 }
