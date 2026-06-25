@@ -3693,33 +3693,75 @@ function toast(msg){
 <script>
 // ── PWA INSTALL PROMPT ──
 let deferredPrompt = null;
+
+// Debug logging
+console.log('🔍 PWA Debug: Page loaded on', window.location.protocol);
+console.log('🔍 PWA Debug: Service Worker available:', 'serviceWorker' in navigator);
+
+// Handle beforeinstallprompt
 window.addEventListener('beforeinstallprompt', (e) => {
+  console.log('✅ beforeinstallprompt event fired!');
   e.preventDefault();
+  deferredPrompt = e;
   window.deferredPrompt = e;
+  
   // Show install button on login page
   const installPrompt=document.getElementById('install-prompt');
-  if(installPrompt)installPrompt.style.display='block';
+  if(installPrompt){
+    installPrompt.style.display='block';
+    console.log('✅ Install prompt visible on login page');
+  }else{
+    console.log('❌ install-prompt element not found');
+  }
+  
   // Also show banner in app
   setTimeout(() => {
     const banner=document.getElementById('install-banner');
-    if(banner)banner.classList.add('show');
+    if(banner){
+      banner.classList.add('show');
+      console.log('✅ Install banner visible in app');
+    }
   }, 3000);
 });
 
+// Handle install button click (login page)
 document.getElementById('install-btn')?.addEventListener('click', async () => {
-  if (window.deferredPrompt) {
-    window.deferredPrompt.prompt();
-    const { outcome } = await window.deferredPrompt.userChoice;
+  console.log('🔘 Install button clicked');
+  if (deferredPrompt || window.deferredPrompt) {
+    const prompt = deferredPrompt || window.deferredPrompt;
+    prompt.prompt();
+    const { outcome } = await prompt.userChoice;
+    console.log('📱 User response:', outcome);
+    deferredPrompt = null;
     window.deferredPrompt = null;
     document.getElementById('install-banner')?.classList.remove('show');
+    document.getElementById('install-prompt').style.display='none';
+  }else{
+    console.log('❌ No deferred prompt available');
+    alert('Installation is not available on your device/browser');
   }
 });
 
+// Handle app installed
 window.addEventListener('appinstalled', () => {
+  console.log('✅ App installed successfully!');
   document.getElementById('install-banner')?.classList.remove('show');
-  document.getElementById('install-prompt')?.style.setAttribute('display','none');
+  document.getElementById('install-prompt').style.display='none';
   toast('✓ ANB FinAdmin installed successfully!');
 });
+
+// Debug: Check if manifest is available
+fetch('/manifest.json')
+  .then(r => r.json())
+  .then(manifest => console.log('✅ manifest.json loaded:', manifest.name))
+  .catch(e => console.log('❌ manifest.json not found:', e.message));
+
+// Debug: Check service worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.ready
+    .then(() => console.log('✅ Service Worker registered'))
+    .catch(e => console.log('❌ Service Worker error:', e.message));
+}
 
 // ── MOBILE NAV ──
 function renderMobileNav() {
