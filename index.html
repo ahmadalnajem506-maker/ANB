@@ -1405,7 +1405,7 @@ function renderTopbar(){
     tabs.innerHTML=adminTabDefs.map(tab=>{
       let badge='';
       if(tab.id==='messages'){
-        const unreadCount=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='anb'&&!m.isRead).length;
+        const unreadCount=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='anb'&&!m.isRead&&!m.deleted).length;
         if(unreadCount>0)badge=`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:var(--red);color:white;border-radius:50%;font-size:10px;font-weight:600;margin-left:4px">${unreadCount>9?'9+':unreadCount}</span>`;
       }
       return `<button class="tab ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')" style="display:flex;align-items:center"><span style="font-size:13px;display:inline-block;margin-right:3px">${tab.icon}</span>${t(tab.key)}${badge}</button>`;
@@ -1518,7 +1518,7 @@ function rClientDash(el,cid){
   const open=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).reduce((s,i)=>s+i.total,0);
   const over=inv.filter(i=>i.status==='Verlopen').reduce((s,i)=>s+i.total,0);
   const hrs=S.hours.filter(h=>h.cid===cid).reduce((s,h)=>s+h.hrs,0);
-  const unread=S.messages.filter(m=>m.cid===cid&&m.from==='anb').length;
+  const unread=S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.deleted).length;
 
   el.innerHTML=`
   <div class="client-welcome">
@@ -1550,7 +1550,7 @@ function rClientDash(el,cid){
 
     <div class="card" style="cursor:pointer" onclick="setTab('messages')">
       <div class="ch"><span class="ct">${t('messages')}</span></div>
-      ${S.messages.filter(m=>m.cid===cid).slice(-3).map(m=>`
+      ${S.messages.filter(m=>m.cid===cid&&!m.deleted).slice(-3).map(m=>`
       <div style="padding:9px 14px;border-bottom:1px solid var(--gr1)">
         <div style="font-size:10px;font-weight:600;color:${m.from==='anb'?'var(--g1)':'var(--gold)'};margin-bottom:3px">
           ${m.from==='anb'?'ANB Financial':t('my_account')} · ${m.time}
@@ -2130,8 +2130,9 @@ function rMessages(el,cid){
       <div style="border:1px solid var(--gr1);border-radius:8px;overflow:hidden;display:flex;flex-direction:column">
         <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1)">👥 Clients</div>
         <div style="flex:1;overflow-y:auto">
-          ${S.clients.length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
+          ${S.clients.filter(c=>!c.deleted).length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
           S.clients.filter(c=>!c.deleted).map(c=>{
+            const unread=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead).length;
             return `<div onclick="S.selectedMsgClient='${c.id}';rMessages(document.getElementById('content'))" style="padding:12px;cursor:pointer;border-bottom:1px solid var(--gr1);background:${selectedClient===c.id?'var(--gr2)':'transparent'};user-select:none">
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <div style="font-weight:500;color:var(--t1)">${c.name}</div>
@@ -2145,8 +2146,8 @@ function rMessages(el,cid){
         ${!selectedClient?`<div style="padding:20px;text-align:center;color:var(--t3)">Select a client</div>`:`
         <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1)">${S.clients.find(c=>c.id===selectedClient)?.name}</div>
         <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
-          ${S.messages.filter(m=>m.cid===selectedClient).length===0?`<div style="color:var(--t3);text-align:center;font-size:12px">No messages</div>`:
-          S.messages.filter(m=>m.cid===selectedClient).map(m=>`<div style="align-self:${m.from==='anb'?'flex-end':'flex-start'};max-width:75%">
+          ${S.messages.filter(m=>m.cid===selectedClient&&!m.deleted).length===0?`<div style="color:var(--t3);text-align:center;font-size:12px">No messages</div>`:
+          S.messages.filter(m=>m.cid===selectedClient&&!m.deleted).map(m=>`<div style="align-self:${m.from==='anb'?'flex-end':'flex-start'};max-width:75%">
             <div style="background:${m.from==='anb'?'#C89010':'#E8E8E8'};color:${m.from==='anb'?'#0A2218':'#1a1a1a'};padding:10px 12px;border-radius:6px;line-height:1.4;font-size:13px">${m.text}</div>
             <div style="font-size:9px;opacity:0.6;margin-top:2px">${m.date} ${m.time}</div>
           </div>`).join('')}
@@ -2171,8 +2172,8 @@ function rMessages(el,cid){
     <div class="card">
       <div class="ch"><span class="ct">💬 Messages with ANB</span></div>
       <div style="padding:16px;max-height:400px;overflow-y:auto">
-        ${S.messages.filter(m=>m.cid===cid).length===0?`<div style="color:var(--t3);text-align:center">No messages yet</div>`:
-        S.messages.filter(m=>m.cid===cid).map(m=>`<div style="margin-bottom:12px;align-self:${m.from==='anb'?'flex-start':'flex-end'};max-width:75%">
+        ${S.messages.filter(m=>m.cid===cid&&!m.deleted).length===0?`<div style="color:var(--t3);text-align:center">No messages yet</div>`:
+        S.messages.filter(m=>m.cid===cid&&!m.deleted).map(m=>`<div style="margin-bottom:12px;align-self:${m.from==='anb'?'flex-start':'flex-end'};max-width:75%">
           <div style="background:${m.from==='anb'?'#C89010':'#0A2218'};color:${m.from==='anb'?'#0A2218':'#C89010'};padding:10px 12px;border-radius:6px;line-height:1.4;font-size:13px">${m.text}</div>
           <div style="font-size:9px;opacity:0.6;margin-top:2px">${m.date} ${m.time}</div>
         </div>`).join('')}
@@ -2205,7 +2206,8 @@ function sendMsgAdmin(cid){
     text:txt,
     date:TODAY(),
     time:now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'),
-    isRead:true
+    isRead:true,
+    deleted:false
   });
   sv();
   inp.value='';
@@ -2225,7 +2227,8 @@ function sendMsgClient(cid){
     text:txt,
     date:TODAY(),
     time:now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'),
-    isRead:false
+    isRead:false,
+    deleted:false
   });
   sv();
   inp.value='';
