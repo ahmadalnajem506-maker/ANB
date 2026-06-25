@@ -1316,7 +1316,7 @@ function renderSidebar(){
   if(isAdmin()){
     badge.innerHTML=`<span class="sb-role-badge badge-admin">🛡 ${t('administrator')}</span>`;
     lbl.textContent=t('client_workspaces');
-    clients.innerHTML=S.clients.map(c=>{
+    clients.innerHTML=S.clients.filter(c=>!c.deleted).map(c=>{
       const ov=S.invoices.filter(i=>i.cid===c.id&&['Openstaand','Verlopen'].includes(i.status)).length;
       const hasActivity=hasNewActivity(c.id);
       return `<button class="cb ${S.currentClient===c.id&&S.tab!=='dashboard'&&S.tab!=='settings'?'act':''}" onclick="selClient('${c.id}')">
@@ -1471,7 +1471,7 @@ function rAdminDash(el){
   </div>
 
   <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">${t('client_workspaces')}</div>
-  ${S.clients.map(c=>{
+  ${S.clients.filter(c=>!c.deleted).map(c=>{
     const inv=S.invoices.filter(i=>i.cid===c.id);
     const paid=inv.filter(i=>i.status==='Betaald').reduce((s,i)=>s+i.total,0);
     const open=inv.filter(i=>['Openstaand','Verlopen'].includes(i.status)).reduce((s,i)=>s+i.total,0);
@@ -2126,13 +2126,12 @@ function rMessages(el,cid){
     // Admin: Simple list of clients + messages
     const selectedClient=S.selectedMsgClient;
     el.innerHTML=`
-    <div style="display:grid;grid-template-columns:250px 1fr;gap:16px;height:600px">
+    <div style="display:grid;grid-template-columns:minmax(150px,200px) 1fr;gap:8px;height:600px">
       <div style="border:1px solid var(--gr1);border-radius:8px;overflow:hidden;display:flex;flex-direction:column">
         <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1)">👥 Clients</div>
         <div style="flex:1;overflow-y:auto">
           ${S.clients.length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
-          S.clients.map(c=>{
-            const unread=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead).length;
+          S.clients.filter(c=>!c.deleted).map(c=>{
             return `<div onclick="S.selectedMsgClient='${c.id}';rMessages(document.getElementById('content'))" style="padding:12px;cursor:pointer;border-bottom:1px solid var(--gr1);background:${selectedClient===c.id?'var(--gr2)':'transparent'};user-select:none">
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <div style="font-weight:500;color:var(--t1)">${c.name}</div>
@@ -2452,7 +2451,7 @@ function rSettings(el){
       <table style="margin-bottom:10px">
         <thead><tr><th>${t('tab_client')}</th><th>${t('set_email')} / ${t('set_phone')}</th><th>${t('lbl_status')}</th><th></th></tr></thead>
         <tbody>
-          ${S.clients.map(c=>`<tr>
+          ${S.clients.filter(c=>!c.deleted).map(c=>`<tr>
             <td style="font-weight:500">${c.name}</td>
             <td style="color:var(--t3);font-size:11px">${c.email||''}${c.phone?' · '+c.phone:''}</td>
             <td>${c.pwSet?'<span class="bdg b-paid">Custom ✓</span>':'<span class="bdg b-draft">Not set</span>'}</td>
@@ -2500,7 +2499,7 @@ function rSettings(el){
       </div>
       <div class="fr2" style="margin-bottom:10px">
         <div class="fg"><label>${t('ye_client')}</label>
-          <select id="ye-client" aria-label="${t('ye_client')}">${S.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>
+          <select id="ye-client" aria-label="${t('ye_client')}">${S.clients.filter(c=>!c.deleted).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>
         </div>
         <div class="fg"><label>${t('ye_year')}</label>
           <select id="ye-year" aria-label="${t('ye_year')}">${[2024,2025,2026].map(y=>`<option value="${y}" ${y===new Date().getFullYear()-1?'selected':''}>${y}</option>`).join('')}</select>
@@ -2625,23 +2624,28 @@ function delDoc(id){if(confirm('Delete?')){S.docs=S.docs.filter(d=>d.id!==id);sv
 function delClient(id){
   if(!confirm('Remove this client and ALL their data?'))return;
   
-  // Mark as deleted (for sync to cloud)
+  // Mark as deleted (KEEP for sync to cloud)
   S.clients=S.clients.map(c=>c.id===id?{...c,deleted:true}:c);
   S.invoices=S.invoices.map(i=>i.cid===id?{...i,deleted:true}:i);
   S.expenses=S.expenses.map(e=>e.cid===id?{...e,deleted:true}:e);
   S.hours=S.hours.map(h=>h.cid===id?{...h,deleted:true}:h);
   S.docs=S.docs.map(d=>d.cid===id?{...d,deleted:true}:d);
   S.messages=S.messages.map(m=>m.cid===id?{...m,deleted:true}:m);
+  S.contacts=S.contacts.map(ct=>ct.cid===id?{...ct,deleted:true}:ct);
   
-  // Then filter for display (merge will handle it correctly)
+  // SAVE FIRST (with deleted flag for sync)
+  S.currentClient=null;S.tab='dashboard';sv();
+  
+  // THEN filter for display
   S.clients=S.clients.filter(c=>!c.deleted);
   S.invoices=S.invoices.filter(i=>!i.deleted);
   S.expenses=S.expenses.filter(e=>!e.deleted);
   S.hours=S.hours.filter(h=>!h.deleted);
   S.docs=S.docs.filter(d=>!d.deleted);
   S.messages=S.messages.filter(m=>!m.deleted);
+  S.contacts=S.contacts.filter(c=>!c.deleted);
   
-  S.currentClient=null;S.tab='dashboard';sv();renderApp();toast(t('remove')+' ✓','ti-check');
+  renderApp();toast(t('remove')+' ✓','ti-check');
 }
 
 function exportCSV(type){
