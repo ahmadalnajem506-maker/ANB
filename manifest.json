@@ -1,12 +1,20 @@
 {
   "name": "ANB Financial Services",
   "short_name": "ANB FinAdmin",
-  "description": "Professional accounting and financial management for ZZP/freelancers",
+  "description": "Professional accounting and financial management for ZZP businesses",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#0A2218",
-  "categories": ["finance", "productivity"]
+  "categories": ["finance", "productivity"],
+  "screenshots": [
+    {
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfAQAFhAJ/wlseKgAAAABJRU5ErkJggg==",
+      "sizes": "192x192",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
 }
