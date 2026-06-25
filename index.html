@@ -3105,16 +3105,19 @@ function exportPDF(id){
   doc.setTextColor(120,120,120);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text('BILL TO',M,y);
   doc.setTextColor(20,20,20);doc.setFontSize(13);doc.setFont('helvetica','bold');
   
-  // Get recipient details
+  // Get recipient details from S.contacts (not old S.clients/S.debtors)
   let recipientData={name:'',email:'',address:'',phone:'',kvk:'',btw:''};
-  if(isClientPortal&&i.billToId){
-    const allList=(S.clients||[]).concat(S.debtors||[]);
-    const recipient=allList.find(e=>e.id===i.billToId);
+  if(i.billToId){
+    // Use S.contacts for Bill To data (filtered by client)
+    const cid=i.cid;
+    const contacts=(S.contacts||[]).filter(con=>con.cid===cid);
+    const recipient=contacts.find(e=>e.id===i.billToId);
     if(recipient){
       recipientData={name:recipient.name,email:recipient.email||'',address:recipient.address||'',
         phone:recipient.phone||'',kvk:recipient.kvk||'',btw:recipient.btw||''};
     }
   }else{
+    // Fallback to client name if no Bill To selected
     recipientData={name:c.name,email:c.email||'',address:'',phone:'',kvk:c.kvk||'',btw:c.btw||''};
   }
   
