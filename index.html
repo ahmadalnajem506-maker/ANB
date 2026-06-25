@@ -2133,12 +2133,12 @@ function rMessagesAdmin(el){
   <div style="display:grid;grid-template-columns:220px 1fr;gap:16px;height:600px">
     <div style="border:1px solid var(--gr1);border-radius:8px;overflow:hidden;display:flex;flex-direction:column">
       <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1)">👥 Clients</div>
-      <div style="flex:1;overflow-y:auto">
+      <div style="flex:1;overflow-y:auto" id="msg-clients-list">
         ${S.clients.length===0?`<div style="padding:16px;color:var(--t3);text-align:center;font-size:12px">No clients</div>`:
         S.clients.map(c=>{
           const lastMsg=S.messages.filter(m=>m.cid===c.id).slice(-1)[0];
           const unread=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead).length;
-          return `<div onclick="openAdminMsgModal('${c.id}')" style="padding:12px;cursor:pointer;border-bottom:1px solid var(--gr1);background:${selectedClient===c.id?'var(--gr2)':'transparent'};transition:background 0.2s;user-select:none">
+          return `<div data-client-id="${c.id}" class="msg-client-item" style="padding:12px;cursor:pointer;border-bottom:1px solid var(--gr1);background:${selectedClient===c.id?'var(--gr2)':'transparent'};transition:background 0.2s;user-select:none">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
               <div style="font-weight:500;color:var(--t1);font-size:13px">${c.name}</div>
               ${unread>0?`<span style="background:var(--red);color:white;font-size:9px;padding:2px 5px;border-radius:8px;font-weight:600">${unread}</span>`:''}
@@ -2149,12 +2149,26 @@ function rMessagesAdmin(el){
       </div>
     </div>
     <div id="admin-msg-view" style="border:1px solid var(--gr1);border-radius:8px;display:flex;flex-direction:column;background:var(--gr2)">
-      ${selectedClient?`<div style="padding:20px;text-align:center;color:var(--t3)">Select a client to view messages</div>`:''}
+      ${!selectedClient?`<div style="padding:20px;text-align:center;color:var(--t3)">Select a client to view messages</div>`:''}
     </div>
   </div>`;
+  
+  // Attach event listeners WITHOUT onclick (prevents propagation issues)
+  setTimeout(()=>{
+    document.querySelectorAll('.msg-client-item').forEach(item=>{
+      item.addEventListener('click',(e)=>{
+        e.stopPropagation();
+        const cid=item.getAttribute('data-client-id');
+        openAdminMsgModal(cid);
+      });
+    });
+  },0);
 }
 
 function openAdminMsgModal(cid){
+  // Prevent any event bubbling
+  event?.stopPropagation?.();
+  
   S.selectedMsgClient=cid;
   const view=document.getElementById('admin-msg-view');
   if(!view)return;
@@ -2176,14 +2190,32 @@ function openAdminMsgModal(cid){
       <div id="msg-anchor-admin"></div>
     </div>
     <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px">
-      <textarea id="msg-textarea-admin" placeholder="Reply..." style="flex:1;min-height:50px;padding:8px;border:1px solid var(--gr1);border-radius:4px;font-family:inherit;resize:none" onkeydown="if(event.key==='Enter'&&event.ctrlKey){sendAdminMsg('${cid}');event.preventDefault()}"></textarea>
-      <button onclick="sendAdminMsg('${cid}')" style="padding:8px 16px;background:#0A2218;color:#C89010;border:none;border-radius:4px;cursor:pointer;font-weight:600;align-self:flex-end">➤</button>
+      <textarea id="msg-textarea-admin" placeholder="Reply..." style="flex:1;min-height:50px;padding:8px;border:1px solid var(--gr1);border-radius:4px;font-family:inherit;resize:none" onkeydown="if(event.key==='Enter'&&event.ctrlKey){sendAdminMsg('${cid}');event.preventDefault()}" onclick="event.stopPropagation()"></textarea>
+      <button id="msg-send-btn-admin" style="padding:8px 16px;background:#0A2218;color:#C89010;border:none;border-radius:4px;cursor:pointer;font-weight:600;align-self:flex-end">➤</button>
     </div>
   `;
   
   setTimeout(()=>{
-    document.getElementById('msg-anchor-admin')?.scrollIntoView();
-    document.getElementById('msg-textarea-admin')?.focus();
+    const textarea=document.getElementById('msg-textarea-admin');
+    const sendBtn=document.getElementById('msg-send-btn-admin');
+    const anchor=document.getElementById('msg-anchor-admin');
+    
+    if(anchor)anchor.scrollIntoView();
+    
+    // Attach send button without onclick to prevent propagation
+    if(sendBtn){
+      sendBtn.addEventListener('click',(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        sendAdminMsg('${cid}');
+      });
+    }
+    
+    // Prevent focus loss on textarea
+    if(textarea){
+      textarea.addEventListener('blur',(e)=>e.preventDefault());
+      textarea.focus();
+    }
   },50);
 }
 
@@ -2192,6 +2224,8 @@ function rMessagesClient(el,cid){
 }
 
 function openMessagesModal(cid){
+  event?.stopPropagation?.();
+  
   const modal=document.getElementById('mo');
   if(!modal)return;
   
@@ -2205,7 +2239,7 @@ function openMessagesModal(cid){
   <div class="modal-overlay">
     <div class="modal-content" style="max-width:500px">
       <div class="mh"><span>${t('messages')} ${isAdmin()?'':'with ANB'}</span>
-        <button class="btn btn-xs" onclick="closeModal()" style="padding:4px 8px">✕</button>
+        <button class="btn btn-xs" id="msg-close-btn" style="padding:4px 8px">✕</button>
       </div>
       <div id="msg-thread-client" style="height:350px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--gr2)">
         ${msgs.length===0?`<div style="padding:20px;text-align:center;color:var(--t3);font-size:12px">No messages yet</div>`:
@@ -2216,15 +2250,43 @@ function openMessagesModal(cid){
         <div id="msg-anchor-client"></div>
       </div>
       <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px">
-        <textarea id="msg-textarea-client" placeholder="Type message..." style="flex:1;min-height:50px;padding:8px;border:1px solid var(--gr1);border-radius:4px;font-family:inherit;resize:none" onkeydown="if(event.key==='Enter'&&event.ctrlKey){sendClientMsg('${cid}');event.preventDefault()}"></textarea>
-        <button onclick="sendClientMsg('${cid}')" style="padding:8px 16px;background:#0A2218;color:#C89010;border:none;border-radius:4px;cursor:pointer;font-weight:600;align-self:flex-end">➤</button>
+        <textarea id="msg-textarea-client" placeholder="Type message..." style="flex:1;min-height:50px;padding:8px;border:1px solid var(--gr1);border-radius:4px;font-family:inherit;resize:none" onkeydown="if(event.key==='Enter'&&event.ctrlKey){sendClientMsg('${cid}');event.preventDefault()}" onclick="event.stopPropagation()"></textarea>
+        <button id="msg-send-btn-client" style="padding:8px 16px;background:#0A2218;color:#C89010;border:none;border-radius:4px;cursor:pointer;font-weight:600;align-self:flex-end">➤</button>
       </div>
     </div>
   </div>`;
   
   setTimeout(()=>{
-    document.getElementById('msg-anchor-client')?.scrollIntoView();
-    document.getElementById('msg-textarea-client')?.focus();
+    const textarea=document.getElementById('msg-textarea-client');
+    const sendBtn=document.getElementById('msg-send-btn-client');
+    const closeBtn=document.getElementById('msg-close-btn');
+    const anchor=document.getElementById('msg-anchor-client');
+    
+    if(anchor)anchor.scrollIntoView();
+    
+    // Attach send button without onclick
+    if(sendBtn){
+      sendBtn.addEventListener('click',(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        sendClientMsg('${cid}');
+      });
+    }
+    
+    // Attach close button
+    if(closeBtn){
+      closeBtn.addEventListener('click',(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+      });
+    }
+    
+    // Prevent focus loss
+    if(textarea){
+      textarea.addEventListener('blur',(e)=>e.preventDefault());
+      textarea.focus();
+    }
   },50);
 }
 
