@@ -2120,28 +2120,110 @@ function viewDoc(id){
 
 
 function rMessages(el,cid){
-  cid=cid||S.currentClient;
+  if(isAdmin()){
+    rMessagesAdmin(el);
+  } else {
+    rMessagesClient(el,cid);
+  }
+}
+
+function rMessagesAdmin(el){
+  // For Admin: Show all clients and allow selecting to message them
+  el.innerHTML=`
+  <div class="card" style="max-width:800px">
+    <div class="ch"><span class="ct">💬 ${t('tab_messages')}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;height:500px">
+      <!-- Client List -->
+      <div style="border-right:1px solid var(--gr1);overflow-y:auto">
+        ${S.clients.length===0?`<div class="empty" style="padding:20px"><span style="font-size:14px;line-height:1" aria-hidden="true">👥</span>No clients yet</div>`:
+        S.clients.map(c=>{
+          const lastMsg=S.messages.filter(m=>m.cid===c.id).slice(-1)[0];
+          const unread=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead).length;
+          return `<div class="msg-client-item" onclick="showAdminMsg('${c.id}')" style="padding:12px;cursor:pointer;border-bottom:1px solid var(--gr1);background:${S.selectedMsgClient===c.id?'var(--gr2)':'transparent'};transition:background 0.2s">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <div style="font-weight:500;color:var(--t1)">${c.name}</div>
+              ${unread>0?`<span style="background:var(--red);color:white;font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600">${unread}</span>`:''}
+            </div>
+            <div style="font-size:11px;color:var(--t3);line-height:1.4">${lastMsg?lastMsg.text.slice(0,40)+'...':'No messages'}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <!-- Message Thread -->
+      <div id="msg-admin-container"></div>
+    </div>
+  </div>`;
+  // Show first client by default
+  if(S.clients.length>0){
+    showAdminMsg(S.clients[0].id);
+  }
+}
+
+function showAdminMsg(cid){
+  S.selectedMsgClient=cid;
+  const container=document.getElementById('msg-admin-container');
+  if(!container)return;
+  
+  // Mark messages as read
+  S.messages.filter(m=>m.cid===cid&&m.from==='client').forEach(m=>m.isRead=true);
+  sv();
+  
+  const msgs=S.messages.filter(m=>m.cid===cid);
+  const client=S.clients.find(c=>c.id===cid);
+  
+  container.innerHTML=`
+    <div style="display:flex;flex-direction:column;height:100%">
+      <div style="font-weight:600;color:var(--t1);padding:12px;border-bottom:1px solid var(--gr1)">${client?.name}</div>
+      <div id="msg-admin-thread" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
+        ${msgs.length===0?`<div class="empty"><span style="font-size:14px" aria-hidden="true">💬</span>${t('empty_messages')}</div>`:
+        msgs.map(m=>`<div class="msg ${m.from==='anb'?'msg-anb':'msg-client'}" style="word-wrap:break-word;max-width:100%">
+          <div class="msg-from" style="font-size:10px;font-weight:600;margin-bottom:4px;opacity:0.7">${m.from==='anb'?'You':'Client'}</div>
+          <div style="background:${m.from==='anb'?'var(--gr2)':'var(--gr3)'};padding:8px 12px;border-radius:6px;line-height:1.4">${m.text}</div>
+          <div class="msg-time" style="font-size:9px;opacity:0.5;margin-top:2px">${m.date} ${m.time}</div>
+        </div>`).join('')}
+      </div>
+      <div class="msg-input-row" style="border-top:1px solid var(--gr1);padding:12px;display:flex;gap:8px">
+        <input id="msg-in-admin-${cid}" placeholder="Reply to ${client?.name}..." style="flex:1;padding:8px 12px;border:1px solid var(--gr1);border-radius:4px;background:var(--gr2);color:var(--t1)"/>
+        <button class="btn btn-p btn-sm" onclick="sendAdminMsg('${cid}')">Send</button>
+      </div>
+    </div>`;
+  
+  setTimeout(()=>{
+    const thread=document.getElementById('msg-admin-thread');
+    if(thread)thread.scrollTop=thread.scrollHeight;
+    const input=document.getElementById(`msg-in-admin-${cid}`);
+    if(input)input.focus();
+  },50);
+}
+
+function rMessagesClient(el,cid){
   // Mark all admin messages as read when viewed
   S.messages.filter(m=>m.cid===cid&&m.from==='anb').forEach(m=>m.isRead=true);
   sv();
+  
   const msgs=S.messages.filter(m=>m.cid===cid);
   el.innerHTML=`
-  <div class="card" style="max-width:600px">
-    <div class="ch"><span class="ct">Conversation${isAdmin()?` — ${S.clients.find(c=>c.id===cid)?.name}`:' with ANB Financial'}</span></div>
-    <div class="msg-thread" id="msg-thread">
-      ${msgs.length===0?`<div class="empty" style="padding:20px"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">💬</span>${t('empty_messages')}</div>`:
-      msgs.map(m=>`<div class="msg ${m.from==='anb'?'msg-anb':'msg-client'}">
-        <div class="msg-from">${m.from==='anb'?'ANB Financial Services':'You'}</div>
-        ${m.text}
-        <div class="msg-time">${m.date} · ${m.time}</div>
+  <div class="card" style="max-width:600px;display:flex;flex-direction:column;height:500px">
+    <div class="ch"><span class="ct">💬 ${t('messages')} with ANB Financial</span></div>
+    <div id="msg-client-thread" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
+      ${msgs.length===0?`<div class="empty"><span style="font-size:14px" aria-hidden="true">💬</span>${t('empty_messages')}</div>`:
+      msgs.map(m=>`<div class="msg ${m.from==='anb'?'msg-anb':'msg-client'}" style="word-wrap:break-word;max-width:100%">
+        <div class="msg-from" style="font-size:10px;font-weight:600;margin-bottom:4px;opacity:0.7">${m.from==='anb'?'ANB Financial':'You'}</div>
+        <div style="background:${m.from==='anb'?'var(--gr2)':'var(--gr3)'};padding:8px 12px;border-radius:6px;line-height:1.4">${m.text}</div>
+        <div class="msg-time" style="font-size:9px;opacity:0.5;margin-top:2px">${m.date} ${m.time}</div>
       </div>`).join('')}
     </div>
-    <div class="msg-input-row">
-      <input id="msg-in" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendMsg('${cid}')"/>
-      <button class="btn btn-p btn-xs" onclick="sendMsg('${cid}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">➤</span>Send</button>
+    <div class="msg-input-row" style="border-top:1px solid var(--gr1);padding:12px;display:flex;gap:8px">
+      <input id="msg-in-client" placeholder="Reply to ANB..." style="flex:1;padding:8px 12px;border:1px solid var(--gr1);border-radius:4px;background:var(--gr2);color:var(--t1)"/>
+      <button class="btn btn-p btn-sm" onclick="sendClientMsg('${cid}')">Send</button>
     </div>
   </div>`;
-  setTimeout(()=>{const t=document.getElementById('msg-thread');if(t)t.scrollTop=t.scrollHeight;},50);
+  
+  setTimeout(()=>{
+    const thread=document.getElementById('msg-client-thread');
+    if(thread)thread.scrollTop=thread.scrollHeight;
+    const input=document.getElementById('msg-in-client');
+    if(input)input.focus();
+  },50);
 }
 
 function rContacts(el){
@@ -2459,23 +2541,64 @@ function saveSettings(){
   sv();toast(t('settings_nav')+' ✓','ti-check');
 }
 
-function sendMsg(cid){
-  const inp=document.getElementById('msg-in');
+function sendAdminMsg(cid){
+  const inp=document.getElementById(`msg-in-admin-${cid}`);
   const txt=inp?.value?.trim();
   if(!txt)return;
+  
   const now=new Date();
   const client=S.clients.find(c=>c.id===cid);
-  S.messages.push({id:UID(),cid,from:isAdmin()?'anb':'client',text:txt,
-    date:TODAY(),time:now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')});
+  S.messages.push({
+    id:UID(),
+    cid,
+    from:'anb',
+    text:txt,
+    date:TODAY(),
+    time:now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'),
+    isRead:true
+  });
   sv();
+  
   if(inp)inp.value='';
-  // ✅ Toast notification
-  if(isAdmin()){
-    toast(`📨 Message sent to ${client?.name}`, 'ti-check');
-  } else {
-    toast(`📨 Message sent to ANB Financial`, 'ti-check');
+  toast(`📨 Message sent to ${client?.name}`, 'ti-check');
+  
+  // Update message thread WITHOUT full re-render
+  showAdminMsg(cid);
+}
+
+function sendClientMsg(cid){
+  const inp=document.getElementById('msg-in-client');
+  const txt=inp?.value?.trim();
+  if(!txt)return;
+  
+  const now=new Date();
+  S.messages.push({
+    id:UID(),
+    cid,
+    from:'client',
+    text:txt,
+    date:TODAY(),
+    time:now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'),
+    isRead:false
+  });
+  sv();
+  
+  if(inp)inp.value='';
+  toast(`📨 Message sent to ANB Financial`, 'ti-check');
+  
+  // Update message thread WITHOUT full re-render
+  const el=document.getElementById('content');
+  if(el)rMessagesClient(el,cid);
+}
+
+function openSendMsg(){
+  // For Admin only - open modal to send message to a client
+  if(!isAdmin()){
+    alert('Only admin can send messages');
+    return;
   }
-  renderContent();
+  // Switch to messages tab
+  setTab('messages');
 }
 function hasNewActivity(cid){
   // Check if there are new documents for this client without isViewed flag
