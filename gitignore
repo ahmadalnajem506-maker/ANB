@@ -1,0 +1,46 @@
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+.tmp/
+temp/
+
+# Backups
+*.bak
+*.backup
+
+# Build outputs (if any)
+dist/
+build/
+out/
+
+# Local development
+.localhost
+localhost.json
