@@ -2241,12 +2241,13 @@ function openContactModal(id, forceType){
     sv();closeModal();renderContent();toast('Contact saved ✓','ti-check');
   });
   
-  // Calculate and update initial account number
-  updateAccNum();
+  // Calculate and update initial account number with the locked type
+  updateAccNum(lockedType);
 }
 
-function updateAccNum(){
-  const type=document.getElementById('cm-type')?.value||'debtor';
+function updateAccNum(typeOverride){
+  const typeDropdown=document.getElementById('cm-type');
+  const type=typeOverride || typeDropdown?.value || 'debtor';
   const contacts=S.contacts.filter(c=>c.type===type);
   const baseNum=type==='debtor'?4100:3100;
   const nextNum=baseNum+contacts.length;
@@ -2722,7 +2723,15 @@ function nextNum(clientId){
   const clientInvoices=S.invoices.filter(i=>i.cid===cid);
   return `${clientName}-${String(clientInvoices.length+1).padStart(3,'0')}`;
 }
-function openNewInvoice(){openInvoiceModal(null);}
+function openNewInvoice(){
+  // Check if there are any debtors in contacts
+  const debtors=S.contacts.filter(c=>c.type==='debtor');
+  if(debtors.length===0){
+    alert('❌ Cannot create invoice:\n\nNo customers (Debtors) found.\n\nPlease add a customer first:\nContacts → + Debtor');
+    return;
+  }
+  openInvoiceModal(null);
+}
 function editInvoice(id){openInvoiceModal(S.invoices.find(i=>i.id===id));}
 function openInvoiceModal(inv){
   const isN=!inv;const cid=S.currentClient;
