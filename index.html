@@ -1326,7 +1326,6 @@ function renderSidebar(){
     </div>`;
     const clientTabDefs=[
       {id:'dashboard',icon:'◼',key:'dashboard'},
-      {id:'invoices',icon:'📄',key:'invoices'},
       {id:'expenses',icon:'🧾',key:'expenses'},
       {id:'hours',icon:'⏱',key:'hours'},
       {id:'documents',icon:'📁',key:'documents'},
@@ -1374,12 +1373,8 @@ function renderTopbar(){
       <span style="font-size:13px;font-weight:500;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px" title="${c?.name||''}">${c?.name}</span>`;
     const adminTabDefs=[
       {id:'invoices',icon:'📄',key:'tab_invoices'},
-      {id:'debtors',icon:'⏰',key:'tab_debtors'},
       {id:'expenses',icon:'🧾',key:'tab_expenses'},
       {id:'hours',icon:'⏱',key:'tab_hours'},
-      {id:'journal',icon:'📒',key:'tab_journal'},
-      {id:'bank',icon:'🏦',key:'tab_bank'},
-      {id:'btw',icon:'🏛',key:'tab_btw'},
       {id:'reports',icon:'📈',key:'tab_reports'},
       {id:'documents',icon:'📁',key:'tab_documents'},
       {id:'contacts',icon:'👥',key:'tab_contacts'},
@@ -1425,11 +1420,12 @@ function renderContent(){
   if(isAdmin()){
     if(S.tab==='settings'){rSettings(el);return;}
     if(!cid||S.tab==='dashboard'){rAdminDash(el);return;}
-    const fn={invoices:rInvoices,debtors:rDebtors,expenses:rExpenses,journal:rJournal,bank:rBank,
-               reports:rReports,btw:rBTW,hours:rHours,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo};
-    (fn[S.tab]||rInvoices)(el,cid);
+    // Admin manages clients: invoices, expenses, hours, reports, documents, contacts, messages, info
+    const fn={invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo};
+    (fn[S.tab]||rAdminDash)(el,cid);
   } else {
-    const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,documents:rDocs,messages:rMessages};
+    // Client can only: dashboard, expenses, hours, documents, messages (NO invoices)
+    const fn={dashboard:rClientDash,expenses:rExpenses,hours:rHours,documents:rDocs,messages:rMessages};
     (fn[S.tab]||rClientDash)(el,S.currentClient);
   }
 }
