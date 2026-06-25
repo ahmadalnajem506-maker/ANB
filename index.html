@@ -907,6 +907,7 @@ var S={
     {id:'b4',cid:'c2',date:'2026-04-12',desc:'Betaling jaarrekening',amount:968,matched:true},
     {id:'b5',cid:'c3',date:'2026-05-22',desc:'Onbekende transactie',amount:-150,matched:false},
   ],
+  contacts:[],
 };
 
 // Direction/lang functions — placed after S so they can access S.lang
@@ -2187,17 +2188,15 @@ function rContacts(el){
 function openContactModal(id){
   const cont=S.contacts.find(c=>c.id===id);
   const isNew=!cont;
-  const type=cont?.type||'debtor';
-  
-  // Calculate next account number
-  const contacts=S.contacts.filter(c=>c.type===type);
-  const baseNum=type==='debtor'?4100:3100;
-  const nextNum=baseNum+contacts.length;
+  const initialType=cont?.type||'debtor';
   
   showModal(isNew?'Add Contact':'Edit Contact',`
     <div class="fg"><label>Name *</label><input id="cm-name" value="${cont?.name||''}"/></div>
-    <div class="fg"><label>Type</label><select id="cm-type" disabled><option value="${type}">${type==='debtor'?'Debtor':'Creditor'}</option></select></div>
-    <div class="fg"><label>Account # (Auto)</label><input id="cm-acc" value="${cont?.accountNumber||nextNum}" disabled style="background:var(--bg2)"/></div>
+    <div class="fg"><label>Type *</label><select id="cm-type" onchange="updateAccNum()">
+      <option value="debtor" ${initialType==='debtor'?'selected':''}>Debtor (Customer)</option>
+      <option value="creditor" ${initialType==='creditor'?'selected':''}>Creditor (Supplier)</option>
+    </select></div>
+    <div class="fg"><label>Account # (Auto)</label><input id="cm-acc" value="${cont?.accountNumber||''}" disabled style="background:var(--bg2)"/></div>
     <div class="fr2">
       <div class="fg"><label>Email</label><input id="cm-email" value="${cont?.email||''}"/></div>
       <div class="fg"><label>Phone</label><input id="cm-phone" value="${cont?.phone||''}"/></div>
@@ -2208,11 +2207,22 @@ function openContactModal(id){
       <div class="fg"><label>BTW</label><input id="cm-btw" value="${cont?.btw||''}"/></div>
     </div>
   `,()=>{
+    const selectedType=document.getElementById('cm-type').value;
+    const existingType=cont?.type;
+    
+    // If type changed, recalculate account number
+    let accNum=cont?.accountNumber;
+    if(isNew||selectedType!==existingType){
+      const contactsOfType=S.contacts.filter(c=>c.type===selectedType);
+      const baseNum=selectedType==='debtor'?4100:3100;
+      accNum=baseNum+contactsOfType.length;
+    }
+    
     const nc={
       id:cont?.id||UID(),
       name:document.getElementById('cm-name').value,
-      type,
-      accountNumber:document.getElementById('cm-acc').value,
+      type:selectedType,
+      accountNumber:accNum.toString(),
       email:document.getElementById('cm-email').value,
       phone:document.getElementById('cm-phone').value,
       address:document.getElementById('cm-addr').value,
@@ -2225,6 +2235,18 @@ function openContactModal(id){
     if(isNew)S.contacts.push(nc);else S.contacts=S.contacts.map(c=>c.id===nc.id?nc:c);
     sv();closeModal();renderContent();toast('Contact saved ✓','ti-check');
   });
+  
+  // Calculate and update initial account number
+  updateAccNum();
+}
+
+function updateAccNum(){
+  const type=document.getElementById('cm-type')?.value||'debtor';
+  const contacts=S.contacts.filter(c=>c.type===type);
+  const baseNum=type==='debtor'?4100:3100;
+  const nextNum=baseNum+contacts.length;
+  const accField=document.getElementById('cm-acc');
+  if(accField)accField.value=nextNum;
 }
 
 function delContact(id){
@@ -2700,10 +2722,10 @@ function editInvoice(id){openInvoiceModal(S.invoices.find(i=>i.id===id));}
 function openInvoiceModal(inv){
   const isN=!inv;const cid=S.currentClient;
   const isClientPortal=S.role==='client';
-  const clientList=S.clients||[];
-  const debtorList=S.debtors||[];
-  const billToOptions=isClientPortal?clientList.map(c=>`<option value="${c.id}" data-name="${c.name}"${inv?.billToId===c.id?'selected':''}>${c.name}</option>`).join('')
-    :(clientList.concat(debtorList)).map(e=>`<option value="${e.id}" data-name="${e.name}"${inv?.billToId===e.id?'selected':''}>${e.name}</option>`).join('');
+  
+  // Use S.contacts for bill-to options (not S.clients)
+  const contacts=S.contacts||[];
+  const billToOptions=contacts.map(c=>`<option value="${c.id}" data-name="${c.name}"${inv?.billToId===c.id?'selected':''}>${c.name} (${c.type})</option>`).join('');
   showModal(isN?t('btn_new_invoice').replace('+ ',''):t('edit')+' '+t('tab_invoices').slice(0,-1),`
     ${isClientPortal?`
     <div class="fg"><label>Bill to (Customer) *</label>
