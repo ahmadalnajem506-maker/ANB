@@ -2842,8 +2842,10 @@ function upBillTo(){
   const detDiv=document.getElementById('if-billto-details');
   const billtoId=sel?.value;
   if(!billtoId){if(detDiv)detDiv.style.display='none';return;}
-  const allList=(S.clients||[]).concat(S.debtors||[]);
-  const entity=allList.find(e=>e.id===billtoId);
+  // Use S.contacts (filtered by current client) instead of old S.clients/S.debtors
+  const cid=S.currentClient;
+  const contacts=(S.contacts||[]).filter(c=>c.cid===cid);
+  const entity=contacts.find(e=>e.id===billtoId);
   if(!entity)return;
   document.getElementById('if-billto-id').value=billtoId;
   document.getElementById('if-billto').value=entity.name;
