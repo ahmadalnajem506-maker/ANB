@@ -2520,7 +2520,7 @@ function generateRecurringInvoices(){
     while(rec.nextDate<=today&&guard<24){ // guard avoids any infinite loop on bad data
       const due=addInterval(rec.nextDate,'monthly'); // standard 30-day payment term regardless of recurrence frequency
       const btw=rec.amount*(rec.btwRate/100);
-      S.invoices.push({id:UID(),cid:rec.cid,num:nextNum(),desc:rec.desc+' ('+FD(rec.nextDate)+')',
+      S.invoices.push({id:UID(),cid:rec.cid,num:nextNum(rec.cid),desc:rec.desc+' ('+FD(rec.nextDate)+')',
         date:rec.nextDate,due,status:'Openstaand',amount:rec.amount,btw,
         total:rec.amount+btw,btwRate:rec.btwRate,fromRecurring:rec.id});
       created++;
@@ -2688,10 +2688,12 @@ function openClientModal(c){
   });
 }
 
-function nextNum(){
-  const yr=new Date().getFullYear();
-  const nums=S.invoices.map(i=>parseInt((i.num||'').split('-').pop())).filter(Boolean);
-  return `ANB-${yr}-${String(nums.length?Math.max(...nums)+1:1).padStart(3,'0')}`;
+function nextNum(clientId){
+  const cid=clientId||S.currentClient;
+  const c=S.clients.find(cc=>cc.id===cid);
+  const clientName=c?c.name.substring(0,3).toUpperCase():'CLI';
+  const clientInvoices=S.invoices.filter(i=>i.cid===cid);
+  return `${clientName}-${String(clientInvoices.length+1).padStart(3,'0')}`;
 }
 function openNewInvoice(){openInvoiceModal(null);}
 function editInvoice(id){openInvoiceModal(S.invoices.find(i=>i.id===id));}
@@ -2719,7 +2721,7 @@ function openInvoiceModal(inv){
     <input type="hidden" id="if-billto" value="${inv?.billTo||''}" />
     <input type="hidden" id="if-billto-id" value="${inv?.billToId||''}" />`:''}
     <div class="fr2">
-      <div class="fg"><label>Invoice #</label><input id="if-n" value="${inv?.num||nextNum()}"/></div>
+      <div class="fg"><label>Invoice #</label><input id="if-n" value="${inv?.num||nextNum(cid)}"/></div>
       <div class="fg"><label>Status</label><select id="if-s">${['Concept','Verzonden','Openstaand','Betaald','Verlopen'].map(s=>`<option ${inv?.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
     </div>
     <div class="fr2">
