@@ -2185,17 +2185,22 @@ function rContacts(el){
   `).join('')||'<span style="color:var(--t3);font-size:12px">No creditors yet</span>';
 }
 
-function openContactModal(id){
+function openContactModal(id, forceType){
   const cont=S.contacts.find(c=>c.id===id);
   const isNew=!cont;
-  const initialType=cont?.type||'debtor';
+  const lockedType=forceType||cont?.type||'debtor'; // forceType locks the type
+  
+  // Only show type dropdown for edits (not for new) if no forceType
+  const showTypeDropdown=!isNew && !forceType;
   
   showModal(isNew?'Add Contact':'Edit Contact',`
     <div class="fg"><label>Name *</label><input id="cm-name" value="${cont?.name||''}"/></div>
+    ${showTypeDropdown?`
     <div class="fg"><label>Type *</label><select id="cm-type" onchange="updateAccNum()">
-      <option value="debtor" ${initialType==='debtor'?'selected':''}>Debtor (Customer)</option>
-      <option value="creditor" ${initialType==='creditor'?'selected':''}>Creditor (Supplier)</option>
+      <option value="debtor" ${lockedType==='debtor'?'selected':''}>Debtor (Customer)</option>
+      <option value="creditor" ${lockedType==='creditor'?'selected':''}>Creditor (Supplier)</option>
     </select></div>
+    `:`<div style="display:none" id="cm-type-locked">${lockedType}</div>`}
     <div class="fg"><label>Account # (Auto)</label><input id="cm-acc" value="${cont?.accountNumber||''}" disabled style="background:var(--bg2)"/></div>
     <div class="fr2">
       <div class="fg"><label>Email</label><input id="cm-email" value="${cont?.email||''}"/></div>
@@ -2207,7 +2212,7 @@ function openContactModal(id){
       <div class="fg"><label>BTW</label><input id="cm-btw" value="${cont?.btw||''}"/></div>
     </div>
   `,()=>{
-    const selectedType=document.getElementById('cm-type').value;
+    const selectedType=showTypeDropdown?document.getElementById('cm-type').value:lockedType;
     const existingType=cont?.type;
     
     // If type changed, recalculate account number
@@ -2727,10 +2732,9 @@ function openInvoiceModal(inv){
   const contacts=S.contacts||[];
   const billToOptions=contacts.map(c=>`<option value="${c.id}" data-name="${c.name}"${inv?.billToId===c.id?'selected':''}>${c.name} (${c.type})</option>`).join('');
   showModal(isN?t('btn_new_invoice').replace('+ ',''):t('edit')+' '+t('tab_invoices').slice(0,-1),`
-    ${isClientPortal?`
     <div class="fg"><label>Bill to (Customer) *</label>
       <select id="if-billto-sel" onchange="upBillTo()">
-        <option value="">-- Select customer --</option>
+        <option value="">-- Select recipient --</option>
         ${billToOptions}
       </select>
       <div id="if-billto-details" style="display:none;background:var(--bg2);padding:10px;border-radius:4px;margin-top:8px;font-size:12px;line-height:1.6">
@@ -2741,7 +2745,7 @@ function openInvoiceModal(inv){
       </div>
     </div>
     <input type="hidden" id="if-billto" value="${inv?.billTo||''}" />
-    <input type="hidden" id="if-billto-id" value="${inv?.billToId||''}" />`:''}
+    <input type="hidden" id="if-billto-id" value="${inv?.billToId||''}" />
     <div class="fr2">
       <div class="fg"><label>Invoice #</label><input id="if-n" value="${inv?.num||nextNum(cid)}"/></div>
       <div class="fg"><label>Status</label><select id="if-s">${['Concept','Verzonden','Openstaand','Betaald','Verlopen'].map(s=>`<option ${inv?.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
