@@ -397,6 +397,13 @@ if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostn
 <!--  LOGIN PAGE                                         -->
 <!-- ════════════════════════════════════════════════════ -->
 <div id="login-page">
+  <!-- Install App Button (Mobile only) -->
+  <div id="install-prompt" style="display:none;position:fixed;top:10px;right:10px;z-index:9999;background:#C89010;color:#0A2218;padding:12px 16px;border-radius:8px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-width:200px;text-align:center">
+    <div style="font-size:12px;margin-bottom:6px">📱 Get App</div>
+    <button id="install-btn" style="width:100%;padding:8px;background:#0A2218;color:#C89010;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:13px" onclick="if(window.deferredPrompt)window.deferredPrompt.prompt();document.getElementById('install-prompt').style.display='none'">Install</button>
+    <button onclick="document.getElementById('install-prompt').style.display='none'" style="width:100%;margin-top:6px;padding:6px;background:transparent;border:1px solid #0A2218;color:#0A2218;border-radius:4px;cursor:pointer;font-size:12px">Later</button>
+  </div>
+  
   <div class="login-box">
     <!-- Language switcher -->
     <div class="lang-switch" id="lang-switch">
@@ -3682,23 +3689,29 @@ function toast(msg){
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
-  deferredPrompt = e;
+  window.deferredPrompt = e;
+  // Show install button on login page
+  const installPrompt=document.getElementById('install-prompt');
+  if(installPrompt)installPrompt.style.display='block';
+  // Also show banner in app
   setTimeout(() => {
-    document.getElementById('install-banner').classList.add('show');
+    const banner=document.getElementById('install-banner');
+    if(banner)banner.classList.add('show');
   }, 3000);
 });
 
-document.getElementById('install-btn').addEventListener('click', async () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    document.getElementById('install-banner').classList.remove('show');
+document.getElementById('install-btn')?.addEventListener('click', async () => {
+  if (window.deferredPrompt) {
+    window.deferredPrompt.prompt();
+    const { outcome } = await window.deferredPrompt.userChoice;
+    window.deferredPrompt = null;
+    document.getElementById('install-banner')?.classList.remove('show');
   }
 });
 
 window.addEventListener('appinstalled', () => {
-  document.getElementById('install-banner').classList.remove('show');
+  document.getElementById('install-banner')?.classList.remove('show');
+  document.getElementById('install-prompt')?.style.setAttribute('display','none');
   toast('✓ ANB FinAdmin installed successfully!');
 });
 
