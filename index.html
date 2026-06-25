@@ -2815,8 +2815,17 @@ function openInvoiceModal(inv){
       amount:a,btw,total:a+btw,btwRate:r,
       billTo:document.getElementById('if-billto')?.value||inv?.billTo||'',
       billToId:document.getElementById('if-billto-id')?.value||inv?.billToId||''};
-    if(!ni.desc){alert('Description required');return;}
-    if(isClientPortal&&!ni.billToId){alert('Customer selection required');return;}
+    
+    // Comprehensive validation for all required fields
+    const errors=[];
+    if(!ni.billToId)errors.push('📋 Select recipient (Bill To)');
+    if(!ni.desc)errors.push('📝 Description is required');
+    if(a<=0)errors.push('💶 Amount must be greater than 0');
+    
+    if(errors.length>0){
+      alert('❌ Please complete all required fields:\n\n'+errors.join('\n'));
+      return;
+    }
     if(isN)S.invoices.push(ni);else S.invoices=S.invoices.map(i=>i.id===ni.id?ni:i);
     if(isN&&document.getElementById('if-rec')?.checked){
       const freq=document.getElementById('if-rec-freq').value;
