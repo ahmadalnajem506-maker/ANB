@@ -608,7 +608,7 @@ var I18N={
     tab_invoices:'Invoices', tab_debtors:'Debtors',
     tab_expenses:'Expenses', tab_hours:'Hours',
     tab_journal:'Journal', tab_bank:'Bank', tab_btw:'BTW',
-    tab_reports:'Reports', tab_documents:'Documents', tab_messages:'Messages', tab_client:'Client',
+    tab_reports:'Reports', tab_documents:'Documents', tab_contacts:'Contacts', tab_messages:'Messages', tab_client:'Client',
     // Topbar actions
     new_invoice:'+ New invoice', new_expense:'+ New expense', log_hours:'+ Log hours',
     send_message:'➤ Send message', new_request:'+ New request', add_expense:'+ Add expense',
@@ -695,7 +695,7 @@ var I18N={
     tab_invoices:'Facturen', tab_debtors:'Debiteuren',
     tab_expenses:'Onkosten', tab_hours:'Uren',
     tab_journal:'Journaal', tab_bank:'Bank', tab_btw:'BTW',
-    tab_reports:'Rapporten', tab_documents:'Documenten', tab_messages:'Berichten', tab_client:'Klant',
+    tab_reports:'Rapporten', tab_documents:'Documenten', tab_contacts:'Contacten', tab_messages:'Berichten', tab_client:'Klant',
     new_invoice:'+ Nieuwe factuur', new_expense:'+ Nieuwe onkost', log_hours:'+ Uren invoeren',
     send_message:'➤ Bericht sturen', new_request:'+ Nieuw verzoek', add_expense:'+ Onkost toevoegen',
     edit:'Bewerken', remove:'Verwijderen',
@@ -770,7 +770,7 @@ var I18N={
     tab_invoices:'الفواتير', tab_debtors:'الديون (Debiteuren)',
     tab_expenses:'المصاريف', tab_hours:'ساعات العمل',
     tab_journal:'اليومية (Journal)', tab_bank:'البنك', tab_btw:'ضريبة القيمة المضافة (BTW)',
-    tab_reports:'التقارير', tab_documents:'المستندات', tab_messages:'الرسائل', tab_client:'العميل',
+    tab_reports:'التقارير', tab_documents:'المستندات', tab_contacts:'جهات الاتصال', tab_messages:'الرسائل', tab_client:'العميل',
     new_invoice:'+ فاتورة جديدة', new_expense:'+ مصروف جديد', log_hours:'+ تسجيل ساعات',
     send_message:'➤ إرسال رسالة', new_request:'+ طلب جديد', add_expense:'+ إضافة مصروف',
     edit:'تعديل', remove:'حذف',
@@ -1028,7 +1028,7 @@ function updateSyncBadge(){
 }
 
 (function ld(){try{const d=localStorage.getItem('anb5');if(d){const p=JSON.parse(d);
-  ['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','recurring','yearClosings'].forEach(k=>{if(p[k])S[k]=p[k];});
+  ['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','contacts','recurring','yearClosings'].forEach(k=>{if(p[k])S[k]=p[k];});
   // Restore session: role, currentClient, tab, language
   if(p.role)S.role=p.role;
   if(p.currentClient)S.currentClient=p.currentClient;
@@ -1381,6 +1381,7 @@ function renderTopbar(){
       {id:'btw',icon:'🏛',key:'tab_btw'},
       {id:'reports',icon:'📈',key:'tab_reports'},
       {id:'documents',icon:'📁',key:'tab_documents'},
+      {id:'contacts',icon:'👥',key:'tab_contacts'},
       {id:'messages',icon:'💬',key:'tab_messages'},
       {id:'info',icon:'👤',key:'tab_client'},
     ];
@@ -1424,7 +1425,7 @@ function renderContent(){
     if(S.tab==='settings'){rSettings(el);return;}
     if(!cid||S.tab==='dashboard'){rAdminDash(el);return;}
     const fn={invoices:rInvoices,debtors:rDebtors,expenses:rExpenses,journal:rJournal,bank:rBank,
-               reports:rReports,btw:rBTW,hours:rHours,documents:rDocs,messages:rMessages,info:rInfo};
+               reports:rReports,btw:rBTW,hours:rHours,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo};
     (fn[S.tab]||rInvoices)(el,cid);
   } else {
     const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,documents:rDocs,messages:rMessages};
@@ -2125,6 +2126,113 @@ function rMessages(el,cid){
   setTimeout(()=>{const t=document.getElementById('msg-thread');if(t)t.scrollTop=t.scrollHeight;},50);
 }
 
+function rContacts(el){
+  if(!S.contacts)S.contacts=[];
+  const debtors=S.contacts.filter(c=>c.type==='debtor');
+  const creditors=S.contacts.filter(c=>c.type==='creditor');
+  el.innerHTML=`
+    <div style="display:flex;gap:12px;margin-bottom:16px">
+      <button onclick="openContactModal(null,'debtor')" class="btn btn-gold" style="flex:1">+ Debtor</button>
+      <button onclick="openContactModal(null,'creditor')" class="btn btn-gold" style="flex:1">+ Supplier</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <h3 style="color:var(--t1);margin-bottom:10px">📊 Debtors (Customers)</h3>
+        <div id="debtors-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div>
+        <h3 style="color:var(--t1);margin-bottom:10px">📦 Creditors (Suppliers)</h3>
+        <div id="creditors-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+  `;
+  
+  // Render debtors
+  const debtorsList=document.getElementById('debtors-list');
+  debtorsList.innerHTML=debtors.map(c=>`
+    <div style="background:var(--bg2);padding:12px;border-radius:6px;border-left:4px solid #4CAF50">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div style="flex:1">
+          <strong>${c.name}</strong><br/>
+          <span style="font-size:11px;color:var(--t2)">📱 ${c.accountNumber} · ${c.email}</span><br/>
+          <span style="font-size:10px;color:var(--t3)">${c.address}</span>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button onclick="openContactModal('${c.id}')" class="btn btn-sm" style="padding:4px 8px">✎</button>
+          <button onclick="delContact('${c.id}')" class="btn btn-sm" style="padding:4px 8px;background:#f44336">✕</button>
+        </div>
+      </div>
+    </div>
+  `).join('')||'<span style="color:var(--t3);font-size:12px">No debtors yet</span>';
+  
+  // Render creditors
+  const creditorsList=document.getElementById('creditors-list');
+  creditorsList.innerHTML=creditors.map(c=>`
+    <div style="background:var(--bg2);padding:12px;border-radius:6px;border-left:4px solid #2196F3">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div style="flex:1">
+          <strong>${c.name}</strong><br/>
+          <span style="font-size:11px;color:var(--t2)">📱 ${c.accountNumber} · ${c.email}</span><br/>
+          <span style="font-size:10px;color:var(--t3)">${c.address}</span>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button onclick="openContactModal('${c.id}')" class="btn btn-sm" style="padding:4px 8px">✎</button>
+          <button onclick="delContact('${c.id}')" class="btn btn-sm" style="padding:4px 8px;background:#f44336">✕</button>
+        </div>
+      </div>
+    </div>
+  `).join('')||'<span style="color:var(--t3);font-size:12px">No creditors yet</span>';
+}
+
+function openContactModal(id){
+  const cont=S.contacts.find(c=>c.id===id);
+  const isNew=!cont;
+  const type=cont?.type||'debtor';
+  
+  // Calculate next account number
+  const contacts=S.contacts.filter(c=>c.type===type);
+  const baseNum=type==='debtor'?4100:3100;
+  const nextNum=baseNum+contacts.length;
+  
+  showModal(isNew?'Add Contact':'Edit Contact',`
+    <div class="fg"><label>Name *</label><input id="cm-name" value="${cont?.name||''}"/></div>
+    <div class="fg"><label>Type</label><select id="cm-type" disabled><option value="${type}">${type==='debtor'?'Debtor':'Creditor'}</option></select></div>
+    <div class="fg"><label>Account # (Auto)</label><input id="cm-acc" value="${cont?.accountNumber||nextNum}" disabled style="background:var(--bg2)"/></div>
+    <div class="fr2">
+      <div class="fg"><label>Email</label><input id="cm-email" value="${cont?.email||''}"/></div>
+      <div class="fg"><label>Phone</label><input id="cm-phone" value="${cont?.phone||''}"/></div>
+    </div>
+    <div class="fg"><label>Address</label><input id="cm-addr" value="${cont?.address||''}"/></div>
+    <div class="fr2">
+      <div class="fg"><label>KvK</label><input id="cm-kvk" value="${cont?.kvk||''}"/></div>
+      <div class="fg"><label>BTW</label><input id="cm-btw" value="${cont?.btw||''}"/></div>
+    </div>
+  `,()=>{
+    const nc={
+      id:cont?.id||UID(),
+      name:document.getElementById('cm-name').value,
+      type,
+      accountNumber:document.getElementById('cm-acc').value,
+      email:document.getElementById('cm-email').value,
+      phone:document.getElementById('cm-phone').value,
+      address:document.getElementById('cm-addr').value,
+      kvk:document.getElementById('cm-kvk').value,
+      btw:document.getElementById('cm-btw').value,
+      createdAt:cont?.createdAt||TODAY(),
+      isActive:true
+    };
+    if(!nc.name){alert('Name required');return;}
+    if(isNew)S.contacts.push(nc);else S.contacts=S.contacts.map(c=>c.id===nc.id?nc:c);
+    sv();closeModal();renderContent();toast('Contact saved ✓','ti-check');
+  });
+}
+
+function delContact(id){
+  if(!confirm('Delete this contact? (Ledger entries will not be deleted)'))return;
+  S.contacts=S.contacts.filter(c=>c.id!==id);
+  sv();renderContent();toast('Contact deleted ✓','ti-check');
+}
+
 function rInfo(el,cid){
   cid=cid||S.currentClient;
   const c=S.clients.find(c=>c.id===cid);if(!c)return;
@@ -2590,9 +2698,26 @@ function editInvoice(id){openInvoiceModal(S.invoices.find(i=>i.id===id));}
 function openInvoiceModal(inv){
   const isN=!inv;const cid=S.currentClient;
   const isClientPortal=S.role==='client';
+  const clientList=S.clients||[];
+  const debtorList=S.debtors||[];
+  const billToOptions=isClientPortal?clientList.map(c=>`<option value="${c.id}" data-name="${c.name}"${inv?.billToId===c.id?'selected':''}>${c.name}</option>`).join('')
+    :(clientList.concat(debtorList)).map(e=>`<option value="${e.id}" data-name="${e.name}"${inv?.billToId===e.id?'selected':''}>${e.name}</option>`).join('');
   showModal(isN?t('btn_new_invoice').replace('+ ',''):t('edit')+' '+t('tab_invoices').slice(0,-1),`
     ${isClientPortal?`
-    <div class="fg"><label>Bill to (Customer name) *</label><input id="if-billto" value="${inv?.billTo||''}" placeholder="Name of your customer"/></div>`:''}
+    <div class="fg"><label>Bill to (Customer) *</label>
+      <select id="if-billto-sel" onchange="upBillTo()">
+        <option value="">-- Select customer --</option>
+        ${billToOptions}
+      </select>
+      <div id="if-billto-details" style="display:none;background:var(--bg2);padding:10px;border-radius:4px;margin-top:8px;font-size:12px;line-height:1.6">
+        <strong id="if-billto-name"></strong><br/>
+        <span id="if-billto-email"></span><br/>
+        <span id="if-billto-addr"></span><br/>
+        <span id="if-billto-phone"></span>
+      </div>
+    </div>
+    <input type="hidden" id="if-billto" value="${inv?.billTo||''}" />
+    <input type="hidden" id="if-billto-id" value="${inv?.billToId||''}" />`:''}
     <div class="fr2">
       <div class="fg"><label>Invoice #</label><input id="if-n" value="${inv?.num||nextNum()}"/></div>
       <div class="fg"><label>Status</label><select id="if-s">${['Concept','Verzonden','Openstaand','Betaald','Verlopen'].map(s=>`<option ${inv?.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
@@ -2629,9 +2754,11 @@ function openInvoiceModal(inv){
     const ni={id:inv?.id||UID(),cid,num:document.getElementById('if-n').value,
       desc:document.getElementById('if-desc').value,date:document.getElementById('if-d').value,
       due:document.getElementById('if-dd').value,status:document.getElementById('if-s').value,
-      amount:a,btw,total:a+btw,btwRate:r,billTo:document.getElementById('if-billto')?.value||inv?.billTo||''};
+      amount:a,btw,total:a+btw,btwRate:r,
+      billTo:document.getElementById('if-billto')?.value||inv?.billTo||'',
+      billToId:document.getElementById('if-billto-id')?.value||inv?.billToId||''};
     if(!ni.desc){alert('Description required');return;}
-    if(isClientPortal&&!ni.billTo){alert('Customer name required');return;}
+    if(isClientPortal&&!ni.billToId){alert('Customer selection required');return;}
     if(isN)S.invoices.push(ni);else S.invoices=S.invoices.map(i=>i.id===ni.id?ni:i);
     if(isN&&document.getElementById('if-rec')?.checked){
       const freq=document.getElementById('if-rec-freq').value;
@@ -2642,6 +2769,26 @@ function openInvoiceModal(inv){
     sv();closeModal();renderContent();toast(isN?t('tab_invoices')+' ✓':t('tab_invoices')+' ✓','ti-check');
   });
   setTimeout(uIT,50);
+}
+function upBillTo(){
+  const sel=document.getElementById('if-billto-sel');
+  const detDiv=document.getElementById('if-billto-details');
+  const billtoId=sel?.value;
+  if(!billtoId){if(detDiv)detDiv.style.display='none';return;}
+  const allList=(S.clients||[]).concat(S.debtors||[]);
+  const entity=allList.find(e=>e.id===billtoId);
+  if(!entity)return;
+  document.getElementById('if-billto-id').value=billtoId;
+  document.getElementById('if-billto').value=entity.name;
+  const nameEl=document.getElementById('if-billto-name');
+  const emailEl=document.getElementById('if-billto-email');
+  const addrEl=document.getElementById('if-billto-addr');
+  const phoneEl=document.getElementById('if-billto-phone');
+  if(nameEl)nameEl.textContent=entity.name;
+  if(emailEl)emailEl.textContent=entity.email?'📧 '+entity.email:'';
+  if(addrEl)addrEl.textContent=entity.address?'📍 '+entity.address:'';
+  if(phoneEl)phoneEl.textContent=entity.phone?'📞 '+entity.phone:'';
+  if(detDiv)detDiv.style.display='block';
 }
 function uIT(){
   const a=parseFloat(document.getElementById('if-a')?.value)||0;
@@ -2841,39 +2988,42 @@ function exportPDF(id){
   doc.setFillColor(10,34,24);doc.rect(0,0,W,55,'F');
   doc.setFillColor(200,144,16);doc.rect(0,53,W,3,'F');
 
-  // ── Embed logo image
-  const logoImgs=document.querySelectorAll('img[alt="ANB Financial Services"]');
-  if(logoImgs.length>0){
-    try{
-      const canvas=document.createElement('canvas');
-      canvas.width=logoImgs[0].naturalWidth||300;
-      canvas.height=logoImgs[0].naturalHeight||300;
-      const ctx=canvas.getContext('2d');
-      ctx.drawImage(logoImgs[0],0,0,canvas.width,canvas.height);
-      const imgData=canvas.toDataURL('image/png');
-      // Draw logo on left side of header (square, 38mm)
-      doc.addImage(imgData,'PNG',M,4,38,38);
-    }catch(e){
-      // Fallback: text logo
-      doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(200,144,16);
-      doc.text('ANB',M,22);
+  // ── Embed logo image (only for admin portal)
+  if(!isClientPortal){
+    const logoImgs=document.querySelectorAll('img[alt="ANB Financial Services"]');
+    if(logoImgs.length>0){
+      try{
+        const canvas=document.createElement('canvas');
+        canvas.width=logoImgs[0].naturalWidth||300;
+        canvas.height=logoImgs[0].naturalHeight||300;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(logoImgs[0],0,0,canvas.width,canvas.height);
+        const imgData=canvas.toDataURL('image/png');
+        // Draw logo on left side of header (square, 38mm)
+        doc.addImage(imgData,'PNG',M,4,38,38);
+      }catch(e){
+        // Fallback: text logo
+        doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(200,144,16);
+        doc.text('ANB',M,22);
+      }
     }
   }
 
-  // ── Company info (offset right of logo)
+  // ── Company info (offset right of logo, or from left if no logo)
   doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(255,255,255);
   // If client portal, show client name as issuer; otherwise show ANB name
   const issuerName=isClientPortal?c.name:co.companyName;
-  doc.text(issuerName,M+42,16);
+  const logoOffset=isClientPortal?0:42;
+  doc.text(issuerName,M+logoOffset,16);
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(180,180,180);
   const issuerAddr=isClientPortal?(c.address||co.address):co.address;
-  doc.text(issuerAddr,M+42,22);
+  doc.text(issuerAddr,M+logoOffset,22);
   const issuerEmail=isClientPortal?c.email:co.email;
-  if(issuerEmail)doc.text(issuerEmail,M+42,27);
+  if(issuerEmail)doc.text(issuerEmail,M+logoOffset,27);
   const issuerPhone=isClientPortal?c.phone:co.phone;
-  if(issuerPhone)doc.text(issuerPhone,M+42,32);
+  if(issuerPhone)doc.text(issuerPhone,M+logoOffset,32);
   const issuerBTW=isClientPortal?c.btw:co.btw;
-  if(issuerBTW)doc.text('BTW: '+issuerBTW,M+42,37);
+  if(issuerBTW)doc.text('BTW: '+issuerBTW,M+logoOffset,37);
 
   // ── INVOICE label top right
   doc.setFont('helvetica','bold');doc.setFontSize(26);doc.setTextColor(200,144,16);
@@ -2885,16 +3035,29 @@ function exportPDF(id){
   let y=70;
   doc.setTextColor(120,120,120);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text('BILL TO',M,y);
   doc.setTextColor(20,20,20);doc.setFontSize(13);doc.setFont('helvetica','bold');
-  // If client portal, billTo is the recipient; otherwise show client name
-  const billToName=isClientPortal?(i.billTo||'Customer'):c.name;
-  doc.text(billToName,M,y+8);
+  
+  // Get recipient details
+  let recipientData={name:'',email:'',address:'',phone:'',kvk:'',btw:''};
+  if(isClientPortal&&i.billToId){
+    const allList=(S.clients||[]).concat(S.debtors||[]);
+    const recipient=allList.find(e=>e.id===i.billToId);
+    if(recipient){
+      recipientData={name:recipient.name,email:recipient.email||'',address:recipient.address||'',
+        phone:recipient.phone||'',kvk:recipient.kvk||'',btw:recipient.btw||''};
+    }
+  }else{
+    recipientData={name:c.name,email:c.email||'',address:'',phone:'',kvk:c.kvk||'',btw:c.btw||''};
+  }
+  
+  doc.text(recipientData.name,M,y+8);
   doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
   let by=y+15;
-  // Only show client details if not client portal
+  if(recipientData.email){doc.text(recipientData.email,M,by);by+=6;}
+  if(recipientData.address){doc.text(recipientData.address,M,by);by+=6;}
+  if(recipientData.phone){doc.text(recipientData.phone,M,by);by+=6;}
   if(!isClientPortal){
-    if(c.email){doc.text(c.email,M,by);by+=6;}
-    if(c.kvk){doc.text('KvK: '+c.kvk,M,by);by+=6;}
-    if(c.btw){doc.text('BTW: '+c.btw,M,by);by+=6;}
+    if(recipientData.kvk){doc.text('KvK: '+recipientData.kvk,M,by);by+=6;}
+    if(recipientData.btw){doc.text('BTW: '+recipientData.btw,M,by);by+=6;}
   }
   y=100;
   doc.setFillColor(214,240,220);doc.rect(M,y,W-M*2,9,'F');
@@ -2931,7 +3094,7 @@ function exportPDF(id){
   doc.setFillColor(200,144,16);doc.rect(0,275,W,1.5,'F');
   doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(160,160,160);
   if(isClientPortal){
-    doc.text('Issued by ANB Financial Services · '+co.address,W/2,283,{align:'center'});
+    doc.text('Issued by ANB Financial Services',W/2,283,{align:'center'});
   }else{
     doc.text(co.companyName+' · '+co.address,W/2,283,{align:'center'});
   }
