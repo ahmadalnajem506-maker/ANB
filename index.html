@@ -2835,6 +2835,7 @@ function exportPDF(id){
   const i=S.invoices.find(i=>i.id===id);
   const c=S.clients.find(c=>c.id===i?.cid);
   const co=S.settings;if(!i||!c)return;
+  const isClientPortal=S.role==='client';
   const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=16;
   // ── Header background
   doc.setFillColor(10,34,24);doc.rect(0,0,W,55,'F');
@@ -2861,12 +2862,18 @@ function exportPDF(id){
 
   // ── Company info (offset right of logo)
   doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(255,255,255);
-  doc.text(co.companyName,M+42,16);
+  // If client portal, show client name as issuer; otherwise show ANB name
+  const issuerName=isClientPortal?c.name:co.companyName;
+  doc.text(issuerName,M+42,16);
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(180,180,180);
-  doc.text(co.address,M+42,22);
-  if(co.email)doc.text(co.email,M+42,27);
-  if(co.phone)doc.text(co.phone,M+42,32);
-  if(co.btw)doc.text('BTW: '+co.btw,M+42,37);
+  const issuerAddr=isClientPortal?(c.address||co.address):co.address;
+  doc.text(issuerAddr,M+42,22);
+  const issuerEmail=isClientPortal?c.email:co.email;
+  if(issuerEmail)doc.text(issuerEmail,M+42,27);
+  const issuerPhone=isClientPortal?c.phone:co.phone;
+  if(issuerPhone)doc.text(issuerPhone,M+42,32);
+  const issuerBTW=isClientPortal?c.btw:co.btw;
+  if(issuerBTW)doc.text('BTW: '+issuerBTW,M+42,37);
 
   // ── INVOICE label top right
   doc.setFont('helvetica','bold');doc.setFontSize(26);doc.setTextColor(200,144,16);
@@ -2878,14 +2885,17 @@ function exportPDF(id){
   let y=70;
   doc.setTextColor(120,120,120);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text('BILL TO',M,y);
   doc.setTextColor(20,20,20);doc.setFontSize(13);doc.setFont('helvetica','bold');
-  // Show billTo if client portal, otherwise show company name
-  const billToName=i.billTo||c.name;
+  // If client portal, billTo is the recipient; otherwise show client name
+  const billToName=isClientPortal?(i.billTo||'Customer'):c.name;
   doc.text(billToName,M,y+8);
   doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
   let by=y+15;
-  if(c.email){doc.text(c.email,M,by);by+=6;}
-  if(c.kvk){doc.text('KvK: '+c.kvk,M,by);by+=6;}
-  if(c.btw){doc.text('BTW: '+c.btw,M,by);by+=6;}
+  // Only show client details if not client portal
+  if(!isClientPortal){
+    if(c.email){doc.text(c.email,M,by);by+=6;}
+    if(c.kvk){doc.text('KvK: '+c.kvk,M,by);by+=6;}
+    if(c.btw){doc.text('BTW: '+c.btw,M,by);by+=6;}
+  }
   y=100;
   doc.setFillColor(214,240,220);doc.rect(M,y,W-M*2,9,'F');
   doc.setFillColor(10,34,24);doc.rect(M,y,W-M*2,0.8,'F');
@@ -2920,7 +2930,11 @@ function exportPDF(id){
   doc.setFillColor(10,34,24);doc.rect(0,275,W,22,'F');
   doc.setFillColor(200,144,16);doc.rect(0,275,W,1.5,'F');
   doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(160,160,160);
-  doc.text(co.companyName+' · '+co.address,W/2,283,{align:'center'});
+  if(isClientPortal){
+    doc.text('Issued by ANB Financial Services · '+co.address,W/2,283,{align:'center'});
+  }else{
+    doc.text(co.companyName+' · '+co.address,W/2,283,{align:'center'});
+  }
   doc.text(co.tagline,W/2,289,{align:'center'});
   doc.save(`${i.num}.pdf`);
   toast('PDF ✓','ti-download');
