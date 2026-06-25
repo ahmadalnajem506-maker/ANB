@@ -2120,120 +2120,117 @@ function viewDoc(id){
 
 
 function rMessages(el,cid){
+  if(!S.messages)S.messages=[];
+  
   if(isAdmin()){
-    // Admin: Show modal for messages instead of inline view
-    openAdminMessagesModal();
-  } else {
-    // Client: Show modal for messages
-    openMessagesModal(cid);
-  }
-}
-
-function openAdminMessagesModal(){
-  const modal=document.getElementById('mo');
-  if(!modal)return;
-  
-  const selectedClient=S.selectedMsgClient;
-  
-  modal.innerHTML=`
-  <div class="modal-overlay">
-    <div class="modal-content" style="max-width:600px;height:600px;display:grid;grid-template-columns:200px 1fr">
-      <!-- Client List -->
-      <div style="border-right:1px solid var(--gr1);display:flex;flex-direction:column;overflow:hidden">
-        <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1);font-size:13px">👥 Clients</div>
-        <div style="flex:1;overflow-y:auto" id="msg-clients-list-modal">
-          ${S.clients.length===0?`<div style="padding:12px;color:var(--t3);font-size:11px">No clients</div>`:
+    // Admin: Simple list of clients + messages
+    const selectedClient=S.selectedMsgClient;
+    el.innerHTML=`
+    <div style="display:grid;grid-template-columns:250px 1fr;gap:16px;height:600px">
+      <div style="border:1px solid var(--gr1);border-radius:8px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1)">👥 Clients</div>
+        <div style="flex:1;overflow-y:auto">
+          ${S.clients.length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
           S.clients.map(c=>{
-            const lastMsg=S.messages.filter(m=>m.cid===c.id).slice(-1)[0];
             const unread=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead).length;
-            return `<div data-client-id="${c.id}" class="msg-client-item-modal" style="padding:10px;cursor:pointer;border-bottom:1px solid var(--gr1);background:${selectedClient===c.id?'var(--gr2)':'transparent'};transition:background 0.2s;user-select:none">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                <div style="font-weight:500;color:var(--t1);font-size:12px">${c.name}</div>
-                ${unread>0?`<span style="background:var(--red);color:white;font-size:8px;padding:1px 4px;border-radius:6px">${unread}</span>`:''}
+            return `<div onclick="S.selectedMsgClient='${c.id}';rMessages(document.getElementById('content'))" style="padding:12px;cursor:pointer;border-bottom:1px solid var(--gr1);background:${selectedClient===c.id?'var(--gr2)':'transparent'};user-select:none">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="font-weight:500;color:var(--t1)">${c.name}</div>
+                ${unread>0?`<span style="background:var(--red);color:white;font-size:9px;padding:2px 5px;border-radius:6px">${unread}</span>`:''}
               </div>
-              <div style="font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lastMsg?lastMsg.text.slice(0,25)+'...':'No msgs'}</div>
             </div>`;
           }).join('')}
         </div>
       </div>
-      <!-- Message View -->
-      <div style="display:flex;flex-direction:column;overflow:hidden;background:var(--gr2)">
-        <div id="admin-msg-modal-view" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
-          ${!selectedClient?`<div style="padding:20px;text-align:center;color:var(--t3);font-size:12px">Select a client</div>`:''}
+      <div style="border:1px solid var(--gr1);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;background:var(--gr2)">
+        ${!selectedClient?`<div style="padding:20px;text-align:center;color:var(--t3)">Select a client</div>`:`
+        <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1)">${S.clients.find(c=>c.id===selectedClient)?.name}</div>
+        <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
+          ${S.messages.filter(m=>m.cid===selectedClient).length===0?`<div style="color:var(--t3);text-align:center;font-size:12px">No messages</div>`:
+          S.messages.filter(m=>m.cid===selectedClient).map(m=>`<div style="align-self:${m.from==='anb'?'flex-end':'flex-start'};max-width:75%">
+            <div style="background:${m.from==='anb'?'#C89010':'#E8E8E8'};color:${m.from==='anb'?'#0A2218':'#1a1a1a'};padding:10px 12px;border-radius:6px;line-height:1.4;font-size:13px">${m.text}</div>
+            <div style="font-size:9px;opacity:0.6;margin-top:2px">${m.date} ${m.time}</div>
+          </div>`).join('')}
+          <div id="msg-end"></div>
         </div>
+        <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px">
+          <input type="text" id="msg-input-admin" placeholder="Reply..." style="flex:1;padding:8px;border:1px solid var(--gr1);border-radius:4px"/>
+          <button onclick="sendMsgAdmin('${selectedClient}')" style="padding:8px 16px;background:#0A2218;color:#C89010;border:none;border-radius:4px;cursor:pointer;font-weight:600">Send</button>
+        </div>
+        `}
       </div>
-    </div>
-  </div>`;
-  
-  setTimeout(()=>{
-    // Attach client selection listeners
-    document.querySelectorAll('.msg-client-item-modal').forEach(item=>{
-      item.addEventListener('click',(e)=>{
-        e.stopPropagation();
-        const cid=item.getAttribute('data-client-id');
-        S.selectedMsgClient=cid;
-        loadAdminMsgInModal(cid);
-      });
-    });
+    </div>`;
     
-    // Load first client by default
-    if(S.clients.length>0 && !selectedClient){
-      S.selectedMsgClient=S.clients[0].id;
-      loadAdminMsgInModal(S.clients[0].id);
-    } else if(selectedClient){
-      loadAdminMsgInModal(selectedClient);
-    }
-  },50);
+    setTimeout(()=>{
+      const inp=document.getElementById('msg-input-admin');
+      if(inp)inp.focus();
+      document.getElementById('msg-end')?.scrollIntoView();
+    },50);
+  } else {
+    // Client: Simple message view
+    el.innerHTML=`
+    <div class="card">
+      <div class="ch"><span class="ct">💬 Messages with ANB</span></div>
+      <div style="padding:16px;max-height:400px;overflow-y:auto">
+        ${S.messages.filter(m=>m.cid===cid).length===0?`<div style="color:var(--t3);text-align:center">No messages yet</div>`:
+        S.messages.filter(m=>m.cid===cid).map(m=>`<div style="margin-bottom:12px;align-self:${m.from==='anb'?'flex-start':'flex-end'};max-width:75%">
+          <div style="background:${m.from==='anb'?'#C89010':'#0A2218'};color:${m.from==='anb'?'#0A2218':'#C89010'};padding:10px 12px;border-radius:6px;line-height:1.4;font-size:13px">${m.text}</div>
+          <div style="font-size:9px;opacity:0.6;margin-top:2px">${m.date} ${m.time}</div>
+        </div>`).join('')}
+        <div id="msg-end-client"></div>
+      </div>
+      <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px">
+        <input type="text" id="msg-input-client" placeholder="Message..." style="flex:1;padding:8px;border:1px solid var(--gr1);border-radius:4px"/>
+        <button onclick="sendMsgClient('${cid}')" style="padding:8px 16px;background:#0A2218;color:#C89010;border:none;border-radius:4px;cursor:pointer;font-weight:600">Send</button>
+      </div>
+    </div>`;
+    
+    setTimeout(()=>{
+      const inp=document.getElementById('msg-input-client');
+      if(inp)inp.focus();
+      document.getElementById('msg-end-client')?.scrollIntoView();
+    },50);
+  }
 }
 
-function loadAdminMsgInModal(cid){
-  const view=document.getElementById('admin-msg-modal-view');
-  if(!view)return;
+function sendMsgAdmin(cid){
+  const inp=document.getElementById('msg-input-admin');
+  const txt=inp?.value?.trim();
+  if(!txt){inp?.focus();return;}
   
-  S.messages.filter(m=>m.cid===cid&&m.from==='client').forEach(m=>m.isRead=true);
+  const now=new Date();
+  S.messages.push({
+    id:UID(),
+    cid,
+    from:'anb',
+    text:txt,
+    date:TODAY(),
+    time:now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'),
+    isRead:true
+  });
   sv();
+  inp.value='';
+  rMessages(document.getElementById('content'),cid);
+}
+
+function sendMsgClient(cid){
+  const inp=document.getElementById('msg-input-client');
+  const txt=inp?.value?.trim();
+  if(!txt){inp?.focus();return;}
   
-  const msgs=S.messages.filter(m=>m.cid===cid);
-  const client=S.clients.find(c=>c.id===cid);
-  
-  view.innerHTML=`
-    <div style="font-weight:600;padding-bottom:8px;color:var(--t1);font-size:12px">${client?.name}</div>
-    ${msgs.length===0?`<div style="text-align:center;color:var(--t3);font-size:11px;padding:10px">No messages yet</div>`:
-    msgs.map(m=>`<div style="word-wrap:break-word;align-self:${m.from==='anb'?'flex-end':'flex-start'};max-width:75%">
-      <div style="background:${m.from==='anb'?'#C89010':'#E8E8E8'};color:${m.from==='anb'?'#0A2218':'#1a1a1a'};padding:8px 11px;border-radius:6px;line-height:1.4;font-size:12px;font-weight:${m.from==='anb'?'500':'400'}">${m.text}</div>
-      <div style="font-size:8px;opacity:0.6;margin-top:2px;padding:0 2px">${m.date} ${m.time}</div>
-    </div>`).join('')}
-    <div id="msg-modal-anchor"></div>
-  `;
-  
-  // Add input area
-  const inputDiv=document.createElement('div');
-  inputDiv.style.cssText='padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px;margin-top:auto';
-  inputDiv.innerHTML=`
-    <textarea id="msg-modal-input-admin" placeholder="Reply..." style="flex:1;min-height:45px;padding:8px;border:1px solid var(--gr1);border-radius:4px;font-family:inherit;resize:none;font-size:12px" onkeydown="if(event.key==='Enter'&&event.ctrlKey){sendMsgFromModal('admin','${cid}');event.preventDefault()}" onclick="event.stopPropagation()"></textarea>
-    <button id="msg-modal-send-btn" style="padding:8px 12px;background:#0A2218;color:#C89010;border:none;border-radius:4px;cursor:pointer;font-weight:600;font-size:12px">➤</button>
-  `;
-  view.parentElement.appendChild(inputDiv);
-  
-  setTimeout(()=>{
-    const textarea=document.getElementById('msg-modal-input-admin');
-    const btn=document.getElementById('msg-modal-send-btn');
-    const anchor=document.getElementById('msg-modal-anchor');
-    
-    if(anchor)anchor.scrollIntoView();
-    
-    if(btn){
-      btn.addEventListener('click',(e)=>{
-        e.preventDefault();
-        e.stopPropagation();
-        sendMsgFromModal('admin',cid);
-      });
-    }
-    
-    if(textarea){
-      textarea.focus();
-    }
-  },50);
+  const now=new Date();
+  S.messages.push({
+    id:UID(),
+    cid,
+    from:'client',
+    text:txt,
+    date:TODAY(),
+    time:now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'),
+    isRead:false
+  });
+  sv();
+  inp.value='';
+  rMessages(document.getElementById('content'),cid);
 }
 
 function rMessagesClient(el,cid){
@@ -2555,14 +2552,6 @@ function saveSettings(){
   sv();toast(t('settings_nav')+' ✓','ti-check');
 }
 
-function sendAdminMsg(cid){
-  sendMsgFromModal('admin',cid);
-}
-
-function sendClientMsg(cid){
-  sendMsgFromModal('client',cid);
-}
-
 function openSendMsg(){
   // For Admin only - open modal to send message to a client
   if(!isAdmin()){
@@ -2636,7 +2625,7 @@ function delDoc(id){if(confirm('Delete?')){S.docs=S.docs.filter(d=>d.id!==id);sv
 function delClient(id){
   if(!confirm('Remove this client and ALL their data?'))return;
   
-  // Soft delete: mark as deleted instead of removing
+  // Mark as deleted (for sync to cloud)
   S.clients=S.clients.map(c=>c.id===id?{...c,deleted:true}:c);
   S.invoices=S.invoices.map(i=>i.cid===id?{...i,deleted:true}:i);
   S.expenses=S.expenses.map(e=>e.cid===id?{...e,deleted:true}:e);
@@ -2644,7 +2633,7 @@ function delClient(id){
   S.docs=S.docs.map(d=>d.cid===id?{...d,deleted:true}:d);
   S.messages=S.messages.map(m=>m.cid===id?{...m,deleted:true}:m);
   
-  // Hard delete from local arrays (for display)
+  // Then filter for display (merge will handle it correctly)
   S.clients=S.clients.filter(c=>!c.deleted);
   S.invoices=S.invoices.filter(i=>!i.deleted);
   S.expenses=S.expenses.filter(e=>!e.deleted);
