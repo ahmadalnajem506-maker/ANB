@@ -4083,7 +4083,7 @@ window.selClient = function(id) {
   _origSelClient(id);
 };
 
-function downloadContract(contractId){
+function viewContract(contractId){
   var contract=S.contracts.find(function(c){return c.id===contractId});
   if(!contract) return;
   
@@ -4091,180 +4091,52 @@ function downloadContract(contractId){
   var today=new Date();
   var dateStr=today.getDate()+' '+getMonthName(today.getMonth())+' '+today.getFullYear();
   
-  // Create professional contract HTML
-  var htmlContent='<!DOCTYPE html><html><head><meta charset="UTF-8">';
-  htmlContent+='<style>';
-  htmlContent+='body{font-family:"Calibri","Arial",sans-serif;line-height:1.6;margin:0;padding:40px;background:white;color:#333}';
-  htmlContent+='.container{max-width:900px;margin:0 auto;background:white;padding:40px;border:1px solid #ddd}';
-  htmlContent+='.header{text-align:center;margin-bottom:40px;border-bottom:3px solid #0A2218;padding-bottom:20px}';
-  htmlContent+='.company-name{font-size:18px;font-weight:bold;color:#0A2218}';
-  htmlContent+='.company-info{font-size:11px;color:#666;margin-top:5px}';
-  htmlContent+='.title{font-size:20px;font-weight:bold;color:#0A2218;margin:30px 0 20px 0}';
-  htmlContent+='.subtitle{font-size:13px;font-weight:bold;color:#0A2218;margin:20px 0 10px 0}';
-  htmlContent+='.section{margin:20px 0}';
-  htmlContent+='.clause{margin:15px 0;text-align:justify}';
-  htmlContent+='.clause-number{font-weight:bold;color:#0A2218}';
-  htmlContent+='.parties{margin:20px 0}';
-  htmlContent+='.party{margin:10px 0}';
-  htmlContent+='.table{width:100%;border-collapse:collapse;margin:15px 0}';
-  htmlContent+='.table td{border:1px solid #ddd;padding:10px}';
-  htmlContent+='.table th{background:#f0f0f0;border:1px solid #ddd;padding:10px;text-align:left;font-weight:bold}';
-  htmlContent+='.signature-section{margin-top:50px;padding-top:30px;border-top:1px solid #ddd}';
-  htmlContent+='.signature-line{margin-top:40px;display:inline-block;width:250px}';
-  htmlContent+='.signature-content{border-top:1px solid #000;padding-top:5px;text-align:center;font-size:12px}';
-  htmlContent+='.footer{margin-top:50px;padding-top:20px;border-top:1px solid #ddd;text-align:center;font-size:10px;color:#777}';
-  htmlContent+='.approved-stamp{background:#d4edda;border:2px solid #28a745;color:#155724;padding:15px;border-radius:8px;margin:20px 0;text-align:center;font-weight:bold}';
-  htmlContent+='</style></head><body>';
+  var htmlContent='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:"Calibri","Arial",sans-serif;line-height:1.6;margin:0;padding:40px;background:white;color:#333}.container{max-width:900px;margin:0 auto;background:white;padding:40px;border:1px solid #ddd}.header{text-align:center;margin-bottom:40px;border-bottom:3px solid #0A2218;padding-bottom:20px}.company-name{font-size:18px;font-weight:bold;color:#0A2218}.company-info{font-size:11px;color:#666;margin-top:5px}.subtitle{font-size:13px;font-weight:bold;color:#0A2218;margin:20px 0 10px 0}.section{margin:20px 0}.clause{margin:15px 0;text-align:justify}.clause-number{font-weight:bold;color:#0A2218}.parties{margin:20px 0}.party{margin:10px 0}.table{width:100%;border-collapse:collapse;margin:15px 0}.table td{border:1px solid #ddd;padding:10px}.table th{background:#f0f0f0;border:1px solid #ddd;padding:10px;text-align:left;font-weight:bold}.signature-section{margin-top:50px;padding-top:30px;border-top:1px solid #ddd}.signature-line{margin-top:40px;display:inline-block;width:250px}.signature-content{border-top:1px solid #000;padding-top:5px;text-align:center;font-size:12px}.footer{margin-top:50px;padding-top:20px;border-top:1px solid #ddd;text-align:center;font-size:10px;color:#777}.approved-stamp{background:#d4edda;border:2px solid #28a745;color:#155724;padding:15px;border-radius:8px;margin:20px 0;text-align:center;font-weight:bold}.close-btn{position:fixed;top:20px;right:20px;padding:10px 20px;background:#0A2218;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold;z-index:1000}.close-btn:hover{background:#05140d}</style></head><body><button class="close-btn" onclick="window.close()">✕ إغلاق</button><div class="container"><div class="header"><div class="company-name">ANB FINANCIAL SERVICES</div><div class="company-info">Gespecialiseerd in boekhoudkundige en belastingadviesdiensten voor ZZP-ers en KMO\'s</div><div class="company-info">Bussum, Nederland | info@anbfinancial.nl | +31 35 123 4567</div></div><div style="text-align:center;margin-bottom:30px"><h1 style="margin:10px 0">SERVICEOVEREENKOMST</h1><p style="color:#666;margin:5px 0">Contractnummer: '+contract.num+'</p></div>';
   
-  htmlContent+='<div class="container">';
-  
-  // Header
-  htmlContent+='<div class="header">';
-  htmlContent+='<div class="company-name">ANB FINANCIAL SERVICES</div>';
-  htmlContent+='<div class="company-info">Gespecialiseerd in boekhoudkundige en belastingadviesdiensten voor ZZP-ers en KMO\'s</div>';
-  htmlContent+='<div class="company-info">Bussum, Nederland | info@anbfinancial.nl | +31 35 123 4567</div>';
-  htmlContent+='</div>';
-  
-  // Title
-  htmlContent+='<div style="text-align:center;margin-bottom:30px">';
-  htmlContent+='<h1 style="margin:10px 0">SERVICEOVEREENKOMST</h1>';
-  htmlContent+='<p style="color:#666;margin:5px 0">Contractnummer: '+contract.num+'</p>';
-  htmlContent+='</div>';
-  
-  // Approval status
   if(contract.status==='signed' || contract.status==='active'){
     htmlContent+='<div class="approved-stamp">✓ GOEDGEKEURD EN ONDERTEKEND</div>';
   }
   
-  // Parties section
-  htmlContent+='<div class="section">';
-  htmlContent+='<div class="subtitle">1. PARTIJEN</div>';
-  htmlContent+='<div class="parties">';
-  htmlContent+='<div class="party"><strong>Dienstverlener:</strong><br>ANB Financial Services<br>Bussum, Nederland<br>BTW-id: NL123456789B01<br>Vertegenwoordigd door: Ahmad Al-Najem</div>';
-  htmlContent+='<div class="party" style="margin-top:15px"><strong>Klant:</strong><br>'+client.name+'<br>Email: '+client.email+'<br>KvK: '+client.kvk+'<br>BTW-id: '+client.btw+'</div>';
-  htmlContent+='</div>';
-  htmlContent+='</div>';
+  htmlContent+='<div class="section"><div class="subtitle">1. PARTIJEN</div><div class="parties"><div class="party"><strong>Dienstverlener:</strong><br>ANB Financial Services<br>Bussum, Nederland<br>BTW-id: NL123456789B01<br>Vertegenwoordigd door: Ahmad Al-Najem</div><div class="party" style="margin-top:15px"><strong>Klant:</strong><br>'+client.name+'<br>Email: '+client.email+'<br>KvK: '+client.kvk+'<br>BTW-id: '+client.btw+'</div></div></div>';
   
-  // Services section
-  htmlContent+='<div class="section">';
-  htmlContent+='<div class="subtitle">2. OMSCHRIJVING VAN DIENSTEN</div>';
-  htmlContent+='<div class="clause">De dienstverlener zal de volgende diensten verlenen aan de klant:</div>';
-  htmlContent+='<ul>';
-  htmlContent+='<li><strong>Boekhoudkundige diensten:</strong> Dagelijkse administratie, crediteurenverwerking, debiteurenadministratie, kostprijsadministratie en boekhoudkundige rapportage.</li>';
-  htmlContent+='<li><strong>Belastingadviesdiensten:</strong> Omzetbelastingadviezen, loonbelastingadviezen, vennootschapsbelastingadviezen, advies over subsidies en belastingplanning.</li>';
-  htmlContent+='<li><strong>Financieel management:</strong> Kasmanagement, begroting en budgettering, financiële analyse en advies.</li>';
-  htmlContent+='<li><strong>Jaarlijkse rapportages:</strong> Jaarrekening opstelling, directieverslagen en aangifte bij de belastingdienst.</li>';
-  htmlContent+='<li><strong>Digitale diensten:</strong> Toegang tot beveiligde portal, cloudopslag documenten, realtime rapportages en alert-systemen.</li>';
-  htmlContent+='</ul>';
-  htmlContent+='</div>';
+  htmlContent+='<div class="section"><div class="subtitle">2. OMSCHRIJVING VAN DIENSTEN</div><div class="clause">De dienstverlener zal de volgende diensten verlenen aan de klant:</div><ul><li><strong>Boekhoudkundige diensten:</strong> Dagelijkse administratie, crediteurenverwerking, debiteurenadministratie.</li><li><strong>Belastingadviesdiensten:</strong> Omzetbelastingadviezen, loonbelastingadviezen, vennootschapsbelastingadviezen.</li><li><strong>Financieel management:</strong> Kasmanagement, begroting en budgettering, financiële analyse.</li><li><strong>Jaarlijkse rapportages:</strong> Jaarrekening opstelling, directieverslagen.</li><li><strong>Digitale diensten:</strong> Toegang tot beveiligde portal, cloudopslag, realtime rapportages.</li></ul></div>';
   
-  // Financial terms
-  htmlContent+='<div class="section">';
-  htmlContent+='<div class="subtitle">3. TARIEVEN EN BETALINGSVOORWAARDEN</div>';
-  htmlContent+='<table class="table">';
-  htmlContent+='<tr><th>Beschrijving</th><th>Bedrag</th></tr>';
-  htmlContent+='<tr><td>Maandelijks retainer</td><td>EUR '+contract.monthlyRate.toLocaleString('nl-NL')+'</td></tr>';
-  htmlContent+='<tr><td>Jaarlijks retainer (12 maanden)</td><td>EUR '+contract.annualRate.toLocaleString('nl-NL')+'</td></tr>';
-  htmlContent+='<tr><td>Factuurtermijn</td><td>Maandelijks op de 1e van de maand</td></tr>';
-  htmlContent+='<tr><td>Betaaltermijn</td><td>Netto 14 dagen</td></tr>';
-  htmlContent+='</table>';
-  htmlContent+='<div class="clause"><strong>Noot:</strong> Alle bedragen zijn excl. BTW 21%. Additionele diensten buiten de scope zullen apart gefactureerd worden tegen EUR 95 per uur.</div>';
-  htmlContent+='</div>';
+  htmlContent+='<div class="section"><div class="subtitle">3. TARIEVEN EN BETALINGSVOORWAARDEN</div><table class="table"><tr><th>Beschrijving</th><th>Bedrag</th></tr><tr><td>Maandelijks retainer</td><td>EUR '+contract.monthlyRate.toLocaleString('nl-NL')+'</td></tr><tr><td>Jaarlijks retainer (12 maanden)</td><td>EUR '+contract.annualRate.toLocaleString('nl-NL')+'</td></tr><tr><td>Factuurtermijn</td><td>Maandelijks op de 1e van de maand</td></tr><tr><td>Betaaltermijn</td><td>Netto 14 dagen</td></tr></table></div>';
   
-  // Terms and conditions
-  htmlContent+='<div class="section">';
-  htmlContent+='<div class="subtitle">4. ALGEMENE VOORWAARDEN</div>';
+  htmlContent+='<div class="section"><div class="subtitle">4. ALGEMENE VOORWAARDEN</div><div class="clause"><span class="clause-number">4.1 Duur:</span> Deze overeenkomst is aangegaan voor 12 maanden. Kan stilzwijgend met 1 maand worden verlengd.</div><div class="clause"><span class="clause-number">4.2 Opzegging:</span> Beide partijen kunnen opzeggen met 1 maand schriftelijke opzegging.</div><div class="clause"><span class="clause-number">4.3 Vertrouwelijkheid:</span> Volledige geheimhouding van alle vertrouwelijke informatie.</div><div class="clause"><span class="clause-number">4.4 Intellectueel eigendom:</span> Alle werken blijven eigendom van ANB Financial Services.</div><div class="clause"><span class="clause-number">4.5 Aansprakelijkheid:</span> Niet aansprakelijk voor schade door onjuiste klantinformatie.</div><div class="clause"><span class="clause-number">4.6 Verzekering:</span> Beroepsaansprakelijkheidsverzekering EUR 1.000.000.</div><div class="clause"><span class="clause-number">4.7 Toepasselijk recht:</span> Nederlands recht.</div></div>';
   
-  htmlContent+='<div class="clause"><span class="clause-number">4.1 Duur:</span> Deze overeenkomst is aangegaan voor een periode van 12 maanden, ingaande op de datum van ondertekening. Na afloop kan de overeenkomst stilzwijgend met 1 maand worden verlengd, tenzij één der partijen 1 maand voor afloop schriftelijk opzegt.</div>';
+  htmlContent+='<div class="section"><div class="subtitle">5. GEGEVENSBESCHERMING (GDPR)</div><div class="clause">ANB Financial Services verwerkt persoonsgegevens conform GDPR. Gegevens worden alleen voor deze overeenkomst gebruikt.</div></div>';
   
-  htmlContent+='<div class="clause"><span class="clause-number">4.2 Opzegging:</span> Beide partijen kunnen deze overeenkomst te allen tijde met ingang van een maand na schriftelijke opzegging beëindigen. Bij beëindiging vanuit schuld zijn geen opzegtermijnen van toepassing.</div>';
-  
-  htmlContent+='<div class="clause"><span class="clause-number">4.3 Vertrouwelijkheid:</span> Beide partijen verplichten zich tot geheimhouding van alle vertrouwelijke informatie die zij tijdens de uitvoering van deze overeenkomst ontvangen. Deze verplichting geldt ook na beëindiging van de overeenkomst.</div>';
-  
-  htmlContent+='<div class="clause"><span class="clause-number">4.4 Intellectueel eigendom:</span> Alle werken, documenten en analyses die door ANB Financial Services worden vervaardigd, blijven eigendom van ANB Financial Services, tenzij anders schriftelijk overeengekomen.</div>';
-  
-  htmlContent+='<div class="clause"><span class="clause-number">4.5 Aansprakelijkheid:</span> ANB Financial Services is niet aansprakelijk voor directe of indirecte schade voortvloeiend uit onjuistheden in de door de klant verstrekte informatie of gegevens.</div>';
-  
-  htmlContent+='<div class="clause"><span class="clause-number">4.6 Verzekering:</span> ANB Financial Services is verzekerd door middel van een beroepsaansprakelijkheidsverzekering. Alle adviezen worden gegeven conform de geldende wettelijke regelingen en best practices.</div>';
-  
-  htmlContent+='<div class="clause"><span class="clause-number">4.7 Wijzigingen:</span> Wijzigingen van deze overeenkomst kunnen alleen schriftelijk en in onderlinge overeenstemming plaatsvinden.</div>';
-  
-  htmlContent+='<div class="clause"><span class="clause-number">4.8 Toepasselijk recht:</span> Deze overeenkomst wordt beheerst door Nederlands recht. Eventuele geschillen zullen in eerste instantie onderling in der minne worden opgelost.</div>';
-  
-  htmlContent+='</div>';
-  
-  // Data protection
-  htmlContent+='<div class="section">';
-  htmlContent+='<div class="subtitle">5. GEGEVENSBESCHERMING (GDPR)</div>';
-  htmlContent+='<div class="clause">ANB Financial Services verwerkt persoonsgegevens in overeenstemming met de EU-Verordening Algemene Gegevensbescherming (GDPR). Gegevens worden alleen gebruikt voor de uitvoering van deze overeenkomst en zullen niet aan derden doorgegeven worden zonder toestemming, behoudens wettelijke verplichtingen.</div>';
-  htmlContent+='</div>';
-  
-  // Insurance and liability
-  htmlContent+='<div class="section">';
-  htmlContent+='<div class="subtitle">6. VERZEKERING EN AANSPRAKELIJKHEID</div>';
-  htmlContent+='<div class="clause"><strong>Beroepsaansprakelijkheid:</strong> ANB Financial Services draagt een beroepsaansprakelijkheidsverzekering ter hoogte van EUR 1.000.000 per sinistrum.</div>';
-  htmlContent+='<div class="clause"><strong>Informatiebeveiligingen:</strong> De klant is verantwoordelijk voor de juistheid en volledigheid van verstrekte informatie. Fouten in de gegeven informatie kunnen gevolgen hebben voor de kwaliteit van onze adviezen.</div>';
-  htmlContent+='</div>';
-  
-  // Signature section
-  htmlContent+='<div class="signature-section">';
-  htmlContent+='<div style="font-weight:bold;margin-bottom:20px">7. GOEDKEURING EN ONDERTEKENING</div>';
-  
-  htmlContent+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px">';
-  
-  // Left signature (Service provider)
-  htmlContent+='<div>';
-  htmlContent+='<div style="font-weight:bold">Dienstverlener:</div>';
-  htmlContent+='<div class="signature-line">';
+  htmlContent+='<div class="signature-section"><div style="font-weight:bold;margin-bottom:20px">7. ONDERTEKENING</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:40px"><div><div style="font-weight:bold">Dienstverlener:</div><div class="signature-line">';
   if(contract.status==='signed' || contract.status==='active'){
-    htmlContent+='<div style="margin-bottom:10px">✓ Geaccepteerd</div>';
-    htmlContent+='<div class="signature-content">Ahmad Al-Najem<br>ANB Financial Services<br>'+dateStr+'</div>';
+    htmlContent+='<div style="margin-bottom:10px">✓ Geaccepteerd</div><div class="signature-content">Ahmad Al-Najem<br>ANB Financial Services<br>'+dateStr+'</div>';
   } else {
     htmlContent+='<div class="signature-content">Handtekening:<br><br>Naam: Ahmad Al-Najem<br>Datum: ___________</div>';
   }
-  htmlContent+='</div>';
-  htmlContent+='</div>';
-  
-  // Right signature (Client)
-  htmlContent+='<div>';
-  htmlContent+='<div style="font-weight:bold">Klant / Gemachtigde:</div>';
-  htmlContent+='<div class="signature-line">';
+  htmlContent+='</div></div><div><div style="font-weight:bold">Klant:</div><div class="signature-line">';
   if(contract.status==='signed' || contract.status==='active'){
-    htmlContent+='<div style="margin-bottom:10px">✓ Geaccepteerd</div>';
-    htmlContent+='<div class="signature-content">'+contract.signerName+'<br>'+contract.signerFunction+'<br>'+dateStr+'</div>';
+    htmlContent+='<div style="margin-bottom:10px">✓ Geaccepteerd</div><div class="signature-content">'+contract.signerName+'<br>'+contract.signerFunction+'<br>'+dateStr+'</div>';
   } else {
     htmlContent+='<div class="signature-content">Handtekening:<br><br>Naam: '+contract.signerName+'<br>Datum: ___________</div>';
   }
-  htmlContent+='</div>';
-  htmlContent+='</div>';
+  htmlContent+='</div></div></div></div>';
   
-  htmlContent+='</div>';
+  htmlContent+='<div class="footer"><p>Document gegenereerd op '+dateStr+' door ANB Financial Services</p><p>Contractnummer: '+contract.num+' | Status: '+contract.status.toUpperCase()+'</p></div></div></body></html>';
   
-  htmlContent+='</div>';
-  
-  // Footer
-  htmlContent+='<div class="footer">';
-  htmlContent+='<p>Document gegenereerd op '+dateStr+' door ANB Financial Services</p>';
-  htmlContent+='<p>Contractnummer: '+contract.num+' | Status: '+contract.status.toUpperCase()+'</p>';
-  htmlContent+='<p>Dit is een officieel document van ANB Financial Services. Alle rechten voorbehouden.</p>';
-  htmlContent+='</div>';
-  
-  htmlContent+='</div>';
-  htmlContent+='</body></html>';
-  
-  // Open in new window and trigger print
-  var printWindow=window.open('','','width=900,height=1000');
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
-  
+  var viewWindow=window.open('','_blank','width=1000,height=800,scrollbars=yes');
+  viewWindow.document.write(htmlContent);
+  viewWindow.document.close();
+}
+
+function downloadContractPDF(contractId){
+  var contract=S.contracts.find(function(c){return c.id===contractId});
+  if(!contract) return;
+  alert('✅ تم التحميل: '+contract.num+'.pdf\n\nسيتم فتح نافذة للطباعة. اختر "حفظ ك PDF" من خيارات الطابعة.');
+  viewContract(contractId);
   setTimeout(function(){
-    printWindow.print();
-    setTimeout(function(){
-      printWindow.close();
-    },500);
-  },500);
-  
-  alert('✅ Professioneel contract geopend - Selecteer "Opslaan als PDF" in het printvenster');
+    var w=window.open('','');
+    if(w) w.print();
+  },1000);
 }
 
 function getMonthName(month){
@@ -4290,7 +4162,7 @@ function rContracts(el,cid){
       h+='<div style="margin:8px 0"><strong>Amount:</strong> €'+c.monthlyRate+'/month | €'+c.annualRate+'/year</div>';
       h+='<div style="margin:8px 0"><strong>Email:</strong> '+c.signerEmail+'</div>';
       h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-top:15px">';
-      h+='<button onclick="alert(\'Contract: '+c.num+'\\n\\nSigner: '+c.signerName+'\\nAmount: €'+c.monthlyRate+'/month\\nStatus: '+c.status+'\')" style="padding:10px;background:#0A2218;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">👁️ View</button>';
+      h+='<button onclick="viewContract(\''+c.id+'\')" style="padding:10px;background:#0A2218;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">👁️ View</button>';
       h+='<button onclick="alert(\'Email sent to '+c.signerEmail+'\')" style="padding:10px;background:#2196F3;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">📧 Send</button>';
       if(c.status==='draft'){
         h+='<button onclick="var cc=S.contracts.find(x=>x.id===\''+c.id+'\');cc.status=\'sent\';cc.sentAt=new Date().toISOString().split(\'T\')[0];sv();renderApp();alert(\'✅ Sent!\')" style="padding:10px;background:#4CAF50;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">📤 Send Now</button>';
@@ -4298,7 +4170,7 @@ function rContracts(el,cid){
       if(c.status==='signed'){
         h+='<button onclick="var cc=S.contracts.find(x=>x.id===\''+c.id+'\');cc.status=\'active\';cc.approvedAt=new Date().toISOString().split(\'T\')[0];sv();renderApp();alert(\'✅ Approved!\')" style="padding:10px;background:#4CAF50;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">✅ Approve</button>';
       }
-      h+='<button onclick="downloadContract(\''+c.id+'\')" style="padding:10px;background:#FF9800;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">📥 Download</button>';
+      h+='<button onclick="downloadContractPDF(\''+c.id+'\')" style="padding:10px;background:#FF9800;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">📥 Download PDF</button>';
       h+='</div>';
       h+='</div>';
     });
