@@ -34,380 +34,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14px;line-height:1.5}
 
-/* ═══ DRAWER NAVIGATION (Mobile) ═══ */
-.drawer {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 280px;
-  height: 100vh;
-  background: linear-gradient(180deg, var(--g1) 0%, var(--g2) 60%, #0F3025 100%);
-  box-shadow: 4px 0 24px rgba(0,0,0,0.3);
-  z-index: 1000;
-  transform: translateX(-100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-.drawer.open {
-  transform: translateX(0);
-}
-
-.drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  z-index: 999;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.drawer.open ~ .drawer-overlay {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.drawer-header {
-  padding: 20px 16px;
-  background: transparent;
-  border-bottom: 1px solid rgba(200,144,16,0.2);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  position: relative;
-}
-
-.drawer-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--gold), #E0B830);
-  color: var(--g1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 20px;
-  box-shadow: 0 6px 16px rgba(200,144,16,0.35), inset 0 1px 0 rgba(255,255,255,0.3);
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.drawer-user-info {
-  flex: 1;
-  min-width: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.drawer-user-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: white;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  letter-spacing: 0.3px;
-}
-
-.drawer-user-role {
-  font-size: 11px;
-  color: rgba(200,144,16,0.85);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin-top: 2px;
-  font-weight: 600;
-}
-
-.drawer-close {
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.8);
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.drawer-close:hover {
-  background: rgba(255,255,255,0.15);
-  transform: scale(1.08) rotate(90deg);
-  color: white;
-}
-
-.drawer-menu {
-  flex: 1;
-  padding: 10px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  overflow-y: auto;
-}
-
-.drawer-item {
-  padding: 13px 14px;
-  color: rgba(255,255,255,0.75);
-  border: none;
-  background: transparent;
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: var(--fb);
-  white-space: nowrap;
-  position: relative;
-  overflow: hidden;
-}
-
-.drawer-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 3px;
-  height: 100%;
-  background: linear-gradient(180deg, var(--gold), rgba(200,144,16,0.6));
-  transform: scaleY(0);
-  transform-origin: top;
-  transition: transform 0.25s ease;
-  border-radius: 0 2px 2px 0;
-}
-
-.drawer-item:hover {
-  background: rgba(200,144,16,0.15);
-  color: rgba(255,255,255,0.95);
-  padding-left: 18px;
-  box-shadow: inset 0 2px 8px rgba(0,0,0,0.15);
-}
-
-.drawer-item:hover::before {
-  transform: scaleY(1);
-}
-
-.drawer-item.active {
-  background: linear-gradient(90deg, rgba(200,144,16,0.3) 0%, transparent 100%);
-  color: var(--gold);
-  font-weight: 600;
-  box-shadow: inset 0 2px 10px rgba(200,144,16,0.15), 0 2px 8px rgba(200,144,16,0.12);
-}
-
-.drawer-item.active::before {
-  transform: scaleY(1);
-}
-
-.drawer-item-icon {
-  font-size: 18px;
-  flex-shrink: 0;
-  width: 24px;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.drawer-item:hover .drawer-item-icon {
-  transform: scale(1.15) rotate(6deg);
-}
-
-.drawer-item.active .drawer-item-icon {
-  transform: scale(1.2);
-  filter: drop-shadow(0 0 6px rgba(200,144,16,0.5));
-}
-
-.drawer-footer {
-  padding: 14px;
-  border-top: 1px solid rgba(200,144,16,0.2);
-  background: rgba(0,0,0,0.08);
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.drawer-logout {
-  padding: 11px 14px;
-  background: linear-gradient(135deg, rgba(192,57,43,0.25) 0%, rgba(192,57,43,0.15) 100%);
-  color: #FF8A80;
-  border: 1px solid rgba(192,57,43,0.35);
-  border-radius: 9px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-}
-
-.drawer-logout:hover {
-  background: linear-gradient(135deg, rgba(192,57,43,0.35) 0%, rgba(192,57,43,0.25) 100%);
-  border-color: rgba(192,57,43,0.5);
-  color: #FF7043;
-  box-shadow: 0 4px 12px rgba(192,57,43,0.2);
-  transform: translateY(-2px);
-}
-
-.drawer-sync-status {
-  font-size: 11px;
-  color: rgba(255,255,255,0.6);
-  text-align: center;
-  padding: 7px 0;
-  letter-spacing: 0.5px;
-  font-weight: 500;
-}
-
-/* ═══ MOBILE HAMBURGER BUTTON ═══ */
-.mobile-menu-btn {
-  display: none;
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: transparent;
-  color: var(--t1);
-  font-size: 22px;
-  cursor: pointer;
-  border-radius: 10px;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.mobile-menu-btn:hover {
-  background: var(--gr1);
-  transform: scale(1.08);
-}
-
-.mobile-menu-btn:active {
-  transform: scale(0.95);
-}
-
-/* ═══ ENHANCED CARDS & SHADOWS ═══ */
-.card {
-  background: var(--white);
-  border: 1px solid var(--gr2);
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(10,34,24,0.05), 0 4px 16px rgba(10,34,24,0.08);
-  transition: all 0.3s ease;
-}
-
-.card:hover {
-  box-shadow: 0 4px 12px rgba(10,34,24,0.08), 0 8px 24px rgba(10,34,24,0.12);
-  transform: translateY(-2px);
-}
-
-.kcard {
-  background: linear-gradient(135deg, var(--white) 0%, #FAFAFA 100%);
-  border: 1px solid var(--gr2);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(10,34,24,0.04);
-  transition: all 0.3s ease;
-}
-
-.kcard:hover {
-  box-shadow: 0 4px 16px rgba(10,34,24,0.1);
-  transform: translateY(-4px);
-}
-
-/* ═══ ENHANCED BUTTONS ═══ */
-.btn {
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.btn-p {
-  background: linear-gradient(135deg, var(--g1), var(--g3));
-  color: var(--gold3);
-  border: none;
-}
-
-.btn-p:hover {
-  filter: brightness(1.08);
-}
-
-.btn-gold {
-  background: linear-gradient(135deg, var(--gold), var(--gold2));
-  color: var(--g1);
-  border: none;
-}
-
-.btn-gold:hover {
-  filter: brightness(1.1);
-}
-
-/* ═══ RESPONSIVE MOBILE ═══ */
-@media (max-width: 768px) {
-  .sidebar {
-    display: none;
-  }
-  
-  .mobile-menu-btn {
-    display: flex;
-  }
-  
-  .main {
-    width: 100%;
-  }
-  
-  .topbar {
-    padding: 0 12px;
-    gap: 8px;
-  }
-  
-  .content {
-    padding: 12px 14px;
-  }
-  
-  .kgrid {
-    grid-template-columns: 1fr;
-  }
-  
-  .tab-row {
-    display: none !important;
-  }
-  
-  .nb {
-    display: none !important;
-  }
-  
-  .sb-foot {
-    display: none !important;
-  }
-  
-  .sb-lang-row {
-    display: none !important;
-  }
-}
+/* ═══ LOGIN PAGE ═══ */
 #login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;
   background:radial-gradient(ellipse at 40% 30%,#1A4A2A 0%,#0A2218 50%,#040E08 100%)}
 .login-box{background:var(--white);border-radius:20px;padding:40px;width:100%;max-width:420px;
@@ -449,69 +76,47 @@ body.rtl .lang-switch{right:auto;left:14px}
 
 /* ═══ APP SHELL ═══ */
 #app{display:none;flex;height:100vh;overflow:hidden}
-.sidebar{width:var(--sw);flex-shrink:0;background:linear-gradient(180deg,var(--g1) 0%,var(--g2) 60%,#0F3025 100%);
-  display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sidebar{width:var(--sw);flex-shrink:0;background:var(--g1);display:flex;flex-direction:column;
+  overflow:hidden;position:relative}
 .sidebar::after{content:'';position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(26,74,42,.1) 0%,rgba(0,0,0,.1) 100%);pointer-events:none}
-.sb-logo{padding:16px 14px 12px;border-bottom:1px solid rgba(200,144,16,.2);position:relative;z-index:1}
-.sb-role-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;
-  border-radius:20px;font-size:10px;font-weight:600;margin-bottom:10px;letter-spacing:.5px}
-.badge-admin{background:linear-gradient(135deg,var(--gold),#E0B830);color:var(--g1);box-shadow:0 2px 8px rgba(200,144,16,0.25)}
-.badge-client{background:rgba(200,144,16,.15);color:var(--gold);border:1px solid rgba(200,144,16,.4)}
-.sb-clients{flex:1;overflow-y:auto;padding:6px 8px;position:relative;z-index:1}
+  background:linear-gradient(180deg,rgba(26,74,42,.2) 0%,rgba(0,0,0,.3) 100%);pointer-events:none}
+.sb-logo{padding:18px 14px 12px;border-bottom:1px solid rgba(255,255,255,.08);position:relative;z-index:1}
+.sb-role-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;
+  border-radius:20px;font-size:10px;font-weight:600;margin-bottom:10px;letter-spacing:.4px}
+.badge-admin{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--g1)}
+.badge-client{background:rgba(245,220,112,.15);color:var(--gold3);border:1px solid rgba(245,220,112,.3)}
+.sb-clients{flex:1;overflow-y:auto;padding:4px 8px;position:relative;z-index:1}
 .sb-clients::-webkit-scrollbar{width:3px}
-.sb-clients::-webkit-scrollbar-thumb{background:rgba(200,144,16,.25);border-radius:2px}
-.sb-sec{padding:12px 8px 4px;position:relative;z-index:1}
-.sb-sec-lbl{font-size:9px;color:rgba(200,144,16,.6);letter-spacing:1px;text-transform:uppercase;padding:0 4px;margin-bottom:4px;font-weight:600}
-.cb{width:100%;text-align:left;padding:11px 12px;border:none;background:transparent;
-  border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:10px;
-  color:rgba(255,255,255,.7);font-size:13px;font-family:var(--fb);margin-bottom:2px;transition:all .25s cubic-bezier(.4,0,.2,1);
-  position:relative;overflow:hidden}
-.cb::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%;
-  background:linear-gradient(180deg,var(--gold),rgba(200,144,16,.6));transform:scaleY(0);
-  transform-origin:top;transition:transform .25s ease;border-radius:0 2px 2px 0}
-.cb:hover{background:rgba(200,144,16,.15);color:rgba(255,255,255,.95);padding-left:16px;box-shadow:inset 0 2px 8px rgba(0,0,0,.15)}
-.cb:hover::before{transform:scaleY(1)}
-.cb.act{background:linear-gradient(90deg,rgba(200,144,16,.3) 0%,transparent 100%);color:var(--gold);font-weight:600;
-  box-shadow:inset 0 2px 10px rgba(200,144,16,.15),0 2px 8px rgba(200,144,16,.12)}
-.cb.act::before{transform:scaleY(1)}
-.cb-av{width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;
-  font-size:9px;font-weight:600;flex-shrink:0;background:linear-gradient(135deg,var(--gold),#E0B830);
-  color:var(--g1);box-shadow:0 2px 6px rgba(200,144,16,.2);transition:all .25s ease}
-.cb:hover .cb-av{transform:scale(1.1)}
-.cb.act .cb-av{transform:scale(1.15);filter:drop-shadow(0 0 4px rgba(200,144,16,.4))}
+.sb-clients::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
+.sb-sec{padding:10px 8px 3px;position:relative;z-index:1}
+.sb-sec-lbl{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;padding:0 4px;margin-bottom:3px}
+.cb{width:100%;text-align:left;padding:7px 8px;border:none;background:transparent;
+  border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;gap:7px;
+  color:rgba(255,255,255,.55);font-size:12px;font-family:var(--fb);margin-bottom:1px;transition:all .15s}
+.cb:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9)}
+.cb.act{background:rgba(200,144,16,.18);color:var(--gold3)}
+.cb-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:600;flex-shrink:0}
 .cb-nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cb-tp{font-size:9px;opacity:.55;margin-top:1px}
-.cb-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;box-shadow:0 0 4px rgba(200,144,16,.6)}
-.sb-foot{padding:10px;border-top:1px solid rgba(200,144,16,.2);position:relative;z-index:1;background:rgba(0,0,0,.05)}
-.nb{width:100%;text-align:left;padding:11px 12px;border:none;background:transparent;
-  border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:10px;
-  color:rgba(255,255,255,.6);font-size:13px;font-family:var(--fb);margin-bottom:2px;
-  transition:all .25s ease;position:relative;overflow:hidden}
-.nb::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%;
-  background:linear-gradient(180deg,var(--gold),rgba(200,144,16,.6));transform:scaleY(0);
-  transform-origin:top;transition:transform .25s ease;border-radius:0 2px 2px 0}
-.nb:hover{background:rgba(200,144,16,.15);color:rgba(255,255,255,.9);padding-left:16px;box-shadow:inset 0 2px 8px rgba(0,0,0,.15)}
-.nb:hover::before{transform:scaleY(1)}
-.nb.act{background:linear-gradient(90deg,rgba(200,144,16,.3) 0%,transparent 100%);color:var(--gold);font-weight:600;
-  box-shadow:inset 0 2px 10px rgba(200,144,16,.15),0 2px 8px rgba(200,144,16,.12)}
-.nb.act::before{transform:scaleY(1)}
-.nb i,.cb i{font-size:13px;width:16px;text-align:center;display:flex;align-items:center;justify-content:center;transition:all .25s ease}
-.cb:hover .nb i,.cb:hover i,.nb:hover i{transform:scale(1.15) rotate(6deg)}
-.cb.act i,.nb.act i{transform:scale(1.2);filter:drop-shadow(0 0 4px rgba(200,144,16,.5))}
+.cb-dot{width:5px;height:5px;border-radius:50%;background:var(--gold2);flex-shrink:0}
+.sb-foot{padding:8px;border-top:1px solid rgba(255,255,255,.08);position:relative;z-index:1}
+.nb{width:100%;text-align:left;padding:7px 8px;border:none;background:transparent;
+  border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;gap:7px;
+  color:rgba(255,255,255,.45);font-size:12px;font-family:var(--fb);margin-bottom:1px}
+.nb:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9)}
+.nb.act{color:var(--gold3);background:rgba(200,144,16,.12)}
+.nb i,.cb i{font-size:13px;width:15px;text-align:center}
 body.rtl .nb{text-align:right;flex-direction:row-reverse}
-.sb-lang-row{display:flex;gap:4px;padding:8px 8px 4px}
-.sb-lang-btn{flex:1;padding:6px 0;border:1px solid rgba(200,144,16,.3);background:transparent;
-  color:rgba(255,255,255,.5);font-size:10px;font-weight:700;border-radius:6px;cursor:pointer;font-family:var(--fb);
-  transition:all .2s ease}
-.sb-lang-btn:hover{background:rgba(200,144,16,.12);color:rgba(255,255,255,.8);border-color:rgba(200,144,16,.5)}
-.sb-lang-btn.act{background:linear-gradient(135deg,var(--gold),#E0B830);color:var(--g1);border-color:var(--gold);box-shadow:0 2px 8px rgba(200,144,16,.25)}
-.logout-btn{width:100%;text-align:left;padding:11px 12px;border:none;background:transparent;
-  border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:10px;
-  color:rgba(255,255,255,.4);font-size:13px;font-family:var(--fb);margin-top:4px;
-  transition:all .2s ease}
-.logout-btn:hover{color:#FF8A80;background:linear-gradient(135deg,rgba(192,57,43,.25) 0%,rgba(192,57,43,.15) 100%);
-  box-shadow:inset 0 2px 8px rgba(192,57,43,.1)}
+.sb-lang-row{display:flex;gap:4px;padding:6px 8px 2px}
+.sb-lang-btn{flex:1;padding:4px 0;border:1px solid rgba(255,255,255,.15);background:transparent;
+  color:rgba(255,255,255,.45);font-size:10px;font-weight:700;border-radius:4px;cursor:pointer;font-family:var(--fb)}
+.sb-lang-btn:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.8)}
+.sb-lang-btn.act{background:var(--gold);color:var(--g1);border-color:var(--gold)}
+.logout-btn{width:100%;text-align:left;padding:7px 8px;border:none;background:transparent;
+  border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;gap:7px;
+  color:rgba(255,255,255,.3);font-size:12px;font-family:var(--fb);margin-top:4px}
+.logout-btn:hover{color:var(--red);background:rgba(139,26,26,.15)}
 
 /* ═══ MAIN ═══ */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
@@ -920,36 +525,6 @@ if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostn
 </div>
 
 <!-- ════════════════════════════════════════════════════ -->
-<!--  DRAWER NAVIGATION (Mobile)                         -->
-<!-- ════════════════════════════════════════════════════ -->
-<div class="drawer" id="drawer">
-  <div class="drawer-header">
-    <div class="drawer-avatar" id="drawer-avatar">A</div>
-    <div class="drawer-user-info">
-      <div class="drawer-user-name" id="drawer-user-name">User</div>
-      <div class="drawer-user-role" id="drawer-user-role">Admin</div>
-    </div>
-    <button class="drawer-close" onclick="toggleDrawer()">✕</button>
-  </div>
-  
-  <div class="drawer-menu" id="drawer-menu">
-    <!-- Menu items populated by JS -->
-  </div>
-  
-  <div class="drawer-footer">
-    <div class="drawer-sync-status" id="drawer-sync-status">
-      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#999;margin-right:4px"></span>
-      Not synced
-    </div>
-    <button class="drawer-logout" onclick="doLogout()">
-      🚪 Logout
-    </button>
-  </div>
-</div>
-
-<div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
-
-<!-- ════════════════════════════════════════════════════ -->
 <!--  APP                                                -->
 <!-- ════════════════════════════════════════════════════ -->
 <div id="app" style="display:none;flex">
@@ -967,7 +542,7 @@ if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostn
 
   <div class="main">
     <div class="topbar">
-      <button class="mobile-menu-btn" id="mobile-menu-btn" onclick="toggleDrawer()" aria-label="Menu">☰</button>
+      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
       <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0" id="tb-left"></div>
       <div class="tab-row" id="tab-row"></div>
       <div class="tb-right" id="tb-right"></div>
@@ -1049,7 +624,7 @@ var I18N={
     outstanding:'Outstanding', overdue:'Overdue', hours_logged:'Hours logged', btw_balance:'BTW balance',
     // Tab labels
     tab_invoices:'Invoices', tab_debtors:'Debtors',
-    tab_expenses:'Expenses', tab_hours:'Hours',
+    tab_expenses:'Expenses', tab_hours:'Hours', tab_contracts:'Contracts',
     tab_journal:'Journal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Reports', tab_documents:'Documents', tab_contacts:'Contacts', tab_messages:'Messages', tab_client:'Client',
     // Topbar actions
@@ -1136,7 +711,7 @@ var I18N={
     dashboard:'Dashboard', invoices:'Facturen', debtors:'Debiteuren', expenses:'Onkosten', hours:'Uren',
     journal:'Journaal', bank:'Bank', reports:'Rapporten', documents:'Documenten', messages:'Berichten', client_info:'Klant',
     tab_invoices:'Facturen', tab_debtors:'Debiteuren',
-    tab_expenses:'Onkosten', tab_hours:'Uren',
+    tab_expenses:'Onkosten', tab_hours:'Uren', tab_contracts:'Overeenkomsten',
     tab_journal:'Journaal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Rapporten', tab_documents:'Documenten', tab_contacts:'Contacten', tab_messages:'Berichten', tab_client:'Klant',
     new_invoice:'+ Nieuwe factuur', new_expense:'+ Nieuwe onkost', log_hours:'+ Uren invoeren',
@@ -1211,7 +786,7 @@ var I18N={
     journal:'اليومية', bank:'البنك', reports:'التقارير', documents:'المستندات', messages:'الرسائل', client_info:'العميل',
     // Tab labels with tab_ prefix (used in topbar & sidebar)
     tab_invoices:'الفواتير', tab_debtors:'الديون (Debiteuren)',
-    tab_expenses:'المصاريف', tab_hours:'ساعات العمل',
+    tab_expenses:'المصاريف', tab_hours:'ساعات العمل', tab_contracts:'العقود',
     tab_journal:'اليومية (Journal)', tab_bank:'البنك', tab_btw:'ضريبة القيمة المضافة (BTW)',
     tab_reports:'التقارير', tab_documents:'المستندات', tab_contacts:'جهات الاتصال', tab_messages:'الرسائل', tab_client:'العميل',
     new_invoice:'+ فاتورة جديدة', new_expense:'+ مصروف جديد', log_hours:'+ تسجيل ساعات',
@@ -1292,6 +867,7 @@ var S={
   role:null, // 'admin' | 'client'
   currentClient:null,
   tab:'dashboard',
+  contractTab:'all',
   clients:[
     {id:'c1',name:'Expat Solutions BV',type:'B2B',email:'info@expatsol.nl',
      kvk:'12345678',btw:'NL123456789B01',iban:'NL91ABNA0417164300',color:'#0C447C',pw:'client123'},
@@ -1316,6 +892,20 @@ var S={
     {id:'h1',cid:'c1',date:'2026-05-17',task:'Power BI dashboard build',cat:'Development',hrs:3.5,rate:95},
     {id:'h2',cid:'c2',date:'2026-05-19',task:'Tax return preparation',cat:'Accounting',hrs:4,rate:80},
     {id:'h3',cid:'c3',date:'2026-05-20',task:'Financial model build',cat:'Consultancy',hrs:6,rate:110},
+  ],
+  contracts:[
+    {id:'cnt1',cid:'c1',num:'SVC-2026-01-0001',status:'active',
+     createdAt:'2026-01-15',sentAt:'2026-01-15',signedAt:'2026-01-20',approvedAt:'2026-01-25',
+     monthlyRate:1500,annualRate:15000,
+     signerName:'Jan de Vries',signerEmail:'jan@expatsol.nl',signerFunction:'Director'},
+    {id:'cnt2',cid:'c2',num:'SVC-2026-02-0002',status:'draft',
+     createdAt:'2026-02-01',sentAt:null,signedAt:null,approvedAt:null,
+     monthlyRate:800,annualRate:8000,
+     signerName:'Maria van den Berg',signerEmail:'maria@gmail.com',signerFunction:'Owner'},
+    {id:'cnt3',cid:'c3',num:'SVC-2026-02-0003',status:'signed',
+     createdAt:'2026-02-10',sentAt:'2026-02-10',signedAt:'2026-02-15',approvedAt:null,
+     monthlyRate:2500,annualRate:25000,
+     signerName:'Peter Jansen',signerEmail:'cfo@techstart.nl',signerFunction:'CFO'},
   ],
   docs:[
     {id:'d1',cid:'c1',name:'KvK_uittreksel_2026.pdf',type:'pdf',date:'2026-05-01',from:'client',size:'142 KB'},
@@ -1729,98 +1319,9 @@ function doLogout(){
   selRole('admin');
 }
 
-/* ═══════════════════════════ DRAWER NAVIGATION ═══════════════════════════ */
-function toggleDrawer(){
-  const drawer=document.getElementById('drawer');
-  if(drawer)drawer.classList.toggle('open');
-}
-
-function closeDrawer(){
-  const drawer=document.getElementById('drawer');
-  if(drawer)drawer.classList.remove('open');
-}
-
-function populateDrawer(){
-  const c=S.clients.find(c=>c.id===S.currentClient);
-  const avatar=document.getElementById('drawer-avatar');
-  const name=document.getElementById('drawer-user-name');
-  const role=document.getElementById('drawer-user-role');
-  const menu=document.getElementById('drawer-menu');
-  const syncStatus=document.getElementById('drawer-sync-status');
-  
-  if(avatar)avatar.textContent=INI(c?.name||S.role==='admin'?'ADM':'USR');
-  if(name)name.textContent=c?.name||'Users';
-  if(role)role.textContent=S.role==='admin'?'Admin':'Client';
-  
-  // Different menu items based on whether a client is selected
-  let menuItems=[];
-  
-  if(S.role==='admin'){
-    if(S.currentClient){
-      // Client selected - show detailed menu
-      menuItems=[
-        {icon:'📊',label:'Dashboard',id:'dashboard',tab:'dashboard'},
-        {icon:'📄',label:'Invoices',id:'invoices',tab:'invoices'},
-        {icon:'🧾',label:'Expenses',id:'expenses',tab:'expenses'},
-        {icon:'⏱',label:'Hours',id:'hours',tab:'hours'},
-        {icon:'📈',label:'Reports',id:'reports',tab:'reports'},
-        {icon:'📁',label:'Documents',id:'documents',tab:'documents'},
-        {icon:'👥',label:'Contacts',id:'contacts',tab:'contacts'},
-        {icon:'💬',label:'Messages',id:'messages',tab:'messages'},
-        {icon:'👤',label:'Client Info',id:'info',tab:'info'},
-        {icon:'⚙️',label:'Settings',id:'settings',tab:'settings'},
-      ];
-    } else {
-      // No client selected - show dashboard menu
-      menuItems=[
-        {icon:'📊',label:'All Clients',id:'dashboard',tab:'dashboard'},
-        {icon:'⚙️',label:'Settings',id:'settings',tab:'settings'},
-      ];
-    }
-  } else {
-    // Client view
-    menuItems=[
-      {icon:'📊',label:'Dashboard',id:'dashboard',tab:'dashboard'},
-      {icon:'📄',label:'Invoices',id:'invoices',tab:'invoices'},
-      {icon:'🧾',label:'Expenses',id:'expenses',tab:'expenses'},
-      {icon:'⏱',label:'Hours',id:'hours',tab:'hours'},
-      {icon:'📁',label:'Documents',id:'documents',tab:'documents'},
-      {icon:'💬',label:'Messages',id:'messages',tab:'messages'},
-    ];
-  }
-  
-  if(menu){
-    menu.innerHTML=menuItems.map(item=>`
-      <button class="drawer-item ${S.tab===item.tab?'active':''}" onclick="setTab('${item.tab}');closeDrawer()">
-        <span class="drawer-item-icon">${item.icon}</span>
-        <span>${item.label}</span>
-      </button>
-    `).join('');
-  }
-  
-  const statusMap={
-    idle:'Not synced',
-    syncing:'Syncing...',
-    synced:'Synced',
-    error:'Sync error',
-    offline:'Offline'
-  };
-  const dotColor={
-    idle:'#999',
-    syncing:'#C89010',
-    synced:'#2E7D32',
-    error:'#C0392B',
-    offline:'#C0392B'
-  };
-  
-  if(syncStatus){
-    syncStatus.innerHTML=`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dotColor[cloudSyncStatus]||'#999'};margin-right:4px"></span>${statusMap[cloudSyncStatus]||'Not synced'}`;
-  }
-}
-
 /* ═══════════════════════════ RENDER ═══════════════════════════ */
 function renderApp(){
-  renderSidebar();renderTopbar();renderContent();populateDrawer();
+  renderSidebar();renderTopbar();renderContent();
   if(typeof renderMobileNav==='function')renderMobileNav();
 }
 
@@ -1904,7 +1405,6 @@ function renderTopbar(){
   const left=document.getElementById('tb-left');
   const tabs=document.getElementById('tab-row');
   const right=document.getElementById('tb-right');
-  const isMobile=window.innerWidth<768;
 
   if(isAdmin()){
     if(!S.currentClient||S.tab==='dashboard'||S.tab==='settings'){
@@ -1920,29 +1420,21 @@ function renderTopbar(){
       {id:'invoices',icon:'📄',key:'tab_invoices'},
       {id:'expenses',icon:'🧾',key:'tab_expenses'},
       {id:'hours',icon:'⏱',key:'tab_hours'},
+      {id:'contracts',icon:'📋',key:'tab_contracts'},
       {id:'reports',icon:'📈',key:'tab_reports'},
       {id:'documents',icon:'📁',key:'tab_documents'},
       {id:'contacts',icon:'👥',key:'tab_contacts'},
       {id:'messages',icon:'💬',key:'tab_messages'},
       {id:'info',icon:'👤',key:'tab_client'},
     ];
-    
-    // على الموبايل: إخفاء التبويبات
-    if(isMobile){
-      tabs.innerHTML='';
-      tabs.style.display='none';
-    } else {
-      tabs.style.display='flex';
-      tabs.innerHTML=adminTabDefs.map(tab=>{
-        let badge='';
-        if(tab.id==='messages'){
-          const unreadCount=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='client'&&!m.isRead&&!m.deleted).length;
-          if(unreadCount>0)badge=`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:var(--red);color:white;border-radius:50%;font-size:10px;font-weight:600;margin-left:4px">${unreadCount>9?'9+':unreadCount}</span>`;
-        }
-        return `<button class="tab ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')" style="display:flex;align-items:center"><span style="font-size:13px;display:inline-block;margin-right:3px">${tab.icon}</span>${t(tab.key)}${badge}</button>`;
-      }).join('');
-    }
-    
+    tabs.innerHTML=adminTabDefs.map(tab=>{
+      let badge='';
+      if(tab.id==='messages'){
+        const unreadCount=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='client'&&!m.isRead&&!m.deleted).length;
+        if(unreadCount>0)badge=`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:var(--red);color:white;border-radius:50%;font-size:10px;font-weight:600;margin-left:4px">${unreadCount>9?'9+':unreadCount}</span>`;
+      }
+      return `<button class="tab ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')" style="display:flex;align-items:center"><span style="font-size:13px;display:inline-block;margin-right:3px">${tab.icon}</span>${t(tab.key)}${badge}</button>`;
+    }).join('');
     const acts={
       invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_invoice')}</button>`,
       expenses:`<button class="btn btn-p btn-xs" onclick="openNewExpense()">${t('new_expense')}</button>`,
@@ -1975,7 +1467,7 @@ function renderContent(){
     if(S.tab==='settings'){rSettings(el);return;}
     if(!cid||S.tab==='dashboard'){rAdminDash(el);return;}
     // Admin manages clients: invoices, expenses, hours, reports, documents, contacts, messages, info
-    const fn={invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo};
+    const fn={invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts};
     (fn[S.tab]||rAdminDash)(el,cid);
   } else {
     // Client can only: dashboard, expenses, hours, documents, messages (NO invoices)
@@ -4590,6 +4082,230 @@ window.selClient = function(id) {
   document.querySelector('.sidebar')?.classList.remove('open');
   _origSelClient(id);
 };
+
+function downloadContract(contractId){
+  var contract=S.contracts.find(function(c){return c.id===contractId});
+  if(!contract) return;
+  
+  var client=S.clients.find(function(c){return c.id===contract.cid});
+  var today=new Date();
+  var dateStr=today.getDate()+' '+getMonthName(today.getMonth())+' '+today.getFullYear();
+  
+  // Create professional contract HTML
+  var htmlContent='<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  htmlContent+='<style>';
+  htmlContent+='body{font-family:"Calibri","Arial",sans-serif;line-height:1.6;margin:0;padding:40px;background:white;color:#333}';
+  htmlContent+='.container{max-width:900px;margin:0 auto;background:white;padding:40px;border:1px solid #ddd}';
+  htmlContent+='.header{text-align:center;margin-bottom:40px;border-bottom:3px solid #0A2218;padding-bottom:20px}';
+  htmlContent+='.company-name{font-size:18px;font-weight:bold;color:#0A2218}';
+  htmlContent+='.company-info{font-size:11px;color:#666;margin-top:5px}';
+  htmlContent+='.title{font-size:20px;font-weight:bold;color:#0A2218;margin:30px 0 20px 0}';
+  htmlContent+='.subtitle{font-size:13px;font-weight:bold;color:#0A2218;margin:20px 0 10px 0}';
+  htmlContent+='.section{margin:20px 0}';
+  htmlContent+='.clause{margin:15px 0;text-align:justify}';
+  htmlContent+='.clause-number{font-weight:bold;color:#0A2218}';
+  htmlContent+='.parties{margin:20px 0}';
+  htmlContent+='.party{margin:10px 0}';
+  htmlContent+='.table{width:100%;border-collapse:collapse;margin:15px 0}';
+  htmlContent+='.table td{border:1px solid #ddd;padding:10px}';
+  htmlContent+='.table th{background:#f0f0f0;border:1px solid #ddd;padding:10px;text-align:left;font-weight:bold}';
+  htmlContent+='.signature-section{margin-top:50px;padding-top:30px;border-top:1px solid #ddd}';
+  htmlContent+='.signature-line{margin-top:40px;display:inline-block;width:250px}';
+  htmlContent+='.signature-content{border-top:1px solid #000;padding-top:5px;text-align:center;font-size:12px}';
+  htmlContent+='.footer{margin-top:50px;padding-top:20px;border-top:1px solid #ddd;text-align:center;font-size:10px;color:#777}';
+  htmlContent+='.approved-stamp{background:#d4edda;border:2px solid #28a745;color:#155724;padding:15px;border-radius:8px;margin:20px 0;text-align:center;font-weight:bold}';
+  htmlContent+='</style></head><body>';
+  
+  htmlContent+='<div class="container">';
+  
+  // Header
+  htmlContent+='<div class="header">';
+  htmlContent+='<div class="company-name">ANB FINANCIAL SERVICES</div>';
+  htmlContent+='<div class="company-info">Gespecialiseerd in boekhoudkundige en belastingadviesdiensten voor ZZP-ers en KMO\'s</div>';
+  htmlContent+='<div class="company-info">Bussum, Nederland | info@anbfinancial.nl | +31 35 123 4567</div>';
+  htmlContent+='</div>';
+  
+  // Title
+  htmlContent+='<div style="text-align:center;margin-bottom:30px">';
+  htmlContent+='<h1 style="margin:10px 0">SERVICEOVEREENKOMST</h1>';
+  htmlContent+='<p style="color:#666;margin:5px 0">Contractnummer: '+contract.num+'</p>';
+  htmlContent+='</div>';
+  
+  // Approval status
+  if(contract.status==='signed' || contract.status==='active'){
+    htmlContent+='<div class="approved-stamp">✓ GOEDGEKEURD EN ONDERTEKEND</div>';
+  }
+  
+  // Parties section
+  htmlContent+='<div class="section">';
+  htmlContent+='<div class="subtitle">1. PARTIJEN</div>';
+  htmlContent+='<div class="parties">';
+  htmlContent+='<div class="party"><strong>Dienstverlener:</strong><br>ANB Financial Services<br>Bussum, Nederland<br>BTW-id: NL123456789B01<br>Vertegenwoordigd door: Ahmad Al-Najem</div>';
+  htmlContent+='<div class="party" style="margin-top:15px"><strong>Klant:</strong><br>'+client.name+'<br>Email: '+client.email+'<br>KvK: '+client.kvk+'<br>BTW-id: '+client.btw+'</div>';
+  htmlContent+='</div>';
+  htmlContent+='</div>';
+  
+  // Services section
+  htmlContent+='<div class="section">';
+  htmlContent+='<div class="subtitle">2. OMSCHRIJVING VAN DIENSTEN</div>';
+  htmlContent+='<div class="clause">De dienstverlener zal de volgende diensten verlenen aan de klant:</div>';
+  htmlContent+='<ul>';
+  htmlContent+='<li><strong>Boekhoudkundige diensten:</strong> Dagelijkse administratie, crediteurenverwerking, debiteurenadministratie, kostprijsadministratie en boekhoudkundige rapportage.</li>';
+  htmlContent+='<li><strong>Belastingadviesdiensten:</strong> Omzetbelastingadviezen, loonbelastingadviezen, vennootschapsbelastingadviezen, advies over subsidies en belastingplanning.</li>';
+  htmlContent+='<li><strong>Financieel management:</strong> Kasmanagement, begroting en budgettering, financiële analyse en advies.</li>';
+  htmlContent+='<li><strong>Jaarlijkse rapportages:</strong> Jaarrekening opstelling, directieverslagen en aangifte bij de belastingdienst.</li>';
+  htmlContent+='<li><strong>Digitale diensten:</strong> Toegang tot beveiligde portal, cloudopslag documenten, realtime rapportages en alert-systemen.</li>';
+  htmlContent+='</ul>';
+  htmlContent+='</div>';
+  
+  // Financial terms
+  htmlContent+='<div class="section">';
+  htmlContent+='<div class="subtitle">3. TARIEVEN EN BETALINGSVOORWAARDEN</div>';
+  htmlContent+='<table class="table">';
+  htmlContent+='<tr><th>Beschrijving</th><th>Bedrag</th></tr>';
+  htmlContent+='<tr><td>Maandelijks retainer</td><td>EUR '+contract.monthlyRate.toLocaleString('nl-NL')+'</td></tr>';
+  htmlContent+='<tr><td>Jaarlijks retainer (12 maanden)</td><td>EUR '+contract.annualRate.toLocaleString('nl-NL')+'</td></tr>';
+  htmlContent+='<tr><td>Factuurtermijn</td><td>Maandelijks op de 1e van de maand</td></tr>';
+  htmlContent+='<tr><td>Betaaltermijn</td><td>Netto 14 dagen</td></tr>';
+  htmlContent+='</table>';
+  htmlContent+='<div class="clause"><strong>Noot:</strong> Alle bedragen zijn excl. BTW 21%. Additionele diensten buiten de scope zullen apart gefactureerd worden tegen EUR 95 per uur.</div>';
+  htmlContent+='</div>';
+  
+  // Terms and conditions
+  htmlContent+='<div class="section">';
+  htmlContent+='<div class="subtitle">4. ALGEMENE VOORWAARDEN</div>';
+  
+  htmlContent+='<div class="clause"><span class="clause-number">4.1 Duur:</span> Deze overeenkomst is aangegaan voor een periode van 12 maanden, ingaande op de datum van ondertekening. Na afloop kan de overeenkomst stilzwijgend met 1 maand worden verlengd, tenzij één der partijen 1 maand voor afloop schriftelijk opzegt.</div>';
+  
+  htmlContent+='<div class="clause"><span class="clause-number">4.2 Opzegging:</span> Beide partijen kunnen deze overeenkomst te allen tijde met ingang van een maand na schriftelijke opzegging beëindigen. Bij beëindiging vanuit schuld zijn geen opzegtermijnen van toepassing.</div>';
+  
+  htmlContent+='<div class="clause"><span class="clause-number">4.3 Vertrouwelijkheid:</span> Beide partijen verplichten zich tot geheimhouding van alle vertrouwelijke informatie die zij tijdens de uitvoering van deze overeenkomst ontvangen. Deze verplichting geldt ook na beëindiging van de overeenkomst.</div>';
+  
+  htmlContent+='<div class="clause"><span class="clause-number">4.4 Intellectueel eigendom:</span> Alle werken, documenten en analyses die door ANB Financial Services worden vervaardigd, blijven eigendom van ANB Financial Services, tenzij anders schriftelijk overeengekomen.</div>';
+  
+  htmlContent+='<div class="clause"><span class="clause-number">4.5 Aansprakelijkheid:</span> ANB Financial Services is niet aansprakelijk voor directe of indirecte schade voortvloeiend uit onjuistheden in de door de klant verstrekte informatie of gegevens.</div>';
+  
+  htmlContent+='<div class="clause"><span class="clause-number">4.6 Verzekering:</span> ANB Financial Services is verzekerd door middel van een beroepsaansprakelijkheidsverzekering. Alle adviezen worden gegeven conform de geldende wettelijke regelingen en best practices.</div>';
+  
+  htmlContent+='<div class="clause"><span class="clause-number">4.7 Wijzigingen:</span> Wijzigingen van deze overeenkomst kunnen alleen schriftelijk en in onderlinge overeenstemming plaatsvinden.</div>';
+  
+  htmlContent+='<div class="clause"><span class="clause-number">4.8 Toepasselijk recht:</span> Deze overeenkomst wordt beheerst door Nederlands recht. Eventuele geschillen zullen in eerste instantie onderling in der minne worden opgelost.</div>';
+  
+  htmlContent+='</div>';
+  
+  // Data protection
+  htmlContent+='<div class="section">';
+  htmlContent+='<div class="subtitle">5. GEGEVENSBESCHERMING (GDPR)</div>';
+  htmlContent+='<div class="clause">ANB Financial Services verwerkt persoonsgegevens in overeenstemming met de EU-Verordening Algemene Gegevensbescherming (GDPR). Gegevens worden alleen gebruikt voor de uitvoering van deze overeenkomst en zullen niet aan derden doorgegeven worden zonder toestemming, behoudens wettelijke verplichtingen.</div>';
+  htmlContent+='</div>';
+  
+  // Insurance and liability
+  htmlContent+='<div class="section">';
+  htmlContent+='<div class="subtitle">6. VERZEKERING EN AANSPRAKELIJKHEID</div>';
+  htmlContent+='<div class="clause"><strong>Beroepsaansprakelijkheid:</strong> ANB Financial Services draagt een beroepsaansprakelijkheidsverzekering ter hoogte van EUR 1.000.000 per sinistrum.</div>';
+  htmlContent+='<div class="clause"><strong>Informatiebeveiligingen:</strong> De klant is verantwoordelijk voor de juistheid en volledigheid van verstrekte informatie. Fouten in de gegeven informatie kunnen gevolgen hebben voor de kwaliteit van onze adviezen.</div>';
+  htmlContent+='</div>';
+  
+  // Signature section
+  htmlContent+='<div class="signature-section">';
+  htmlContent+='<div style="font-weight:bold;margin-bottom:20px">7. GOEDKEURING EN ONDERTEKENING</div>';
+  
+  htmlContent+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px">';
+  
+  // Left signature (Service provider)
+  htmlContent+='<div>';
+  htmlContent+='<div style="font-weight:bold">Dienstverlener:</div>';
+  htmlContent+='<div class="signature-line">';
+  if(contract.status==='signed' || contract.status==='active'){
+    htmlContent+='<div style="margin-bottom:10px">✓ Geaccepteerd</div>';
+    htmlContent+='<div class="signature-content">Ahmad Al-Najem<br>ANB Financial Services<br>'+dateStr+'</div>';
+  } else {
+    htmlContent+='<div class="signature-content">Handtekening:<br><br>Naam: Ahmad Al-Najem<br>Datum: ___________</div>';
+  }
+  htmlContent+='</div>';
+  htmlContent+='</div>';
+  
+  // Right signature (Client)
+  htmlContent+='<div>';
+  htmlContent+='<div style="font-weight:bold">Klant / Gemachtigde:</div>';
+  htmlContent+='<div class="signature-line">';
+  if(contract.status==='signed' || contract.status==='active'){
+    htmlContent+='<div style="margin-bottom:10px">✓ Geaccepteerd</div>';
+    htmlContent+='<div class="signature-content">'+contract.signerName+'<br>'+contract.signerFunction+'<br>'+dateStr+'</div>';
+  } else {
+    htmlContent+='<div class="signature-content">Handtekening:<br><br>Naam: '+contract.signerName+'<br>Datum: ___________</div>';
+  }
+  htmlContent+='</div>';
+  htmlContent+='</div>';
+  
+  htmlContent+='</div>';
+  
+  htmlContent+='</div>';
+  
+  // Footer
+  htmlContent+='<div class="footer">';
+  htmlContent+='<p>Document gegenereerd op '+dateStr+' door ANB Financial Services</p>';
+  htmlContent+='<p>Contractnummer: '+contract.num+' | Status: '+contract.status.toUpperCase()+'</p>';
+  htmlContent+='<p>Dit is een officieel document van ANB Financial Services. Alle rechten voorbehouden.</p>';
+  htmlContent+='</div>';
+  
+  htmlContent+='</div>';
+  htmlContent+='</body></html>';
+  
+  // Open in new window and trigger print
+  var printWindow=window.open('','','width=900,height=1000');
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+  
+  setTimeout(function(){
+    printWindow.print();
+    setTimeout(function(){
+      printWindow.close();
+    },500);
+  },500);
+  
+  alert('✅ Professioneel contract geopend - Selecteer "Opslaan als PDF" in het printvenster');
+}
+
+function getMonthName(month){
+  var months=['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  return months[month];
+}
+
+function rContracts(el,cid){
+  cid=cid||S.currentClient;
+  var contracts=(S.contracts||[]).filter(function(c){return c.cid===cid});
+  var h='<div style="padding:20px"><h3>📋 Contracts | العقود</h3>';
+  if(contracts.length===0){
+    h+='<p>No contracts | لا توجد عقود</p>';
+  } else {
+    contracts.forEach(function(c){
+      var statusColor=c.status==='active'?'#4CAF50':c.status==='signed'?'#FF9800':c.status==='draft'?'#FFC107':'#F44336';
+      h+='<div style="background:white;border:1px solid #ddd;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+      h+='<div style="font-weight:bold;font-size:16px">'+c.num+'</div>';
+      h+='<div style="background:'+statusColor+';color:white;padding:4px 12px;border-radius:4px;font-size:12px;font-weight:bold">'+c.status+'</div>';
+      h+='</div>';
+      h+='<div style="margin:8px 0"><strong>Signer:</strong> '+c.signerName+' ('+c.signerFunction+')</div>';
+      h+='<div style="margin:8px 0"><strong>Amount:</strong> €'+c.monthlyRate+'/month | €'+c.annualRate+'/year</div>';
+      h+='<div style="margin:8px 0"><strong>Email:</strong> '+c.signerEmail+'</div>';
+      h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-top:15px">';
+      h+='<button onclick="alert(\'Contract: '+c.num+'\\n\\nSigner: '+c.signerName+'\\nAmount: €'+c.monthlyRate+'/month\\nStatus: '+c.status+'\')" style="padding:10px;background:#0A2218;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">👁️ View</button>';
+      h+='<button onclick="alert(\'Email sent to '+c.signerEmail+'\')" style="padding:10px;background:#2196F3;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">📧 Send</button>';
+      if(c.status==='draft'){
+        h+='<button onclick="var cc=S.contracts.find(x=>x.id===\''+c.id+'\');cc.status=\'sent\';cc.sentAt=new Date().toISOString().split(\'T\')[0];sv();renderApp();alert(\'✅ Sent!\')" style="padding:10px;background:#4CAF50;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">📤 Send Now</button>';
+      }
+      if(c.status==='signed'){
+        h+='<button onclick="var cc=S.contracts.find(x=>x.id===\''+c.id+'\');cc.status=\'active\';cc.approvedAt=new Date().toISOString().split(\'T\')[0];sv();renderApp();alert(\'✅ Approved!\')" style="padding:10px;background:#4CAF50;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">✅ Approve</button>';
+      }
+      h+='<button onclick="downloadContract(\''+c.id+'\')" style="padding:10px;background:#FF9800;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">📥 Download</button>';
+      h+='</div>';
+      h+='</div>';
+    });
+  }
+  h+='</div>';
+  el.innerHTML=h;
+}
 </script>
 
 </body>
