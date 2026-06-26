@@ -1414,7 +1414,7 @@ function renderTopbar(){
     tabs.innerHTML=adminTabDefs.map(tab=>{
       let badge='';
       if(tab.id==='messages'){
-        const unreadCount=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='anb'&&!m.isRead&&!m.deleted).length;
+        const unreadCount=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='client'&&!m.isRead&&!m.deleted).length;
         if(unreadCount>0)badge=`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:var(--red);color:white;border-radius:50%;font-size:10px;font-weight:600;margin-left:4px">${unreadCount>9?'9+':unreadCount}</span>`;
       }
       return `<button class="tab ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')" style="display:flex;align-items:center"><span style="font-size:13px;display:inline-block;margin-right:3px">${tab.icon}</span>${t(tab.key)}${badge}</button>`;
@@ -3904,6 +3904,9 @@ function toast(msg){
 <script>
 // ── TABLE SORTING & FILTERING ──
 var tableSort={key:'',order:'asc',searchText:''};
+
+// ── PWA INSTALL PROMPT ──
+var deferredPrompt = null;
 
 function sortTable(key){
   if(tableSort.key===key){
