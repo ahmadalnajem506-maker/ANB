@@ -36,43 +36,55 @@ body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14p
 
 /* ═══ LOGIN PAGE ═══ */
 #login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;
-  background:radial-gradient(ellipse at 40% 30%,#1A4A2A 0%,#0A2218 50%,#040E08 100%)}
-.login-box{background:rgba(255,255,255,.95);border-radius:20px;padding:40px;width:100%;max-width:420px;
-  box-shadow:0 24px 80px rgba(0,0,0,.4);text-align:center;position:relative;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2)}
-.lang-switch{position:absolute;top:14px;right:14px;display:flex;gap:4px}
-body.rtl .lang-switch{right:auto;left:14px}
-.lang-btn{border:1px solid var(--gr2);background:var(--white);color:var(--t3);font-size:10px;
-  font-weight:600;padding:3px 8px;border-radius:20px;cursor:pointer;font-family:var(--fb)}
-.lang-btn.active{background:var(--g1);color:var(--gold3);border-color:var(--g1)}
-.login-logo{margin-bottom:24px}
-.login-logo svg{width:200px;height:70px}
-.login-title{font-family:var(--fd);font-size:22px;font-weight:600;color:var(--g1);margin-bottom:6px}
-.login-sub{font-size:12px;color:var(--t3);margin-bottom:28px}
-.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
-.role-card{padding:16px 12px;border:1.5px solid var(--gr2);border-radius:var(--r);cursor:pointer;
-  transition:all .15s;text-align:center}
-.role-card:hover{border-color:var(--gold);background:var(--gold-light)}
-.role-card.sel{border-color:var(--g1);background:var(--g1)}
-.role-card.sel .ri{color:var(--gold3)}
-.role-card.sel .rl{color:var(--white)}
-.role-card.sel .rs{color:rgba(255,255,255,.6)}
-.ri{font-size:28px;color:var(--g3);margin-bottom:8px;display:block}
-.rl{font-size:13px;font-weight:600;color:var(--t1);display:block}
-.rs{font-size:11px;color:var(--t3);margin-top:2px;display:block}
-.login-input-wrap{margin-bottom:14px;text-align:left}
-.login-input-wrap label{display:block;font-size:11px;font-weight:600;color:var(--t3);
-  text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
-.login-input-wrap input{width:100%;padding:10px 14px;border:1px solid var(--gr2);
-  border-radius:var(--rs);font-size:14px;color:var(--t1);outline:none}
-.login-input-wrap input:focus{border-color:var(--g1)}
-.login-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--g1),var(--g3));
-  color:var(--gold3);border:none;border-radius:var(--r);font-size:14px;font-weight:600;
-  cursor:pointer;font-family:var(--fb);letter-spacing:.3px}
-.login-btn:hover{filter:brightness(1.1)}
-.login-err{background:var(--red-bg);color:var(--red);padding:8px 12px;border-radius:var(--rs);
-  font-size:12px;margin-bottom:12px;display:none}
-.login-hint{font-size:11px;color:var(--t3);margin-top:14px;line-height:1.6}
-.login-hint code{background:var(--gr1);padding:1px 5px;border-radius:3px;font-family:var(--fm)}
+  background:linear-gradient(135deg,#0A2218 0%,#1A4A2A 50%,#050F0A 100%);position:relative;overflow:hidden}
+#login-page::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 50%,rgba(200,144,16,.15) 0%,transparent 50%);animation:float 20s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0px)}50%{transform:translateY(30px)}}
+@keyframes iconFloat{0%{transform:scale(.8) rotate(-5deg);opacity:.5}50%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1.15) rotate(2deg);opacity:1}}
+.login-box{background:rgba(15,48,37,.85);backdrop-filter:blur(20px);border-radius:24px;padding:48px 40px;width:100%;max-width:420px;
+  box-shadow:0 8px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(200,144,16,.2);text-align:center;position:relative;border:1px solid rgba(200,144,16,.3);z-index:10}
+.lang-switch{position:absolute;top:20px;right:20px;display:flex;gap:6px}
+body.rtl .lang-switch{right:auto;left:20px}
+.lang-btn{border:1.5px solid rgba(200,144,16,.4);background:rgba(200,144,16,.1);color:rgba(200,144,16,.8);font-size:10px;
+  font-weight:700;padding:4px 10px;border-radius:20px;cursor:pointer;font-family:var(--fb);transition:all .3s;text-transform:uppercase;letter-spacing:.5px}
+.lang-btn:hover{background:rgba(200,144,16,.2);border-color:rgba(200,144,16,.6)}
+.lang-btn.active{background:var(--gold3);color:#0A2218;border-color:var(--gold3);box-shadow:0 0 12px rgba(200,144,16,.4)}
+.login-logo{margin-bottom:28px;filter:drop-shadow(0 4px 12px rgba(200,144,16,.3))}
+.login-logo svg{width:180px;height:60px}
+.login-title{font-family:var(--fd);font-size:26px;font-weight:700;background:linear-gradient(135deg,#C89010,#E6B840);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;letter-spacing:-.5px}
+.login-sub{font-size:13px;color:rgba(255,255,255,.65);margin-bottom:32px;font-weight:500;letter-spacing:.3px}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px}
+.role-card{padding:18px 14px;border:2px solid rgba(200,144,16,.3);border-radius:12px;cursor:pointer;
+  transition:all .2s ease;text-align:center;background:rgba(200,144,16,.05);position:relative;overflow:hidden}
+.role-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(200,144,16,.1),transparent);opacity:0;transition:opacity .2s}
+.role-card:hover{border-color:rgba(200,144,16,.6);background:rgba(200,144,16,.12);box-shadow:0 4px 16px rgba(200,144,16,.15)}
+.role-card:hover::before{opacity:1}
+.role-card.sel{border-color:var(--gold3);background:linear-gradient(135deg,rgba(200,144,16,.25),rgba(200,144,16,.1));box-shadow:0 0 20px rgba(200,144,16,.3)}
+.role-card.sel .ri{color:var(--gold3);transform:scale(1.1)}
+.role-card.sel .rl{color:var(--gold3);font-weight:700}
+.role-card.sel .rs{color:rgba(200,144,16,.8)}
+.ri{font-size:32px;color:rgba(200,144,16,.7);margin-bottom:10px;display:block;transition:all .2s}
+.role-icon{width:48px;height:48px;margin:0 auto 12px;color:rgba(200,144,16,.6);transition:all .3s ease;filter:drop-shadow(0 0 0 rgba(200,144,16,0))}
+.role-card:hover .role-icon{color:rgba(200,144,16,.85);transform:scale(1.1);filter:drop-shadow(0 2px 8px rgba(200,144,16,.2))}
+.role-card.sel .role-icon{color:var(--gold3);transform:scale(1.15) rotate(2deg);filter:drop-shadow(0 4px 12px rgba(200,144,16,.4));animation:iconFloat .3s ease-out}
+.rl{font-size:13px;font-weight:600;color:rgba(255,255,255,.85);display:block;transition:all .2s}
+.rs{font-size:11px;color:rgba(200,144,16,.6);margin-top:4px;display:block;transition:all .2s}
+.login-input-wrap{margin-bottom:16px;text-align:left}
+.login-input-wrap label{display:block;font-size:11px;font-weight:700;color:rgba(200,144,16,.8);
+  text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.login-input-wrap input{width:100%;padding:12px 16px;border:1.5px solid rgba(200,144,16,.3);
+  border-radius:10px;font-size:14px;color:rgba(255,255,255,.95);outline:none;background:rgba(200,144,16,.08);
+  transition:all .2s;font-weight:500}
+.login-input-wrap input::placeholder{color:rgba(200,144,16,.5)}
+.login-input-wrap input:focus{border-color:var(--gold3);background:rgba(200,144,16,.15);box-shadow:0 0 0 3px rgba(200,144,16,.15)}
+.login-btn{width:100%;padding:14px 16px;background:linear-gradient(135deg,#C89010 0%,#E6B840 100%);
+  color:#0A2218;border:none;border-radius:10px;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:var(--fb);letter-spacing:.5px;transition:all .3s;text-transform:uppercase;box-shadow:0 4px 16px rgba(200,144,16,.3)}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(200,144,16,.4);filter:brightness(1.05)}
+.login-btn:active{transform:translateY(0);box-shadow:0 2px 8px rgba(200,144,16,.2)}
+.login-err{background:rgba(239,68,68,.15);color:#EF4444;padding:10px 14px;border-radius:10px;
+  font-size:12px;margin-bottom:14px;display:none;border:1px solid rgba(239,68,68,.3);font-weight:500}
+.login-hint{font-size:11px;color:rgba(200,144,16,.7);margin-top:16px;line-height:1.6;font-weight:500}
+.login-hint code{background:rgba(200,144,16,.15);padding:2px 6px;border-radius:4px;font-family:var(--fm);color:var(--gold3)}
 
 /* ═══ APP SHELL ═══ */
 #app{display:none;flex;height:100vh;overflow:hidden}
@@ -272,8 +284,8 @@ tr:hover td{background:var(--gr1)}
 .prog-bar{height:4px;background:var(--gr2);border-radius:2px;overflow:hidden;margin-top:5px}
 .prog-fill{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--g3),var(--gold))}
 /* ── AUTH FLOW ── */
-.forgot-link{font-size:12px;color:var(--g3);cursor:pointer;text-decoration:underline;display:block;text-align:right;margin:-4px 0 12px}
-.forgot-link:hover{color:var(--gold)}
+.forgot-link{font-size:12px;color:var(--gold3);cursor:pointer;text-decoration:underline;display:block;text-align:right;margin:-4px 0 12px;font-weight:600;transition:all .2s}
+.forgot-link:hover{color:#FFDB58;text-decoration:underline;filter:brightness(1.2)}
 .auth-step{display:none}
 .auth-step.active{display:block}
 .step-dots{display:flex;gap:5px;justify-content:center;margin-bottom:18px}
@@ -440,12 +452,47 @@ if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostn
 
       <div class="role-grid">
         <div class="role-card sel" id="rc-admin" onclick="selRole('admin')">
-          <span style="font-size:26px;display:block;margin-bottom:6px">🛡</span>
+          <svg class="role-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Shield Background -->
+            <path d="M50 10 L75 20 L75 45 Q75 70 50 85 Q25 70 25 45 L25 20 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <!-- Inner shield with gradient effect -->
+            <defs>
+              <linearGradient id="admin-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:currentColor;stop-opacity:.3"/>
+                <stop offset="100%" style="stop-color:currentColor;stop-opacity:.1"/>
+              </linearGradient>
+            </defs>
+            <path d="M50 10 L75 20 L75 45 Q75 70 50 85 Q25 70 25 45 L25 20 Z" fill="url(#admin-grad)" opacity="0.5"/>
+            <!-- Checkmark inside shield -->
+            <path d="M40 50 L45 58 L60 42" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
           <span class="rl" data-i18n="role_admin">Administrator</span>
           <span class="rs" data-i18n="role_admin_sub">Full access</span>
         </div>
         <div class="role-card" id="rc-client" onclick="selRole('client')">
-          <span style="font-size:26px;display:block;margin-bottom:6px">👤</span>
+          <svg class="role-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Head circle -->
+            <circle cx="50" cy="35" r="18" fill="none" stroke="currentColor" stroke-width="2"/>
+            <!-- Body -->
+            <path d="M50 53 L50 75" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Arms -->
+            <path d="M50 60 L30 50" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M50 60 L70 50" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Legs -->
+            <path d="M50 75 L35 90" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M50 75 L65 90" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Inner glow -->
+            <defs>
+              <filter id="client-glow">
+                <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <circle cx="50" cy="35" r="18" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.3"/>
+          </svg>
           <span class="rl" data-i18n="role_client">Client</span>
           <span class="rs" data-i18n="role_client_sub">My account</span>
         </div>
