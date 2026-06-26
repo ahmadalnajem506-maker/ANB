@@ -998,25 +998,34 @@ function mergeArraysById(localArr,cloudArr){
 }
 
 async function syncNow(){
-  if(cloudSyncInFlight)return; // avoid overlapping syncs
+  if(cloudSyncInFlight)return;
   cloudSyncInFlight=true;
   cloudSyncStatus='syncing';updateSyncBadge();
-  const cloud=await cloudPull();
-  if(cloud===null){
-    cloudSyncStatus='offline';updateSyncBadge();cloudSyncInFlight=false;return;
-  }
-  const cloudPayload=cloud.payload||{};
-  const merged={};
-  CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{merged[k]=mergeArraysById(S[k],cloudPayload[k]);});
-  CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{S[k]=merged[k];});
-  if(!S.settings)S.settings=cloudPayload.settings||{};
+  
   try{
+    // STEP 1: PUSH LOCAL DATA FIRST (with deleted flags)
     const nowIso=new Date().toISOString();
-    const res=await fetch(`${CLOUD_SYNC_URL}?id=eq.${CLOUD_ROW_ID}`,{
+    const localPayload={};
+    CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{localPayload[k]=S[k]||[];});
+    const pushRes=await fetch(`${CLOUD_SYNC_URL}?id=eq.${CLOUD_ROW_ID}`,{
       method:'PATCH',headers:cloudHeaders({'Prefer':'return=minimal'}),
-      body:JSON.stringify({payload:{...merged,settings:S.settings},updated_at:nowIso})
+      body:JSON.stringify({payload:{...localPayload,settings:S.settings},updated_at:nowIso})
     });
-    if(!res.ok)throw new Error('HTTP '+res.status);
+    if(!pushRes.ok)throw new Error('HTTP '+pushRes.status);
+    
+    // STEP 2: PULL FRESH DATA FROM CLOUD
+    const cloud=await cloudPull();
+    if(cloud===null){
+      cloudSyncStatus='offline';updateSyncBadge();cloudSyncInFlight=false;return;
+    }
+    const cloudPayload=cloud.payload||{};
+    
+    // STEP 3: MERGE with local data (local wins)
+    const merged={};
+    CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{merged[k]=mergeArraysById(S[k],cloudPayload[k]);});
+    CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{S[k]=merged[k];});
+    if(!S.settings)S.settings=cloudPayload.settings||{};
+    
     localStorage.setItem('anb5_synced_at',nowIso);
     try{saveLocalCache();}catch{}
     cloudSyncStatus='synced';
@@ -1025,7 +1034,7 @@ async function syncNow(){
   }
   updateSyncBadge();
   cloudSyncInFlight=false;
-  if(S.role)renderApp(); // reflect any items merged in from other devices, only once logged in
+  if(S.role)renderApp();
 }
 
 function scheduleSync(){
@@ -1374,7 +1383,7 @@ function selClient(id){
 }
 function gotoOverview(){S.currentClient=null;S.tab='dashboard';renderApp();}
 function gotoSettings(){S.tab='settings';renderApp();}
-function setTab(t){S.tab=t;renderContent();renderTopbar();renderSidebar();if(typeof renderMobileNav==='function')renderMobileNav();}
+function setTab(t){S.tab=t;tableSort={key:'',order:'asc',searchText:''};renderContent();renderTopbar();renderSidebar();if(typeof renderMobileNav==='function')renderMobileNav();}
 
 /* ── TOPBAR ── */
 function renderTopbar(){
@@ -1565,9 +1574,35 @@ function rClientDash(el,cid){
 function rInvoices(el,cid){
   cid=cid||S.currentClient;
   const c=S.clients.find(c=>c.id===cid);
-  const inv=S.invoices.filter(i=>i.cid===cid&&!i.deleted); // Filter out deleted items
-  const paid=inv.filter(i=>i.status==='Betaald').reduce((s,i)=>s+i.total,0);
-  const open=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).reduce((s,i)=>s+i.total,0);
+  let inv=S.invoices.filter(i=>i.cid===cid&&!i.deleted);
+  
+  // Apply search filter
+  if(tableSort.searchText){
+    inv=inv.filter(i=>
+      i.num.toLowerCase().includes(tableSort.searchText)||
+      i.desc.toLowerCase().includes(tableSort.searchText)||
+      i.status.toLowerCase().includes(tableSort.searchText)
+    );
+  }
+  
+  // Apply sorting
+  if(tableSort.key){
+    inv=inv.sort((a,b)=>{
+      let aVal=a[tableSort.key];
+      let bVal=b[tableSort.key];
+      if(typeof aVal==='string')aVal=aVal.toLowerCase();
+      if(typeof bVal==='string')bVal=bVal.toLowerCase();
+      if(aVal<bVal)return tableSort.order==='asc'?-1:1;
+      if(aVal>bVal)return tableSort.order==='asc'?1:-1;
+      return 0;
+    });
+  }
+  
+  const paid=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&!i.deleted).reduce((s,i)=>s+i.total,0);
+  const open=S.invoices.filter(i=>i.cid===cid&&['Openstaand','Verzonden'].includes(i.status)&&!i.deleted).reduce((s,i)=>s+i.total,0);
+  
+  const sortIcon=(key)=>tableSort.key===key?` ${tableSort.order==='asc'?'↑':'↓'}`:' ↕';
+  
   el.innerHTML=`
   <div class="kgrid">
     <div class="kcard"><div class="kl">${t('lbl_total')}</div><div class="kv">${inv.length}</div></div>
@@ -1578,8 +1613,21 @@ function rInvoices(el,cid){
     <div class="ch"><span class="ct">${isAdmin()?c?.name+' — ':''} ${t('tab_invoices')}</span>
       ${isAdmin()?`<button class="btn btn-p btn-xs" onclick="openNewInvoice()"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">+</span>${t('btn_new_invoice').replace('+ ','')}</button>`:''}
     </div>
+    <div style="padding:12px;border-bottom:1px solid var(--gr1)">
+      <input type="text" placeholder="Search invoices..." value="${tableSort.searchText}" onkeyup="filterTable(this.value)" style="width:100%;padding:8px;border:1px solid var(--gr1);border-radius:4px;font-size:12px"/>
+    </div>
     ${inv.length===0?`<div class="empty"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📄</span>${t('empty_invoices')}</div>`:
-    `<table><thead><tr><th>${t('lbl_num')}</th><th>${t('lbl_description')}</th><th>${t('lbl_date')}</th><th>${t('lbl_due')}</th><th>${t('lbl_amount')}</th><th>${t('lbl_btw')}</th><th>${t('lbl_total')}</th><th>${t('lbl_status')}</th><th></th></tr></thead>
+    `<table><thead><tr>
+      <th style="cursor:pointer" onclick="sortTable('num')">${t('lbl_num')}${sortIcon('num')}</th>
+      <th style="cursor:pointer" onclick="sortTable('desc')">${t('lbl_description')}${sortIcon('desc')}</th>
+      <th style="cursor:pointer" onclick="sortTable('date')">${t('lbl_date')}${sortIcon('date')}</th>
+      <th style="cursor:pointer" onclick="sortTable('due')">${t('lbl_due')}${sortIcon('due')}</th>
+      <th style="cursor:pointer" onclick="sortTable('amount')">${t('lbl_amount')}${sortIcon('amount')}</th>
+      <th style="cursor:pointer" onclick="sortTable('btw')">${t('lbl_btw')}${sortIcon('btw')}</th>
+      <th style="cursor:pointer" onclick="sortTable('total')">${t('lbl_total')}${sortIcon('total')}</th>
+      <th style="cursor:pointer" onclick="sortTable('status')">${t('lbl_status')}${sortIcon('status')}</th>
+      <th></th>
+    </tr></thead>
     <tbody>${inv.map(i=>`<tr>
       <td style="font-family:var(--fm);font-size:11px;color:var(--g1);font-weight:600">${i.num}</td>
       <td>${i.desc}</td>
@@ -1669,9 +1717,35 @@ function rDebtors(el,cid){
 function rExpenses(el,cid){
   cid=cid||S.currentClient;
   const c=S.clients.find(c=>c.id===cid);
-  const exp=S.expenses.filter(e=>e.cid===cid&&!e.deleted); // Filter out deleted items
-  const tot=exp.reduce((s,e)=>s+(e.amount||0),0);
-  const bIn=exp.reduce((s,e)=>s+(e.btw||0),0);
+  let exp=S.expenses.filter(e=>e.cid===cid&&!e.deleted);
+  
+  // Apply search filter
+  if(tableSort.searchText){
+    exp=exp.filter(e=>
+      e.desc.toLowerCase().includes(tableSort.searchText)||
+      e.supplier.toLowerCase().includes(tableSort.searchText)||
+      e.cat.toLowerCase().includes(tableSort.searchText)
+    );
+  }
+  
+  // Apply sorting
+  if(tableSort.key){
+    exp=exp.sort((a,b)=>{
+      let aVal=a[tableSort.key];
+      let bVal=b[tableSort.key];
+      if(typeof aVal==='string')aVal=aVal.toLowerCase();
+      if(typeof bVal==='string')bVal=bVal.toLowerCase();
+      if(aVal<bVal)return tableSort.order==='asc'?-1:1;
+      if(aVal>bVal)return tableSort.order==='asc'?1:-1;
+      return 0;
+    });
+  }
+  
+  const tot=S.expenses.filter(e=>e.cid===cid&&!e.deleted).reduce((s,e)=>s+(e.amount||0),0);
+  const bIn=S.expenses.filter(e=>e.cid===cid&&!e.deleted).reduce((s,e)=>s+(e.btw||0),0);
+  
+  const sortIcon=(key)=>tableSort.key===key?` ${tableSort.order==='asc'?'↑':'↓'}`:' ↕';
+  
   el.innerHTML=`
   <div class="kgrid">
     <div class="kcard"><div class="kl">${t('dash_boekingen')}</div><div class="kv">${exp.length}</div></div>
@@ -1682,8 +1756,19 @@ function rExpenses(el,cid){
     <div class="ch"><span class="ct">${isAdmin()?c?.name+' — ':''} ${t('tab_expenses')}</span>
       ${isAdmin()?`<button class="btn btn-p btn-xs" onclick="openNewExpense()"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">${t('new_expense')}</button>`:`<button class="btn btn-p btn-xs" onclick="openNewExpense()">${t('new_expense')}</button>`}
     </div>
+    <div style="padding:12px;border-bottom:1px solid var(--gr1)">
+      <input type="text" placeholder="Search expenses..." value="${tableSort.searchText}" onkeyup="filterTable(this.value)" style="width:100%;padding:8px;border:1px solid var(--gr1);border-radius:4px;font-size:12px"/>
+    </div>
     ${exp.length===0?`<div class="empty"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🧾</span>${t('empty_expenses')}</div>`:
-    `<table><thead><tr><th>${t('lbl_date')}</th><th>${t('lbl_from')}</th><th>${t('lbl_description')}</th><th>${t('lbl_category')}</th><th>${t('lbl_amount')}</th><th>${t('lbl_btw')}</th>${isAdmin()?'<th></th>':''}</tr></thead>
+    `<table><thead><tr>
+      <th style="cursor:pointer" onclick="sortTable('date')">${t('lbl_date')}${sortIcon('date')}</th>
+      <th style="cursor:pointer" onclick="sortTable('supplier')">${t('lbl_from')}${sortIcon('supplier')}</th>
+      <th style="cursor:pointer" onclick="sortTable('desc')">${t('lbl_description')}${sortIcon('desc')}</th>
+      <th style="cursor:pointer" onclick="sortTable('cat')">${t('lbl_category')}${sortIcon('cat')}</th>
+      <th style="cursor:pointer" onclick="sortTable('amount')">${t('lbl_amount')}${sortIcon('amount')}</th>
+      <th style="cursor:pointer" onclick="sortTable('btw')">${t('lbl_btw')}${sortIcon('btw')}</th>
+      ${isAdmin()?'<th></th>':''}
+    </tr></thead>
     <tbody>${exp.map(e=>`<tr>
       <td style="color:var(--t3)">${FD(e.date)}</td>
       <td style="font-weight:500">${e.supplier}</td>
@@ -2119,12 +2204,33 @@ function viewDoc(id){
 }
 
 
+function markMessagesAsRead(cid, from='anb'){
+  // Mark all messages from 'from' as read for this client
+  let changed=false;
+  S.messages.forEach(m=>{
+    if(m.cid===cid && m.from===from && !m.isRead){
+      m.isRead=true;
+      changed=true;
+    }
+  });
+  if(changed){
+    sv();
+    scheduleSync();
+  }
+}
+
 function rMessages(el,cid){
   if(!S.messages)S.messages=[];
   
   if(isAdmin()){
     // Admin: Simple list of clients + messages
     const selectedClient=S.selectedMsgClient;
+    
+    // Mark ANB messages as read when viewing
+    if(selectedClient){
+      markMessagesAsRead(selectedClient, 'client');
+    }
+    
     el.innerHTML=`
     <div style="display:grid;grid-template-columns:minmax(150px,200px) 1fr;gap:8px;height:600px">
       <div style="border:1px solid var(--gr1);border-radius:8px;overflow:hidden;display:flex;flex-direction:column">
@@ -2132,7 +2238,7 @@ function rMessages(el,cid){
         <div style="flex:1;overflow-y:auto">
           ${S.clients.filter(c=>!c.deleted).length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
           S.clients.filter(c=>!c.deleted).map(c=>{
-            const unread=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead).length;
+            const unread=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead&&!m.deleted).length;
             return `<div onclick="S.selectedMsgClient='${c.id}';rMessages(document.getElementById('content'))" style="padding:12px;cursor:pointer;border-bottom:1px solid var(--gr1);background:${selectedClient===c.id?'var(--gr2)':'transparent'};user-select:none">
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <div style="font-weight:500;color:var(--t1)">${c.name}</div>
@@ -2168,6 +2274,9 @@ function rMessages(el,cid){
     },50);
   } else {
     // Client: Simple message view
+    // Mark ANB messages as read when viewing
+    markMessagesAsRead(cid, 'anb');
+    
     el.innerHTML=`
     <div class="card">
       <div class="ch"><span class="ct">💬 Messages with ANB</span></div>
@@ -2627,7 +2736,7 @@ function delDoc(id){if(confirm('Delete?')){S.docs=S.docs.filter(d=>d.id!==id);sv
 function delClient(id){
   if(!confirm('Remove this client and ALL their data?'))return;
   
-  // Mark as deleted (KEEP for sync to cloud)
+  // 1. Mark as deleted (KEEP for sync to cloud)
   S.clients=S.clients.map(c=>c.id===id?{...c,deleted:true}:c);
   S.invoices=S.invoices.map(i=>i.cid===id?{...i,deleted:true}:i);
   S.expenses=S.expenses.map(e=>e.cid===id?{...e,deleted:true}:e);
@@ -2636,19 +2745,14 @@ function delClient(id){
   S.messages=S.messages.map(m=>m.cid===id?{...m,deleted:true}:m);
   S.contacts=S.contacts.map(ct=>ct.cid===id?{...ct,deleted:true}:ct);
   
-  // SAVE FIRST (with deleted flag for sync)
+  // 2. SAVE FIRST (with deleted flag for sync to cloud)
   S.currentClient=null;S.tab='dashboard';sv();
   
-  // THEN filter for display
-  S.clients=S.clients.filter(c=>!c.deleted);
-  S.invoices=S.invoices.filter(i=>!i.deleted);
-  S.expenses=S.expenses.filter(e=>!e.deleted);
-  S.hours=S.hours.filter(h=>!h.deleted);
-  S.docs=S.docs.filter(d=>!d.deleted);
-  S.messages=S.messages.filter(m=>!m.deleted);
-  S.contacts=S.contacts.filter(c=>!c.deleted);
-  
+  // 3. NOW render (filtering will handle display)
   renderApp();toast(t('remove')+' ✓','ti-check');
+  
+  // 4. Schedule sync to push deleted flags to cloud
+  scheduleSync();
 }
 
 function exportCSV(type){
@@ -3798,8 +3902,23 @@ function toast(msg){
 <div class="mobile-nav" id="mobile-nav"></div>
 
 <script>
-// ── PWA INSTALL PROMPT ──
-let deferredPrompt = null;
+// ── TABLE SORTING & FILTERING ──
+var tableSort={key:'',order:'asc',searchText:''};
+
+function sortTable(key){
+  if(tableSort.key===key){
+    tableSort.order=tableSort.order==='asc'?'desc':'asc';
+  }else{
+    tableSort.key=key;
+    tableSort.order='asc';
+  }
+  renderContent();
+}
+
+function filterTable(text){
+  tableSort.searchText=text.toLowerCase();
+  renderContent();
+}
 
 // Debug logging
 console.log('🔍 PWA Debug: Page loaded on', window.location.protocol);
