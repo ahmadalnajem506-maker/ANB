@@ -34,7 +34,303 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14px;line-height:1.5}
 
-/* ═══ LOGIN PAGE ═══ */
+/* ═══ DRAWER NAVIGATION (Mobile) ═══ */
+.drawer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 280px;
+  height: 100vh;
+  background: linear-gradient(135deg, var(--g1) 0%, var(--g2) 100%);
+  box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+  z-index: 1000;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.drawer.open ~ .drawer-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer-header {
+  padding: 24px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawer-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--g1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(200,144,16,0.3);
+}
+
+.drawer-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.drawer-user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawer-user-role {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.drawer-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.drawer-close:hover {
+  background: rgba(255,255,255,0.2);
+  transform: scale(1.05);
+}
+
+.drawer-menu {
+  flex: 1;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer-item {
+  padding: 12px 16px;
+  color: rgba(255,255,255,0.7);
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-family: var(--fb);
+  white-space: nowrap;
+}
+
+.drawer-item:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+  transform: translateX(6px);
+}
+
+.drawer-item.active {
+  background: var(--gold);
+  color: var(--g1);
+  font-weight: 600;
+}
+
+.drawer-item-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.drawer-footer {
+  padding: 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-logout {
+  padding: 10px 16px;
+  background: rgba(139,26,26,0.2);
+  color: #FF6B6B;
+  border: 1px solid rgba(139,26,26,0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.drawer-logout:hover {
+  background: rgba(139,26,26,0.3);
+  border-color: rgba(139,26,26,0.5);
+}
+
+.drawer-sync-status {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  padding: 8px 0;
+}
+
+/* ═══ MOBILE HAMBURGER BUTTON ═══ */
+.mobile-menu-btn {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--t1);
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-btn:hover {
+  background: var(--gr1);
+}
+
+/* ═══ ENHANCED CARDS & SHADOWS ═══ */
+.card {
+  background: var(--white);
+  border: 1px solid var(--gr2);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(10,34,24,0.05), 0 4px 16px rgba(10,34,24,0.08);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(10,34,24,0.08), 0 8px 24px rgba(10,34,24,0.12);
+  transform: translateY(-2px);
+}
+
+.kcard {
+  background: linear-gradient(135deg, var(--white) 0%, #FAFAFA 100%);
+  border: 1px solid var(--gr2);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(10,34,24,0.04);
+  transition: all 0.3s ease;
+}
+
+.kcard:hover {
+  box-shadow: 0 4px 16px rgba(10,34,24,0.1);
+  transform: translateY(-4px);
+}
+
+/* ═══ ENHANCED BUTTONS ═══ */
+.btn {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-p {
+  background: linear-gradient(135deg, var(--g1), var(--g3));
+  color: var(--gold3);
+  border: none;
+}
+
+.btn-p:hover {
+  filter: brightness(1.08);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--g1);
+  border: none;
+}
+
+.btn-gold:hover {
+  filter: brightness(1.1);
+}
+
+/* ═══ RESPONSIVE MOBILE ═══ */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  
+  .mobile-menu-btn {
+    display: flex;
+  }
+  
+  .main {
+    width: 100%;
+  }
+  
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+  }
+  
+  .content {
+    padding: 12px 14px;
+  }
+  
+  .kgrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .tab-row {
+    display: none;
+  }
+}
 #login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;
   background:radial-gradient(ellipse at 40% 30%,#1A4A2A 0%,#0A2218 50%,#040E08 100%)}
 .login-box{background:var(--white);border-radius:20px;padding:40px;width:100%;max-width:420px;
@@ -525,6 +821,36 @@ if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostn
 </div>
 
 <!-- ════════════════════════════════════════════════════ -->
+<!--  DRAWER NAVIGATION (Mobile)                         -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-avatar" id="drawer-avatar">A</div>
+    <div class="drawer-user-info">
+      <div class="drawer-user-name" id="drawer-user-name">User</div>
+      <div class="drawer-user-role" id="drawer-user-role">Admin</div>
+    </div>
+    <button class="drawer-close" onclick="toggleDrawer()">✕</button>
+  </div>
+  
+  <div class="drawer-menu" id="drawer-menu">
+    <!-- Menu items populated by JS -->
+  </div>
+  
+  <div class="drawer-footer">
+    <div class="drawer-sync-status" id="drawer-sync-status">
+      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#999;margin-right:4px"></span>
+      Not synced
+    </div>
+    <button class="drawer-logout" onclick="logout()">
+      🚪 Logout
+    </button>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
+
+<!-- ════════════════════════════════════════════════════ -->
 <!--  APP                                                -->
 <!-- ════════════════════════════════════════════════════ -->
 <div id="app" style="display:none;flex">
@@ -542,7 +868,7 @@ if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostn
 
   <div class="main">
     <div class="topbar">
-      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+      <button class="mobile-menu-btn" id="mobile-menu-btn" onclick="toggleDrawer()" aria-label="Menu">☰</button>
       <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0" id="tb-left"></div>
       <div class="tab-row" id="tab-row"></div>
       <div class="tb-right" id="tb-right"></div>
@@ -1304,9 +1630,81 @@ function doLogout(){
   selRole('admin');
 }
 
+/* ═══════════════════════════ DRAWER NAVIGATION ═══════════════════════════ */
+function toggleDrawer(){
+  const drawer=document.getElementById('drawer');
+  if(drawer)drawer.classList.toggle('open');
+}
+
+function closeDrawer(){
+  const drawer=document.getElementById('drawer');
+  if(drawer)drawer.classList.remove('open');
+}
+
+function populateDrawer(){
+  const c=S.clients.find(c=>c.id===S.currentClient);
+  const avatar=document.getElementById('drawer-avatar');
+  const name=document.getElementById('drawer-user-name');
+  const role=document.getElementById('drawer-user-role');
+  const menu=document.getElementById('drawer-menu');
+  const syncStatus=document.getElementById('drawer-sync-status');
+  
+  if(avatar)avatar.textContent=INI(c?.name||S.role==='admin'?'ADM':'USR');
+  if(name)name.textContent=c?.name||'User';
+  if(role)role.textContent=S.role==='admin'?'Admin':'Client';
+  
+  const menuItems=S.role==='admin'?[
+    {icon:'📊',label:'Dashboard',id:'dashboard',tab:'dashboard'},
+    {icon:'📄',label:'Invoices',id:'invoices',tab:'invoices'},
+    {icon:'🧾',label:'Expenses',id:'expenses',tab:'expenses'},
+    {icon:'⏱',label:'Hours',id:'hours',tab:'hours'},
+    {icon:'📈',label:'Reports',id:'reports',tab:'reports'},
+    {icon:'📁',label:'Documents',id:'documents',tab:'documents'},
+    {icon:'👥',label:'Contacts',id:'contacts',tab:'contacts'},
+    {icon:'💬',label:'Messages',id:'messages',tab:'messages'},
+    {icon:'👤',label:'Client Info',id:'info',tab:'info'},
+    {icon:'⚙️',label:'Settings',id:'settings',tab:'settings'},
+  ]:[
+    {icon:'📊',label:'Dashboard',id:'dashboard',tab:'dashboard'},
+    {icon:'📄',label:'Invoices',id:'invoices',tab:'invoices'},
+    {icon:'🧾',label:'Expenses',id:'expenses',tab:'expenses'},
+    {icon:'⏱',label:'Hours',id:'hours',tab:'hours'},
+    {icon:'📁',label:'Documents',id:'documents',tab:'documents'},
+    {icon:'💬',label:'Messages',id:'messages',tab:'messages'},
+  ];
+  
+  if(menu){
+    menu.innerHTML=menuItems.map(item=>`
+      <button class="drawer-item ${S.tab===item.tab?'active':''}" onclick="setTab('${item.tab}');closeDrawer()">
+        <span class="drawer-item-icon">${item.icon}</span>
+        <span>${item.label}</span>
+      </button>
+    `).join('');
+  }
+  
+  const statusMap={
+    idle:'Not synced',
+    syncing:'Syncing...',
+    synced:'Synced',
+    error:'Sync error',
+    offline:'Offline'
+  };
+  const dotColor={
+    idle:'#999',
+    syncing:'#C89010',
+    synced:'#2E7D32',
+    error:'#C0392B',
+    offline:'#C0392B'
+  };
+  
+  if(syncStatus){
+    syncStatus.innerHTML=`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dotColor[cloudSyncStatus]||'#999'};margin-right:4px"></span>${statusMap[cloudSyncStatus]||'Not synced'}`;
+  }
+}
+
 /* ═══════════════════════════ RENDER ═══════════════════════════ */
 function renderApp(){
-  renderSidebar();renderTopbar();renderContent();
+  renderSidebar();renderTopbar();renderContent();populateDrawer();
   if(typeof renderMobileNav==='function')renderMobileNav();
 }
 
