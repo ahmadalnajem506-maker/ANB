@@ -1,32 +1,38 @@
 {
-  "name": "ANB Financial Services",
+  "name": "ANB Financial Services - المحاسبة الذكية",
   "short_name": "ANB FinAdmin",
-  "description": "نظام إدارة مالي شامل للعاملين بحسابهم الخاص والشركات الصغيرة",
+  "description": "تطبيق إدارة مالي احترافي للعاملين بحسابهم الخاص والشركات الصغيرة | Professioneel financieel beheersysteem",
   "start_url": "./index.html",
   "display": "standalone",
   "scope": "./",
-  "background_color": "#ffffff",
+  "background_color": "#0A2218",
   "theme_color": "#0A2218",
   "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230A2218' width='192' height='192'/><text x='50%' y='50%' font-size='80' fill='%23C89010' font-weight='bold' text-anchor='middle' dominant-baseline='middle' font-family='Arial'>ANB</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%230A2218;stop-opacity:1'/><stop offset='100%' style='stop-color:%230F3025;stop-opacity:1'/></linearGradient></defs><rect fill='url(%23g)' width='192' height='192'/><circle cx='96' cy='96' r='85' fill='%23C89010'/><text x='96' y='110' font-size='60' fill='%230A2218' font-weight='bold' text-anchor='middle' font-family='Arial'>ANB</text></svg>",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%230A2218' width='512' height='512'/><text x='50%' y='50%' font-size='200' fill='%23C89010' font-weight='bold' text-anchor='middle' dominant-baseline='middle' font-family='Arial'>ANB</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g2' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%230A2218;stop-opacity:1'/><stop offset='100%' style='stop-color:%230F3025;stop-opacity:1'/></linearGradient></defs><rect fill='url(%23g2)' width='512' height='512'/><circle cx='256' cy='256' r='220' fill='%23C89010'/><text x='256' y='300' font-size='150' fill='%230A2218' font-weight='bold' text-anchor='middle' font-family='Arial'>ANB</text></svg>",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><defs><linearGradient id='g3' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%230A2218;stop-opacity:1'/><stop offset='100%' style='stop-color:%230F3025;stop-opacity:1'/></linearGradient></defs><rect fill='url(%23g3)' width='96' height='96'/><circle cx='48' cy='48' r='42' fill='%23C89010'/><text x='48' y='55' font-size='28' fill='%230A2218' font-weight='bold' text-anchor='middle' font-family='Arial'>ANB</text></svg>",
+      "sizes": "96x96",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ],
   "categories": ["business", "finance", "productivity"],
   "screenshots": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%23f5f5f5' width='540' height='720'/><text x='50%' y='50%' font-size='40' fill='%230A2218' text-anchor='middle' dominant-baseline='middle'>ANB FinAdmin Pro</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><defs><linearGradient id='bg' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%230A2218;stop-opacity:1'/><stop offset='100%' style='stop-color:%230F3025;stop-opacity:1'/></linearGradient></defs><rect fill='url(%23bg)' width='540' height='720'/><text x='270' y='360' font-size='40' fill='%23C89010' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>ANB FinAdmin Pro</text></svg>",
       "sizes": "540x720",
       "type": "image/svg+xml",
       "form_factor": "narrow"
@@ -53,6 +59,13 @@
       "description": "إدارة العقود والاتفاقيات",
       "url": "./index.html?tab=contracts",
       "icons": []
+    },
+    {
+      "name": "الأصول | Assets",
+      "short_name": "الأصول",
+      "description": "إدارة الأصول والإهتلاك",
+      "url": "./index.html?tab=assets",
+      "icons": []
     }
   ],
   "share_target": {
@@ -66,3 +79,4 @@
     }
   }
 }
+

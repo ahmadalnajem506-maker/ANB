@@ -37,8 +37,8 @@ body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14p
 /* ═══ LOGIN PAGE ═══ */
 #login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;
   background:radial-gradient(ellipse at 40% 30%,#1A4A2A 0%,#0A2218 50%,#040E08 100%)}
-.login-box{background:var(--white);border-radius:20px;padding:40px;width:100%;max-width:420px;
-  box-shadow:0 24px 80px rgba(0,0,0,.4);text-align:center;position:relative}
+.login-box{background:rgba(255,255,255,.95);border-radius:20px;padding:40px;width:100%;max-width:420px;
+  box-shadow:0 24px 80px rgba(0,0,0,.4);text-align:center;position:relative;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2)}
 .lang-switch{position:absolute;top:14px;right:14px;display:flex;gap:4px}
 body.rtl .lang-switch{right:auto;left:14px}
 .lang-btn{border:1px solid var(--gr2);background:var(--white);color:var(--t3);font-size:10px;
@@ -624,9 +624,14 @@ var I18N={
     outstanding:'Outstanding', overdue:'Overdue', hours_logged:'Hours logged', btw_balance:'BTW balance',
     // Tab labels
     tab_invoices:'Invoices', tab_debtors:'Debtors',
-    tab_expenses:'Expenses', tab_hours:'Hours', tab_contracts:'Contracts',
-    tab_journal:'Journal', tab_bank:'Bank', tab_btw:'BTW',
+    tab_expenses:'Expenses', tab_hours:'Hours', tab_contracts:'Contracts', tab_assets:'Assets',
+    tab_journal:'Journal', tab_bank:'Bank', tab_btw:'BTW', tab_dashboard:'Dashboard',
     tab_reports:'Reports', tab_documents:'Documents', tab_contacts:'Contacts', tab_messages:'Messages', tab_client:'Client',
+    overview:'Overview', add_client:'Add Client',
+    // Subscription tiers
+    tier_basic:'Basic (€299/mo)', tier_pro:'Professional (€599/mo)', tier_enterprise:'Enterprise (€999/mo)',
+    select_tier:'Select Subscription', import_data:'Import Previous Data', new_asset:'Add Asset', no_assets:'No assets yet', add_asset:'Add Asset',
+    please_fill:'Please fill all required fields',
     // Topbar actions
     new_invoice:'+ New invoice', new_expense:'+ New expense', log_hours:'+ Log hours',
     send_message:'➤ Send message', new_request:'+ New request', add_expense:'+ Add expense',
@@ -711,9 +716,13 @@ var I18N={
     dashboard:'Dashboard', invoices:'Facturen', debtors:'Debiteuren', expenses:'Onkosten', hours:'Uren',
     journal:'Journaal', bank:'Bank', reports:'Rapporten', documents:'Documenten', messages:'Berichten', client_info:'Klant',
     tab_invoices:'Facturen', tab_debtors:'Debiteuren',
-    tab_expenses:'Onkosten', tab_hours:'Uren', tab_contracts:'Overeenkomsten',
-    tab_journal:'Journaal', tab_bank:'Bank', tab_btw:'BTW',
+    tab_expenses:'Onkosten', tab_hours:'Uren', tab_contracts:'Overeenkomsten', tab_assets:'Vaste Activa',
+    tab_journal:'Journaal', tab_bank:'Bank', tab_btw:'BTW', tab_dashboard:'Dashboard',
     tab_reports:'Rapporten', tab_documents:'Documenten', tab_contacts:'Contacten', tab_messages:'Berichten', tab_client:'Klant',
+    overview:'Overzicht', add_client:'Klant toevoegen',
+    tier_basic:'Basic (€299/mnd)', tier_pro:'Professional (€599/mnd)', tier_enterprise:'Enterprise (€999/mnd)',
+    select_tier:'Kies abonnement', import_data:'Gegevens importeren', new_asset:'Vast actief toevoegen', no_assets:'Geen vaste activa yet', add_asset:'Vast actief toevoegen',
+    please_fill:'Vul alle velden in',
     new_invoice:'+ Nieuwe factuur', new_expense:'+ Nieuwe onkost', log_hours:'+ Uren invoeren',
     send_message:'➤ Bericht sturen', new_request:'+ Nieuw verzoek', add_expense:'+ Onkost toevoegen',
     edit:'Bewerken', remove:'Verwijderen',
@@ -786,9 +795,13 @@ var I18N={
     journal:'اليومية', bank:'البنك', reports:'التقارير', documents:'المستندات', messages:'الرسائل', client_info:'العميل',
     // Tab labels with tab_ prefix (used in topbar & sidebar)
     tab_invoices:'الفواتير', tab_debtors:'الديون (Debiteuren)',
-    tab_expenses:'المصاريف', tab_hours:'ساعات العمل', tab_contracts:'العقود',
-    tab_journal:'اليومية (Journal)', tab_bank:'البنك', tab_btw:'ضريبة القيمة المضافة (BTW)',
+    tab_expenses:'المصاريف', tab_hours:'ساعات العمل', tab_contracts:'العقود', tab_assets:'الأصول',
+    tab_journal:'اليومية (Journal)', tab_bank:'البنك', tab_btw:'ضريبة القيمة المضافة (BTW)', tab_dashboard:'لوحة التحكم',
     tab_reports:'التقارير', tab_documents:'المستندات', tab_contacts:'جهات الاتصال', tab_messages:'الرسائل', tab_client:'العميل',
+    overview:'النظرة العامة', add_client:'إضافة عميل جديد',
+    tier_basic:'الباقة الأساسية (€299/شهر)', tier_pro:'الباقة الاحترافية (€599/شهر)', tier_enterprise:'الباقة الشاملة (€999/شهر)',
+    select_tier:'اختر باقة الاشتراك', import_data:'استيراد البيانات السابقة', new_asset:'إضافة أصل', no_assets:'لا توجد أصول بعد', add_asset:'إضافة أصل',
+    please_fill:'يرجى ملء جميع الحقول',
     new_invoice:'+ فاتورة جديدة', new_expense:'+ مصروف جديد', log_hours:'+ تسجيل ساعات',
     send_message:'➤ إرسال رسالة', new_request:'+ طلب جديد', add_expense:'+ إضافة مصروف',
     edit:'تعديل', remove:'حذف',
@@ -870,11 +883,11 @@ var S={
   contractTab:'all',
   clients:[
     {id:'c1',name:'Expat Solutions BV',type:'B2B',email:'info@expatsol.nl',
-     kvk:'12345678',btw:'NL123456789B01',iban:'NL91ABNA0417164300',color:'#0C447C',pw:'client123'},
+     kvk:'12345678',btw:'NL123456789B01',iban:'NL91ABNA0417164300',color:'#0C447C',pw:'client123',subscriptionTier:'pro'},
     {id:'c2',name:'Maria van den Berg',type:'B2C',email:'maria@gmail.com',
-     kvk:'',btw:'',iban:'',color:'#1B5E35',pw:'client123'},
+     kvk:'',btw:'',iban:'',color:'#1B5E35',pw:'client123',subscriptionTier:'basic'},
     {id:'c3',name:'TechStart Amsterdam',type:'B2B',email:'cfo@techstart.nl',
-     kvk:'87654321',btw:'NL987654321B01',iban:'NL02ABNA0123456789',color:'#7A3500',pw:'client123'},
+     kvk:'87654321',btw:'NL987654321B01',iban:'NL02ABNA0123456789',color:'#7A3500',pw:'client123',subscriptionTier:'enterprise'},
   ],
   invoices:[
     {id:'i1',cid:'c1',num:'ANB-2026-001',desc:'Power BI dashboard Q1',amount:2400,btw:504,total:2904,date:'2026-05-01',due:'2026-05-31',status:'Betaald',btwRate:21},
@@ -906,6 +919,11 @@ var S={
      createdAt:'2026-02-10',sentAt:'2026-02-10',signedAt:'2026-02-15',approvedAt:null,
      monthlyRate:2500,annualRate:25000,
      signerName:'Peter Jansen',signerEmail:'cfo@techstart.nl',signerFunction:'CFO'},
+  ],
+  assets:[
+    {id:'ast1',cid:'c1',name:'Dell Office Computer',type:'Equipment',purchaseDate:'2023-06-15',purchasePrice:1200,estimatedLife:5,salvageValue:200,currentValue:900,depreciation:'Linear'},
+    {id:'ast2',cid:'c1',name:'Office Furniture Set',type:'Furniture',purchaseDate:'2024-01-10',purchasePrice:3500,estimatedLife:10,salvageValue:500,currentValue:3150,depreciation:'Linear'},
+    {id:'ast3',cid:'c3',name:'Company Vehicle',type:'Vehicle',purchaseDate:'2022-03-20',purchasePrice:35000,estimatedLife:5,salvageValue:5000,currentValue:21000,depreciation:'Linear'},
   ],
   docs:[
     {id:'d1',cid:'c1',name:'KvK_uittreksel_2026.pdf',type:'pdf',date:'2026-05-01',from:'client',size:'142 KB'},
@@ -1467,7 +1485,7 @@ function renderContent(){
     if(S.tab==='settings'){rSettings(el);return;}
     if(!cid||S.tab==='dashboard'){rAdminDash(el);return;}
     // Admin manages clients: invoices, expenses, hours, reports, documents, contacts, messages, info
-    const fn={invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts};
+    const fn={invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets};
     (fn[S.tab]||rAdminDash)(el,cid);
   } else {
     // Client can only: dashboard, expenses, hours, documents, messages (NO invoices)
@@ -2952,6 +2970,11 @@ function openClientModal(c){
       <div class="fg"><label>Company / Name *</label><input id="cf-n" value="${c?.name||''}"/></div>
       <div class="fg"><label>Type</label><select id="cf-t">${['B2B','B2C','Expat','ZZP'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}</select></div>
     </div>
+    <div class="fg"><label>${t('select_tier')} *</label><select id="cf-tier" style="padding:8px;border:1px solid var(--bd);border-radius:4px;font-size:14px">
+      <option value="basic" ${c?.subscriptionTier==='basic'?'selected':''}>🆓 ${t('tier_basic')}</option>
+      <option value="pro" ${c?.subscriptionTier==='pro'?'selected':''}>⭐ ${t('tier_pro')}</option>
+      <option value="enterprise" ${c?.subscriptionTier==='enterprise'?'selected':''}>👑 ${t('tier_enterprise')}</option>
+    </select></div>
     <div class="fg"><label>Email</label><input id="cf-e" value="${c?.email||''}" type="email"/></div>
     <div class="fr2">
       <div class="fg"><label>${t('set_kvk')}</label><input id="cf-k" value="${c?.kvk||''}"/></div>
@@ -2959,6 +2982,9 @@ function openClientModal(c){
     </div>
     <div class="fg"><label>IBAN</label><input id="cf-i" value="${c?.iban||''}"/></div>
     <div class="fg"><label>Phone number</label><input id="cf-ph" value="${c?.phone||''}" placeholder="+31 6 12345678"/></div>
+    ${isN?`<div style="background:var(--gold3)20;border-radius:var(--rs);padding:9px 12px;font-size:11px;color:var(--tx1);margin-top:4px">
+      💡 ${t('import_data')} - ${(t('import_data_desc')||'Import historical data from previous accountant')}
+    </div>`:''}
     <div style="background:var(--blue-bg);border-radius:var(--rs);padding:9px 12px;font-size:11px;color:var(--blue);margin-top:4px">
       ℹ️ The client will set their own password using their email or phone via "Forgot password" on the login screen.
     </div>
@@ -2969,6 +2995,7 @@ function openClientModal(c){
       email:document.getElementById('cf-e').value,kvk:document.getElementById('cf-k').value,
       btw:document.getElementById('cf-b').value,iban:document.getElementById('cf-i').value,
       phone:document.getElementById('cf-ph')?.value||c?.phone||'',
+      subscriptionTier:document.getElementById('cf-tier').value,
       pw:c?.pw||'client123',pwCustom:c?.pwCustom,pwSet:c?.pwSet,
       color:c?.color||COLORS[S.clients.length%COLORS.length]};
     if(isN){S.clients.push(nc);S.currentClient=nc.id;S.tab='invoices';}
@@ -4034,21 +4061,53 @@ function renderMobileNav() {
   const nav = document.getElementById('mobile-nav');
   if (!nav) return;
   
-  if (!S.role) { nav.innerHTML = ''; return; }
+  // إخفاء بعد تسجيل الدخول مباشرة
+  if (!S.role) { 
+    nav.innerHTML = ''; 
+    nav.style.display = 'none';
+    return; 
+  }
   
-  const items = S.role === 'admin' ? [
-    { icon: '◼', label: t('overview'), tab: 'dashboard', action: () => gotoOverview() },
-    { icon: '📄', label: t('tab_invoices'), tab: 'invoices', action: () => { if(S.currentClient) setTab('invoices'); } },
-    { icon: '🧾', label: t('tab_expenses'), tab: 'expenses', action: () => { if(S.currentClient) setTab('expenses'); } },
-    { icon: '📒', label: t('tab_journal'), tab: 'journal', action: () => { if(S.currentClient) setTab('journal'); } },
-    { icon: '⚙', label: t('settings_nav'), tab: 'settings', action: () => setTab('settings') },
-  ] : [
-    { icon: '◼', label: t('dashboard'), tab: 'dashboard', action: () => setTab('dashboard') },
-    { icon: '📄', label: t('tab_invoices'), tab: 'invoices', action: () => setTab('invoices') },
-    { icon: '🧾', label: t('tab_expenses'), tab: 'expenses', action: () => setTab('expenses') },
-    { icon: '📁', label: t('documents'), tab: 'documents', action: () => setTab('documents') },
-    { icon: '💬', label: t('messages'), tab: 'messages', action: () => setTab('messages') },
-  ];
+  // التحقق من حجم الشاشة
+  if(window.innerWidth >= 861) {
+    nav.style.display = 'none';
+    return;
+  }
+  
+  nav.style.display = 'flex';
+  
+  let items = [];
+  
+  if(S.role === 'admin') {
+    if(!S.currentClient || S.tab === 'dashboard') {
+      items = [
+        { icon: '📊', label: t('overview'), tab: 'dashboard', action: () => gotoOverview() },
+        { icon: '👤', label: t('add_client'), tab: 'add-client', action: () => openAddClient() },
+        { icon: '⚙', label: t('settings_nav'), tab: 'settings', action: () => setTab('settings') },
+      ];
+    } else {
+      items = [
+        { icon: '📄', label: t('tab_invoices'), tab: 'invoices', action: () => setTab('invoices') },
+        { icon: '🧾', label: t('tab_expenses'), tab: 'expenses', action: () => setTab('expenses') },
+        { icon: '⏱', label: t('tab_hours'), tab: 'hours', action: () => setTab('hours') },
+        { icon: '📋', label: t('tab_contracts'), tab: 'contracts', action: () => setTab('contracts') },
+        { icon: '🏢', label: t('tab_assets'), tab: 'assets', action: () => setTab('assets') },
+        { icon: '📈', label: t('tab_reports'), tab: 'reports', action: () => setTab('reports') },
+        { icon: '📁', label: t('tab_documents'), tab: 'documents', action: () => setTab('documents') },
+        { icon: '👥', label: t('tab_contacts'), tab: 'contacts', action: () => setTab('contacts') },
+        { icon: '💬', label: t('tab_messages'), tab: 'messages', action: () => setTab('messages') },
+      ];
+    }
+  } else {
+    items = [
+      { icon: '📊', label: t('tab_dashboard'), tab: 'dashboard', action: () => setTab('dashboard') },
+      { icon: '📄', label: t('tab_invoices'), tab: 'invoices', action: () => setTab('invoices') },
+      { icon: '🧾', label: t('tab_expenses'), tab: 'expenses', action: () => setTab('expenses') },
+      { icon: '⏱', label: t('tab_hours'), tab: 'hours', action: () => setTab('hours') },
+      { icon: '📁', label: t('tab_documents'), tab: 'documents', action: () => setTab('documents') },
+      { icon: '💬', label: t('tab_messages'), tab: 'messages', action: () => setTab('messages') },
+    ];
+  }
 
   nav.innerHTML = items.map(item => `
     <button class="mn-item ${S.tab === item.tab ? 'act' : ''}" onclick="(${item.action.toString()})()">
@@ -4131,12 +4190,126 @@ function viewContract(contractId){
 function downloadContractPDF(contractId){
   var contract=S.contracts.find(function(c){return c.id===contractId});
   if(!contract) return;
-  alert('✅ تم التحميل: '+contract.num+'.pdf\n\nسيتم فتح نافذة للطباعة. اختر "حفظ ك PDF" من خيارات الطابعة.');
-  viewContract(contractId);
-  setTimeout(function(){
-    var w=window.open('','');
-    if(w) w.print();
-  },1000);
+  
+  // التحقق من أن الجهاز موبايل
+  var isMobileDevice = window.innerWidth < 768 || /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if(isMobileDevice){
+    // الموبايل: فتح العقد في نافذة جديدة فقط (بدون طباعة)
+    alert('✅ تم فتح العقد\n\n💡 اضغط على ⋮ ثم "Share" أو "Save" لحفظ الملف');
+    viewContract(contractId);
+  } else {
+    // Desktop: فتح نافذة الطباعة التقليدية
+    alert('✅ سيتم فتح نافذة الطباعة\n\nاختر "حفظ ك PDF" من خيارات الطابعة');
+    viewContract(contractId);
+    setTimeout(function(){
+      if(window.frames.length > 0){
+        window.print();
+      } else {
+        var w=window.open('','');
+        if(w) {
+          w.print();
+        }
+      }
+    },1000);
+  }
+}
+
+function rAssets(el, cid) {
+  if(!cid || !S.currentClient) return;
+  var assets = (S.assets || []).filter(a => a.cid === cid && !a.deleted);
+  var h = '<div class="ch"><span class="ct">🏢 ' + t('tab_assets') + '</span>';
+  h += '<button class="btn btn-p btn-xs" onclick="showAddAssetModal(\'' + cid + '\')"><span style="font-size:14px">+</span> ' + (t('new_asset') || 'Add Asset') + '</button></div>';
+  
+  if(assets.length === 0) {
+    h += '<div style="padding:20px;text-align:center;color:var(--tx3)">' + (t('no_assets') || 'No assets yet') + '</div>';
+  } else {
+    h += '<table style="width:100%;border-collapse:collapse"><tr style="background:var(--bg2);font-weight:bold">';
+    h += '<td style="padding:10px;border-bottom:1px solid var(--bd)">Asset</td>';
+    h += '<td style="padding:10px;border-bottom:1px solid var(--bd)">Type</td>';
+    h += '<td style="padding:10px;border-bottom:1px solid var(--bd)">Cost</td>';
+    h += '<td style="padding:10px;border-bottom:1px solid var(--bd)">Current Value</td>';
+    h += '<td style="padding:10px;border-bottom:1px solid var(--bd)">Life</td>';
+    h += '</tr>';
+    
+    assets.forEach(function(a) {
+      var yearDepreciated = new Date().getFullYear() - new Date(a.purchaseDate).getFullYear();
+      var totalDepreciation = ((a.purchasePrice - a.salvageValue) / a.estimatedLife) * yearDepreciated;
+      var currentValue = a.purchasePrice - totalDepreciation;
+      currentValue = Math.max(currentValue, a.salvageValue);
+      
+      h += '<tr style="border-bottom:1px solid var(--bd)">';
+      h += '<td style="padding:10px"><strong>' + a.name + '</strong></td>';
+      h += '<td style="padding:10px">' + a.type + '</td>';
+      h += '<td style="padding:10px;text-align:right">€' + a.purchasePrice.toLocaleString('nl-NL') + '</td>';
+      h += '<td style="padding:10px;text-align:right"><strong>€' + Math.round(currentValue).toLocaleString('nl-NL') + '</strong></td>';
+      h += '<td style="padding:10px;text-align:center">' + yearDepreciated + '/' + a.estimatedLife + ' yr</td>';
+      h += '</tr>';
+    });
+    
+    h += '</table>';
+    h += '<div style="padding:15px;background:var(--bg2);margin-top:15px;border-radius:6px;font-size:12px">';
+    h += '<strong>📊 Total Assets Value:</strong><br>';
+    var totalVal = assets.reduce((sum, a) => {
+      var yd = new Date().getFullYear() - new Date(a.purchaseDate).getFullYear();
+      var td = ((a.purchasePrice - a.salvageValue) / a.estimatedLife) * yd;
+      var cv = Math.max(a.purchasePrice - td, a.salvageValue);
+      return sum + cv;
+    }, 0);
+    h += 'Current: <strong>€' + Math.round(totalVal).toLocaleString('nl-NL') + '</strong>';
+    h += '</div>';
+  }
+  
+  el.innerHTML = h;
+}
+
+function showAddAssetModal(cid) {
+  var modalContent = '<div style="padding:20px"><h3>' + (t('add_asset') || 'Add Asset') + '</h3>';
+  modalContent += '<div style="display:grid;gap:10px;margin-top:15px">';
+  modalContent += '<input type="text" id="asset-name" placeholder="Asset Name" style="padding:8px;border:1px solid var(--bd);border-radius:4px;font-size:14px">';
+  modalContent += '<select id="asset-type" style="padding:8px;border:1px solid var(--bd);border-radius:4px;font-size:14px"><option>Equipment</option><option>Furniture</option><option>Vehicle</option><option>Building</option><option>Other</option></select>';
+  modalContent += '<input type="number" id="asset-cost" placeholder="Purchase Price (€)" style="padding:8px;border:1px solid var(--bd);border-radius:4px;font-size:14px">';
+  modalContent += '<input type="date" id="asset-date" style="padding:8px;border:1px solid var(--bd);border-radius:4px;font-size:14px">';
+  modalContent += '<input type="number" id="asset-life" placeholder="Useful Life (years)" style="padding:8px;border:1px solid var(--bd);border-radius:4px;font-size:14px">';
+  modalContent += '<input type="number" id="asset-salvage" placeholder="Salvage Value (€)" style="padding:8px;border:1px solid var(--bd);border-radius:4px;font-size:14px">';
+  modalContent += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px">';
+  modalContent += '<button onclick="closeModal()" class="btn btn-light" style="padding:10px;border:1px solid var(--bd);border-radius:6px;cursor:pointer">Cancel</button>';
+  modalContent += '<button onclick="saveNewAsset(\'' + cid + '\')" class="btn btn-primary" style="padding:10px;background:var(--main);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">Save Asset</button>';
+  modalContent += '</div></div></div>';
+  
+  showModal(modalContent);
+}
+
+function saveNewAsset(cid) {
+  var name = document.getElementById('asset-name').value.trim();
+  var type = document.getElementById('asset-type').value;
+  var cost = parseFloat(document.getElementById('asset-cost').value) || 0;
+  var date = document.getElementById('asset-date').value;
+  var life = parseFloat(document.getElementById('asset-life').value) || 5;
+  var salvage = parseFloat(document.getElementById('asset-salvage').value) || 0;
+  
+  if(!name || !cost || !date) {
+    alert(t('please_fill') || 'Please fill all fields');
+    return;
+  }
+  
+  if(!S.assets) S.assets = [];
+  S.assets.push({
+    id: 'ast' + Date.now(),
+    cid: cid,
+    name: name,
+    type: type,
+    purchaseDate: date,
+    purchasePrice: cost,
+    estimatedLife: life,
+    salvageValue: salvage,
+    depreciation: 'Linear'
+  });
+  
+  sv();
+  closeModal();
+  renderApp();
+  alert('✅ Asset added successfully!');
 }
 
 function getMonthName(month){
