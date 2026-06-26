@@ -1,33 +1,37 @@
-const CACHE_NAME = 'anb-v1';
-const ASSETS_TO_CACHE = [
-  '/index.html',
-  '/manifest.json'
+// ANB FinAdmin Pro - Service Worker v1.0
+// تاريخ الإنشاء: 26 يونيو 2026
+// الغرض: تفعيل PWA والعمل بدون إنترنت
+
+const CACHE_NAME = 'anb-finadmin-v1.0';
+const urlsToCache = [
+  './',
+  './index.html',
+  './manifest.json'
 ];
 
-// Install event
+// تثبيت Service Worker
 self.addEventListener('install', event => {
-  console.log('Service Worker installing...');
+  console.log('🔧 Service Worker installing...');
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log('Caching assets:', ASSETS_TO_CACHE);
-      return cache.addAll(ASSETS_TO_CACHE).catch(err => {
-        console.warn('Cache error (non-critical):', err);
-        // Continue without caching - network will serve files
+      console.log('✅ Cache opened');
+      return cache.addAll(urlsToCache).catch(err => {
+        console.log('⚠️ Some URLs failed to cache (offline-first strategy applied)');
       });
     })
   );
   self.skipWaiting();
 });
 
-// Activate event
+// تفعيل Service Worker
 self.addEventListener('activate', event => {
-  console.log('Service Worker activating...');
+  console.log('🚀 Service Worker activating...');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
+            console.log('🗑️ Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -37,72 +41,45 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch event - Network first strategy
+// استراتيجية التخزين: Network First, Fallback to Cache
 self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-  
-  // Skip non-GET requests
+  // تخطي الطلبات غير GET
   if (event.request.method !== 'GET') {
     return;
   }
 
-  // Skip chrome extensions and non-http requests
-  if (!url.protocol.startsWith('http')) {
-    return;
-  }
-
-  // For API calls (Supabase), use network first
-  if (url.hostname.includes('supabase') || url.pathname.includes('api')) {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          console.log('API response:', url.href);
-          return response;
-        })
-        .catch(err => {
-          console.warn('API fetch failed:', err);
-          // Return index.html as fallback
-          return caches.match('/index.html').catch(() => {
-            return new Response('Offline - Please check your connection', {
-              status: 503,
-              statusText: 'Service Unavailable'
-            });
-          });
-        })
-    );
-    return;
-  }
-
-  // For HTML/CSS/JS, try network first, fall back to cache
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Only cache successful responses
-        if (response.status === 200) {
-          const clonedResponse = response.clone();
+        // احفظ النسخة الناجحة
+        if (response && response.status === 200) {
+          const responseToCache = response.clone();
           caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, clonedResponse);
+            cache.put(event.request, responseToCache);
           });
         }
         return response;
       })
-      .catch(err => {
-        console.warn('Fetch failed, trying cache:', url.href);
-        // Try cache as fallback
-        return caches.match(event.request)
-          .then(cachedResponse => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            // If not in cache and offline, return index.html
-            if (url.pathname !== '/index.html') {
-              return caches.match('/index.html');
-            }
-            return new Response('Offline', { status: 503 });
-          })
-          .catch(() => {
-            return new Response('Service Worker Error', { status: 500 });
-          });
+      .catch(error => {
+        // استخدم النسخة المخزنة عند الفشل
+        console.log('📡 Network error, trying cache:', event.request.url);
+        return caches.match(event.request).then(response => {
+          if (response) {
+            console.log('✅ Served from cache:', event.request.url);
+            return response;
+          }
+          // إذا لم تكن في الـ cache، أرجع الصفحة الرئيسية
+          return caches.match('./index.html');
+        });
       })
   );
 });
+
+// تعامل مع رسائل من الصفحة
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+console.log('✨ ANB FinAdmin Service Worker Loaded');

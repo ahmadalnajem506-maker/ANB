@@ -676,7 +676,7 @@ var I18N={
     tab_reports:'Reports', tab_documents:'Documents', tab_contacts:'Contacts', tab_messages:'Messages', tab_client:'Client',
     overview:'Overview', add_client:'Add Client',
     // Subscription tiers
-    tier_basic:'Basic (€299/mo)', tier_pro:'Professional (€599/mo)', tier_enterprise:'Enterprise (€999/mo)',
+    tier_basic:'Basic (€100/mo)', tier_pro:'Professional (€150/mo)', tier_enterprise:'Enterprise (€200/mo)',
     select_tier:'Select Subscription', import_data:'Import Previous Data', new_asset:'Add Asset', no_assets:'No assets yet', add_asset:'Add Asset',
     please_fill:'Please fill all required fields',
     // Topbar actions
@@ -767,7 +767,7 @@ var I18N={
     tab_journal:'Journaal', tab_bank:'Bank', tab_btw:'BTW', tab_dashboard:'Dashboard',
     tab_reports:'Rapporten', tab_documents:'Documenten', tab_contacts:'Contacten', tab_messages:'Berichten', tab_client:'Klant',
     overview:'Overzicht', add_client:'Klant toevoegen',
-    tier_basic:'Basic (€299/mnd)', tier_pro:'Professional (€599/mnd)', tier_enterprise:'Enterprise (€999/mnd)',
+    tier_basic:'Basic (€100/mnd)', tier_pro:'Professional (€150/mnd)', tier_enterprise:'Enterprise (€200/mnd)',
     select_tier:'Kies abonnement', import_data:'Gegevens importeren', new_asset:'Vast actief toevoegen', no_assets:'Geen vaste activa yet', add_asset:'Vast actief toevoegen',
     please_fill:'Vul alle velden in',
     new_invoice:'+ Nieuwe factuur', new_expense:'+ Nieuwe onkost', log_hours:'+ Uren invoeren',
@@ -846,7 +846,7 @@ var I18N={
     tab_journal:'اليومية (Journal)', tab_bank:'البنك', tab_btw:'ضريبة القيمة المضافة (BTW)', tab_dashboard:'لوحة التحكم',
     tab_reports:'التقارير', tab_documents:'المستندات', tab_contacts:'جهات الاتصال', tab_messages:'الرسائل', tab_client:'العميل',
     overview:'النظرة العامة', add_client:'إضافة عميل جديد',
-    tier_basic:'الباقة الأساسية (€299/شهر)', tier_pro:'الباقة الاحترافية (€599/شهر)', tier_enterprise:'الباقة الشاملة (€999/شهر)',
+    tier_basic:'الباقة الأساسية (€100/شهر)', tier_pro:'الباقة الاحترافية (€150/شهر)', tier_enterprise:'الباقة الشاملة (€200/شهر)',
     select_tier:'اختر باقة الاشتراك', import_data:'استيراد البيانات السابقة', new_asset:'إضافة أصل', no_assets:'لا توجد أصول بعد', add_asset:'إضافة أصل',
     please_fill:'يرجى ملء جميع الحقول',
     new_invoice:'+ فاتورة جديدة', new_expense:'+ مصروف جديد', log_hours:'+ تسجيل ساعات',
@@ -3013,36 +3013,65 @@ function openEditClient(id){openClientModal(S.clients.find(c=>c.id===id));}
 function openClientModal(c){
   const isN=!c;
   showModal(isN?t('add_client'):t('edit')+' '+t('tab_client').toLowerCase(),`
-    <div class="fr2">
-      <div class="fg"><label>Company / Name *</label><input id="cf-n" value="${c?.name||''}"/></div>
-      <div class="fg"><label>Type</label><select id="cf-t">${['B2B','B2C','Expat','ZZP'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}</select></div>
+    <div style="background:rgba(200,144,16,.1);border:1px solid rgba(200,144,16,.3);border-radius:8px;padding:10px 12px;font-size:11px;color:rgba(200,144,16,.9);margin-bottom:14px;font-weight:600">
+      ⚠️ All fields marked with * are required for legal contract compliance
     </div>
-    <div class="fg"><label>${t('select_tier')} *</label><select id="cf-tier" style="padding:8px;border:1px solid var(--bd);border-radius:4px;font-size:14px">
+    <div class="fr2">
+      <div class="fg"><label>Company / Name *</label><input id="cf-n" value="${c?.name||''}" required/></div>
+      <div class="fg"><label>Type *</label><select id="cf-t" required><option value="">-- Select --</option>${['B2B','B2C','Expat','ZZP'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}</select></div>
+    </div>
+    <div class="fg"><label>${t('select_tier')} *</label><select id="cf-tier" style="padding:8px;border:1px solid var(--bd);border-radius:4px;font-size:14px" required>
+      <option value="">-- Select subscription --</option>
       <option value="basic" ${c?.subscriptionTier==='basic'?'selected':''}>🆓 ${t('tier_basic')}</option>
       <option value="pro" ${c?.subscriptionTier==='pro'?'selected':''}>⭐ ${t('tier_pro')}</option>
       <option value="enterprise" ${c?.subscriptionTier==='enterprise'?'selected':''}>👑 ${t('tier_enterprise')}</option>
     </select></div>
-    <div class="fg"><label>Email</label><input id="cf-e" value="${c?.email||''}" type="email"/></div>
+    <div class="fg"><label>Email *</label><input id="cf-e" value="${c?.email||''}" type="email" required/></div>
+    <div class="fg"><label>Phone Number *</label><input id="cf-ph" value="${c?.phone||''}" placeholder="+31 6 12345678" required/></div>
     <div class="fr2">
-      <div class="fg"><label>${t('set_kvk')}</label><input id="cf-k" value="${c?.kvk||''}"/></div>
-      <div class="fg"><label>${t('set_btw_num')}</label><input id="cf-b" value="${c?.btw||''}"/></div>
+      <div class="fg"><label>${t('set_kvk')} *</label><input id="cf-k" value="${c?.kvk||''}" required/></div>
+      <div class="fg"><label>${t('set_btw_num')} *</label><input id="cf-b" value="${c?.btw||''}" required/></div>
     </div>
-    <div class="fg"><label>IBAN</label><input id="cf-i" value="${c?.iban||''}"/></div>
-    <div class="fg"><label>Phone number</label><input id="cf-ph" value="${c?.phone||''}" placeholder="+31 6 12345678"/></div>
-    ${isN?`<div style="background:var(--gold3)20;border-radius:var(--rs);padding:9px 12px;font-size:11px;color:var(--tx1);margin-top:4px">
+    <div class="fg"><label>IBAN *</label><input id="cf-i" value="${c?.iban||''}" placeholder="NL91ABNA0417164300" required/></div>
+    ${isN?`<div style="background:var(--gold3)20;border-radius:var(--rs);padding:9px 12px;font-size:11px;color:var(--tx1);margin-top:4px;border:1px solid rgba(200,144,16,.2)">
       💡 ${t('import_data')} - ${(t('import_data_desc')||'Import historical data from previous accountant')}
     </div>`:''}
-    <div style="background:var(--blue-bg);border-radius:var(--rs);padding:9px 12px;font-size:11px;color:var(--blue);margin-top:4px">
-      ℹ️ The client will set their own password using their email or phone via "Forgot password" on the login screen.
+    <div style="background:rgba(100,150,255,.1);border-radius:var(--rs);padding:9px 12px;font-size:11px;color:rgba(100,150,255,.9);margin-top:8px;border:1px solid rgba(100,150,255,.2)">
+      ℹ️ Client can set password via email or phone at login ("Forgot password")
     </div>
   `,()=>{
+    // Validation
     const n=document.getElementById('cf-n').value.trim();
-    if(!n){alert('Name required');return;}
-    const nc={id:c?.id||UID(),name:n,type:document.getElementById('cf-t').value,
-      email:document.getElementById('cf-e').value,kvk:document.getElementById('cf-k').value,
-      btw:document.getElementById('cf-b').value,iban:document.getElementById('cf-i').value,
-      phone:document.getElementById('cf-ph')?.value||c?.phone||'',
-      subscriptionTier:document.getElementById('cf-tier').value,
+    const t_val=document.getElementById('cf-t').value.trim();
+    const e=document.getElementById('cf-e').value.trim();
+    const ph=document.getElementById('cf-ph').value.trim();
+    const k=document.getElementById('cf-k').value.trim();
+    const b=document.getElementById('cf-b').value.trim();
+    const i=document.getElementById('cf-i').value.trim();
+    const tier=document.getElementById('cf-tier').value.trim();
+    
+    // Check all required fields
+    if(!n || !t_val || !e || !ph || !k || !b || !i || !tier){
+      alert('❌ All fields marked with * are required!\\n\\nPlease fill in:\\n✓ Company/Name\\n✓ Type\\n✓ Email\\n✓ Phone\\n✓ KVK\\n✓ BTW\\n✓ IBAN\\n✓ Subscription');
+      return;
+    }
+    
+    // Email validation
+    const emailRegex=/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+    if(!emailRegex.test(e)){
+      alert('❌ Invalid email format');
+      return;
+    }
+    
+    // IBAN validation (basic)
+    if(!i.startsWith('NL') || i.length<18){
+      alert('❌ Invalid IBAN format (should start with NL and be 18+ chars)');
+      return;
+    }
+    
+    const nc={id:c?.id||UID(),name:n,type:t_val,
+      email:e,kvk:k,btw:b,iban:i,phone:ph,
+      subscriptionTier:tier,
       pw:c?.pw||'client123',pwCustom:c?.pwCustom,pwSet:c?.pwSet,
       color:c?.color||COLORS[S.clients.length%COLORS.length]};
     if(isN){S.clients.push(nc);S.currentClient=nc.id;S.tab='invoices';}
