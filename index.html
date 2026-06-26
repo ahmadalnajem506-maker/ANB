@@ -842,7 +842,7 @@ if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostn
       <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#999;margin-right:4px"></span>
       Not synced
     </div>
-    <button class="drawer-logout" onclick="logout()">
+    <button class="drawer-logout" onclick="doLogout()">
       🚪 Logout
     </button>
   </div>
@@ -1650,28 +1650,45 @@ function populateDrawer(){
   const syncStatus=document.getElementById('drawer-sync-status');
   
   if(avatar)avatar.textContent=INI(c?.name||S.role==='admin'?'ADM':'USR');
-  if(name)name.textContent=c?.name||'User';
+  if(name)name.textContent=c?.name||'Users';
   if(role)role.textContent=S.role==='admin'?'Admin':'Client';
   
-  const menuItems=S.role==='admin'?[
-    {icon:'📊',label:'Dashboard',id:'dashboard',tab:'dashboard'},
-    {icon:'📄',label:'Invoices',id:'invoices',tab:'invoices'},
-    {icon:'🧾',label:'Expenses',id:'expenses',tab:'expenses'},
-    {icon:'⏱',label:'Hours',id:'hours',tab:'hours'},
-    {icon:'📈',label:'Reports',id:'reports',tab:'reports'},
-    {icon:'📁',label:'Documents',id:'documents',tab:'documents'},
-    {icon:'👥',label:'Contacts',id:'contacts',tab:'contacts'},
-    {icon:'💬',label:'Messages',id:'messages',tab:'messages'},
-    {icon:'👤',label:'Client Info',id:'info',tab:'info'},
-    {icon:'⚙️',label:'Settings',id:'settings',tab:'settings'},
-  ]:[
-    {icon:'📊',label:'Dashboard',id:'dashboard',tab:'dashboard'},
-    {icon:'📄',label:'Invoices',id:'invoices',tab:'invoices'},
-    {icon:'🧾',label:'Expenses',id:'expenses',tab:'expenses'},
-    {icon:'⏱',label:'Hours',id:'hours',tab:'hours'},
-    {icon:'📁',label:'Documents',id:'documents',tab:'documents'},
-    {icon:'💬',label:'Messages',id:'messages',tab:'messages'},
-  ];
+  // Different menu items based on whether a client is selected
+  let menuItems=[];
+  
+  if(S.role==='admin'){
+    if(S.currentClient){
+      // Client selected - show detailed menu
+      menuItems=[
+        {icon:'📊',label:'Dashboard',id:'dashboard',tab:'dashboard'},
+        {icon:'📄',label:'Invoices',id:'invoices',tab:'invoices'},
+        {icon:'🧾',label:'Expenses',id:'expenses',tab:'expenses'},
+        {icon:'⏱',label:'Hours',id:'hours',tab:'hours'},
+        {icon:'📈',label:'Reports',id:'reports',tab:'reports'},
+        {icon:'📁',label:'Documents',id:'documents',tab:'documents'},
+        {icon:'👥',label:'Contacts',id:'contacts',tab:'contacts'},
+        {icon:'💬',label:'Messages',id:'messages',tab:'messages'},
+        {icon:'👤',label:'Client Info',id:'info',tab:'info'},
+        {icon:'⚙️',label:'Settings',id:'settings',tab:'settings'},
+      ];
+    } else {
+      // No client selected - show dashboard menu
+      menuItems=[
+        {icon:'📊',label:'All Clients',id:'dashboard',tab:'dashboard'},
+        {icon:'⚙️',label:'Settings',id:'settings',tab:'settings'},
+      ];
+    }
+  } else {
+    // Client view
+    menuItems=[
+      {icon:'📊',label:'Dashboard',id:'dashboard',tab:'dashboard'},
+      {icon:'📄',label:'Invoices',id:'invoices',tab:'invoices'},
+      {icon:'🧾',label:'Expenses',id:'expenses',tab:'expenses'},
+      {icon:'⏱',label:'Hours',id:'hours',tab:'hours'},
+      {icon:'📁',label:'Documents',id:'documents',tab:'documents'},
+      {icon:'💬',label:'Messages',id:'messages',tab:'messages'},
+    ];
+  }
   
   if(menu){
     menu.innerHTML=menuItems.map(item=>`
@@ -1788,6 +1805,7 @@ function renderTopbar(){
   const left=document.getElementById('tb-left');
   const tabs=document.getElementById('tab-row');
   const right=document.getElementById('tb-right');
+  const isMobile=window.innerWidth<768;
 
   if(isAdmin()){
     if(!S.currentClient||S.tab==='dashboard'||S.tab==='settings'){
@@ -1809,14 +1827,23 @@ function renderTopbar(){
       {id:'messages',icon:'💬',key:'tab_messages'},
       {id:'info',icon:'👤',key:'tab_client'},
     ];
-    tabs.innerHTML=adminTabDefs.map(tab=>{
-      let badge='';
-      if(tab.id==='messages'){
-        const unreadCount=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='client'&&!m.isRead&&!m.deleted).length;
-        if(unreadCount>0)badge=`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:var(--red);color:white;border-radius:50%;font-size:10px;font-weight:600;margin-left:4px">${unreadCount>9?'9+':unreadCount}</span>`;
-      }
-      return `<button class="tab ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')" style="display:flex;align-items:center"><span style="font-size:13px;display:inline-block;margin-right:3px">${tab.icon}</span>${t(tab.key)}${badge}</button>`;
-    }).join('');
+    
+    // على الموبايل: إخفاء التبويبات
+    if(isMobile){
+      tabs.innerHTML='';
+      tabs.style.display='none';
+    } else {
+      tabs.style.display='flex';
+      tabs.innerHTML=adminTabDefs.map(tab=>{
+        let badge='';
+        if(tab.id==='messages'){
+          const unreadCount=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='client'&&!m.isRead&&!m.deleted).length;
+          if(unreadCount>0)badge=`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:var(--red);color:white;border-radius:50%;font-size:10px;font-weight:600;margin-left:4px">${unreadCount>9?'9+':unreadCount}</span>`;
+        }
+        return `<button class="tab ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')" style="display:flex;align-items:center"><span style="font-size:13px;display:inline-block;margin-right:3px">${tab.icon}</span>${t(tab.key)}${badge}</button>`;
+      }).join('');
+    }
+    
     const acts={
       invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_invoice')}</button>`,
       expenses:`<button class="btn btn-p btn-xs" onclick="openNewExpense()">${t('new_expense')}</button>`,
