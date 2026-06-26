@@ -41,7 +41,7 @@ body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14p
   top: 0;
   width: 280px;
   height: 100vh;
-  background: linear-gradient(135deg, var(--g1) 0%, var(--g2) 100%);
+  background: linear-gradient(180deg, var(--g1) 0%, var(--g2) 60%, #0F3025 100%);
   box-shadow: 4px 0 24px rgba(0,0,0,0.3);
   z-index: 1000;
   transform: translateX(-100%);
@@ -71,47 +71,56 @@ body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14p
 }
 
 .drawer-header {
-  padding: 24px 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding: 20px 16px;
+  background: transparent;
+  border-bottom: 1px solid rgba(200,144,16,0.2);
   display: flex;
   align-items: center;
   gap: 12px;
+  position: relative;
 }
 
 .drawer-avatar {
   width: 56px;
   height: 56px;
-  border-radius: 50%;
-  background: var(--gold);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--gold), #E0B830);
   color: var(--g1);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 20px;
-  box-shadow: 0 4px 12px rgba(200,144,16,0.3);
+  box-shadow: 0 6px 16px rgba(200,144,16,0.35), inset 0 1px 0 rgba(255,255,255,0.3);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .drawer-user-info {
   flex: 1;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .drawer-user-name {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: white;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: 0.3px;
 }
 
 .drawer-user-role {
   font-size: 11px;
-  color: rgba(255,255,255,0.6);
+  color: rgba(200,144,16,0.85);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   margin-top: 2px;
+  font-weight: 600;
 }
 
 .drawer-close {
@@ -119,7 +128,7 @@ body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14p
   height: 36px;
   border: none;
   background: rgba(255,255,255,0.1);
-  color: white;
+  color: rgba(255,255,255,0.8);
   border-radius: 8px;
   cursor: pointer;
   font-size: 18px;
@@ -127,48 +136,79 @@ body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14p
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .drawer-close:hover {
-  background: rgba(255,255,255,0.2);
-  transform: scale(1.05);
+  background: rgba(255,255,255,0.15);
+  transform: scale(1.08) rotate(90deg);
+  color: white;
 }
 
 .drawer-menu {
   flex: 1;
-  padding: 12px 8px;
+  padding: 10px 8px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  overflow-y: auto;
 }
 
 .drawer-item {
-  padding: 12px 16px;
-  color: rgba(255,255,255,0.7);
+  padding: 13px 14px;
+  color: rgba(255,255,255,0.75);
   border: none;
   background: transparent;
   border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 13px;
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: var(--fb);
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.drawer-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--gold), rgba(200,144,16,0.6));
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.25s ease;
+  border-radius: 0 2px 2px 0;
 }
 
 .drawer-item:hover {
-  background: rgba(255,255,255,0.1);
-  color: white;
-  transform: translateX(6px);
+  background: rgba(200,144,16,0.15);
+  color: rgba(255,255,255,0.95);
+  padding-left: 18px;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.drawer-item:hover::before {
+  transform: scaleY(1);
 }
 
 .drawer-item.active {
-  background: var(--gold);
-  color: var(--g1);
+  background: linear-gradient(90deg, rgba(200,144,16,0.3) 0%, transparent 100%);
+  color: var(--gold);
   font-weight: 600;
+  box-shadow: inset 0 2px 10px rgba(200,144,16,0.15), 0 2px 8px rgba(200,144,16,0.12);
+}
+
+.drawer-item.active::before {
+  transform: scaleY(1);
 }
 
 .drawer-item-icon {
@@ -176,22 +216,36 @@ body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14p
   flex-shrink: 0;
   width: 24px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawer-item:hover .drawer-item-icon {
+  transform: scale(1.15) rotate(6deg);
+}
+
+.drawer-item.active .drawer-item-icon {
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 6px rgba(200,144,16,0.5));
 }
 
 .drawer-footer {
-  padding: 16px;
-  border-top: 1px solid rgba(255,255,255,0.1);
+  padding: 14px;
+  border-top: 1px solid rgba(200,144,16,0.2);
+  background: rgba(0,0,0,0.08);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
 }
 
 .drawer-logout {
-  padding: 10px 16px;
-  background: rgba(139,26,26,0.2);
-  color: #FF6B6B;
-  border: 1px solid rgba(139,26,26,0.3);
-  border-radius: 8px;
+  padding: 11px 14px;
+  background: linear-gradient(135deg, rgba(192,57,43,0.25) 0%, rgba(192,57,43,0.15) 100%);
+  color: #FF8A80;
+  border: 1px solid rgba(192,57,43,0.35);
+  border-radius: 9px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
@@ -199,37 +253,48 @@ body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14p
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .drawer-logout:hover {
-  background: rgba(139,26,26,0.3);
-  border-color: rgba(139,26,26,0.5);
+  background: linear-gradient(135deg, rgba(192,57,43,0.35) 0%, rgba(192,57,43,0.25) 100%);
+  border-color: rgba(192,57,43,0.5);
+  color: #FF7043;
+  box-shadow: 0 4px 12px rgba(192,57,43,0.2);
+  transform: translateY(-2px);
 }
 
 .drawer-sync-status {
   font-size: 11px;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.6);
   text-align: center;
-  padding: 8px 0;
+  padding: 7px 0;
+  letter-spacing: 0.5px;
+  font-weight: 500;
 }
 
 /* ═══ MOBILE HAMBURGER BUTTON ═══ */
 .mobile-menu-btn {
   display: none;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border: none;
   background: transparent;
   color: var(--t1);
-  font-size: 20px;
+  font-size: 22px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 10px;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .mobile-menu-btn:hover {
   background: var(--gr1);
+  transform: scale(1.08);
+}
+
+.mobile-menu-btn:active {
+  transform: scale(0.95);
 }
 
 /* ═══ ENHANCED CARDS & SHADOWS ═══ */
