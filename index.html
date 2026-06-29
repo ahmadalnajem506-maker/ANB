@@ -1244,6 +1244,7 @@ var I18N={
     // Sidebar / nav
     overview:'Overview', settings_nav:'Settings', add_client:'Add client', sign_out:'Sign out',
     client_workspaces:'Client workspaces', my_account:'My account', administrator:'Administrator',
+    viewing_client:'Viewing client',
     not_synced:'Not synced yet', syncing:'Syncing…', synced:'Synced', sync_error:'Sync error', offline:'Offline',
     dashboard:'Dashboard', invoices:'Invoices', debtors:'Debtors', expenses:'Expenses', hours:'Hours',
     journal:'Journal', bank:'Bank', reports:'Reports', documents:'Documents', messages:'Messages', client_info:'Client',
@@ -1335,6 +1336,7 @@ var I18N={
     sign_in_btn:'Inloggen', set_pw_signin:'Wachtwoord instellen & inloggen',
     overview:'Overzicht', settings_nav:'Instellingen', add_client:'Klant toevoegen', sign_out:'Uitloggen',
     client_workspaces:'Klantdossiers', my_account:'Mijn account', administrator:'Administrator',
+    viewing_client:'Klant weergeven',
     not_synced:'Nog niet gesynchroniseerd', syncing:'Synchroniseren…', synced:'Gesynchroniseerd', sync_error:'Synchronisatiefout', offline:'Offline',
     dashboard:'Dashboard', invoices:'Facturen', debtors:'Debiteuren', expenses:'Onkosten', hours:'Uren',
     journal:'Journaal', bank:'Bank', reports:'Rapporten', documents:'Documenten', messages:'Berichten', client_info:'Klant',
@@ -1409,6 +1411,7 @@ var I18N={
     sign_in_btn:'تسجيل الدخول', set_pw_signin:'تحديد كلمة المرور والدخول',
     overview:'نظرة عامة', settings_nav:'الإعدادات', add_client:'إضافة عميل', sign_out:'تسجيل الخروج',
     client_workspaces:'ملفات العملاء', my_account:'حسابي', administrator:'مسؤول النظام',
+    viewing_client:'عرض العميل',
     not_synced:'لم تتم المزامنة بعد', syncing:'جارٍ المزامنة…', synced:'تمت المزامنة', sync_error:'خطأ في المزامنة', offline:'غير متصل',
     dashboard:'لوحة التحكم', invoices:'الفواتير', debtors:'الديون', expenses:'المصاريف', hours:'ساعات العمل',
     journal:'اليومية', bank:'البنك', reports:'التقارير', documents:'المستندات', messages:'الرسائل', client_info:'العميل',
@@ -1984,7 +1987,10 @@ function renderSidebar(){
     const c=S.clients.find(c=>c.id===S.currentClient);
     lbl.textContent=c?.name||'Client';
     clients.innerHTML=`
-    <div style="padding:4px 2px;margin-bottom:4px"><div style="display:flex;align-items:center;gap:6px;padding:4px;background:rgba(200,144,16,.12);border-radius:var(--rs)"><div class="cb-av" style="width:24px;height:24px;font-size:9px;background:${c?.color||'#888'}22;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div><div><div style="font-size:11px;font-weight:500;color:rgba(255,255,255,.9)">${c?.name}</div><div style="font-size:9px;color:rgba(255,255,255,.4)">${c?.type||'Client'}</div></div></div></div>`;
+    <div style="padding:4px 2px;margin-bottom:4px">
+      <div style="font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:600;padding:0 4px">👁 ${t('viewing_client')}</div>
+      <div style="display:flex;align-items:center;gap:6px;padding:4px;background:rgba(200,144,16,.12);border-radius:var(--rs)"><div class="cb-av" style="width:24px;height:24px;font-size:9px;background:${c?.color||'#888'}22;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div><div><div style="font-size:11px;font-weight:500;color:rgba(255,255,255,.9)">${c?.name}</div><div style="font-size:9px;color:rgba(255,255,255,.4)">${c?.type||'Client'}</div></div></div>
+    </div>`;
     const adminTabs=[
       {id:'dashboard',icon:'◼',key:'dashboard'},
       {id:'invoices',icon:'📄',key:'tab_invoices'},
@@ -2074,6 +2080,12 @@ function gotoSettings(){
   renderApp();
 }
 function setTab(t){
+  // ✅ If switching to 'clients' tab and currently viewing a client, go back to overview
+  if(t==='clients'&&S.currentClient){
+    gotoOverview();
+    return;
+  }
+  
   S.tab=t;
   renderContent();
   renderTopbar();
@@ -2096,15 +2108,17 @@ function renderTopbar(){
   const right=document.getElementById('tb-right');
 
   if(isAdmin()){
-    if(!S.currentClient||S.tab==='dashboard'||S.tab==='settings'){
+    if(!S.currentClient||S.tab==='settings'){
       left.innerHTML=`<span style="font-size:13px;font-weight:500;color:var(--t1)">${S.tab==='settings'?t('settings_topbar'):t('all_clients_overview_topbar')}</span>`;
       tabs.innerHTML='';
       right.innerHTML=S.tab==='clients'?`<button class="btn btn-p btn-xs" onclick="openAddClient()">👤 ${t('add_client')}</button>`:'';
       return;
     }
     const c=S.clients.find(c=>c.id===S.currentClient);
+    // ✅ Show "Dashboard" label when Admin is viewing client dashboard
+    const tabLabel=S.tab==='dashboard'?`📊 ${t('dashboard')} — ${c?.name}`:c?.name;
     left.innerHTML=`<div class="cb-av" style="width:22px;height:22px;font-size:8px;border-radius:50%;background:${c?.color||'#888'}22;color:${c?.color||'#888'};flex-shrink:0">${INI(c?.name||'?')}</div>
-      <span style="font-size:13px;font-weight:500;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px" title="${c?.name||''}">${c?.name}</span>`;
+      <span style="font-size:13px;font-weight:500;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px" title="${tabLabel}">${tabLabel}</span>`;
     // Hide tabs in topbar - use sidebar instead
     tabs.innerHTML='';
     const acts={
@@ -2441,6 +2455,7 @@ function rClientDash(el,cid){
   const unread=S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.deleted).length;
 
   el.innerHTML=`
+  ${isAdmin()?`<div style="background:linear-gradient(135deg,rgba(200,144,16,0.08) 0%,rgba(200,144,16,0.03) 100%);border-left:4px solid #C89010;padding:12px 14px;border-radius:8px;margin-bottom:16px;font-size:12px;color:#C89010;font-weight:600">📊 Viewing Client Dashboard for <strong>${c?.name||'Client'}</strong></div>`:''}
   <div class="kgrid">
     <div class="kcard"><div class="kl">${t('total_paid')}</div><div class="kv" style="color:var(--green)">${FMT(paid)}</div></div>
     <div class="kcard"><div class="kl">${t('outstanding')}</div><div class="kv" style="color:var(--orange)">${FMT(open)}</div></div>
