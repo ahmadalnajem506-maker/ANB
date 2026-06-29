@@ -4321,13 +4321,13 @@ window.addEventListener('beforeinstallprompt', (e) => {
   const fallback = document.getElementById('fallback-install');
   if (fallback) fallback.style.display = 'none';
   
-  // Show install button on login page
+  // Show install button on login page (if element exists)
   const installPrompt=document.getElementById('install-prompt');
   if(installPrompt){
     installPrompt.style.display='block';
     console.log('✅ Install prompt visible on login page');
   }else{
-    console.log('❌ install-prompt element not found');
+    console.log('ℹ️  install-prompt element not in HTML (optional)');
   }
   
   // Also show banner in app
@@ -4351,7 +4351,7 @@ document.getElementById('install-btn')?.addEventListener('click', async () => {
     deferredPrompt = null;
     window.deferredPrompt = null;
     document.getElementById('install-banner')?.classList.remove('show');
-    document.getElementById('install-prompt').style.display='none';
+    document.getElementById('install-prompt')?.style.display='none';
   }else{
     console.log('❌ No deferred prompt available');
     alert('Installation is not available on your device/browser');
@@ -4362,7 +4362,7 @@ document.getElementById('install-btn')?.addEventListener('click', async () => {
 window.addEventListener('appinstalled', () => {
   console.log('✅ App installed successfully!');
   document.getElementById('install-banner')?.classList.remove('show');
-  document.getElementById('install-prompt').style.display='none';
+  document.getElementById('install-prompt')?.style.display='none';
   toast('✓ ANB FinAdmin installed successfully!');
 });
 
