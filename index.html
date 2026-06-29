@@ -2155,6 +2155,7 @@ function renderSidebar(){
 function selClient(id){
   S.currentClient=id;
   S.tab='dashboard';
+  S.reportTab=null;  // ✅ Reset report tab when switching clients
   S.selectedMsgClient=id;  // ✅ Set selected client for messages
   // Mark all documents as viewed
   S.docs.filter(d=>d.cid===id).forEach(d=>d.isNew=false);
