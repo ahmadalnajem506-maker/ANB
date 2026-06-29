@@ -1475,9 +1475,25 @@ var I18N={
     accept_agreement:'I accept this Service Agreement and all terms & conditions',
     accept_gdpr:'I agree to GDPR data processing as outlined',
     sign_agreement_btn:'Sign Agreement',
-    agreement_signed:'Agreement signed',
-    signature_received:'Your signature received',
-    signature_awaiting_admin:'Your agreement will be reviewed shortly. Your account will be activated upon approval.',
+    agreement_signed:'Agreement signed successfully',
+    signature_received:'Your signature has been received',
+    signature_awaiting_admin:'Our team will review your signature and send confirmation soon.',
+    electronic_signature:'Electronic Signature (eIDAS 910/2014)',
+    sign_agreement_desc:'By signing, you agree to the terms and conditions of this service agreement.',
+    confirm_sign:'Confirm & Sign',
+    reject_agreement:'Reject Agreement',
+    request_changes:'Request Changes',
+    request_changes_desc:'Please describe the changes or modifications you would like to request. Our team will review your suggestions.',
+    describe_changes:'Please describe the changes you would like to request...',
+    please_enter_changes:'Please enter your requested changes',
+    send_changes:'Send to Admin',
+    changes_sent_to_admin:'Your change request has been sent to our team',
+    changes_requested_by_client:'Client has requested changes',
+    agreement_rejected:'Agreement has been rejected by client',
+    agreement_sent_to_client:'Agreement sent to client',
+    created:'Created',
+    signer:'Signer',
+    company:'Company',
     pending_agreements:'Pending Agreements',
     view_agreement:'View Agreement',
     approve_agreement:'Approve Agreement',
@@ -1607,9 +1623,25 @@ var I18N={
     accept_agreement:'Ik accepteer deze Serviceovereenkomst en alle voorwaarden',
     accept_gdpr:'Ik ga akkoord met GDPR-gegevensbescherming',
     sign_agreement_btn:'Overeenkomst ondertekenen',
-    agreement_signed:'Overeenkomst ondertekend',
-    signature_received:'Uw handtekening ontvangen',
-    signature_awaiting_admin:'Uw overeenkomst wordt binnenkort beoordeeld. Uw account wordt geactiveerd na goedkeuring.',
+    agreement_signed:'Overeenkomst succesvol ondertekend',
+    signature_received:'Uw handtekening is ontvangen',
+    signature_awaiting_admin:'Ons team zal uw handtekening beoordelen en binnenkort bevestiging sturen.',
+    electronic_signature:'Elektronische Handtekening (eIDAS 910/2014)',
+    sign_agreement_desc:'Door te ondertekenen gaat u akkoord met de voorwaarden van deze serviceovereenkomst.',
+    confirm_sign:'Bevestig & Onderteken',
+    reject_agreement:'Overeenkomst afwijzen',
+    request_changes:'Wijzigingen aanvragen',
+    request_changes_desc:'Beschrijf alstublieft de wijzigingen of aanpassingen die u zou willen aanvragen. Ons team zal uw suggesties beoordelen.',
+    describe_changes:'Beschrijf alstublieft de gewenste wijzigingen...',
+    please_enter_changes:'Voer alstublieft uw gevraagde wijzigingen in',
+    send_changes:'Naar beheerder verzenden',
+    changes_sent_to_admin:'Uw wijzigingsverzoek is naar ons team verzonden',
+    changes_requested_by_client:'Klant heeft wijzigingen aangevraagd',
+    agreement_rejected:'Overeenkomst is door klant afgewezen',
+    agreement_sent_to_client:'Overeenkomst naar klant verzonden',
+    created:'Gemaakt',
+    signer:'Ondertekenaar',
+    company:'Bedrijf',
     pending_agreements:'Hangende overeenkomsten',
     view_agreement:'Overeenkomst weergeven',
     approve_agreement:'Overeenkomst goedkeuren',
@@ -1740,9 +1772,25 @@ var I18N={
     accept_agreement:'أوافق على اتفاقية الخدمة وكل الشروط والأحكام',
     accept_gdpr:'أوافق على معالجة البيانات وفقاً لـ GDPR',
     sign_agreement_btn:'وقّع الاتفاقية',
-    agreement_signed:'تم توقيع الاتفاقية',
+    agreement_signed:'تم توقيع الاتفاقية بنجاح',
     signature_received:'تم استقبال توقيعك',
-    signature_awaiting_admin:'سيتم مراجعة عقدك من قبل الإدارة في أقرب وقت. سيتم تنشيط حسابك بمجرد الموافقة.',
+    signature_awaiting_admin:'سيقوم فريقنا بمراجعة توقيعك وسيرسل لك تأكيداً قريباً.',
+    electronic_signature:'التوقيع الإلكتروني (eIDAS 910/2014)',
+    sign_agreement_desc:'بتوقيعك، فإنك توافق على شروط وأحكام اتفاقية هذه الخدمة.',
+    confirm_sign:'تأكيد والتوقيع',
+    reject_agreement:'رفض الاتفاقية',
+    request_changes:'طلب تعديلات',
+    request_changes_desc:'يرجى وصف التغييرات أو التعديلات التي تود طلبها. سيقوم فريقنا بمراجعة اقتراحاتك.',
+    describe_changes:'يرجى وصف التعديلات المطلوبة...',
+    please_enter_changes:'يرجى إدخال التعديلات المطلوبة',
+    send_changes:'الإرسال للإدارة',
+    changes_sent_to_admin:'تم إرسال طلب التعديلات لفريقنا',
+    changes_requested_by_client:'العميل طلب تعديلات',
+    agreement_rejected:'تم رفض الاتفاقية من قبل العميل',
+    agreement_sent_to_client:'تم إرسال الاتفاقية للعميل',
+    created:'تم الإنشاء',
+    signer:'الموقّع',
+    company:'الشركة',
     pending_agreements:'الاتفاقيات المعلقة',
     view_agreement:'عرض الاتفاقية',
     approve_agreement:'الموافقة على الاتفاقية',
@@ -2224,6 +2272,18 @@ function doSetPassword(){
 }
 
 function launchApp(){
+  // Check for agreement token in URL
+  const params=new URLSearchParams(window.location.search);
+  const tokenParam=params.get('agreement-token');
+  
+  if(tokenParam){
+    // Show agreement page without login
+    showClientAgreementPage(tokenParam);
+    document.getElementById('login-page').style.display='none';
+    document.getElementById('app').style.display='flex';
+    return;
+  }
+  
   document.getElementById('login-page').style.display='none';
   document.getElementById('app').style.display='flex';
   checkOverdueInvoices();
@@ -4493,17 +4553,6 @@ function openClientModal(c){
           </select></div>
         </div>
       </div>
-      <div style="background:rgba(10,34,24,0.05);padding:12px;border-radius:8px;border-left:3px solid #2d7a4f">
-        <div style="font-size:11px;font-weight:600;color:#0A2218;margin-bottom:8px">📝 ${t('contract_terms')}</div>
-        <label style="display:flex;align-items:flex-start;gap:8px;font-size:11px;cursor:pointer;margin-bottom:8px">
-          <input type="checkbox" id="cf-agree" style="margin-top:2px;cursor:pointer"/> 
-          <span>${t('agree_terms')}</span>
-        </label>
-        <div style="font-size:10px;color:var(--t3);line-height:1.5">
-          ✓ ${t('contract_will_generate')}<br/>
-          ✓ ${t('will_receive_pdf')}<br/>
-          ✓ ${t('account_activated')}
-        </div>
       </div>
     </div>
   `,()=>{
@@ -4516,7 +4565,6 @@ function openClientModal(c){
     const addr=document.getElementById('cf-addr').value.trim();
     const zip=document.getElementById('cf-zip').value.trim();
     const city=document.getElementById('cf-city').value.trim();
-    const agree=document.getElementById('cf-agree').checked;
     const monthlyFee=parseInt(document.querySelector('input[name="plan"]:checked')?.value||'150')||150;
     const contractStartDate=document.getElementById('cf-start').value;
     const contractDuration=parseInt(document.getElementById('cf-duration').value)||12;
@@ -4530,7 +4578,6 @@ function openClientModal(c){
     if(!b){alert('❌ BTW/VAT number required');return;}
     if(!i){alert('❌ IBAN required');return;}
     if(!addr||!zip||!city){alert('❌ Complete address required');return;}
-    if(!agree){alert('❌ Please agree to terms & conditions');return;}
 
     // If adding new client, generate contract instead of directly adding
     if(isN){
@@ -5941,49 +5988,130 @@ function generateServiceAgreement(clientData){
   if(!S.pendingClients)S.pendingClients=[];
   if(!S.serviceAgreements)S.serviceAgreements=[];
   
+  const uniqueToken=UID()+UID();
+  
   const agreement={
     id:UID(),
+    token:uniqueToken,
     clientData:clientData,
     createdDate:TODAY(),
-    status:'pending_signature',
+    status:'pending_review',
     clientSignDate:null,
     adminSignDate:null,
     clientSignature:null,
-    adminSignature:null
+    adminSignature:null,
+    clientNotes:null,
+    changeRequests:[]
   };
   
   S.serviceAgreements.push(agreement);
-  S.pendingClients.push({...clientData, agreementId:agreement.id, createdAt:TODAY()});
+  S.pendingClients.push({...clientData, agreementId:agreement.id, token:uniqueToken, createdAt:TODAY()});
   sv();
   
-  showServiceAgreementModal(agreement);
+  sendAgreementEmail(clientData, agreement.token);
 }
 
-function showServiceAgreementModal(agreement){
+function sendAgreementEmail(client, token){
+  const signLink=window.location.href.split('?')[0]+'?agreement-token='+token;
+  
+  // Simulated email - in production, use real email service
+  console.log('📧 Email sent to: '+client.email);
+  console.log('Review link: '+signLink);
+  
+  S.messages.push({
+    id:UID(),
+    from:'system',
+    to:client.email,
+    cid:token,
+    subject:'Service Agreement - ANB Financial Services',
+    text:`Hello ${client.contactPerson},\n\nPlease review your service agreement: ${signLink}`,
+    time:new Date().toLocaleTimeString(),
+    isRead:false,
+    deleted:false,
+    type:'agreement_email'
+  });
+}
+
+function showClientAgreementPage(token){
+  const agreement=S.serviceAgreements?.find(a=>a.token===token);
+  if(!agreement){
+    document.getElementById('app').innerHTML='<div style="padding:40px;text-align:center"><h2>❌ Agreement not found</h2><p>The agreement token is invalid or expired.</p></div>';
+    return;
+  }
+  
   const client=agreement.clientData;
   const contractHTML=generateDutchContractHTML(client);
   
-  showModal(t('service_agreement')+' - '+client.name,`
-    <div style="max-height:650px;overflow-y:auto;font-size:11px;line-height:1.5;color:var(--t2)">
-      ${contractHTML}
-    </div>
-    
-    <div style="margin-top:16px;padding:12px;background:rgba(10,34,24,0.08);border-radius:8px;border-left:3px solid #0A2218;font-size:11px">
-      <div style="font-weight:600;margin-bottom:8px">✓ ${t('electronic_signature')}</div>
-      <div style="color:var(--t3);margin-bottom:8px;font-size:10px">
-        ${t('sign_agreement_desc')}
+  let actionButtons='';
+  if(agreement.status==='pending_review'){
+    actionButtons=`
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <button style="padding:12px;background:#4dA876;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600" onclick="signAgreement('${agreement.id}','${token}')">✓ ${t('sign_agreement_btn')}</button>
+        <button style="padding:12px;background:#C89010;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600" onclick="showRequestChangesForm('${agreement.id}','${token}')">✎ ${t('request_changes')}</button>
+        <button style="padding:12px;background:#d9534f;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600" onclick="rejectAgreement('${agreement.id}','${token}')">✕ ${t('reject_agreement')}</button>
       </div>
-      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:10px;margin-bottom:8px">
-        <input type="checkbox" id="agree-contract" style="margin-top:3px;cursor:pointer"/> 
+    `;
+  } else if(agreement.status==='client_signed'){
+    actionButtons='<div style="background:rgba(77,168,118,0.1);padding:16px;border-radius:8px;text-align:center;border-left:3px solid #4dA876"><strong>✓ '+t('agreement_signed')+' '+agreement.clientSignDate+'</strong><br/><span style="font-size:11px;color:var(--t3)">'+t('signature_awaiting_admin')+'</span></div>';
+  } else if(agreement.status==='client_rejected'){
+    actionButtons='<div style="background:rgba(217,83,79,0.1);padding:16px;border-radius:8px;text-align:center;border-left:3px solid #d9534f"><strong>✕ '+t('agreement_rejected')+'</strong></div>';
+  } else if(agreement.status==='changes_requested'){
+    actionButtons='<div style="background:rgba(200,144,16,0.1);padding:16px;border-radius:8px;border-left:3px solid #C89010"><strong>✎ '+t('changes_requested_by_client')+'</strong><div style="font-size:10px;color:var(--t2);margin-top:8px">'+agreement.clientNotes+'</div></div>';
+  }
+  
+  document.getElementById('app').innerHTML=`
+    <div style="max-width:900px;margin:0 auto;padding:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--gr2)">
+        <div>
+          <div style="font-size:24px;font-weight:600">${client.name}</div>
+          <div style="font-size:12px;color:var(--t3)">📄 ${t('service_agreement')}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--t3)">${t('created')}: ${agreement.createdDate}</div>
+          <div style="font-size:12px;font-weight:600;color:#C89010">Status: ${agreement.status}</div>
+        </div>
+      </div>
+      
+      <div style="background:var(--bg1);padding:20px;border-radius:8px;margin-bottom:20px;font-size:11px;line-height:1.6;color:var(--t2);max-height:600px;overflow-y:auto;border:1px solid var(--gr2)">
+        ${contractHTML}
+      </div>
+      
+      <div style="margin-top:24px">
+        ${actionButtons}
+      </div>
+    </div>
+  `;
+}
+
+function signAgreement(agreementId, token){
+  const agreement=S.serviceAgreements.find(a=>a.id===agreementId);
+  if(!agreement)return;
+  
+  const client=agreement.clientData;
+  
+  showModal('✓ '+t('sign_agreement_btn'), `
+    <div style="padding:16px">
+      <div style="margin-bottom:16px;padding:12px;background:rgba(77,168,118,0.1);border-radius:6px;border-left:3px solid #4dA876">
+        <div style="font-weight:600;margin-bottom:8px">📝 ${t('electronic_signature')}</div>
+        <div style="font-size:11px;color:var(--t2);line-height:1.6">
+          ${t('sign_agreement_desc')}<br/><br/>
+          <strong>${t('signer')}:</strong> ${client.contactPerson}<br/>
+          <strong>Email:</strong> ${client.email}<br/>
+          <strong>${t('company')}:</strong> ${client.name}
+        </div>
+      </div>
+      
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:11px;margin-bottom:12px;padding:12px;background:var(--bg1);border-radius:6px">
+        <input type="checkbox" id="agree-terms" style="margin-top:2px;cursor:pointer"/> 
         <span>${t('accept_agreement')}</span>
       </label>
-      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:10px">
-        <input type="checkbox" id="agree-privacy" style="margin-top:3px;cursor:pointer"/> 
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:11px;padding:12px;background:var(--bg1);border-radius:6px">
+        <input type="checkbox" id="agree-privacy" style="margin-top:2px;cursor:pointer"/> 
         <span>${t('accept_gdpr')}</span>
       </label>
     </div>
-  `,()=>{
-    const agreedTerms=document.getElementById('agree-contract').checked;
+  `, ()=>{
+    const agreedTerms=document.getElementById('agree-terms').checked;
     const agreedPrivacy=document.getElementById('agree-privacy').checked;
     
     if(!agreedTerms||!agreedPrivacy){
@@ -5993,25 +6121,56 @@ function showServiceAgreementModal(agreement){
     
     agreement.status='client_signed';
     agreement.clientSignDate=TODAY();
-    agreement.clientSignature=client.contactPerson + ' (' + client.email + ')';
-    
+    agreement.clientSignature=client.contactPerson+' ('+client.email+')';
     sv();
     closeModal();
     
+    showClientAgreementPage(token);
     toast('✓ '+t('agreement_signed'));
-    
-    if(!isAdmin()){
-      showModal('📧 '+t('confirmation'),
-        '<div style="text-align:center;padding:20px">'+
-        '<div style="font-size:14px;font-weight:600;margin-bottom:12px">✓ '+t('signature_received')+'</div>'+
-        '<div style="font-size:12px;color:var(--t3);line-height:1.6">'+t('signature_awaiting_admin')+'</div>'+
-        '</div>',
-        ()=>{closeModal();}
-      );
-    } else {
-      renderContent();
+  }, t('confirm_sign'));
+}
+
+function showRequestChangesForm(agreementId, token){
+  const agreement=S.serviceAgreements.find(a=>a.id===agreementId);
+  if(!agreement)return;
+  
+  showModal('✎ '+t('request_changes'), `
+    <div style="padding:16px">
+      <div style="margin-bottom:16px;font-size:11px;color:var(--t2);line-height:1.6">
+        ${t('request_changes_desc')}
+      </div>
+      <textarea id="changes-notes" placeholder="${t('describe_changes')}" style="width:100%;height:120px;padding:12px;border:1px solid var(--gr2);border-radius:6px;font-size:11px;font-family:inherit;resize:none;background:var(--bg1)"></textarea>
+    </div>
+  `, ()=>{
+    const notes=document.getElementById('changes-notes').value.trim();
+    if(!notes){
+      alert('❌ '+t('please_enter_changes'));
+      return;
     }
-  },t('sign_agreement_btn'));
+    
+    agreement.status='changes_requested';
+    agreement.clientNotes=notes;
+    agreement.clientSignDate=TODAY();
+    sv();
+    closeModal();
+    
+    showClientAgreementPage(token);
+    toast('✎ '+t('changes_sent_to_admin'));
+  }, t('send_changes'));
+}
+
+function rejectAgreement(agreementId, token){
+  if(!confirm('Are you sure you want to reject this agreement?'))return;
+  
+  const agreement=S.serviceAgreements.find(a=>a.id===agreementId);
+  if(!agreement)return;
+  
+  agreement.status='client_rejected';
+  agreement.clientSignDate=TODAY();
+  sv();
+  
+  showClientAgreementPage(token);
+  toast('✕ '+t('agreement_rejected'));
 }
 
 function generateDutchContractHTML(client){
