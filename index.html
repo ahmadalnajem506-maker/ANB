@@ -1965,7 +1965,11 @@ function renderSidebar(){
       {id:'contracts',icon:'📋',key:'contracts'},
       {id:'assets',icon:'🏢',key:'assets'},
     ];
-    clients.innerHTML+=adminTabs.map(tab=>`<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block">${tab.icon}</span> ${t(tab.key)}</button>`).join('');
+    const unreadMsgs=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='anb'&&!m.isRead&&!m.deleted).length;
+    clients.innerHTML+=adminTabs.map(tab=>{
+      const badge=tab.id==='messages'&&unreadMsgs>0?` <span style="background:var(--red);color:white;font-size:8px;padding:1px 4px;border-radius:4px;margin-left:4px">${unreadMsgs}</span>`:'';
+      return `<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block">${tab.icon}</span> ${t(tab.key)}${badge}</button>`;
+    }).join('');
     
     // Admin main tabs at bottom
     const adminMainTabs=[
@@ -1994,9 +1998,12 @@ function renderSidebar(){
 function selClient(id){
   S.currentClient=id;
   S.tab='dashboard';
+  S.selectedMsgClient=id;  // ✅ Set selected client for messages
   // Mark all documents as viewed
   S.docs.filter(d=>d.cid===id).forEach(d=>d.isNew=false);
   S.expenses.filter(e=>e.cid===id).forEach(e=>e.isReviewed=true);
+  // ✅ Mark all messages from ANB for this client as read
+  S.messages.filter(m=>m.cid===id&&m.from==='anb'&&!m.isRead).forEach(m=>m.isRead=true);
   sv();
   renderApp();
 }
