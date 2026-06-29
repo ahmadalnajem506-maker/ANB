@@ -1673,6 +1673,8 @@ var S={
     {id:'b5',cid:'c3',date:'2026-05-22',desc:'Onbekende transactie',amount:-150,matched:false},
   ],
   contacts:[],
+  contracts:[],
+  assets:[],
 };
 
 // Direction/lang functions — placed after S so they can access S.lang
@@ -1715,7 +1717,7 @@ function sv(){saveLocalCache();scheduleSync();}
 const CLOUD_SYNC_URL='https://zvlpeivqpiomhriukjxz.supabase.co/rest/v1/anb_data';
 const CLOUD_SYNC_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2bHBlaXZxcGlvbWhyaXVranh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2ODQ0MTIsImV4cCI6MjA5NzI2MDQxMn0.fTTFV2A5CxrKyQJGG_iSMq47ifQoLKXxZVCML8zsJHo';
 const CLOUD_ROW_ID='anb-main';
-const CLOUD_SYNC_ARRAY_KEYS=['clients','invoices','expenses','hours','docs','messages','journal','bankTx','recurring','yearClosings'];
+const CLOUD_SYNC_ARRAY_KEYS=['clients','invoices','expenses','hours','docs','messages','journal','bankTx','recurring','yearClosings','contracts','assets'];
 let cloudSyncTimer=null;
 let cloudSyncStatus='idle'; // idle | syncing | synced | error | offline
 let cloudSyncInFlight=false;
@@ -1803,7 +1805,7 @@ function updateSyncBadge(){
     const d=localStorage.getItem('anb5');
     if(d){
       const p=JSON.parse(d);
-      ['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','contacts','recurring','yearClosings'].forEach(k=>{if(p[k])S[k]=p[k];});
+      ['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','contacts','recurring','yearClosings','contracts','assets'].forEach(k=>{if(p[k])S[k]=p[k];});
       if(p.role)S.role=p.role;
       if(p.currentClient)S.currentClient=p.currentClient;
       if(p.tab)S.tab=p.tab;
@@ -2457,6 +2459,36 @@ function deleteContract(contractId){
 }
 
 /* ── ASSETS ── */
+/* ── CLIENT CONTRACTS ── */
+function rContracts(el,cid){
+  const contracts=S.contracts?.filter(c=>c.cid===cid)||[];
+  el.innerHTML=`
+  <div class="card">
+    <div class="ch"><span class="ct">📋 ${t('contracts')}</span>
+      <button class="btn btn-p btn-xs" onclick="openAddContract('${cid}')">➕ ${t('add')}</button>
+    </div>
+    ${contracts.length===0?`<div class="empty">📋 ${t('no_data')}</div>`:
+    contracts.map(con=>`<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div style="flex:1">
+          <div style="font-weight:500;font-size:12px;color:var(--t1)">${con.title||'Contract'}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">${con.desc||''}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:4px">
+            Type: ${con.type||'Standard'} | Status: <span style="color:${con.status==='active'?'var(--green)':'var(--orange)'}">${con.status||'Draft'}</span>
+          </div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px">
+            From: ${FD(con.startDate||'')} | To: ${FD(con.endDate||'')}
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="btn btn-xs" onclick="openEditContract('${con.id}','${cid}')" title="Edit">✏</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteContract('${con.id}')" title="Delete">🗑</button>
+        </div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
 function rAssets(el,cid){
   const assets=S.assets?.filter(a=>a.cid===cid)||[];
   const c=S.clients.find(c=>c.id===cid);
