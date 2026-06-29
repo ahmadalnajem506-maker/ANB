@@ -198,8 +198,9 @@ body.rtl .lang-switch{right:auto;left:14px}
     max-width: 280px !important;
   }
   /* Step indicators container */
-  #login-page > div[style*="justify-content:center;gap"] { 
-    margin-bottom: 12px !important; 
+  .login-step-indicators { 
+    margin-top: 20px !important;
+    margin-bottom: 24px !important; 
     gap: 8px !important;
   }
   /* Individual indicators */
@@ -225,7 +226,7 @@ body.rtl .lang-switch{right:auto;left:14px}
   }
   /* Step title divs */
   .auth-step > div:nth-child(1) {
-    margin-bottom: 16px !important;
+    margin-bottom: 20px !important;
   }
   /* Role cards grid */
   .auth-step div[style*="grid-template-columns:1fr 1fr"] {
@@ -707,7 +708,7 @@ var S = {lang:'en', role:null, clients:[]};
     </div>
 
     <!-- Step Indicators -->
-    <div style="display:flex;justify-content:center;gap:12px;margin-bottom:28px;animation:fadeInUp 0.8s ease-out 0.1s both">
+    <div style="display:flex;justify-content:center;gap:12px;margin-bottom:28px;margin-top:16px;animation:fadeInUp 0.8s ease-out 0.1s both;width:100%" class="login-step-indicators">
       <div id="sd1" style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);transition:all 0.35s;box-shadow:0 0 12px rgba(200,144,16,0.5)"></div>
       <div id="sd2" style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);transition:all 0.35s;box-shadow:0 0 8px rgba(255,255,255,0.1)"></div>
       <div id="sd3" style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);transition:all 0.35s;box-shadow:0 0 8px rgba(255,255,255,0.1)"></div>
@@ -2493,7 +2494,6 @@ function rClientsLis(el){
     <input type="text" id="client-search" placeholder="${t('search')} ${t('clients_list')}..." 
       style="flex:1;padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1)"
       oninput="filterClients(this.value)">
-    <button class="btn btn-p btn-sm" onclick="openAddClient()">👤 ${t('add_client')}</button>
   </div>
   <div id="clients-list-container"></div>`;
   
