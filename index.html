@@ -1606,6 +1606,7 @@ async function syncNow(){
   const cloudPayload=cloud.payload||{};
   const merged={};
   CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{merged[k]=mergeArraysById(S[k],cloudPayload[k]);});
+  const hadChanges=CLOUD_SYNC_ARRAY_KEYS.some(k=>merged[k].length!==S[k].length);
   CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{S[k]=merged[k];});
   if(!S.settings)S.settings=cloudPayload.settings||{};
   try{
@@ -1623,7 +1624,8 @@ async function syncNow(){
   }
   updateSyncBadge();
   cloudSyncInFlight=false;
-  if(S.role)renderApp(); // reflect any items merged in from other devices, only once logged in
+  // ✅ Only re-render if there were actual changes AND not viewing messages
+  if(S.role&&hadChanges&&S.tab!=='messages')renderApp();
 }
 
 function scheduleSync(){
@@ -2996,7 +2998,9 @@ function viewDoc(id){
 
 function selectMsgClient(clientId){
   S.selectedMsgClient=clientId;
-  // ✅ Mark all messages from ANB for this client as read
+  // ✅ Mark all messages FROM CLIENT as read (these show the badges)
+  S.messages.filter(m=>m.cid===clientId&&m.from==='client'&&!m.isRead).forEach(m=>m.isRead=true);
+  // ✅ Also mark messages FROM ANB as read
   S.messages.filter(m=>m.cid===clientId&&m.from==='anb'&&!m.isRead).forEach(m=>m.isRead=true);
   sv();
   rMessages(document.getElementById('content'));
