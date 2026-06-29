@@ -2,7 +2,7 @@
 // تاريخ الإنشاء: 26 يونيو 2026
 // الغرض: تفعيل PWA والعمل بدون إنترنت
 
-const CACHE_NAME = 'anb-finadmin-v1.0';
+const CACHE_NAME = 'anb-finadmin-v2.1';
 const urlsToCache = [
   './',
   './index.html',

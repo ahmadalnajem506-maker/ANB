@@ -1,46 +1,63 @@
-# IDE & Editor
-.vscode/
-.idea/
+# Backup files
+*.backup
+*.bak
+*_backup*.html
+index.html.backup
+index_refined.html.backup
+index_premium.html.backup
+index_with_container.html.backup
+
+# Old versions
+*_v*.html
+*_fixed.html
+*_with_*.html
+index_before_sidebar_change.html
+index_with_compliance.html
+
+# Node modules (if using npm in future)
+node_modules/
+package-lock.json
+yarn.lock
+
+# OS files
+.DS_Store
+Thumbs.db
 *.swp
 *.swo
 *~
-.DS_Store
+
+# IDE files
+.vscode/
+.idea/
 *.sublime-project
 *.sublime-workspace
 
-# Node.js
-node_modules/
-npm-debug.log
-yarn-error.log
-package-lock.json
-
-# Environment
+# Environment variables
 .env
 .env.local
 .env.*.local
 
-# OS
-Thumbs.db
-.DS_Store
+# Build outputs (if using build tools)
+dist/
+build/
+.cache/
 
 # Logs
-logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
 
 # Temporary files
 *.tmp
-.tmp/
-temp/
+*.temp
+.temporary/
 
-# Backups
-*.bak
-*.backup
+# Test files
+*.test.html
+test-*.html
 
-# Build outputs (if any)
-dist/
-build/
-out/
+# Documentation (optional - include if needed)
+# docs/
 
-# Local development
-.localhost
-localhost.json
+# Dependencies
+node_modules/

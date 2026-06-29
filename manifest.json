@@ -1,82 +1,108 @@
 {
-  "name": "ANB Financial Services - المحاسبة الذكية",
+  "name": "ANB FinAdmin Pro",
   "short_name": "ANB FinAdmin",
-  "description": "تطبيق إدارة مالي احترافي للعاملين بحسابهم الخاص والشركات الصغيرة | Professioneel financieel beheersysteem",
-  "start_url": "./index.html",
+  "description": "Accounting & Financial Services Management Platform",
+  "start_url": "/index.html",
+  "scope": "/",
   "display": "standalone",
-  "scope": "./",
-  "background_color": "#0A2218",
-  "theme_color": "#0A2218",
   "orientation": "portrait-primary",
-  "prefer_related_applications": false,
+  "theme_color": "#0A2218",
+  "background_color": "#FFFFFF",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%230A2218;stop-opacity:1'/><stop offset='100%' style='stop-color:%230F3025;stop-opacity:1'/></linearGradient></defs><rect fill='url(%23g)' width='192' height='192'/><circle cx='96' cy='96' r='85' fill='%23C89010'/><text x='96' y='110' font-size='60' fill='%230A2218' font-weight='bold' text-anchor='middle' font-family='Arial'>ANB</text></svg>",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g2' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%230A2218;stop-opacity:1'/><stop offset='100%' style='stop-color:%230F3025;stop-opacity:1'/></linearGradient></defs><rect fill='url(%23g2)' width='512' height='512'/><circle cx='256' cy='256' r='220' fill='%23C89010'/><text x='256' y='300' font-size='150' fill='%230A2218' font-weight='bold' text-anchor='middle' font-family='Arial'>ANB</text></svg>",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><defs><linearGradient id='g3' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%230A2218;stop-opacity:1'/><stop offset='100%' style='stop-color:%230F3025;stop-opacity:1'/></linearGradient></defs><rect fill='url(%23g3)' width='96' height='96'/><circle cx='48' cy='48' r='42' fill='%23C89010'/><text x='48' y='55' font-size='28' fill='%230A2218' font-weight='bold' text-anchor='middle' font-family='Arial'>ANB</text></svg>",
+      "src": "icon-96x96.png",
       "sizes": "96x96",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
-    }
-  ],
-  "categories": ["business", "finance", "productivity"],
-  "screenshots": [
+    },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><defs><linearGradient id='bg' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%230A2218;stop-opacity:1'/><stop offset='100%' style='stop-color:%230F3025;stop-opacity:1'/></linearGradient></defs><rect fill='url(%23bg)' width='540' height='720'/><text x='270' y='360' font-size='40' fill='%23C89010' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>ANB FinAdmin Pro</text></svg>",
-      "sizes": "540x720",
-      "type": "image/svg+xml",
-      "form_factor": "narrow"
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [
     {
-      "name": "لوحة التحكم | Dashboard",
-      "short_name": "لوحة التحكم",
-      "description": "اذهب إلى لوحة التحكم الرئيسية",
-      "url": "./index.html?tab=dashboard",
-      "icons": []
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Go to dashboard",
+      "url": "/index.html?tab=dashboard",
+      "icons": [
+        {
+          "src": "icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
-      "name": "الفواتير | Invoices",
-      "short_name": "الفواتير",
-      "description": "إدارة الفواتير والإيرادات",
-      "url": "./index.html?tab=invoices",
-      "icons": []
+      "name": "Invoices",
+      "short_name": "Invoices",
+      "description": "View invoices",
+      "url": "/index.html?tab=invoices",
+      "icons": [
+        {
+          "src": "icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
-      "name": "العقود | Contracts",
-      "short_name": "العقود",
-      "description": "إدارة العقود والاتفاقيات",
-      "url": "./index.html?tab=contracts",
-      "icons": []
+      "name": "Expenses",
+      "short_name": "Expenses",
+      "description": "View expenses",
+      "url": "/index.html?tab=expenses",
+      "icons": [
+        {
+          "src": "icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
-      "name": "الأصول | Assets",
-      "short_name": "الأصول",
-      "description": "إدارة الأصول والإهتلاك",
-      "url": "./index.html?tab=assets",
-      "icons": []
+      "name": "Messages",
+      "short_name": "Messages",
+      "description": "Check messages",
+      "url": "/index.html?tab=messages",
+      "icons": [
+        {
+          "src": "icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ],
-  "share_target": {
-    "action": "/index.html",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
+  "categories": ["business", "productivity"],
+  "screenshots": [
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "form_factor": "narrow"
     }
-  }
+  ]
 }
-
