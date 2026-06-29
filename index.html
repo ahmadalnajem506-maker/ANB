@@ -2203,6 +2203,11 @@ function setTab(t){
     gotoOverview();
     return;
   }
+  // ✅ If switching to admin 'dashboard' and currently viewing a client, go back to overview
+  if(t==='dashboard'&&S.currentClient){
+    gotoOverview();
+    return;
+  }
   
   S.tab=t;
   renderContent();
@@ -2270,8 +2275,9 @@ function renderContent(){
   if(isAdmin()){
     if(S.tab==='settings'){rSettings(el);return;}
     if(S.tab==='clients'){rClientsLis(el);return;}
+    // ✅ If no client selected, show admin dashboard
     if(!cid){rAdminDash(el);return;}
-    // Admin manages clients: invoices, expenses, hours, reports, documents, contacts, messages, info
+    // Admin manages client's content: dashboard (client dash), invoices, expenses, etc.
     const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets};
     (fn[S.tab]||rClientDash)(el,cid);
   } else {
