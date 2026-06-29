@@ -530,6 +530,7 @@ window.selRole = function(r){};
 window.goStep2 = function(){};
 window.selClient = function(id){};
 window.rImport = function(el,cid){};
+window.toggleSidebar = function(){};
 
 // Stub S object
 var S = {lang:'en', role:null, clients:[]};
@@ -1681,6 +1682,14 @@ function toast(msg,icon='ti-check'){
   el.innerHTML=msg;
   el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'),2800);
+}
+function toggleSidebar(){
+  const sb=document.querySelector('.sidebar');
+  const bd=document.getElementById('sidebar-backdrop');
+  if(sb){
+    sb.classList.toggle('open');
+    if(bd)bd.style.display=sb.classList.contains('open')?'block':'none';
+  }
 }
 function isAdmin(){return S.role==='admin';}
 
