@@ -2111,7 +2111,7 @@ function renderSidebar(){
       <div style="display:flex;align-items:center;gap:6px;padding:4px;background:rgba(200,144,16,.12);border-radius:var(--rs)"><div class="cb-av" style="width:24px;height:24px;font-size:9px;background:${c?.color||'#888'}22;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div><div><div style="font-size:11px;font-weight:500;color:rgba(255,255,255,.9)">${c?.name}</div><div style="font-size:9px;color:rgba(255,255,255,.4)">${c?.type||'Client'}</div></div></div>
     </div>`;
     const adminTabs=[
-      {id:'dashboard',icon:'👁',key:'client_overview'},
+      {id:'client_overview',icon:'👁',key:'client_overview'},
       {id:'invoices',icon:'📄',key:'tab_invoices'},
       {id:'expenses',icon:'🧾',key:'tab_expenses'},
       {id:'hours',icon:'⏱',key:'tab_hours'},
@@ -2285,7 +2285,7 @@ function renderContent(){
       rAdminDash(el);return;
     }
     // Admin manages client's content: dashboard (client dash), invoices, expenses, etc.
-    const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets};
+    const fn={client_overview:rClientDash,dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets};
     (fn[S.tab]||rClientDash)(el,cid);
   } else {
     // Client can see: dashboard, invoices, expenses, hours, documents, messages
