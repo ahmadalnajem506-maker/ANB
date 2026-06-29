@@ -171,6 +171,36 @@ body.rtl .lang-switch{right:auto;left:14px}
 .login-hint{font-size:11px;color:var(--t3);margin-top:14px;line-height:1.6}
 .login-hint code{background:var(--gr1);padding:1px 5px;border-radius:3px;font-family:var(--fm)}
 
+/* ═══ MOBILE LOGIN OPTIMIZATION ═══ */
+@media (max-width: 540px) {
+  #login-page { padding: 12px; }
+  /* Logo reduction */
+  #ll-logo { min-height: 80px !important; margin-bottom: 16px !important; }
+  /* Step indicators */
+  #login-page div[style*="gap:12px"] { margin-bottom: 16px !important; }
+  #sd1, #sd2, #sd3 { width: 8px !important; height: 8px !important; }
+  /* Main titles */
+  h1[style*="font-size:38px"] { font-size: 28px !important; margin-bottom: 4px !important; }
+  /* Subtitles */
+  p[style*="font-size:13px"] { font-size: 12px !important; }
+  /* Role cards */
+  .role-card { padding: 16px 14px !important; margin-bottom: 8px !important; gap: 8px !important; }
+  .role-card svg { width: 32px !important; height: 32px !important; margin-bottom: 8px !important; }
+  .rl { font-size: 13px !important; }
+  .rs { font-size: 10px !important; }
+  /* Input sections */
+  #id-label, label { font-size: 9px !important; margin-bottom: 6px !important; }
+  input[type="email"], input[type="tel"], input[type="password"], input[type="text"] {
+    padding: 10px 12px !important; font-size: 13px !important;
+  }
+  /* Bottom links/hints */
+  .login-hint, div[style*="font-size:11px;color:#C89010"] { font-size: 10px !important; margin-bottom: 12px !important; }
+  /* Buttons */
+  .login-btn { padding: 10px 16px !important; font-size: 13px !important; }
+  /* Back button */
+  button[style*="background:none;border:none;color:#C89010"] { font-size: 11px !important; margin-bottom: 16px !important; }
+}
+
 /* ═══ APP SHELL ═══ */
 #app{display:none;flex;height:100vh;overflow:hidden}
 .sidebar{width:var(--sw);flex-shrink:0;background:var(--g1);display:flex;flex-direction:column;
@@ -2019,8 +2049,8 @@ function selClient(id){
   renderApp();
 }
 function gotoOverview(){
-  S.currentClient=null;
-  S.tab='dashboard';
+  S.currentClient=null;  // ✅ مسح العميل المختار
+  S.tab='dashboard';     // ✅ العودة للـ Dashboard
   // ✅ Close sidebar on mobile
   const sb=document.querySelector('.sidebar');
   const bd=document.getElementById('sidebar-backdrop');
@@ -2028,7 +2058,9 @@ function gotoOverview(){
     sb.classList.remove('open');
     if(bd)bd.style.display='none';
   }
-  renderApp();
+  // ✅ Render app to update sidebar
+  renderSidebar();  // ✅ إعادة رسم الـ sidebar صراحة
+  renderContent();
 }
 function gotoSettings(){
   S.tab='settings';
