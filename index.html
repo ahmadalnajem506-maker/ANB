@@ -2275,8 +2275,13 @@ function renderContent(){
   if(isAdmin()){
     if(S.tab==='settings'){rSettings(el);return;}
     if(S.tab==='clients'){rClientsLis(el);return;}
-    // ✅ If no client selected, show admin dashboard
-    if(!cid){rAdminDash(el);return;}
+    // ✅ Handle admin-level tabs (when viewing all data, not specific client)
+    if(!cid){
+      if(S.tab==='reports'){rAdminReports(el);return;}
+      if(S.tab==='messages'){rAdminMessages(el);return;}
+      if(S.tab==='documents'){rAdminDocuments(el);return;}
+      rAdminDash(el);return;
+    }
     // Admin manages client's content: dashboard (client dash), invoices, expenses, etc.
     const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets};
     (fn[S.tab]||rClientDash)(el,cid);
@@ -2287,7 +2292,140 @@ function renderContent(){
   }
 }
 
-/* ── CONTRACTS ── */
+/* ── ADMIN REPORTS ── */
+function rAdminReports(el){
+  const reportType=S.reportType||'invoices';
+  const allInvoices=S.invoices||[];
+  const allHours=S.hours||[];
+  
+  if(reportType==='invoices'){
+    const invoices=allInvoices.filter(i=>['Openstaand','Verzonden','Verlopen'].includes(i.status));
+    el.innerHTML=`
+    <div class="card">
+      <div class="ch"><span class="ct">📄 ${t('tab_invoices')}</span></div>
+      ${invoices.length===0?`<div class="empty">📄 ${t('no_data')}</div>`:
+      invoices.map(i=>{
+        const c=S.clients.find(x=>x.id===i.cid);
+        return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="flex:1">
+              <div style="font-weight:500;font-size:12px;color:var(--t1)">${i.num} - ${i.desc}</div>
+              <div style="font-size:10px;color:var(--t3);margin-top:2px">👤 ${c?.name||'Unknown'}</div>
+              <div style="font-size:10px;color:var(--t3);margin-top:2px">Due: ${FD(i.due)}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:12px;font-weight:600;color:var(--t1)">€${i.total.toFixed(2)}</div>
+              <div style="font-size:9px;color:var(--t3);margin-top:2px">${i.status}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  } else if(reportType==='overdue'){
+    const overdue=allInvoices.filter(i=>i.status==='Verlopen');
+    el.innerHTML=`
+    <div class="card">
+      <div class="ch"><span class="ct">⚠️ Overdue Invoices</span></div>
+      ${overdue.length===0?`<div class="empty">✅ No overdue invoices</div>`:
+      overdue.map(i=>{
+        const c=S.clients.find(x=>x.id===i.cid);
+        return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);border-left:3px solid var(--red)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="flex:1">
+              <div style="font-weight:500;font-size:12px;color:var(--t1)">${i.num}</div>
+              <div style="font-size:10px;color:var(--t3);margin-top:2px">👤 ${c?.name||'Unknown'}</div>
+              <div style="font-size:10px;color:var(--red);margin-top:2px">Due: ${FD(i.due)}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:12px;font-weight:600;color:var(--red)">€${i.total.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  } else if(reportType==='hours'){
+    const hours=allHours;
+    const total=hours.reduce((s,h)=>s+h.hrs,0);
+    el.innerHTML=`
+    <div class="card">
+      <div class="ch"><span class="ct">⏱ Hours Logged</span></div>
+      <div style="padding:12px 14px;margin-bottom:12px;background:var(--bg1);border-radius:var(--r)">
+        <div style="font-size:24px;font-weight:600;color:var(--gold)">${total.toFixed(1)}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:4px">Total hours</div>
+      </div>
+      ${hours.length===0?`<div class="empty">⏱ ${t('no_data')}</div>`:
+      hours.map(h=>{
+        const c=S.clients.find(x=>x.id===h.cid);
+        return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="flex:1">
+              <div style="font-weight:500;font-size:12px;color:var(--t1)">${h.task}</div>
+              <div style="font-size:10px;color:var(--t3);margin-top:2px">👤 ${c?.name||'Unknown'} • ${h.cat}</div>
+              <div style="font-size:10px;color:var(--t3);margin-top:2px">${FD(h.date)}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:12px;font-weight:600;color:var(--gold)">${h.hrs}h</div>
+              <div style="font-size:9px;color:var(--t3);margin-top:2px">€${(h.hrs*h.rate).toFixed(2)}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+}
+
+/* ── ADMIN MESSAGES ── */
+function rAdminMessages(el){
+  const allMessages=(S.messages||[]).filter(m=>!m.deleted);
+  el.innerHTML=`
+  <div class="card">
+    <div class="ch"><span class="ct">💬 All Messages</span></div>
+    ${allMessages.length===0?`<div class="empty">💬 ${t('no_data')}</div>`:
+    allMessages.map(m=>{
+      const c=S.clients.find(x=>x.id===m.cid);
+      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);background:${!m.isRead?'rgba(200,144,16,.08)':'transparent'}">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:500;font-size:12px;color:var(--t1);margin-bottom:2px">
+              ${m.from==='anb'?'👨‍💼':'👤'} ${c?.name||'Unknown'} ${!m.isRead?'<span style="background:var(--red);color:white;font-size:8px;padding:1px 4px;border-radius:2px;margin-left:4px">NEW</span>':''}
+            </div>
+            <div style="font-size:11px;color:var(--t3);margin-bottom:2px;white-space:normal;word-break:break-word">${m.text||''}</div>
+            <div style="font-size:9px;color:var(--t3)">${FD(m.date)} ${m.time||''}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+/* ── ADMIN DOCUMENTS ── */
+function rAdminDocuments(el){
+  const allDocs=(S.docs||[]).filter(d=>!d.deleted);
+  const newDocs=allDocs.filter(d=>d.isNew);
+  el.innerHTML=`
+  <div class="card">
+    <div class="ch"><span class="ct">📁 ${t('documents')}</span>
+      ${newDocs.length>0?`<span style="background:var(--orange);color:white;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:8px">${newDocs.length} New</span>`:''}
+    </div>
+    ${allDocs.length===0?`<div class="empty">📁 ${t('no_data')}</div>`:
+    allDocs.map(d=>{
+      const c=S.clients.find(x=>x.id===d.cid);
+      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);border-left:3px solid ${d.isNew?'var(--orange)':'var(--gr2)'}">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div style="flex:1">
+            <div style="font-weight:500;font-size:12px;color:var(--t1);margin-bottom:2px">
+              📄 ${d.name||'Document'} ${d.isNew?'<span style="background:var(--orange);color:white;font-size:8px;padding:1px 4px;border-radius:2px;margin-left:4px">NEW</span>':''}
+            </div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">👤 ${c?.name||'Unknown'}</div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">${FD(d.date||d.uploadedAt)}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+/* ── ADMIN CONTRACTS ── */
 function rAdminContracts(el){
   const allContracts=S.contracts||[];
   el.innerHTML=`
