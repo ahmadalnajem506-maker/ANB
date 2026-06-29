@@ -1871,24 +1871,8 @@ function renderTopbar(){
     const c=S.clients.find(c=>c.id===S.currentClient);
     left.innerHTML=`<div class="cb-av" style="width:22px;height:22px;font-size:8px;border-radius:50%;background:${c?.color||'#888'}22;color:${c?.color||'#888'};flex-shrink:0">${INI(c?.name||'?')}</div>
       <span style="font-size:13px;font-weight:500;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px" title="${c?.name||''}">${c?.name}</span>`;
-    const adminTabDefs=[
-      {id:'invoices',icon:'📄',key:'tab_invoices'},
-      {id:'expenses',icon:'🧾',key:'tab_expenses'},
-      {id:'hours',icon:'⏱',key:'tab_hours'},
-      {id:'reports',icon:'📈',key:'tab_reports'},
-      {id:'documents',icon:'📁',key:'tab_documents'},
-      {id:'contacts',icon:'👥',key:'tab_contacts'},
-      {id:'messages',icon:'💬',key:'tab_messages'},
-      {id:'info',icon:'👤',key:'tab_client'},
-    ];
-    tabs.innerHTML=adminTabDefs.map(tab=>{
-      let badge='';
-      if(tab.id==='messages'){
-        const unreadCount=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='anb'&&!m.isRead&&!m.deleted).length;
-        if(unreadCount>0)badge=`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:var(--red);color:white;border-radius:50%;font-size:10px;font-weight:600;margin-left:4px">${unreadCount>9?'9+':unreadCount}</span>`;
-      }
-      return `<button class="tab ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')" style="display:flex;align-items:center"><span style="font-size:13px;display:inline-block;margin-right:3px">${tab.icon}</span>${t(tab.key)}${badge}</button>`;
-    }).join('');
+    // Hide tabs in topbar - use sidebar instead
+    tabs.innerHTML='';
     const acts={
       invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_invoice')}</button>`,
       expenses:`<button class="btn btn-p btn-xs" onclick="openNewExpense()">${t('new_expense')}</button>`,
@@ -1922,13 +1906,23 @@ function renderContent(){
     if(S.tab==='clients'){rClientsLis(el);return;}
     if(!cid||S.tab==='dashboard'){rAdminDash(el);return;}
     // Admin manages clients: invoices, expenses, hours, reports, documents, contacts, messages, info
-    const fn={invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo};
+    const fn={invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets};
     (fn[S.tab]||rAdminDash)(el,cid);
   } else {
     // Client can see: dashboard, invoices, expenses, hours, documents, messages
     const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,documents:rDocs,messages:rMessages};
     (fn[S.tab]||rClientDash)(el,S.currentClient);
   }
+}
+
+/* ── CONTRACTS ── */
+function rContracts(el,cid){
+  el.innerHTML=`<div style="padding:20px"><h2>${t('contracts')}</h2><p>${t('no_data')}</p></div>`;
+}
+
+/* ── ASSETS ── */
+function rAssets(el,cid){
+  el.innerHTML=`<div style="padding:20px"><h2>${t('assets')}</h2><p>${t('no_data')}</p></div>`;
 }
 
 /* ═══════════════════════════ CLIENTS LIST ═══════════════════════════ */
