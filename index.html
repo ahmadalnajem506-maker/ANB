@@ -2306,7 +2306,10 @@ function rAdminReports(el){
       ${invoices.length===0?`<div class="empty">📄 ${t('no_data')}</div>`:
       invoices.map(i=>{
         const c=S.clients.find(x=>x.id===i.cid);
-        return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
+        return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);cursor:pointer;transition:all .2s" 
+          onclick="selClient('${i.cid}');S.tab='invoices';renderApp()"
+          onmouseover="this.style.background='rgba(200,144,16,.08)'"
+          onmouseout="this.style.background='transparent'">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div style="flex:1">
               <div style="font-weight:500;font-size:12px;color:var(--t1)">${i.num} - ${i.desc}</div>
@@ -2329,7 +2332,10 @@ function rAdminReports(el){
       ${overdue.length===0?`<div class="empty">✅ No overdue invoices</div>`:
       overdue.map(i=>{
         const c=S.clients.find(x=>x.id===i.cid);
-        return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);border-left:3px solid var(--red)">
+        return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);border-left:3px solid var(--red);cursor:pointer;transition:all .2s"
+          onclick="selClient('${i.cid}');S.tab='invoices';renderApp()"
+          onmouseover="this.style.background='rgba(255,0,0,.05)'"
+          onmouseout="this.style.background='transparent'">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div style="flex:1">
               <div style="font-weight:500;font-size:12px;color:var(--t1)">${i.num}</div>
@@ -2356,7 +2362,10 @@ function rAdminReports(el){
       ${hours.length===0?`<div class="empty">⏱ ${t('no_data')}</div>`:
       hours.map(h=>{
         const c=S.clients.find(x=>x.id===h.cid);
-        return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
+        return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);cursor:pointer;transition:all .2s"
+          onclick="selClient('${h.cid}');S.tab='hours';renderApp()"
+          onmouseover="this.style.background='rgba(200,144,16,.08)'"
+          onmouseout="this.style.background='transparent'">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div style="flex:1">
               <div style="font-weight:500;font-size:12px;color:var(--t1)">${h.task}</div>
@@ -2383,7 +2392,10 @@ function rAdminMessages(el){
     ${allMessages.length===0?`<div class="empty">💬 ${t('no_data')}</div>`:
     allMessages.map(m=>{
       const c=S.clients.find(x=>x.id===m.cid);
-      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);background:${!m.isRead?'rgba(200,144,16,.08)':'transparent'}">
+      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);background:${!m.isRead?'rgba(200,144,16,.08)':'transparent'};cursor:pointer;transition:all .2s"
+        onclick="selClient('${m.cid}');S.tab='messages';renderApp()"
+        onmouseover="this.style.background='rgba(200,144,16,.12)'"
+        onmouseout="this.style.background='${!m.isRead?'rgba(200,144,16,.08)':'transparent'}'">
         <div style="display:flex;justify-content:space-between;align-items:start">
           <div style="flex:1;min-width:0">
             <div style="font-weight:500;font-size:12px;color:var(--t1);margin-bottom:2px">
@@ -2410,7 +2422,10 @@ function rAdminDocuments(el){
     ${allDocs.length===0?`<div class="empty">📁 ${t('no_data')}</div>`:
     allDocs.map(d=>{
       const c=S.clients.find(x=>x.id===d.cid);
-      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);border-left:3px solid ${d.isNew?'var(--orange)':'var(--gr2)'}">
+      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);border-left:3px solid ${d.isNew?'var(--orange)':'var(--gr2)'};cursor:pointer;transition:all .2s"
+        onclick="selClient('${d.cid}');S.tab='documents';renderApp()"
+        onmouseover="this.style.background='rgba(200,144,16,.08)'"
+        onmouseout="this.style.background='transparent'">
         <div style="display:flex;justify-content:space-between;align-items:start">
           <div style="flex:1">
             <div style="font-weight:500;font-size:12px;color:var(--t1);margin-bottom:2px">
