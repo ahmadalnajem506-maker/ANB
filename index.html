@@ -1491,6 +1491,16 @@ var I18N={
     my_overview:'My Overview',
     must_agree_first:'You must accept all terms and conditions',
     confirmation:'Confirmation',
+    subscription_plan:'Subscription Plan',
+    plan_includes:'Each plan includes:',
+    plan_basic_features:'Essential bookkeeping + quarterly VAT reporting',
+    plan_standard_features:'Basic + Advanced reporting + Monthly consultation',
+    plan_premium_features:'Standard + Dedicated accountant + Year-end support',
+    contract_details:'Contract Details',
+    start_date_label:'Start Date *',
+    contract_duration_label:'Contract Duration *',
+    payment_terms_label:'Payment Terms *',
+    termination_notice_label:'Termination Notice *',
   },
   nl:{
     welcome_back:'Welkom terug', sign_in_sub:'Log in met uw e-mailadres of telefoonnummer',
@@ -1613,6 +1623,16 @@ var I18N={
     my_overview:'Mijn gegevens',
     must_agree_first:'U moet alle voorwaarden accepteren',
     confirmation:'Bevestiging',
+    subscription_plan:'Abonnement',
+    plan_includes:'Elk pakket bevat:',
+    plan_basic_features:'Basisboekhouding + driemaandelijkse BTW-aangifte',
+    plan_standard_features:'Basic + Geavanceerde rapportage + Maandelijks overleg',
+    plan_premium_features:'Standard + Toegewezen accountant + Jaarafsluiting support',
+    contract_details:'Contractgegevens',
+    start_date_label:'Startdatum *',
+    contract_duration_label:'Contractduur *',
+    payment_terms_label:'Betalingstermijn *',
+    termination_notice_label:'Opzegtermijn *',
   },
   ar:{
     welcome_back:'مرحباً بعودتك', sign_in_sub:'سجّل الدخول بالبريد الإلكتروني أو رقم الهاتف',
@@ -1736,6 +1756,16 @@ var I18N={
     my_overview:'نظرتي الخاصة',
     must_agree_first:'يجب أن تقبل جميع الشروط والأحكام',
     confirmation:'تأكيد',
+    subscription_plan:'خطة الاشتراك',
+    plan_includes:'يتضمن كل خطة:',
+    plan_basic_features:'محاسبة أساسية + تقارير ضريبة قيمة مضافة ربع سنوية',
+    plan_standard_features:'الأساسي + تقارير متقدمة + استشارة شهرية',
+    plan_premium_features:'المعيار + محاسب مخصص + دعم إغلاق السنة المالية',
+    contract_details:'تفاصيل العقد',
+    start_date_label:'تاريخ البدء *',
+    contract_duration_label:'مدة العقد *',
+    payment_terms_label:'شروط الدفع *',
+    termination_notice_label:'إشعار الإنهاء *',
   },
 };
 
@@ -4417,7 +4447,52 @@ function openClientModal(c){
         </div>
       </div>
 
-      <!-- Terms & Services -->
+      <!-- Subscription Plan Section -->
+      <div style="padding-bottom:12px;border-bottom:2px solid var(--gr2);margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px">💳 ${t('subscription_plan')}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <label style="border:2px solid var(--gr2);padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s">
+            <input type="radio" name="plan" value="100" id="plan-100" ${c?.monthlyFee===100?'checked':''} style="cursor:pointer"/> 
+            <div style="font-weight:600;color:var(--t1);margin-top:6px">€100</div>
+            <div style="font-size:9px;color:var(--t3)">/month</div>
+          </label>
+          <label style="border:2px solid #C89010;padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;background:rgba(200,144,16,0.05)">
+            <input type="radio" name="plan" value="150" id="plan-150" ${c?.monthlyFee===150?'checked':''} style="cursor:pointer"/> 
+            <div style="font-weight:600;color:#C89010;margin-top:6px">€150</div>
+            <div style="font-size:9px;color:var(--t3)">/month</div>
+          </label>
+          <label style="border:2px solid var(--g1);padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;background:rgba(77,168,118,0.05)">
+            <input type="radio" name="plan" value="200" id="plan-200" ${c?.monthlyFee===200?'checked':''} style="cursor:pointer"/> 
+            <div style="font-weight:600;color:var(--g1);margin-top:6px">€200</div>
+            <div style="font-size:9px;color:var(--t3)">/month</div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Contract Details Section -->
+      <div style="padding-bottom:12px;border-bottom:2px solid var(--gr2);margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px">📜 ${t('contract_details')}</div>
+        <div class="fr2">
+          <div class="fg"><label>${t('start_date_label')} *</label><input type="date" id="cf-start" value="${c?.contractStartDate||TODAY()}" style="cursor:pointer"/></div>
+          <div class="fg"><label>${t('contract_duration_label')} *</label><select id="cf-duration">
+            <option value="12" ${c?.contractDuration===12?'selected':''}>12 months (1 year)</option>
+            <option value="24" ${c?.contractDuration===24?'selected':''}>24 months (2 years)</option>
+            <option value="36" ${c?.contractDuration===36?'selected':''}>36 months (3 years)</option>
+          </select></div>
+        </div>
+        <div class="fr2">
+          <div class="fg"><label>${t('payment_terms_label')} *</label><select id="cf-payment">
+            <option value="15" ${c?.paymentTerms===15?'selected':''}>15 days</option>
+            <option value="30" ${c?.paymentTerms===30?'selected':''}>30 days</option>
+            <option value="45" ${c?.paymentTerms===45?'selected':''}>45 days</option>
+          </select></div>
+          <div class="fg"><label>${t('termination_notice_label')} *</label><select id="cf-termination">
+            <option value="1" ${c?.terminationNotice===1?'selected':''}>1 month</option>
+            <option value="2" ${c?.terminationNotice===2?'selected':''}>2 months</option>
+            <option value="3" ${c?.terminationNotice===3?'selected':''}>3 months</option>
+          </select></div>
+        </div>
+      </div>
       <div style="background:rgba(10,34,24,0.05);padding:12px;border-radius:8px;border-left:3px solid #2d7a4f">
         <div style="font-size:11px;font-weight:600;color:#0A2218;margin-bottom:8px">📝 ${t('contract_terms')}</div>
         <label style="display:flex;align-items:flex-start;gap:8px;font-size:11px;cursor:pointer;margin-bottom:8px">
@@ -4442,6 +4517,11 @@ function openClientModal(c){
     const zip=document.getElementById('cf-zip').value.trim();
     const city=document.getElementById('cf-city').value.trim();
     const agree=document.getElementById('cf-agree').checked;
+    const monthlyFee=parseInt(document.querySelector('input[name="plan"]:checked')?.value||'150')||150;
+    const contractStartDate=document.getElementById('cf-start').value;
+    const contractDuration=parseInt(document.getElementById('cf-duration').value)||12;
+    const paymentTerms=parseInt(document.getElementById('cf-payment').value)||15;
+    const terminationNotice=parseInt(document.getElementById('cf-termination').value)||1;
 
     if(!n){alert('❌ Company name required');return;}
     if(!e){alert('❌ Email required');return;}
@@ -4470,6 +4550,11 @@ function openClientModal(c){
         city:city,
         country:document.getElementById('cf-country').value,
         registrationNumber:document.getElementById('cf-regnum').value,
+        monthlyFee:monthlyFee,
+        contractStartDate:contractStartDate,
+        contractDuration:contractDuration,
+        paymentTerms:paymentTerms,
+        terminationNotice:terminationNotice,
         createdDate:TODAY(),
         status:'pending'  // Pending signature
       };
@@ -4495,7 +4580,12 @@ function openClientModal(c){
         zipCode:zip,
         city:city,
         country:document.getElementById('cf-country').value,
-        registrationNumber:document.getElementById('cf-regnum').value
+        registrationNumber:document.getElementById('cf-regnum').value,
+        monthlyFee:monthlyFee,
+        contractStartDate:contractStartDate,
+        contractDuration:contractDuration,
+        paymentTerms:paymentTerms,
+        terminationNotice:terminationNotice
       };
       S.clients=S.clients.map(x=>x.id===updatedClient.id?updatedClient:x);
       sv();
@@ -5975,19 +6065,21 @@ function generateDutchContractHTML(client){
 <div style="background:var(--bg1);padding:12px;border-radius:6px;margin-bottom:12px">
   <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">3. LOOPTIJD (Duration / المدة)</div>
   <div style="font-size:10px;line-height:1.8;color:var(--t2)">
-    <strong>Begindatum (Start Date):</strong> ${startDate}<br/>
-    <strong>Initiale looptijd:</strong> 1 jaar (12 maanden)<br/>
-    <strong>Verlenging:</strong> Deze overeenkomst wordt automatisch met periodes van 1 jaar verlengd, tenzij één van de partijen minimaal 1 maand van tevoren schriftelijk opzegt.<br/>
-    <strong>Opzeggingtermijn:</strong> 1 maand
+    <strong>Begindatum (Start Date):</strong> ${client.contractStartDate||TODAY()}<br/>
+    <strong>Initiale looptijd:</strong> ${client.contractDuration||12} maanden<br/>
+    <strong>Eindatum:</strong> ${new Date(new Date(client.contractStartDate||TODAY()).getFullYear(), new Date(client.contractStartDate||TODAY()).getMonth()+(client.contractDuration||12), new Date(client.contractStartDate||TODAY()).getDate()).toISOString().split('T')[0]}<br/>
+    <strong>Verlenging:</strong> Deze overeenkomst wordt automatisch met periodes van 1 jaar verlengd, tenzij één van de partijen minimaal ${client.terminationNotice||1} maand van tevoren schriftelijk opzegt.<br/>
+    <strong>Opzeggingtermijn:</strong> ${client.terminationNotice||1} maand(en)
   </div>
 </div>
 
 <div style="background:var(--bg1);padding:12px;border-radius:6px;margin-bottom:12px">
   <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">4. VERGOEDING EN BETALINGSCONDITIES (Compensation)</div>
   <div style="font-size:10px;line-height:1.8;color:var(--t2)">
-    <strong>Maandelijks Tarief:</strong> Overeen te komen op basis van servicepakket en omvang<br/>
+    <strong>Gekozen Servicepakket:</strong> €${client.monthlyFee} per maand<br/>
+    <strong>Maandelijks Tarief:</strong> €${client.monthlyFee},00 (exclusief BTW)<br/>
     <strong>Facturering:</strong> Maandelijks vooruit op de eerste dag van de maand<br/>
-    <strong>Betalingstermijn:</strong> Binnen 15 dagen na factuurdatum<br/>
+    <strong>Betalingstermijn:</strong> Binnen ${client.paymentTerms||15} dagen na factuurdatum<br/>
     <strong>Betaalmethode:</strong> Overboeking naar IBAN (conform eerste factuur)<br/>
     <strong>Rente achterstallig bedrag:</strong> 1,5% per maand op achterstallige bedragen<br/>
     <strong>Alle bedragen zijn exclusief BTW (21%)</strong>
