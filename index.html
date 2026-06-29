@@ -2005,11 +2005,55 @@ function selClient(id){
   // ✅ Mark all messages from ANB for this client as read
   S.messages.filter(m=>m.cid===id&&m.from==='anb'&&!m.isRead).forEach(m=>m.isRead=true);
   sv();
+  
+  // ✅ Close sidebar on mobile
+  const sb=document.querySelector('.sidebar');
+  const bd=document.getElementById('sidebar-backdrop');
+  if(sb&&sb.classList.contains('open')){
+    sb.classList.remove('open');
+    if(bd)bd.style.display='none';
+  }
+  
   renderApp();
 }
-function gotoOverview(){S.currentClient=null;S.tab='dashboard';renderApp();}
-function gotoSettings(){S.tab='settings';renderApp();}
-function setTab(t){S.tab=t;renderContent();renderTopbar();renderSidebar();if(typeof renderMobileNav==='function')renderMobileNav();}
+function gotoOverview(){
+  S.currentClient=null;
+  S.tab='dashboard';
+  // ✅ Close sidebar on mobile
+  const sb=document.querySelector('.sidebar');
+  const bd=document.getElementById('sidebar-backdrop');
+  if(sb&&sb.classList.contains('open')){
+    sb.classList.remove('open');
+    if(bd)bd.style.display='none';
+  }
+  renderApp();
+}
+function gotoSettings(){
+  S.tab='settings';
+  // ✅ Close sidebar on mobile
+  const sb=document.querySelector('.sidebar');
+  const bd=document.getElementById('sidebar-backdrop');
+  if(sb&&sb.classList.contains('open')){
+    sb.classList.remove('open');
+    if(bd)bd.style.display='none';
+  }
+  renderApp();
+}
+function setTab(t){
+  S.tab=t;
+  renderContent();
+  renderTopbar();
+  renderSidebar();
+  if(typeof renderMobileNav==='function')renderMobileNav();
+  
+  // ✅ Close sidebar on mobile when tab is selected
+  const sb=document.querySelector('.sidebar');
+  const bd=document.getElementById('sidebar-backdrop');
+  if(sb&&sb.classList.contains('open')){
+    sb.classList.remove('open');
+    if(bd)bd.style.display='none';
+  }
+}
 
 /* ── TOPBAR ── */
 function renderTopbar(){
