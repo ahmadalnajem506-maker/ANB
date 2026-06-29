@@ -394,6 +394,15 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
   navigator.serviceWorker.register('sw.js?v=2.1').catch(()=>{});
 }
+
+// Stub functions to prevent ReferenceError when HTML is loaded
+window.setLang = function(l){};
+window.selRole = function(r){};
+window.goStep2 = function(){};
+window.selClient = function(id){};
+
+// Stub S object
+var S = {lang:'en', role:null, clients:[]};
 </script>
 </head>
 <body>
@@ -1507,23 +1516,28 @@ function updateSyncBadge(){
   });
 }
 
-(function ld(){try{const d=localStorage.getItem('anb5');if(d){const p=JSON.parse(d);
-  ['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','contacts','recurring','yearClosings'].forEach(k=>{if(p[k])S[k]=p[k];});
-  // Restore session: role, currentClient, tab, language
-  if(p.role)S.role=p.role;
-  if(p.currentClient)S.currentClient=p.currentClient;
-  if(p.tab)S.tab=p.tab;
-  if(p.lang)S.lang=p.lang;
-}
-// If contacts is empty, add test data
-if(!S.contacts||S.contacts.length===0){
-  S.contacts=[
-    {id:'c1',cid:'maria@gmail.com',name:'ExpatSol BV',type:'debtor',email:'contact@expatsol.com',phone:'+31612345678',address:'Amsterdam, NL',kvk:'12345678',btw:'NL123456789B01',color:'#FF6B6B'},
-    {id:'c2',cid:'maria@gmail.com',name:'TechStart Inc',type:'debtor',email:'info@techstart.nl',phone:'+31687654321',address:'Utrecht, NL',kvk:'87654321',btw:'NL987654321B01',color:'#4ECDC4'},
-    {id:'c3',cid:'jan@expatsol.nl',name:'Local Business Co',type:'debtor',email:'hello@localbiz.nl',phone:'+31612121212',address:'Rotterdam, NL',kvk:'11111111',btw:'NL111111111B01',color:'#95E1D3'}
-  ];
-}
-}}catch{}})();
+(function ld(){
+  try{
+    const d=localStorage.getItem('anb5');
+    if(d){
+      const p=JSON.parse(d);
+      ['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','contacts','recurring','yearClosings'].forEach(k=>{if(p[k])S[k]=p[k];});
+      if(p.role)S.role=p.role;
+      if(p.currentClient)S.currentClient=p.currentClient;
+      if(p.tab)S.tab=p.tab;
+      if(p.lang)S.lang=p.lang;
+    }
+  }catch(e){}
+  
+  // If contacts is empty, add test data
+  if(!S.contacts||S.contacts.length===0){
+    S.contacts=[
+      {id:'c1',cid:'maria@gmail.com',name:'ExpatSol BV',type:'debtor',email:'contact@expatsol.com',phone:'+31612345678',address:'Amsterdam, NL',kvk:'12345678',btw:'NL123456789B01',color:'#FF6B6B'},
+      {id:'c2',cid:'maria@gmail.com',name:'TechStart Inc',type:'debtor',email:'info@techstart.nl',phone:'+31687654321',address:'Utrecht, NL',kvk:'87654321',btw:'NL987654321B01',color:'#4ECDC4'},
+      {id:'c3',cid:'jan@expatsol.nl',name:'Local Business Co',type:'debtor',email:'hello@localbiz.nl',phone:'+31612121212',address:'Rotterdam, NL',kvk:'11111111',btw:'NL111111111B01',color:'#95E1D3'}
+    ];
+  }
+})();
 
 /* ═══════════════════════════ HELPERS ═══════════════════════════ */
 function bdg(s){
@@ -1757,9 +1771,9 @@ function doLogout(){
   document.getElementById('login-page').style.display='flex';
   document.getElementById('app').style.display='none';
   document.getElementById('login-id').value='';
-  document.getElementById('login-pw').value='';
+  if(document.getElementById('login-pw'))document.getElementById('login-pw').value='';
   goStep(1);
-  selRole('admin');
+  if(typeof selRole === 'function') selRole('admin');
 }
 
 /* ═══════════════════════════ RENDER ═══════════════════════════ */
@@ -4417,13 +4431,6 @@ document.addEventListener('touchend', e => {
   if (diff > 60 && touchStartX < 30) sb?.classList.add('open');
   if (diff < -60) sb?.classList.remove('open');
 }, {passive:true});
-
-// Close sidebar when selecting client on mobile
-const _origSelClient = selClient;
-window.selClient = function(id) {
-  document.querySelector('.sidebar')?.classList.remove('open');
-  _origSelClient(id);
-};
 
 
 // ═══════════════════════════════════════════════════════════════
