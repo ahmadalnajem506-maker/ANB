@@ -1813,9 +1813,10 @@ function renderSidebar(){
     }
     const c=S.clients.find(c=>c.id===S.currentClient);
     lbl.textContent=c?.name||'Client';
-    clients.innerHTML=`<button class="nb" onclick="gotoOverview()" style="width:100%;text-align:left;margin-bottom:4px;background:rgba(200,144,16,.1)">⬅ Back to Clients</button>
+    clients.innerHTML=`
     <div style="padding:8px 4px;margin-bottom:8px"><div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(200,144,16,.12);border-radius:var(--rs)"><div class="cb-av" style="width:28px;height:28px;font-size:11px;background:${c?.color||'#888'}22;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div><div><div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.9)">${c?.name}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${c?.type||'Client'}</div></div></div></div>`;
     const adminTabs=[
+      {id:'dashboard',icon:'◼',key:'dashboard'},
       {id:'invoices',icon:'📄',key:'tab_invoices'},
       {id:'expenses',icon:'🧾',key:'tab_expenses'},
       {id:'hours',icon:'⏱',key:'tab_hours'},
@@ -1827,7 +1828,16 @@ function renderSidebar(){
       {id:'assets',icon:'🏢',key:'assets'},
     ];
     clients.innerHTML+=adminTabs.map(tab=>`<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block">${tab.icon}</span> ${t(tab.key)}</button>`).join('');
-    foot.innerHTML=`${langBar}
+    
+    // Admin main tabs at bottom
+    const adminMainTabs=[
+      {id:'dashboard',icon:'◼',key:'dashboard'},
+      {id:'clients',icon:'👥',key:'clients_list'},
+      {id:'settings',icon:'⚙',key:'settings'}
+    ];
+    foot.innerHTML=`<div style="padding:8px 0;border-top:1px solid rgba(200,144,16,.2);margin-top:8px">
+      ${adminMainTabs.map(tab=>`<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block">${tab.icon}</span> ${t(tab.key)}</button>`).join('')}
+    </div>${langBar}
       <div id="sync-badge" style="font-size:10px;color:rgba(255,255,255,.55);padding:4px 10px 2px;cursor:pointer" onclick="syncNow()"></div>
       <button class="logout-btn" onclick="doLogout()">⬅ ${t('sign_out')}</button>`;
     updateSyncBadge();
@@ -1905,10 +1915,10 @@ function renderContent(){
   if(isAdmin()){
     if(S.tab==='settings'){rSettings(el);return;}
     if(S.tab==='clients'){rClientsLis(el);return;}
-    if(!cid||S.tab==='dashboard'){rAdminDash(el);return;}
+    if(!cid){rAdminDash(el);return;}
     // Admin manages clients: invoices, expenses, hours, reports, documents, contacts, messages, info
-    const fn={invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets};
-    (fn[S.tab]||rAdminDash)(el,cid);
+    const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets};
+    (fn[S.tab]||rClientDash)(el,cid);
   } else {
     // Client can see: dashboard, invoices, expenses, hours, documents, messages
     const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,documents:rDocs,messages:rMessages};
@@ -1918,7 +1928,135 @@ function renderContent(){
 
 /* ── CONTRACTS ── */
 function rContracts(el,cid){
-  el.innerHTML=`<div style="padding:20px"><h2>${t('contracts')}</h2><p>${t('no_data')}</p></div>`;
+  const contracts=S.contracts?.filter(c=>c.cid===cid)||[];
+  const client=S.clients.find(c=>c.id===cid);
+  el.innerHTML=`
+  <div class="card">
+    <div class="ch"><span class="ct">📋 ${t('contracts')}</span>
+      <button class="btn btn-p btn-xs" onclick="openAddContract('${cid}')">➕ ${t('add')}</button>
+    </div>
+    ${contracts.length===0?`<div class="empty">📋 ${t('no_data')}</div>`:
+    contracts.map(con=>`<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div style="flex:1">
+          <div style="font-weight:500;font-size:12px;color:var(--t1)">${con.title||'Contract'}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">${con.desc||''}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:4px">
+            Type: ${con.type||'Standard'} | Status: <span style="color:${con.status==='active'?'var(--green)':'var(--orange)'}">${con.status||'Draft'}</span>
+          </div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px">
+            From: ${FD(con.startDate||'')} | To: ${FD(con.endDate||'')}
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="btn btn-xs" onclick="openEditContract('${con.id}','${cid}')" title="Edit">✏</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteContract('${con.id}')" title="Delete">🗑</button>
+        </div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function openAddContract(cid){
+  showModal('Add Contract',`
+    <input type="text" id="contract-title" placeholder="Contract Title" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+    <textarea id="contract-desc" placeholder="Description" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);height:60px;resize:none"></textarea>
+    <select id="contract-type" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+      <option value="Standard">Standard Service</option>
+      <option value="Retainer">Retainer Agreement</option>
+      <option value="Project">Project Contract</option>
+      <option value="NDA">NDA</option>
+      <option value="Other">Other</option>
+    </select>
+    <input type="date" id="contract-start" placeholder="Start Date" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+    <input type="date" id="contract-end" placeholder="End Date" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+    <select id="contract-status" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+      <option value="draft">Draft</option>
+      <option value="active">Active</option>
+      <option value="completed">Completed</option>
+      <option value="terminated">Terminated</option>
+    </select>
+  `, ()=>saveContract(null,'${cid}'), 'Save Contract');
+}
+
+function openEditContract(contractId,cid){
+  const con=S.contracts?.find(c=>c.id===contractId);
+  if(!con)return;
+  
+  showModal('Edit Contract',`
+    <input type="text" id="contract-title" value="${con.title||''}" placeholder="Contract Title" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+    <textarea id="contract-desc" placeholder="Description" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);height:60px;resize:none">${con.desc||''}</textarea>
+    <select id="contract-type" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+      <option value="Standard" ${con.type==='Standard'?'selected':''}>Standard Service</option>
+      <option value="Retainer" ${con.type==='Retainer'?'selected':''}>Retainer Agreement</option>
+      <option value="Project" ${con.type==='Project'?'selected':''}>Project Contract</option>
+      <option value="NDA" ${con.type==='NDA'?'selected':''}>NDA</option>
+      <option value="Other" ${con.type==='Other'?'selected':''}>Other</option>
+    </select>
+    <input type="date" id="contract-start" value="${con.startDate||''}" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+    <input type="date" id="contract-end" value="${con.endDate||''}" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+    <select id="contract-status" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+      <option value="draft" ${con.status==='draft'?'selected':''}>Draft</option>
+      <option value="active" ${con.status==='active'?'selected':''}>Active</option>
+      <option value="completed" ${con.status==='completed'?'selected':''}>Completed</option>
+      <option value="terminated" ${con.status==='terminated'?'selected':''}>Terminated</option>
+    </select>
+  `, ()=>saveContract('${contractId}','${cid}'), 'Update Contract');
+}
+
+function saveContract(contractId,cid){
+  const title=document.getElementById('contract-title')?.value||'';
+  const desc=document.getElementById('contract-desc')?.value||'';
+  const type=document.getElementById('contract-type')?.value||'Standard';
+  const startDate=document.getElementById('contract-start')?.value||'';
+  const endDate=document.getElementById('contract-end')?.value||'';
+  const status=document.getElementById('contract-status')?.value||'draft';
+  
+  if(!title){alert('Contract title required');return;}
+  
+  if(!S.contracts)S.contracts=[];
+  
+  if(contractId){
+    // Update existing
+    const idx=S.contracts.findIndex(c=>c.id===contractId);
+    if(idx>=0){
+      S.contracts[idx]={...S.contracts[idx],title,desc,type,startDate,endDate,status};
+    }
+  }else{
+    // Add new
+    S.contracts.push({
+      id:UID(),
+      cid:cid,
+      title:title,
+      desc:desc,
+      type:type,
+      startDate:startDate,
+      endDate:endDate,
+      status:status,
+      createdDate:TODAY()
+    });
+  }
+  
+  sv();
+  setTab('contracts');
+  closeModal();
+}
+
+function deleteContract(contractId){
+  if(!confirm('Delete this contract?'))return;
+  if(S.contracts){
+    S.contracts=S.contracts.filter(c=>c.id!==contractId);
+    sv();
+    setTab('contracts');
+  }
 }
 
 /* ── ASSETS ── */
