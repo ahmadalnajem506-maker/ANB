@@ -173,24 +173,21 @@ body.rtl .lang-switch{right:auto;left:14px}
 
 /* ═══ MOBILE LOGIN OPTIMIZATION ═══ */
 @media (max-width: 540px) {
-  #login-page { 
-    padding: 12px !important; 
-    min-height: 100vh !important;
-  }
-  /* Main container - reduce top padding */
-  #login-page > div[style*="max-width"] { 
+  .login-main-container {
     padding-top: 4px !important;
-    max-width: 100% !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
   }
-  /* Logo - reduce spacing */
-  #login-page > div[style*="max-width"] > div[style*="text-align"] {
-    margin-bottom: 12px !important;
+  .login-lang-switch {
+    margin-bottom: 8px !important;
+    margin-top: 0 !important;
   }
-  /* Logo */
+  .login-logo-container {
+    margin-bottom: 8px !important;
+  }
   #ll-logo { 
-    min-height: 80px !important; 
-    max-height: 100px !important;
-    margin-bottom: 8px !important; 
+    min-height: 70px !important; 
+    max-height: 90px !important;
   }
   /* Step indicators container */
   #login-page > div[style*="justify-content:center;gap"] { 
@@ -683,17 +680,17 @@ var S = {lang:'en', role:null, clients:[]};
   </div>
 
   <!-- Main Container -->
-  <div style="width:100%;max-width:480px;position:relative;z-index:10;padding-top:max(20px,calc(env(safe-area-inset-top) + 8px))">
+  <div style="width:100%;max-width:480px;position:relative;z-index:10;padding-top:max(20px,calc(env(safe-area-inset-top) + 8px));" class="login-main-container">
     
     <!-- Language Buttons -->
-    <div id="lang-switch" style="display:flex;gap:10px;backdrop-filter:blur(10px);padding:8px 12px;border-radius:24px;background:rgba(10,34,24,0.4);border:1px solid rgba(200,144,16,0.2);margin-bottom:32px;width:fit-content;margin-left:auto;margin-right:0">
+    <div id="lang-switch" style="display:flex;gap:10px;backdrop-filter:blur(10px);padding:8px 12px;border-radius:24px;background:rgba(10,34,24,0.4);border:1px solid rgba(200,144,16,0.2);margin-bottom:32px;width:fit-content;margin-left:auto;margin-right:0" class="login-lang-switch">
       <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
       <button class="lang-btn" data-lang="nl" onclick="setLang('nl')">NL</button>
       <button class="lang-btn" data-lang="ar" onclick="setLang('ar')">AR</button>
     </div>
 
     <!-- Logo - Integrated with background -->
-    <div style="text-align:center;margin-bottom:32px;animation:fadeInDown 0.8s ease-out">
+    <div style="text-align:center;margin-bottom:32px;animation:fadeInDown 0.8s ease-out" class="login-logo-container">
       <div id="ll-logo" style="display:flex;justify-content:center;align-items:center;min-height:120px"></div>
     </div>
 
