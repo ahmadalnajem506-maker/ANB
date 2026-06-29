@@ -5046,6 +5046,9 @@ function rReports(el,cid){
     case 'expenses':
       rReportExpenses(contentEl,cid);
       break;
+    case 'cashflow':
+      rReportCashFlow(contentEl,cid);
+      break;
     default:
       rReportSummary(contentEl,cid);
   }
@@ -5056,11 +5059,12 @@ function rReportsList(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
   const reports=[
-    {id:'summary',icon:'📊',name:'Financial Summary',desc:'Revenue, Expenses & Profit Overview',bgColor:'rgba(10,34,24',textColor:'#0A2218',accentColor:'#C89010'},
-    {id:'pl',icon:'📈',name:'P&L Statement',desc:'Detailed Profit & Loss Report',bgColor:'rgba(10,34,24',textColor:'#0A2218',accentColor:'#C89010'},
-    {id:'btw',icon:'💰',name:'BTW/VAT Return',desc:'Tax Return Information',bgColor:'rgba(200,144,16',textColor:'#C89010',accentColor:'#0A2218'},
-    {id:'debtors',icon:'👥',name:'Debtors Aging',desc:'Outstanding Invoices Report',bgColor:'rgba(10,34,24',textColor:'#0A2218',accentColor:'#C89010'},
-    {id:'expenses',icon:'🧾',name:'Expenses Report',desc:'Detailed Expense Breakdown',bgColor:'rgba(10,34,24',textColor:'#0A2218',accentColor:'#C89010'},
+    {id:'summary',icon:'📊',name:'Financial Summary',desc:'Revenue, Expenses & Profit Overview',bg:'linear-gradient(135deg, #0A2218 0%, #1a4d2e 100%)',border:'#2d7a4f',text:'#ffffff',accent:'#FFD700'},
+    {id:'pl',icon:'📈',name:'P&L Statement',desc:'Detailed Profit & Loss Report',bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#4da876',text:'#ffffff',accent:'#FFD700'},
+    {id:'btw',icon:'💰',name:'BTW/VAT Return',desc:'Tax Return Information',bg:'linear-gradient(135deg, #FFB700 0%, #FFC700 100%)',border:'#FF9500',text:'#0A2218',accent:'#0A2218'},
+    {id:'debtors',icon:'👥',name:'Debtors Aging',desc:'Outstanding Invoices Report',bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#7dbfa3',text:'#ffffff',accent:'#FFD700'},
+    {id:'expenses',icon:'🧾',name:'Expenses Report',desc:'Detailed Expense Breakdown',bg:'linear-gradient(135deg, #FFEB99 0%, #FFE66D 100%)',border:'#FFC700',text:'#0A2218',accent:'#0A2218'},
+    {id:'cashflow',icon:'💵',name:'Cash Flow',desc:'Cash In & Out Analysis',bg:'linear-gradient(135deg, #B8E6D1 0%, #7dbfa3 100%)',border:'#4da876',text:'#0A2218',accent:'#C89010'},
   ];
   
   const isMobile=window.innerWidth<=860;
@@ -5071,28 +5075,21 @@ function rReportsList(el,cid){
   html+='<div style="font-size:14px;color:var(--t3)">'+c?.name+' — '+new Date().getFullYear()+'</div>';
   html+='</div>';
   
-  html+='<div style="display:grid;grid-template-columns:'+(isMobile?'1fr':'repeat(2,1fr)')+';gap:'+(isMobile?'10px':'16px')+'">';
+  html+='<div style="display:grid;grid-template-columns:'+(isMobile?'1fr':'repeat(2,1fr)')+';gap:'+(isMobile?'12px':'16px')+'">';
   
-  reports.forEach((r,idx)=>{
-    const isGold=idx===2;
-    const bgCol=isGold?'rgba(200,144,16':'rgba(10,34,24';
-    const txtCol=isGold?'#C89010':'#0A2218';
-    const accentCol=isGold?'#0A2218':'#C89010';
-    
+  reports.forEach(r=>{
     html+='<div onclick="S.reportTab=\''+r.id+'\';renderApp()"';
-    html+=' style="padding:20px;border-radius:12px;background:'+bgCol+'0.06);border:2px solid '+bgCol+'0.15);cursor:pointer;transition:all .3s ease;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden"';
-    html+=' onmouseover="this.style.borderColor=\''+bgCol+'0.35)\';this.style.background=\''+bgCol+'0.12)\';this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 24px rgba(0,0,0,0.12)\'"';
-    html+=' onmouseout="this.style.borderColor=\''+bgCol+'0.15)\';this.style.background=\''+bgCol+'0.06)\';this.style.transform=\'translateY(0)\';this.style.boxShadow=\'none\'">';
-    
-    html+='<div style="position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:'+bgCol+'0.1);border-radius:50%;pointer-events:none"></div>';
+    html+=' style="padding:20px;border-radius:12px;background:'+r.bg+';border:2px solid '+r.border+';cursor:pointer;transition:all .3s ease;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)"';
+    html+=' onmouseover="this.style.transform=\'translateY(-6px)\';this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.15)\';this.style.borderColor=\''+r.accent+'\'"';
+    html+=' onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\';this.style.borderColor=\''+r.border+'\'">';
     
     html+='<div style="position:relative;z-index:1">';
     html+='<div style="font-size:48px;margin-bottom:12px">'+r.icon+'</div>';
-    html+='<div style="font-size:16px;font-weight:600;color:'+txtCol+';margin-bottom:6px">'+r.name+'</div>';
-    html+='<div style="font-size:12px;color:var(--t3);line-height:1.4">'+r.desc+'</div>';
+    html+='<div style="font-size:16px;font-weight:600;color:'+r.text+';margin-bottom:6px">'+r.name+'</div>';
+    html+='<div style="font-size:12px;color:rgba('+(r.text==='#ffffff'?'255,255,255':'10,34,24')+',0.8);line-height:1.4">'+r.desc+'</div>';
     html+='</div>';
     
-    html+='<div style="margin-top:16px;padding-top:12px;border-top:2px solid '+bgCol+'0.2);display:flex;align-items:center;color:'+accentCol+';font-size:13px;font-weight:600;position:relative;z-index:1">';
+    html+='<div style="margin-top:16px;padding-top:12px;border-top:2px solid rgba('+(r.text==='#ffffff'?'255,255,255':'10,34,24')+',0.2);display:flex;align-items:center;color:'+r.accent+';font-size:13px;font-weight:600;position:relative;z-index:1">';
     html+='View Report <span style="margin-left:6px;display:inline-block;transition:transform .3s">→</span>';
     html+='</div>';
     
@@ -5100,7 +5097,7 @@ function rReportsList(el,cid){
   });
   
   html+='</div>';
-  html+='<div style="margin-top:24px;padding:16px;background:linear-gradient(135deg,rgba(10,34,24,0.04) 0%,rgba(200,144,16,0.04) 100%);border-radius:8px;border-left:4px solid #C89010;border-top:1px solid rgba(200,144,16,0.2)">';
+  html+='<div style="margin-top:24px;padding:16px;background:linear-gradient(135deg,rgba(10,34,24,0.05) 0%,rgba(255,215,0,0.05) 100%);border-radius:8px;border-left:4px solid #C89010;border:1px solid rgba(200,144,16,0.2)">';
   html+='<div style="font-size:13px;color:var(--t3);line-height:1.6">';
   html+='💡 <strong>Tip:</strong> Click any report card to view detailed information and export as PDF or Excel.';
   html+='</div>';
@@ -5113,6 +5110,66 @@ function rReportsList(el,cid){
 function goBackToReportsList(){
   S.reportTab=null;
   renderApp();
+}
+
+/* ── REPORT: Cash Flow ── */
+function rReportCashFlow(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
+  const exp=S.expenses.filter(e=>e.cid===cid);
+  
+  const cashIn=inv.reduce((s,i)=>s+(i.amount||0),0);
+  const cashOut=exp.reduce((s,e)=>s+(e.amount||0),0);
+  const netCashFlow=cashIn-cashOut;
+  
+  let html='<div style="padding:16px">';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<div class="card"><div class="ch"><span class="ct">💵 Cash Flow Report</span>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'cashflow\',\''+cid+'\')">📥 PDF</button>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'cashflow\',\''+cid+'\')">📊 Excel</button></div>';
+  html+='<div style="padding:16px">';
+  
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
+  html+='<div style="background:linear-gradient(135deg,rgba(45,122,79,0.1) 0%,rgba(77,168,118,0.1) 100%);border-radius:var(--r);padding:12px;border-left:3px solid #2d7a4f">';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💰 Cash Inflow</div>';
+  html+='<div style="font-size:20px;font-weight:600;color:#2d7a4f">+'+FMT(cashIn)+'</div>';
+  html+='</div>';
+  
+  html+='<div style="background:linear-gradient(135deg,rgba(255,183,0,0.1) 0%,rgba(255,199,0,0.1) 100%);border-radius:var(--r);padding:12px;border-left:3px solid #FFB700">';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💸 Cash Outflow</div>';
+  html+='<div style="font-size:20px;font-weight:600;color:#FFB700">-'+FMT(cashOut)+'</div>';
+  html+='</div>';
+  html+='</div>';
+  
+  html+='<div style="padding:12px;background:linear-gradient(135deg,'+(netCashFlow>=0?'rgba(45,122,79,0.15) 0%,rgba(77,168,118,0.15)':'rgba(255,107,107,0.15) 0%,rgba(255,152,152,0.15)')+' 100%);border-radius:var(--r);border-left:4px solid '+(netCashFlow>=0?'#2d7a4f':'#FF6B6B')+';margin-bottom:16px">';
+  html+='<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600">';
+  html+='<span>Net Cash Flow</span><span style="color:'+(netCashFlow>=0?'#2d7a4f':'#FF6B6B')+'">'+(netCashFlow>=0?'+':'')+FMT(netCashFlow)+'</span>';
+  html+='</div>';
+  html+='</div>';
+  
+  html+='<div style="margin-bottom:16px">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #2d7a4f">Inflow Breakdown</div>';
+  html+='<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:12px;font-weight:600;background:var(--bg1);padding:10px;border-radius:var(--rs)">';
+  html+='<span>Total Invoices Paid</span><span style="color:#2d7a4f">+'+FMT(cashIn)+'</span>';
+  html+='</div>';
+  html+='</div>';
+  
+  html+='<div>';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #FFB700">Outflow Breakdown</div>';
+  
+  const expByCat={};
+  exp.forEach(e=>{const k=e.cat||'Other';expByCat[k]=(expByCat[k]||0)+(e.amount||0);});
+  
+  Object.entries(expByCat).forEach(([cat,amt])=>{
+    html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)">';
+    html+='<span>'+cat+'</span><span style="color:#FFB700">-'+FMT(amt)+'</span>';
+    html+='</div>';
+  });
+  
+  html+='</div>';
+  html+='</div></div></div>';
+  
+  el.innerHTML=html;
 }
 
 /* ── REPORT: Summary ── */
