@@ -82,6 +82,7 @@ body.rtl .lang-switch{right:auto;left:14px}
   position:relative;
   overflow:hidden;
   box-shadow:0 4px 15px rgba(200,144,16,0.08);
+  -webkit-tap-highlight-color:transparent;
 }
 .role-card::before{
   content:'';
@@ -103,6 +104,17 @@ body.rtl .lang-switch{right:auto;left:14px}
 }
 .role-card:hover::before{
   opacity:1;
+}
+@media (hover: none) {
+  .role-card:active{
+    border-color:#C89010;
+    background:rgba(200,144,16,0.15);
+    box-shadow:0 6px 20px rgba(200,144,16,0.25);
+    transform:translateY(-2px);
+  }
+  .role-card:active::before{
+    opacity:1;
+  }
 }
 .role-card.sel{
   background:linear-gradient(135deg,rgba(200,144,16,0.25) 0%,rgba(200,144,16,0.12) 100%) !important;
@@ -426,6 +438,29 @@ tr:hover td{background:var(--gr1)}
 @media (min-width: 861px){
   .mobile-nav{display:none!important}
   .sidebar-backdrop{display:none!important}
+}
+
+/* ════════════════════ MOBILE OPTIMIZATIONS ════════════════════ */
+@media (max-width: 860px){
+  .role-card{
+    padding:20px 16px;
+  }
+  .role-card:hover{
+    transform:translateY(-2px);
+  }
+  .role-card.sel{
+    transform:scale(1.01) !important;
+  }
+}
+
+/* ════════════════════ TABLET & DESKTOP ════════════════════ */
+@media (min-width: 861px){
+  .role-card:hover{
+    transform:translateY(-4px);
+  }
+  .role-card.sel{
+    transform:scale(1.03) !important;
+  }
 }
 
 /* ════════════════════ RTL LAYOUT SUPPORT ════════════════════ */
