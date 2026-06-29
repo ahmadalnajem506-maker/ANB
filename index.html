@@ -419,9 +419,6 @@ tr:hover td{background:var(--gr1)}
 
 /* ═══ RESPONSIVE: MOBILE LAYOUT ═══ */
 @media (max-width: 860px){
-  .auth-step{
-    padding-top:8vh !important;
-  }
   .hamburger-btn{display:inline-flex}
   #app{position:relative}
   .sidebar{position:fixed;top:0;left:0;height:100vh;z-index:200;
@@ -543,7 +540,7 @@ var S = {lang:'en', role:null, clients:[]};
   </div>
 
   <!-- Main Container -->
-  <div style="width:100%;max-width:480px;position:relative;z-index:10">
+  <div style="width:100%;max-width:480px;position:relative;z-index:10;padding-top:max(12px,env(safe-area-inset-top))">
     
     <!-- Language Buttons -->
     <div id="lang-switch" style="display:flex;gap:10px;backdrop-filter:blur(10px);padding:8px 12px;border-radius:24px;background:rgba(10,34,24,0.4);border:1px solid rgba(200,144,16,0.2);margin-bottom:32px;width:fit-content;margin-left:auto;margin-right:0">
