@@ -81,15 +81,15 @@ body.rtl .lang-switch{right:auto;left:14px}
 .sidebar::after{content:'';position:absolute;inset:0;
   background:linear-gradient(180deg,rgba(26,74,42,.2) 0%,rgba(0,0,0,.3) 100%);pointer-events:none}
 .sb-logo{padding:18px 14px 12px;border-bottom:1px solid rgba(255,255,255,.08);position:relative;z-index:1}
-.sb-role-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;
-  border-radius:20px;font-size:10px;font-weight:600;margin-bottom:10px;letter-spacing:.4px}
+.sb-role-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;
+  border-radius:12px;font-size:9px;font-weight:600;margin-bottom:4px;letter-spacing:.2px}
 .badge-admin{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--g1)}
 .badge-client{background:rgba(245,220,112,.15);color:var(--gold3);border:1px solid rgba(245,220,112,.3)}
-.sb-clients{flex:1;overflow-y:auto;padding:4px 8px;position:relative;z-index:1}
+.sb-clients{flex:1;overflow-y:auto;padding:2px 4px;position:relative;z-index:1}
 .sb-clients::-webkit-scrollbar{width:3px}
 .sb-clients::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
-.sb-sec{padding:10px 8px 3px;position:relative;z-index:1}
-.sb-sec-lbl{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;padding:0 4px;margin-bottom:3px}
+.sb-sec{padding:4px 8px 2px;position:relative;z-index:1}
+.sb-sec-lbl{font-size:8px;color:rgba(255,255,255,.3);letter-spacing:.5px;text-transform:uppercase;padding:0 4px;margin-bottom:2px}
 .cb{width:100%;text-align:left;padding:7px 8px;border:none;background:transparent;
   border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;gap:7px;
   color:rgba(255,255,255,.55);font-size:12px;font-family:var(--fb);margin-bottom:1px;transition:all .15s}
@@ -1814,7 +1814,7 @@ function renderSidebar(){
     const c=S.clients.find(c=>c.id===S.currentClient);
     lbl.textContent=c?.name||'Client';
     clients.innerHTML=`
-    <div style="padding:8px 4px;margin-bottom:8px"><div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(200,144,16,.12);border-radius:var(--rs)"><div class="cb-av" style="width:28px;height:28px;font-size:11px;background:${c?.color||'#888'}22;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div><div><div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.9)">${c?.name}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${c?.type||'Client'}</div></div></div></div>`;
+    <div style="padding:4px 2px;margin-bottom:4px"><div style="display:flex;align-items:center;gap:6px;padding:4px;background:rgba(200,144,16,.12);border-radius:var(--rs)"><div class="cb-av" style="width:24px;height:24px;font-size:9px;background:${c?.color||'#888'}22;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div><div><div style="font-size:11px;font-weight:500;color:rgba(255,255,255,.9)">${c?.name}</div><div style="font-size:9px;color:rgba(255,255,255,.4)">${c?.type||'Client'}</div></div></div></div>`;
     const adminTabs=[
       {id:'dashboard',icon:'◼',key:'dashboard'},
       {id:'invoices',icon:'📄',key:'tab_invoices'},
