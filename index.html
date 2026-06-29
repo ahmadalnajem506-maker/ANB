@@ -174,20 +174,28 @@ body.rtl .lang-switch{right:auto;left:14px}
 /* ═══ MOBILE LOGIN OPTIMIZATION ═══ */
 @media (max-width: 540px) {
   .login-main-container {
-    padding-top: 4px !important;
+    padding-top: 60px !important;
     padding-left: 8px !important;
     padding-right: 8px !important;
+    align-items: center !important;
   }
   .login-lang-switch {
-    margin-bottom: 8px !important;
-    margin-top: 0 !important;
+    position: fixed !important;
+    top: max(8px, calc(env(safe-area-inset-top) + 4px)) !important;
+    right: 8px !important;
+    z-index: 999 !important;
+    margin: 0 !important;
   }
   .login-logo-container {
     margin-bottom: 8px !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
   }
   #ll-logo { 
-    min-height: 70px !important; 
-    max-height: 90px !important;
+    min-height: 80px !important;
+    max-height: 110px !important;
+    max-width: 280px !important;
   }
   /* Step indicators container */
   #login-page > div[style*="justify-content:center;gap"] { 
@@ -541,8 +549,12 @@ tr:hover td{background:var(--gr1)}
 /* ═══ RESPONSIVE: MOBILE LAYOUT ═══ */
 @media (max-width: 860px){
   #lang-switch {
-    margin-bottom: 12px !important;
-    margin-top: 0 !important;
+    position: fixed !important;
+    top: max(8px, calc(env(safe-area-inset-top) + 4px)) !important;
+    right: 8px !important;
+    z-index: 999 !important;
+    margin: 0 !important;
+    padding: 8px 12px !important;
   }
   /* Main container padding reduction */
   #login-page > div[style*="max-width:480px"] {
@@ -680,18 +692,18 @@ var S = {lang:'en', role:null, clients:[]};
   </div>
 
   <!-- Main Container -->
-  <div style="width:100%;max-width:480px;position:relative;z-index:10;padding-top:max(20px,calc(env(safe-area-inset-top) + 8px));" class="login-main-container">
+  <div style="width:100%;max-width:480px;position:relative;z-index:10;padding-top:60px;display:flex;flex-direction:column;align-items:center" class="login-main-container">
     
-    <!-- Language Buttons -->
-    <div id="lang-switch" style="display:flex;gap:10px;backdrop-filter:blur(10px);padding:8px 12px;border-radius:24px;background:rgba(10,34,24,0.4);border:1px solid rgba(200,144,16,0.2);margin-bottom:32px;width:fit-content;margin-left:auto;margin-right:0" class="login-lang-switch">
-      <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
-      <button class="lang-btn" data-lang="nl" onclick="setLang('nl')">NL</button>
-      <button class="lang-btn" data-lang="ar" onclick="setLang('ar')">AR</button>
-    </div>
+  <!-- Language Buttons - Top Right Fixed -->
+  <div id="lang-switch" style="position:fixed;top:max(8px,calc(env(safe-area-inset-top) + 4px));right:8px;z-index:999;display:flex;gap:10px;backdrop-filter:blur(10px);padding:8px 12px;border-radius:24px;background:rgba(10,34,24,0.4);border:1px solid rgba(200,144,16,0.2);margin:0" class="login-lang-switch">
+    <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" data-lang="nl" onclick="setLang('nl')">NL</button>
+    <button class="lang-btn" data-lang="ar" onclick="setLang('ar')">AR</button>
+  </div>
 
-    <!-- Logo - Integrated with background -->
-    <div style="text-align:center;margin-bottom:32px;animation:fadeInDown 0.8s ease-out" class="login-logo-container">
-      <div id="ll-logo" style="display:flex;justify-content:center;align-items:center;min-height:120px"></div>
+    <!-- Logo - Centered -->
+    <div style="text-align:center;margin-bottom:12px;animation:fadeInDown 0.8s ease-out;width:100%;display:flex;justify-content:center" class="login-logo-container">
+      <div id="ll-logo" style="display:flex;justify-content:center;align-items:center;min-height:100px;width:100%;max-width:300px"></div>
     </div>
 
     <!-- Step Indicators -->
