@@ -177,16 +177,20 @@ body.rtl .lang-switch{right:auto;left:14px}
     padding: 12px !important; 
     min-height: 100vh !important;
   }
-  /* Main container */
+  /* Main container - reduce top padding */
   #login-page > div[style*="max-width"] { 
-    padding-top: 8px !important;
+    padding-top: 4px !important;
     max-width: 100% !important;
+  }
+  /* Logo - reduce spacing */
+  #login-page > div[style*="max-width"] > div[style*="text-align"] {
+    margin-bottom: 12px !important;
   }
   /* Logo */
   #ll-logo { 
     min-height: 80px !important; 
     max-height: 100px !important;
-    margin-bottom: 12px !important; 
+    margin-bottom: 8px !important; 
   }
   /* Step indicators container */
   #login-page > div[style*="justify-content:center;gap"] { 
@@ -540,6 +544,15 @@ tr:hover td{background:var(--gr1)}
 /* ═══ RESPONSIVE: MOBILE LAYOUT ═══ */
 @media (max-width: 860px){
   #lang-switch {
+    margin-bottom: 12px !important;
+    margin-top: 0 !important;
+  }
+  /* Main container padding reduction */
+  #login-page > div[style*="max-width:480px"] {
+    padding-top: 8px !important;
+  }
+  /* Logo container */
+  #login-page > div[style*="max-width:480px"] > div[style*="text-align:center"] {
     margin-bottom: 16px !important;
   }
   #app > div:nth-child(2) > div:nth-child(2) {
