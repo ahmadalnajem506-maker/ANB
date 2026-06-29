@@ -2218,14 +2218,6 @@ function rClientDash(el,cid){
   const unread=S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.deleted).length;
 
   el.innerHTML=`
-  <div class="client-welcome">
-    <div class="cw-text">
-      <h2>${t('welcome_back_name',{name:c?.name?.split(' ')[0]||''})}</h2>
-      <p>${t('client_tagline')}</p>
-    </div>
-    <div class="cw-av" style="background:${c?.color||'#888'}30;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div>
-  </div>
-
   <div class="kgrid">
     <div class="kcard"><div class="kl">${t('total_paid')}</div><div class="kv" style="color:var(--green)">${FMT(paid)}</div></div>
     <div class="kcard"><div class="kl">${t('outstanding')}</div><div class="kv" style="color:var(--orange)">${FMT(open)}</div></div>
