@@ -1813,7 +1813,8 @@ function renderSidebar(){
     }
     const c=S.clients.find(c=>c.id===S.currentClient);
     lbl.textContent=c?.name||'Client';
-    clients.innerHTML=`<div style="padding:8px 4px;margin-bottom:8px"><div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(200,144,16,.12);border-radius:var(--rs)"><div class="cb-av" style="width:28px;height:28px;font-size:11px;background:${c?.color||'#888'}22;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div><div><div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.9)">${c?.name}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${c?.type||'Client'}</div></div></div></div>`;
+    clients.innerHTML=`<button class="nb" onclick="gotoOverview()" style="width:100%;text-align:left;margin-bottom:4px;background:rgba(200,144,16,.1)">⬅ Back to Clients</button>
+    <div style="padding:8px 4px;margin-bottom:8px"><div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(200,144,16,.12);border-radius:var(--rs)"><div class="cb-av" style="width:28px;height:28px;font-size:11px;background:${c?.color||'#888'}22;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div><div><div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.9)">${c?.name}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${c?.type||'Client'}</div></div></div></div>`;
     const adminTabs=[
       {id:'invoices',icon:'📄',key:'tab_invoices'},
       {id:'expenses',icon:'🧾',key:'tab_expenses'},
@@ -1922,10 +1923,83 @@ function rContracts(el,cid){
 
 /* ── ASSETS ── */
 function rAssets(el,cid){
-  el.innerHTML=`<div style="padding:20px"><h2>${t('assets')}</h2><p>${t('no_data')}</p></div>`;
+  const assets=S.assets?.filter(a=>a.cid===cid)||[];
+  const c=S.clients.find(c=>c.id===cid);
+  el.innerHTML=`
+  <div class="card">
+    <div class="ch"><span class="ct">🏢 ${t('assets')}</span>
+      <button class="btn btn-p btn-xs" onclick="openAddAsset('${cid}')">➕ ${t('add')}</button>
+    </div>
+    ${assets.length===0?`<div class="empty">🏢 ${t('no_data')}</div>`:
+    assets.map(a=>`<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
+      <div style="font-weight:500;font-size:12px;color:var(--t1)">${a.name||''}</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:2px">${a.desc||''}</div>
+      <div style="font-size:10px;color:var(--t3);margin-top:4px">Value: ${FMT(a.value||0)} | Added: ${FD(a.date||'')}</div>
+    </div>`).join('')}
+  </div>`;
 }
 
-/* ═══════════════════════════ CLIENTS LIST ═══════════════════════════ */
+/* ── IMPORT DATA ── */
+function rImport(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  el.innerHTML=`
+  <div class="card">
+    <div class="ch"><span class="ct">📥 ${t('import_data')}</span></div>
+    <div style="padding:20px;text-align:center">
+      <div style="margin-bottom:20px;font-size:13px;color:var(--t2)">${t('import_options')||'Import Data'}</div>
+      <button class="btn btn-p" onclick="document.getElementById('bank-csv-${cid}').click()" style="margin-bottom:10px;display:block;width:100%">
+        📥 Import Bank Statement (CSV/MT940)
+      </button>
+      <input type="file" id="bank-csv-${cid}" accept=".csv,.txt,.mt940,.sta,.940" style="display:none" onchange="importBankFile(event,'${cid}')"/>
+      
+      <button class="btn btn-p" onclick="document.getElementById('backup-${cid}').click()" style="margin-top:10px;display:block;width:100%">
+        📂 Restore from Backup
+      </button>
+      <input type="file" id="backup-${cid}" accept=".json" style="display:none" onchange="importBackup(event)"/>
+      
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--gr2);font-size:11px;color:var(--t3)">
+        <div>Supported formats:</div>
+        <div>• Bank: CSV (ING, ABN AMRO, Rabobank, Bunq) or MT940</div>
+        <div>• Backup: ANB JSON export</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openAddAsset(cid){
+  showModal('Add Asset',`
+    <input type="text" id="asset-name" placeholder="Asset Name" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+    <textarea id="asset-desc" placeholder="Description" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);height:60px;resize:none"></textarea>
+    <input type="number" id="asset-value" placeholder="Value (€)" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+  `, ()=>saveAsset('${cid}'), 'Save Asset');
+}
+
+function saveAsset(cid){
+  const name=document.getElementById('asset-name')?.value||'';
+  const desc=document.getElementById('asset-desc')?.value||'';
+  const value=parseFloat(document.getElementById('asset-value')?.value||0);
+  
+  if(!name){alert('Asset name required');return;}
+  
+  if(!S.assets)S.assets=[];
+  S.assets.push({
+    id:UID(),
+    cid:cid,
+    name:name,
+    desc:desc,
+    value:value,
+    date:TODAY()
+  });
+  
+  sv();
+  setTab('assets');
+  closeModal();
+}
+
+/* ── BACK TO CLIENTS BUTTON IN SIDEBAR ── */
 function rClientsLis(el){
   el.innerHTML=`
   <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center">
