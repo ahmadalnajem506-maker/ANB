@@ -431,13 +431,16 @@ tr:hover td{background:var(--gr1)}
 /* ═══ ADMIN SPECIFIC ═══ */
 .all-stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
 .stat-card{background:var(--white);border:1px solid var(--gr2);border-radius:var(--r);
-  padding:16px;box-shadow:var(--sh);position:relative;overflow:hidden}
+  padding:16px;box-shadow:var(--sh);position:relative;overflow:hidden;transition:all .3s ease}
+.stat-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.12);border-color:var(--gold)}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .stat-card.sc-gold::before{background:linear-gradient(90deg,var(--gold),var(--gold3))}
 .stat-card.sc-green::before{background:var(--green)}
 .stat-card.sc-red::before{background:var(--red)}
 .stat-card.sc-blue::before{background:var(--blue)}
 .stat-card.sc-orange::before{background:var(--orange)}
+.stat-card.sc-purple::before{background:#9C27B0}
+.stat-card.sc-pink::before{background:#E91E63}
 .sc-icon{font-size:22px;margin-bottom:8px;display:block}
 .sc-val{font-size:24px;font-weight:600;font-family:var(--fd);color:var(--t1);margin-bottom:2px}
 .sc-lbl{font-size:11px;color:var(--t3)}
@@ -719,49 +722,49 @@ var S = {lang:'en', role:null, clients:[]};
       
       <!-- Title & Subtitle -->
       <div style="text-align:center;margin-bottom:30px">
-        <h1 data-i18n="welcome_back" style="font-size:38px;font-weight:800;color:#C89010;margin:0 0 8px 0;letter-spacing:-0.3px;line-height:1.2;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Welcome back</h1>
-        <p data-i18n="sign_in_sub" style="color:rgba(255,255,255,0.6);font-size:13px;margin:0;line-height:1.5">Sign in with your email or phone number</p>
+        <h1 data-i18n="welcome_back" style="font-size:42px;font-weight:800;color:#C89010;margin:0 0 10px 0;letter-spacing:-0.3px;line-height:1.2;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Welcome back</h1>
+        <p data-i18n="sign_in_sub" style="color:rgba(255,255,255,0.6);font-size:15px;margin:0;line-height:1.5">Sign in with your email or phone number</p>
       </div>
 
       <!-- Role Selection Cards -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px">
-        <div class="role-card sel" id="rc-admin" onclick="selRole('admin')" style="padding:26px 20px;border:2px solid #C89010;background:linear-gradient(135deg,rgba(200,144,16,0.08) 0%,rgba(200,144,16,0.03) 100%);border-radius:14px;text-align:center;cursor:pointer;transition:all 0.35s;backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(200,144,16,0.1),inset 0 1px 0 rgba(255,255,255,0.05);position:relative;overflow:hidden" onmouseover="this.style.boxShadow='0 16px 40px rgba(200,144,16,0.25),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.transform='translateY(-6px)';this.style.background='linear-gradient(135deg,rgba(200,144,16,0.12) 0%,rgba(200,144,16,0.06) 100%)'" onmouseout="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.1),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.transform='translateY(0)';this.style.background='linear-gradient(135deg,rgba(200,144,16,0.08) 0%,rgba(200,144,16,0.03) 100%)'">
+        <div class="role-card sel" id="rc-admin" onclick="selRole('admin')" style="padding:30px 24px;border:2px solid #C89010;background:linear-gradient(135deg,rgba(200,144,16,0.08) 0%,rgba(200,144,16,0.03) 100%);border-radius:14px;text-align:center;cursor:pointer;transition:all 0.35s;backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(200,144,16,0.1),inset 0 1px 0 rgba(255,255,255,0.05);position:relative;overflow:hidden" onmouseover="this.style.boxShadow='0 16px 40px rgba(200,144,16,0.25),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.transform='translateY(-6px)';this.style.background='linear-gradient(135deg,rgba(200,144,16,0.12) 0%,rgba(200,144,16,0.06) 100%)'" onmouseout="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.1),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.transform='translateY(0)';this.style.background='linear-gradient(135deg,rgba(200,144,16,0.08) 0%,rgba(200,144,16,0.03) 100%)'">
           <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(circle at 50% 0%, rgba(200,144,16,0.1) 0%, transparent 70%);pointer-events:none"></div>
-          <svg width="40" height="40" viewBox="0 0 40 40" style="margin:0 auto 12px;display:block;position:relative;z-index:1" fill="none" stroke="#C89010" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="44" height="44" viewBox="0 0 40 40" style="margin:0 auto 14px;display:block;position:relative;z-index:1" fill="none" stroke="#C89010" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 18L18 24L32 10"/>
             <circle cx="20" cy="20" r="18"/>
           </svg>
-          <span class="rl" data-i18n="role_admin" style="font-weight:700;color:#C89010;display:block;margin-bottom:4px;font-size:14px;position:relative;z-index:1">Administrator</span>
-          <span class="rs" data-i18n="role_admin_sub" style="font-size:11px;color:rgba(200,144,16,0.7);position:relative;z-index:1">Full access</span>
+          <span class="rl" data-i18n="role_admin" style="font-weight:700;color:#C89010;display:block;margin-bottom:6px;font-size:16px;position:relative;z-index:1">Administrator</span>
+          <span class="rs" data-i18n="role_admin_sub" style="font-size:13px;color:rgba(200,144,16,0.7);position:relative;z-index:1">Full access</span>
         </div>
         
-        <div class="role-card" id="rc-client" onclick="selRole('client')" style="padding:26px 20px;border:2px solid #C89010;background:transparent;border-radius:14px;text-align:center;cursor:pointer;transition:all 0.35s;backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(200,144,16,0.1),inset 0 1px 0 rgba(255,255,255,0.05);position:relative;overflow:hidden" onmouseover="this.style.boxShadow='0 16px 40px rgba(200,144,16,0.25),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.transform='translateY(-6px)';this.style.background='rgba(200,144,16,0.08)'" onmouseout="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.1),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.transform='translateY(0)';this.style.background='transparent'">
+        <div class="role-card" id="rc-client" onclick="selRole('client')" style="padding:30px 24px;border:2px solid #C89010;background:transparent;border-radius:14px;text-align:center;cursor:pointer;transition:all 0.35s;backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(200,144,16,0.1),inset 0 1px 0 rgba(255,255,255,0.05);position:relative;overflow:hidden" onmouseover="this.style.boxShadow='0 16px 40px rgba(200,144,16,0.25),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.transform='translateY(-6px)';this.style.background='rgba(200,144,16,0.08)'" onmouseout="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.1),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.transform='translateY(0)';this.style.background='transparent'">
           <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(circle at 50% 0%, rgba(200,144,16,0.05) 0%, transparent 70%);pointer-events:none"></div>
-          <svg width="40" height="40" viewBox="0 0 40 40" style="margin:0 auto 12px;display:block;position:relative;z-index:1" fill="none" stroke="#C89010" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="44" height="44" viewBox="0 0 40 40" style="margin:0 auto 14px;display:block;position:relative;z-index:1" fill="none" stroke="#C89010" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="20" cy="12" r="7"/>
             <path d="M8 32C8 24 13 18 20 18C27 18 32 24 32 32"/>
           </svg>
-          <span class="rl" data-i18n="role_client" style="font-weight:700;color:#C89010;display:block;margin-bottom:4px;font-size:14px;position:relative;z-index:1">Client</span>
-          <span class="rs" data-i18n="role_client_sub" style="font-size:11px;color:rgba(200,144,16,0.7);position:relative;z-index:1">My account</span>
+          <span class="rl" data-i18n="role_client" style="font-weight:700;color:#C89010;display:block;margin-bottom:6px;font-size:16px;position:relative;z-index:1">Client</span>
+          <span class="rs" data-i18n="role_client_sub" style="font-size:13px;color:rgba(200,144,16,0.7);position:relative;z-index:1">My account</span>
         </div>
       </div>
 
       <!-- Email/Phone Input -->
       <div style="margin-bottom:20px">
-        <label id="id-label" data-i18n="email_or_phone" style="display:block;font-size:10px;font-weight:700;color:#C89010;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Email or Phone</label>
-        <input type="text" id="login-id" placeholder="info@company.nl" style="width:100%;padding:12px 14px;border:2px solid #C89010;border-radius:10px;font-size:13px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')goStep2()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
+        <label id="id-label" data-i18n="email_or_phone" style="display:block;font-size:11px;font-weight:700;color:#C89010;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Email or Phone</label>
+        <input type="text" id="login-id" placeholder="info@company.nl" style="width:100%;padding:14px 16px;border:2px solid #C89010;border-radius:10px;font-size:14px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')goStep2()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
       </div>
 
       <div id="login-err-1" style="background:rgba(211,47,47,0.12);color:#FF7B7B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #FF7B7B;font-weight:600;box-shadow:0 4px 12px rgba(211,47,47,0.15)"></div>
 
       <!-- Continue Button -->
-      <button class="login-btn" onclick="goStep2()" data-i18n="continue_btn" style="width:100%;padding:12px 20px;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);color:#0A2218;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.35s;box-shadow:0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:16px;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 36px rgba(200,144,16,0.5),0 0 30px rgba(200,144,16,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2)'">
+      <button class="login-btn" onclick="goStep2()" data-i18n="continue_btn" style="width:100%;padding:14px 24px;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);color:#0A2218;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.35s;box-shadow:0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:16px;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 36px rgba(200,144,16,0.5),0 0 30px rgba(200,144,16,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2)'">
         <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:translateX(-100%);animation:shine 3s infinite"></div>
         <span style="position:relative;z-index:1">Continue</span>
       </button>
 
       <!-- New Account Link -->
-      <div style="text-align:center;font-size:12px;color:rgba(255,255,255,0.6)">
+      <div style="text-align:center;font-size:14px;color:rgba(255,255,255,0.6)">
         <span data-i18n="first_time">First time?</span> 
         <span style="color:#C89010;cursor:pointer;font-weight:700;transition:all 0.3s;position:relative" onclick="goForgot()" onmouseover="this.style.textDecoration='underline';this.style.color='#D4A520'" onmouseout="this.style.textDecoration='none';this.style.color='#C89010'" data-i18n="set_pw_here">Set password</span>
       </div>
@@ -2277,34 +2280,78 @@ function renderContent(){
 }
 
 /* ── CONTRACTS ── */
-function rContracts(el,cid){
-  const contracts=S.contracts?.filter(c=>c.cid===cid)||[];
-  const client=S.clients.find(c=>c.id===cid);
+function rAdminContracts(el){
+  const allContracts=S.contracts||[];
   el.innerHTML=`
   <div class="card">
     <div class="ch"><span class="ct">📋 ${t('contracts')}</span>
-      <button class="btn btn-p btn-xs" onclick="openAddContract('${cid}')">➕ ${t('add')}</button>
+      <button class="btn btn-p btn-xs" onclick="openNewContractDialog()">➕ ${t('add')}</button>
     </div>
-    ${contracts.length===0?`<div class="empty">📋 ${t('no_data')}</div>`:
-    contracts.map(con=>`<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
-      <div style="display:flex;justify-content:space-between;align-items:start">
-        <div style="flex:1">
-          <div style="font-weight:500;font-size:12px;color:var(--t1)">${con.title||'Contract'}</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:2px">${con.desc||''}</div>
-          <div style="font-size:10px;color:var(--t3);margin-top:4px">
-            Type: ${con.type||'Standard'} | Status: <span style="color:${con.status==='active'?'var(--green)':'var(--orange)'}">${con.status||'Draft'}</span>
+    ${allContracts.length===0?`<div class="empty">📋 ${t('no_data')}</div>`:
+    allContracts.map(con=>{
+      const client=S.clients.find(c=>c.id===con.cid);
+      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div style="flex:1">
+            <div style="font-weight:500;font-size:12px;color:var(--t1)">${con.title||'Contract'}</div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px;font-weight:500">👤 ${client?.name||'Unknown Client'}</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px">${con.desc||''}</div>
+            <div style="font-size:10px;color:var(--t3);margin-top:4px">
+              Type: ${con.type||'Standard'} | Status: <span style="color:${con.status==='active'?'var(--green)':'var(--orange)'}">${con.status||'Draft'}</span>
+            </div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">
+              From: ${FD(con.startDate||'')} | To: ${FD(con.endDate||'')}
+            </div>
           </div>
-          <div style="font-size:10px;color:var(--t3);margin-top:2px">
-            From: ${FD(con.startDate||'')} | To: ${FD(con.endDate||'')}
+          <div style="display:flex;gap:4px;flex-shrink:0">
+            <button class="btn btn-xs" onclick="openEditContract('${con.id}','${con.cid}')" title="Edit">✏</button>
+            <button class="btn btn-danger btn-xs" onclick="deleteContract('${con.id}')" title="Delete">🗑</button>
           </div>
         </div>
-        <div style="display:flex;gap:4px;flex-shrink:0">
-          <button class="btn btn-xs" onclick="openEditContract('${con.id}','${cid}')" title="Edit">✏</button>
-          <button class="btn btn-danger btn-xs" onclick="deleteContract('${con.id}')" title="Delete">🗑</button>
-        </div>
-      </div>
-    </div>`).join('')}
+      </div>`;
+    }).join('')}
   </div>`;
+}
+
+function openNewContractDialog(){
+  const clients=S.clients||[];
+  const opts=clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  showModal('Add Contract',`
+    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Select Client</label>
+    <select id="contract-client" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+      <option value="">-- Select Client --</option>
+      ${opts}
+    </select>
+    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Contract Title</label>
+    <input type="text" id="contract-title" placeholder="Contract Title" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Description</label>
+    <textarea id="contract-desc" placeholder="Description" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);height:60px;resize:none"></textarea>
+    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Type</label>
+    <select id="contract-type" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+      <option value="Standard">Standard Service</option>
+      <option value="Retainer">Retainer Agreement</option>
+      <option value="NDA">NDA</option>
+    </select>
+    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Start Date</label>
+    <input type="date" id="contract-start" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">End Date</label>
+    <input type="date" id="contract-end" 
+      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+  `, function(){
+    const cid=document.getElementById('contract-client').value;
+    if(!cid){alert('Please select a client');return;}
+    const title=document.getElementById('contract-title').value;
+    const desc=document.getElementById('contract-desc').value;
+    const type=document.getElementById('contract-type').value;
+    const start=document.getElementById('contract-start').value;
+    const end=document.getElementById('contract-end').value;
+    const con={id:UID(),cid,title,desc,type,startDate:start,endDate:end,status:'Draft',createdAt:NOW()};
+    S.contracts.push(con);
+    sv();renderApp();closeModal();
+  }, 'Create Contract');
 }
 
 function openAddContract(cid){
@@ -2543,18 +2590,80 @@ function rAdminDash(el){
   const totalHours=S.hours.reduce((s,h)=>s+h.hrs,0);
   const overdueInvoices=S.invoices.filter(i=>i.status==='Verlopen').length;
   const newDocuments=S.docs.filter(d=>d.isNew).length;
+  const totalContracts=S.contracts.filter(c=>c.status==='active').length;
 
   el.innerHTML=`
   <div class="all-stats-row">
-    <div class="stat-card sc-gold"><span class="sc-icon">👥</span><div class="sc-val">${totalClients}</div><div class="sc-lbl">${t('active_clients')}</div></div>
-    <div class="stat-card sc-orange"><span class="sc-icon">📄</span><div class="sc-val">${pendingInvoices}</div><div class="sc-lbl">Pending Invoices</div></div>
-    <div class="stat-card sc-red"><span class="sc-icon">⚠️</span><div class="sc-val">${overdueInvoices}</div><div class="sc-lbl">Overdue</div></div>
-    <div class="stat-card sc-blue"><span class="sc-icon">💬</span><div class="sc-val">${newMessages}</div><div class="sc-lbl">New Messages</div></div>
-    <div class="stat-card sc-green"><span class="sc-icon">📁</span><div class="sc-val">${newDocuments}</div><div class="sc-lbl">New Documents</div></div>
-    <div class="stat-card sc-purple"><span class="sc-icon">⏱</span><div class="sc-val">${totalHours.toFixed(0)}</div><div class="sc-lbl">Hours Logged</div></div>
+    <div class="stat-card sc-gold" onclick="goToAdminStat('clients')" style="cursor:pointer">
+      <span class="sc-icon">👥</span>
+      <div class="sc-val">${totalClients}</div>
+      <div class="sc-lbl">${t('active_clients')}</div>
+    </div>
+    <div class="stat-card sc-orange" onclick="goToAdminStat('invoices')" style="cursor:pointer">
+      <span class="sc-icon">📄</span>
+      <div class="sc-val">${pendingInvoices}</div>
+      <div class="sc-lbl">Pending Invoices</div>
+    </div>
+    <div class="stat-card sc-red" onclick="goToAdminStat('overdue')" style="cursor:pointer">
+      <span class="sc-icon">⚠️</span>
+      <div class="sc-val">${overdueInvoices}</div>
+      <div class="sc-lbl">Overdue</div>
+    </div>
+    <div class="stat-card sc-blue" onclick="goToAdminStat('messages')" style="cursor:pointer">
+      <span class="sc-icon">💬</span>
+      <div class="sc-val">${newMessages}</div>
+      <div class="sc-lbl">New Messages</div>
+    </div>
+    <div class="stat-card sc-green" onclick="goToAdminStat('documents')" style="cursor:pointer">
+      <span class="sc-icon">📁</span>
+      <div class="sc-val">${newDocuments}</div>
+      <div class="sc-lbl">New Documents</div>
+    </div>
+    <div class="stat-card sc-purple" onclick="goToAdminStat('hours')" style="cursor:pointer">
+      <span class="sc-icon">⏱</span>
+      <div class="sc-val">${totalHours.toFixed(0)}</div>
+      <div class="sc-lbl">Hours Logged</div>
+    </div>
+    <div class="stat-card sc-pink" onclick="goToAdminStat('contracts')" style="cursor:pointer">
+      <span class="sc-icon">📋</span>
+      <div class="sc-val">${totalContracts}</div>
+      <div class="sc-lbl">Active Contracts</div>
+    </div>
   </div>
   `;
 }
+
+function goToAdminStat(type){
+  S.adminStatFilter=type;
+  switch(type){
+    case 'clients':
+      S.tab='clients';
+      break;
+    case 'invoices':
+      S.tab='reports';
+      S.reportType='invoices';
+      break;
+    case 'overdue':
+      S.tab='reports';
+      S.reportType='overdue';
+      break;
+    case 'messages':
+      S.tab='messages';
+      break;
+    case 'documents':
+      S.tab='documents';
+      break;
+    case 'hours':
+      S.tab='reports';
+      S.reportType='hours';
+      break;
+    case 'contracts':
+      rAdminContracts(document.getElementById('content'));
+      return;
+  }
+  renderApp();
+}
+
 
 /* ═══════════════════════════ CLIENT DASHBOARD ═══════════════════════════ */
 function rClientDash(el,cid){
