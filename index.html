@@ -13,6 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!-- Tabler icons replaced with inline symbols -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
 <style>
 :root{
   --g1:#0A2218;--g2:#0F3025;--g3:#1A4A2A;--g4:#2A6040;
@@ -5024,75 +5025,422 @@ function splitCSV(line){
 }
 function rReports(el,cid){
   const c=S.clients.find(c=>c.id===cid);
+  
+  // ✅ إذا لم يتم اختيار تقرير بعد، عرض القائمة
+  if(!S.reportTab){
+    return rReportsList(el,cid);
+  }
+  
+  // ✅ إذا تم اختيار تقرير، عرض التفاصيل
+  const contentEl=el;
+  switch(S.reportTab){
+    case 'pl':
+      rReportPL(contentEl,cid);
+      break;
+    case 'btw':
+      rReportBTW(contentEl,cid);
+      break;
+    case 'debtors':
+      rReportDebtors(contentEl,cid);
+      break;
+    case 'expenses':
+      rReportExpenses(contentEl,cid);
+      break;
+    default:
+      rReportSummary(contentEl,cid);
+  }
+}
+
+/* ── REPORTS LIST PAGE ── */
+function rReportsList(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  
+  const reports=[
+    {id:'summary',icon:'📊',name:'Financial Summary',desc:'Revenue, Expenses & Profit Overview',bgColor:'rgba(76,175,80',textColor:'#4CAF50'},
+    {id:'pl',icon:'📈',name:'P&L Statement',desc:'Detailed Profit & Loss Report',bgColor:'rgba(33,150,243',textColor:'#2196F3'},
+    {id:'btw',icon:'💰',name:'BTW/VAT Return',desc:'Tax Return Information',bgColor:'rgba(255,152,0',textColor:'#FF9800'},
+    {id:'debtors',icon:'👥',name:'Debtors Aging',desc:'Outstanding Invoices Report',bgColor:'rgba(244,67,54',textColor:'#F44336'},
+    {id:'expenses',icon:'🧾',name:'Expenses Report',desc:'Detailed Expense Breakdown',bgColor:'rgba(156,39,176',textColor:'#9C27B0'},
+  ];
+  
+  const isMobile=window.innerWidth<=860;
+  
+  let html='<div style="padding:'+(isMobile?'12px':'20px')+'">';
+  html+='<div style="margin-bottom:20px">';
+  html+='<div style="font-size:'+(isMobile?'20px':'28px')+';font-weight:600;color:var(--t1);margin-bottom:4px">📊 Reports</div>';
+  html+='<div style="font-size:14px;color:var(--t3)">'+c?.name+' — '+new Date().getFullYear()+'</div>';
+  html+='</div>';
+  
+  html+='<div style="display:grid;grid-template-columns:'+(isMobile?'1fr':'repeat(2,1fr)')+';gap:'+(isMobile?'10px':'16px')+'">';
+  
+  reports.forEach(r=>{
+    html+='<div onclick="S.reportTab=\''+r.id+'\';renderApp()"';
+    html+=' style="padding:20px;border-radius:12px;background:'+r.bgColor+'0.08);border:2px solid '+r.bgColor+'0.2);cursor:pointer;transition:all .3s;display:flex;flex-direction:column;justify-content:space-between"';
+    html+=' onmouseover="this.style.borderColor=\''+r.bgColor+'0.4)\';this.style.background=\''+r.bgColor+'0.12)\';this.style.transform=\'translateY(-4px)\'"';
+    html+=' onmouseout="this.style.borderColor=\''+r.bgColor+'0.2)\';this.style.background=\''+r.bgColor+'0.08)\';this.style.transform=\'translateY(0)\'">';
+    html+='<div><div style="font-size:48px;margin-bottom:12px">'+r.icon+'</div>';
+    html+='<div style="font-size:16px;font-weight:600;color:var(--t1);margin-bottom:6px">'+r.name+'</div>';
+    html+='<div style="font-size:12px;color:var(--t3);line-height:1.4">'+r.desc+'</div></div>';
+    html+='<div style="margin-top:16px;padding-top:12px;border-top:1px solid '+r.bgColor+'0.2);display:flex;align-items:center;color:'+r.textColor+';font-size:14px;font-weight:500">View Report →</div>';
+    html+='</div>';
+  });
+  
+  html+='</div>';
+  html+='<div style="margin-top:24px;padding:16px;background:var(--bg1);border-radius:8px;border-left:4px solid var(--gold)">';
+  html+='<div style="font-size:13px;color:var(--t3);line-height:1.6">💡 <strong>Tip:</strong> Select any report above to view detailed information and export as PDF or Excel.</div>';
+  html+='</div></div>';
+  
+  el.innerHTML=html;
+}
+
+/* ── BACK BUTTON FOR REPORTS ── */
+function goBackToReportsList(){
+  S.reportTab=null;
+  renderApp();
+}
+
+/* ── REPORT: Summary ── */
+function rReportSummary(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
   const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
   const exp=S.expenses.filter(e=>e.cid===cid);
   const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
   const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
   const profit=revenue-expenses;
-  const bankBal=S.bankTx.filter(tx=>tx.cid===cid).reduce((s,tx)=>s+(tx.amount||0),0);
   const debtors=S.invoices.filter(i=>i.cid===cid&&['Openstaand','Verzonden'].includes(i.status)).reduce((s,i)=>s+i.total,0);
   const btwPayable=inv.reduce((s,i)=>s+(i.btw||0),0)-exp.reduce((s,e)=>s+(e.btw||0),0);
 
-  const expByCat={};exp.forEach(e=>{const k=e.cat||'Overig';expByCat[k]=(expByCat[k]||0)+(e.amount||0);});
+  let html='<div style="padding:16px">';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<div class="card"><div class="ch"><span class="ct">📊 '+(t('rep_summary')||'Summary')+' — '+c?.name+'</span>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'summary\',\''+cid+'\')">📥 PDF</button>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'summary\',\''+cid+'\')">📊 Excel</button></div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px">';
+  html+='<div style="background:rgba(46,125,50,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--green)">';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💰 Revenue</div>';
+  html+='<div style="font-size:20px;font-weight:600;color:var(--green)">'+FMT(revenue)+'</div></div>';
+  html+='<div style="background:rgba(192,57,43,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--red)">';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💸 Expenses</div>';
+  html+='<div style="font-size:20px;font-weight:600;color:var(--red)">'+FMT(expenses)+'</div></div>';
+  html+='<div style="background:'+(profit>=0?'rgba(46,125,50,.08)':'rgba(192,57,43,.08)')+';border-radius:var(--r);padding:12px;border-left:3px solid '+(profit>=0?'var(--green)':'var(--red)')+'">';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">📈 Net Profit</div>';
+  html+='<div style="font-size:20px;font-weight:600;color:'+(profit>=0?'var(--green)':'var(--red)')+'">' + FMT(profit) + '</div></div>';
+  html+='<div style="background:rgba(200,144,16,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--gold)">';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💳 BTW Payable</div>';
+  html+='<div style="font-size:20px;font-weight:600;color:var(--gold)">'+FMT(btwPayable)+'</div></div>';
+  html+='<div style="background:rgba(63,81,181,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--blue)">';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">👥 Debtors</div>';
+  html+='<div style="font-size:20px;font-weight:600;color:var(--blue)">'+FMT(debtors)+'</div></div>';
+  html+='</div></div></div>';
+  
+  el.innerHTML=html;
+}
 
-  el.innerHTML=`
-  <div class="kgrid">
-    <div class="kcard"><div class="kl">${t('rep_revenue')}</div><div class="kv" style="color:var(--green)">${FMT(revenue)}</div></div>
-    <div class="kcard"><div class="kl">${t('rep_expenses')}</div><div class="kv" style="color:var(--red)">${FMT(expenses)}</div></div>
-    <div class="kcard"><div class="kl">${t('rep_net_profit')}</div><div class="kv" style="color:${profit>=0?'var(--green)':'var(--red)'}">${FMT(profit)}</div></div>
-    <div class="kcard"><div class="kl">${t('rep_btw_balance')}</div><div class="kv" style="color:var(--orange)">${FMT(btwPayable)}</div></div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-    <div class="card" style="padding:14px">
-      <div style="font-size:12px;font-weight:500;color:var(--t1);margin-bottom:11px;padding-bottom:7px;border-bottom:1px solid var(--gr2)">
-        📈 ${t('winst_verlies')} — ${c?.name} · ${new Date().getFullYear()}
-      </div>
-      <div style="margin-bottom:12px">
-        <div style="font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${t('rep_revenue')}</div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--gr2)">
-          <span>${t('rep_revenue')}</span><span style="color:var(--green)">${FMT(revenue)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:5px 7px;font-size:11px;font-weight:500;background:var(--gr1);border-radius:var(--rs);margin:3px 0">
-          <span>${t('rep_total_omzet')}</span><span style="color:var(--green)">${FMT(revenue)}</span>
-        </div>
-      </div>
-      <div style="margin-bottom:12px">
-        <div style="font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${t('rep_expenses')}</div>
-        ${Object.entries(expByCat).map(([cat,amt])=>`
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--gr2)">
-          <span>${cat}</span><span style="color:var(--red)">-${FMT(amt)}</span>
-        </div>`).join('')}
-        <div style="display:flex;justify-content:space-between;padding:5px 7px;font-size:11px;font-weight:500;background:var(--color-background-secondary);border-radius:var(--border-radius-sm);margin:3px 0">
-          <span>${t('rep_total_costs')}</span><span style="color:var(--red)">-${FMT(expenses)}</span>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:600;font-size:13px;border-top:1px solid var(--gr2);margin-top:4px">
-        <span>${t('rep_nettowinst')}</span>
-        <span style="color:${profit>=0?'var(--green)':'var(--red)'};font-size:15px">${FMT(profit)}</span>
-      </div>
-    </div>
+/* ── REPORT: P&L ── */
+function rReportPL(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
+  const exp=S.expenses.filter(e=>e.cid===cid);
+  const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
+  const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+  const profit=revenue-expenses;
+  
+  const expByCat={};
+  exp.forEach(e=>{const k=e.cat||'Other';expByCat[k]=(expByCat[k]||0)+(e.amount||0);});
 
-    <div class="card" style="padding:14px">
-      <div style="font-size:12px;font-weight:500;color:var(--t1);margin-bottom:11px;padding-bottom:7px;border-bottom:1px solid var(--gr2)">
-        ⚖️ ${t('balans')} — ${c?.name}
-      </div>
-      <div style="margin-bottom:10px">
-        <div style="font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${t('rep_activa')}</div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--gr2)"><span>Bank (0100)</span><span>${FMT(bankBal)}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--gr2)"><span>Debiteuren (0200)</span><span>${FMT(debtors)}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--gr2)"><span>BTW te vorderen (0410)</span><span>${FMT(exp.reduce((s,e)=>s+(e.btw||0),0))}</span></div>
-      </div>
-      <div>
-        <div style="font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${t('rep_passiva')}</div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--gr2)"><span>BTW te betalen (0400)</span><span style="color:var(--orange)">${FMT(btwPayable)}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--gr2)"><span>Eigen vermogen (0500)</span><span style="color:var(--green)">${FMT(profit)}</span></div>
-      </div>
-    </div>
-  </div>
-  <div style="display:flex;gap:7px;margin-top:6px">
-    <button class="btn btn-gold btn-xs" onclick="exportClientPDF('${cid}')">${t('btn_export_pdf_report')}</button>
-    <button class="btn btn-xs" onclick="exportReportCSV('${cid}')">${t('btn_export_csv')}</button>
-  </div>`;
+  let html='<div style="padding:16px">';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<div class="card">';
+  html+='<div class="ch"><span class="ct">📈 Profit & Loss Statement</span>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'pl\',\''+cid+'\')">📥 PDF</button>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'pl\',\''+cid+'\')">📊 Excel</button>';
+  html+='</div><div style="padding:16px">';
+  html+='<div style="margin-bottom:20px">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gold)">REVENUE</div>';
+  html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)">';
+  html+='<span>Total Revenue</span><span style="font-weight:600;color:var(--green)">'+FMT(revenue)+'</span>';
+  html+='</div></div>';
+  
+  html+='<div style="margin-bottom:20px">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--red)">EXPENSES</div>';
+  
+  Object.entries(expByCat).forEach(([cat,amt])=>{
+    html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)">';
+    html+='<span>'+cat+'</span><span style="color:var(--red)">-'+FMT(amt)+'</span>';
+    html+='</div>';
+  });
+  
+  html+='<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:12px;font-weight:600;border-top:1px solid var(--gr2);margin-top:8px">';
+  html+='<span>Total Expenses</span><span style="color:var(--red)">-'+FMT(expenses)+'</span>';
+  html+='</div></div>';
+  
+  html+='<div style="padding:12px;background:'+(profit>=0?'rgba(46,125,50,.1)':'rgba(192,57,43,.1)')+';border-radius:var(--r);border-left:4px solid '+(profit>=0?'var(--green)':'var(--red)')+'">';
+  html+='<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600">';
+  html+='<span>NET PROFIT/LOSS</span><span style="color:'+(profit>=0?'var(--green)':'var(--red)')+'">' + FMT(profit) + '</span>';
+  html+='</div></div>';
+  html+='</div></div></div>';
+  
+  el.innerHTML=html;
+}
+
+/* ── REPORT: BTW ── */
+function rReportBTW(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
+  const exp=S.expenses.filter(e=>e.cid===cid);
+  
+  const btwOut=inv.reduce((s,i)=>s+(i.btw||0),0);
+  const btwIn=exp.reduce((s,e)=>s+(e.btw||0),0);
+  const btwPayable=btwOut-btwIn;
+
+  let html='<div style="padding:16px">';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<div class="card"><div class="ch"><span class="ct">💰 BTW Return (VAT)</span>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'btw\',\''+cid+'\')">📥 PDF</button>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'btw\',\''+cid+'\')">📊 Excel</button></div>';
+  html+='<div style="padding:16px">';
+  html+='<div style="margin-bottom:16px;padding:12px;background:rgba(200,144,16,.08);border-radius:var(--r);border-left:3px solid var(--gold)">';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">BTW Payable (Due)</div>';
+  html+='<div style="font-size:24px;font-weight:600;color:var(--gold)">'+FMT(btwPayable)+'</div></div>';
+  html+='<div style="margin-bottom:16px">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gold)">VAT OUTPUT (Sales)</div>';
+  html+='<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:12px;font-weight:600;background:var(--bg1);padding:10px;border-radius:var(--rs)">';
+  html+='<span>Total VAT Output</span><span style="color:var(--green)">'+FMT(btwOut)+'</span></div></div>';
+  html+='<div style="margin-bottom:16px">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--red)">VAT INPUT (Expenses)</div>';
+  html+='<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:12px;font-weight:600;background:var(--bg1);padding:10px;border-radius:var(--rs)">';
+  html+='<span>Total VAT Input</span><span style="color:var(--red)">-'+FMT(btwIn)+'</span></div></div></div></div></div>';
+  
+  el.innerHTML=html;
+}
+
+/* ── REPORT: Debtors ── */
+function rReportDebtors(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  const invoices=S.invoices.filter(i=>i.cid===cid&&['Openstaand','Verzonden'].includes(i.status)).sort((a,b)=>new Date(b.due)-new Date(a.due));
+  const total=invoices.reduce((s,i)=>s+i.total,0);
+
+  let html='<div style="padding:16px">';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<div class="card"><div class="ch"><span class="ct">👥 Debtors Aging Report</span>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'debtors\',\''+cid+'\')">📥 PDF</button>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'debtors\',\''+cid+'\')">📊 Excel</button></div>';
+  html+='<div style="padding:16px">';
+  html+='<div style="margin-bottom:16px;padding:12px;background:rgba(192,57,43,.08);border-radius:var(--r);border-left:3px solid var(--red)">';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Outstanding</div>';
+  html+='<div style="font-size:24px;font-weight:600;color:var(--red)">'+FMT(total)+'</div></div>';
+  
+  if(invoices.length===0){
+    html+='<div style="text-align:center;padding:24px;color:var(--t3)">✅ No outstanding invoices</div>';
+  } else {
+    invoices.forEach(i=>{
+      html+='<div style="padding:12px;border-bottom:1px solid var(--gr2);display:flex;justify-content:space-between;align-items:center">';
+      html+='<div style="flex:1">';
+      html+='<div style="font-weight:500;font-size:12px;color:var(--t1)">'+i.num+'</div>';
+      html+='<div style="font-size:10px;color:var(--t3);margin-top:2px">'+i.desc+'</div>';
+      html+='<div style="font-size:10px;color:var(--t3);margin-top:2px">Due: '+FD(i.due)+'</div></div>';
+      html+='<div style="text-align:right;flex-shrink:0"><div style="font-size:12px;font-weight:600;color:var(--red)">'+FMT(i.total)+'</div></div></div>';
+    });
+  }
+  
+  html+='</div></div></div>';
+  el.innerHTML=html;
+}
+
+/* ── REPORT: Expenses ── */
+function rReportExpenses(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  const expenses=S.expenses.filter(e=>e.cid===cid).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const total=expenses.reduce((s,e)=>s+e.amount,0);
+  
+  const expByCat={};
+  expenses.forEach(e=>{const k=e.cat||'Other';expByCat[k]=(expByCat[k]||0)+(e.amount||0);});
+
+  let html='<div style="padding:16px">';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<div class="card"><div class="ch"><span class="ct">🧾 Expenses Report</span>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'expenses\',\''+cid+'\')">📥 PDF</button>';
+  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'expenses\',\''+cid+'\')">📊 Excel</button></div>';
+  html+='<div style="padding:16px">';
+  html+='<div style="margin-bottom:16px;padding:12px;background:rgba(192,57,43,.08);border-radius:var(--r);border-left:3px solid var(--red)">';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Expenses</div>';
+  html+='<div style="font-size:24px;font-weight:600;color:var(--red)">'+FMT(total)+'</div></div>';
+  
+  html+='<div style="margin-bottom:16px">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--red)">By Category</div>';
+  Object.entries(expByCat).forEach(([cat,amt])=>{
+    html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)">';
+    html+='<span>'+cat+'</span><span style="color:var(--red)">-'+FMT(amt)+'</span></div>';
+  });
+  html+='</div>';
+  
+  html+='<div style="margin-bottom:16px">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gray)">Detailed List</div>';
+  if(expenses.length===0){
+    html+='<div style="text-align:center;padding:16px;color:var(--t3)">No expenses</div>';
+  } else {
+    expenses.forEach(e=>{
+      html+='<div style="padding:10px;border-bottom:1px solid var(--gr2);display:flex;justify-content:space-between;align-items:center">';
+      html+='<div style="flex:1"><div style="font-weight:500;font-size:11px;color:var(--t1)">'+e.supplier+'</div>';
+      html+='<div style="font-size:10px;color:var(--t3);margin-top:1px">'+e.desc+' • '+e.cat+'</div>';
+      html+='<div style="font-size:9px;color:var(--t3);margin-top:1px">'+FD(e.date)+'</div></div>';
+      html+='<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:600;color:var(--red)">-'+FMT(e.amount)+'</div></div></div>';
+    });
+  }
+  html+='</div></div></div>';
+  
+  el.innerHTML=html;
+}
+
+/* ══════════════════════ EXPORT FUNCTIONS ══════════════════════ */
+
+function exportReportPDF(type,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
+  if(!jsPDF){toast('Loading PDF library...','ti-loader');return;}
+  
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=210,M=15,lineHeight=7;
+  let y=M;
+  
+  // Header
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.text(`${c?.name||'Report'}`,M,y);
+  y+=12;
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica','normal');
+  doc.text(`Report Type: ${type.toUpperCase()} | Generated: ${FD(new Date())}`,M,y);
+  y+=10;
+  
+  doc.line(M,y,W-M,y);
+  y+=8;
+  
+  // Content based on type
+  if(type==='summary'){
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
+    const exp=S.expenses.filter(e=>e.cid===cid);
+    const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
+    const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const profit=revenue-expenses;
+    
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.text('Financial Summary',M,y);y+=10;
+    
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    doc.text(`Total Revenue: ${FMT(revenue)}`,M,y);y+=lineHeight;
+    doc.text(`Total Expenses: ${FMT(expenses)}`,M,y);y+=lineHeight;
+    doc.setFont('helvetica','bold');
+    doc.text(`Net Profit: ${FMT(profit)}`,M,y);y+=lineHeight;
+  }
+  
+  doc.save(`Report_${type}_${c?.name}_${new Date().getFullYear()}.pdf`);
+  toast('PDF exported successfully!');
+}
+
+function exportReportExcel(type,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  const XLSX=window.XLSX;
+  if(!XLSX){toast('Loading Excel library...','ti-loader');return;}
+  
+  let data=[];
+  let sheets={};
+  
+  if(type==='summary'){
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
+    const exp=S.expenses.filter(e=>e.cid===cid);
+    const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
+    const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const profit=revenue-expenses;
+    
+    data=[
+      ['Financial Summary Report'],
+      ['Client',c?.name],
+      ['Date Generated',FD(new Date())],
+      [],
+      ['Metric','Amount'],
+      ['Total Revenue',revenue],
+      ['Total Expenses',expenses],
+      ['Net Profit',profit]
+    ];
+    sheets['Summary']=XLSX.utils.aoa_to_sheet(data);
+  }else if(type==='pl'){
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
+    const exp=S.expenses.filter(e=>e.cid===cid);
+    const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
+    const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const profit=revenue-expenses;
+    
+    data=[
+      ['Profit & Loss Statement'],
+      ['Client',c?.name],
+      [],
+      ['REVENUE'],
+      ['Description','Amount'],
+      ['Total Revenue',revenue],
+      [],
+      ['EXPENSES'],
+      ['Category','Amount']
+    ];
+    
+    exp.forEach(e=>{
+      data.push([e.cat||'Other',e.amount]);
+    });
+    
+    data.push([]);
+    data.push(['Total Expenses',expenses]);
+    data.push([]);
+    data.push(['NET PROFIT/LOSS',profit]);
+    
+    sheets['P&L']=XLSX.utils.aoa_to_sheet(data);
+  }else if(type==='btw'){
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
+    const exp=S.expenses.filter(e=>e.cid===cid);
+    const btwOut=inv.reduce((s,i)=>s+(i.btw||0),0);
+    const btwIn=exp.reduce((s,e)=>s+(e.btw||0),0);
+    const btwPayable=btwOut-btwIn;
+    
+    data=[
+      ['VAT/BTW Return'],
+      ['Client',c?.name],
+      [],
+      ['Item','Amount'],
+      ['VAT Output',btwOut],
+      ['VAT Input',btwIn],
+      [],
+      ['VAT Payable',btwPayable]
+    ];
+    sheets['BTW']=XLSX.utils.aoa_to_sheet(data);
+  }else if(type==='expenses'){
+    const expenses=S.expenses.filter(e=>e.cid===cid);
+    data=[
+      ['Expenses Report'],
+      ['Client',c?.name],
+      [],
+      ['Date','Supplier','Description','Category','Amount']
+    ];
+    
+    expenses.forEach(e=>{
+      data.push([e.date,e.supplier,e.desc,e.cat||'Other',e.amount]);
+    });
+    
+    const total=expenses.reduce((s,e)=>s+e.amount,0);
+    data.push([]);
+    data.push(['TOTAL','','','',total]);
+    
+    sheets['Expenses']=XLSX.utils.aoa_to_sheet(data);
+  }
+  
+  const workbook=XLSX.utils.book_new();
+  Object.entries(sheets).forEach(([name,sheet])=>{
+    XLSX.utils.book_append_sheet(workbook,sheet,name);
+  });
+  
+  XLSX.writeFile(workbook,`Report_${type}_${c?.name}_${new Date().getFullYear()}.xlsx`);
+  toast('Excel exported successfully!');
 }
 
 // ═══════════════ NEW MODAL FUNCTIONS ═══════════════
