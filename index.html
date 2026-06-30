@@ -1363,7 +1363,7 @@ var I18N={
     client_workspaces:'Client workspaces', my_account:'My account', administrator:'Administrator',
     viewing_client:'Viewing client',
     not_synced:'Not synced yet', syncing:'Syncing…', synced:'Synced', sync_error:'Sync error', offline:'Offline',
-    dashboard:'Dashboard', invoices:'Invoices', debtors:'Debtors', expenses:'Expenses', hours:'Hours',
+    dashboard:'Dashboard', invoices:'Invoices', debtors:'Debtors', expenses:'Expenses', hours:'Hours', back_to_overview:'Back to Overview',
     journal:'Journal', bank:'Bank', reports:'Reports', documents:'Documents', messages:'Messages', client_info:'Client',
     // Dashboard (admin)
     all_clients_overview:'All clients overview', active_clients:'Active clients', clients_list:'Clients List', revenue_collected:'Revenue collected',
@@ -1528,7 +1528,7 @@ var I18N={
     client_workspaces:'Klantdossiers', my_account:'Mijn account', administrator:'Administrator',
     viewing_client:'Klant weergeven',
     not_synced:'Nog niet gesynchroniseerd', syncing:'Synchroniseren…', synced:'Gesynchroniseerd', sync_error:'Synchronisatiefout', offline:'Offline',
-    dashboard:'Dashboard', invoices:'Facturen', debtors:'Debiteuren', expenses:'Onkosten', hours:'Uren',
+    dashboard:'Dashboard', invoices:'Facturen', debtors:'Debiteuren', expenses:'Onkosten', hours:'Uren', back_to_overview:'Terug naar overzicht',
     journal:'Journaal', bank:'Bank', reports:'Rapporten', documents:'Documenten', messages:'Berichten', client_info:'Klant',
     tab_invoices:'Facturen', tab_debtors:'Debiteuren',
     tab_expenses:'Onkosten', tab_hours:'Uren',
@@ -1676,7 +1676,7 @@ var I18N={
     client_workspaces:'ملفات العملاء', my_account:'حسابي', administrator:'مسؤول النظام',
     viewing_client:'عرض العميل',
     not_synced:'لم تتم المزامنة بعد', syncing:'جارٍ المزامنة…', synced:'تمت المزامنة', sync_error:'خطأ في المزامنة', offline:'غير متصل',
-    dashboard:'لوحة التحكم', invoices:'الفواتير', debtors:'الديون', expenses:'المصاريف', hours:'ساعات العمل',
+    dashboard:'لوحة التحكم', invoices:'الفواتير', debtors:'الديون', expenses:'المصاريف', hours:'ساعات العمل', back_to_overview:'العودة للـ Overview',
     journal:'اليومية', bank:'البنك', reports:'التقارير', documents:'المستندات', messages:'الرسائل', client_info:'العميل',
     // Tab labels with tab_ prefix (used in topbar & sidebar)
     tab_invoices:'الفواتير', tab_debtors:'الديون (Debiteuren)',
@@ -2858,7 +2858,14 @@ function deleteContract(contractId){
 /* ── CLIENT CONTRACTS ── */
 function rContracts(el,cid){
   const contracts=S.contracts?.filter(c=>c.cid===cid)||[];
+  const c=S.clients.find(c=>c.id===cid);
   el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:rgba(183,220,197,0.08);border-left:4px solid #B8E6D1;border-radius:6px">
+    <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:#B8E6D1;color:#0A2218;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:500" onmouseover="this.style.background='#7dbfa3';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='#B8E6D1';this.style.transform='translateX(0)'">
+      ← ${t('back_to_overview')||'العودة للـ Overview'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
+  </div>
   <div class="card">
     <div class="ch"><span class="ct">📋 ${t('contracts')}</span>
       <button class="btn btn-p btn-xs" onclick="openAddContract('${cid}')">➕ ${t('add')}</button>
@@ -2889,6 +2896,12 @@ function rAssets(el,cid){
   const assets=S.assets?.filter(a=>a.cid===cid)||[];
   const c=S.clients.find(c=>c.id===cid);
   el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:rgba(10,34,24,0.08);border-left:4px solid #0A2218;border-radius:6px">
+    <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:#0A2218;color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='#1a4d2e';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='#0A2218';this.style.transform='translateX(0)'">
+      ← ${t('back_to_overview')||'العودة للـ Overview'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
+  </div>
   <div class="card">
     <div class="ch"><span class="ct">🏢 ${t('assets')}</span>
       <button class="btn btn-p btn-xs" onclick="openAddAsset('${cid}')">➕ ${t('add')}</button>
@@ -3019,52 +3032,39 @@ function rAdminDash(el){
   const overdueInvoices=S.invoices.filter(i=>i.status==='Verlopen').length;
   const newDocuments=S.docs.filter(d=>d.isNew).length;
   const totalContracts=S.contracts.filter(c=>c.status==='active').length;
-  const pendingAgreements=S.serviceAgreements?S.serviceAgreements.filter(a=>['pending_signature','client_signed'].includes(a.status)).length:0;
+  const pendingAgreements=S.serviceAgreements?S.serviceAgreements.filter(a=>['pending_review','client_signed'].includes(a.status)).length:0;
 
-  el.innerHTML=`
-  <div class="all-stats-row">
-    <div class="stat-card sc-gold" onclick="goToAdminStat('clients')" style="cursor:pointer">
-      <span class="sc-icon">👥</span>
-      <div class="sc-val">${totalClients}</div>
-      <div class="sc-lbl">${t('active_clients')}</div>
-    </div>
-    <div class="stat-card sc-orange" onclick="goToAdminStat('invoices')" style="cursor:pointer">
-      <span class="sc-icon">📄</span>
-      <div class="sc-val">${pendingInvoices}</div>
-      <div class="sc-lbl">Pending Invoices</div>
-    </div>
-    <div class="stat-card sc-red" onclick="goToAdminStat('overdue')" style="cursor:pointer">
-      <span class="sc-icon">⚠️</span>
-      <div class="sc-val">${overdueInvoices}</div>
-      <div class="sc-lbl">Overdue</div>
-    </div>
-    <div class="stat-card sc-blue" onclick="goToAdminStat('messages')" style="cursor:pointer">
-      <span class="sc-icon">💬</span>
-      <div class="sc-val">${newMessages}</div>
-      <div class="sc-lbl">New Messages</div>
-    </div>
-    <div class="stat-card sc-green" onclick="goToAdminStat('documents')" style="cursor:pointer">
-      <span class="sc-icon">📁</span>
-      <div class="sc-val">${newDocuments}</div>
-      <div class="sc-lbl">New Documents</div>
-    </div>
-    <div class="stat-card sc-purple" onclick="goToAdminStat('hours')" style="cursor:pointer">
-      <span class="sc-icon">⏱</span>
-      <div class="sc-val">${totalHours.toFixed(0)}</div>
-      <div class="sc-lbl">Hours Logged</div>
-    </div>
-    <div class="stat-card sc-pink" onclick="goToAdminStat('contracts')" style="cursor:pointer">
-      <span class="sc-icon">📋</span>
-      <div class="sc-val">${totalContracts}</div>
-      <div class="sc-lbl">Active Contracts</div>
-    </div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#E8D4B0 0%,#D4A574 100%);color:#2d1810;cursor:pointer" onclick="viewPendingAgreements()">
-      <span class="sc-icon">📜</span>
-      <div class="sc-val" style="color:#2d1810">${pendingAgreements}</div>
-      <div class="sc-lbl" style="color:#2d1810">Pending Agreements</div>
-    </div>
-  </div>
-  `;
+  const cards=[
+    {icon:'👥',value:totalClients,label:t('active_clients'),action:'clients',bg:'linear-gradient(135deg, #0A2218 0%, #1a4d2e 100%)',border:'#2d7a4f',text:'#ffffff',accent:'#FFD700'},
+    {icon:'📄',value:pendingInvoices,label:'Pending Invoices',action:'invoices',bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#4da876',text:'#ffffff',accent:'#FFD700'},
+    {icon:'⚠️',value:overdueInvoices,label:'Overdue',action:'overdue',bg:'linear-gradient(135deg, #d9534f 0%, #c9302c 100%)',border:'#d9534f',text:'#ffffff',accent:'#FFD700'},
+    {icon:'💬',value:newMessages,label:'New Messages',action:'messages',bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#7dbfa3',text:'#ffffff',accent:'#FFD700'},
+    {icon:'📁',value:newDocuments,label:'New Documents',action:'documents',bg:'linear-gradient(135deg, #FFB700 0%, #FFC700 100%)',border:'#FF9500',text:'#0A2218',accent:'#0A2218'},
+    {icon:'⏱',value:totalHours.toFixed(0),label:'Hours Logged',action:'hours',bg:'linear-gradient(135deg, #FFEB99 0%, #FFE66D 100%)',border:'#FFC700',text:'#0A2218',accent:'#0A2218'},
+    {icon:'📋',value:totalContracts,label:'Active Contracts',action:'contracts',bg:'linear-gradient(135deg, #B8E6D1 0%, #7dbfa3 100%)',border:'#4da876',text:'#0A2218',accent:'#C89010'},
+    {icon:'📜',value:pendingAgreements,label:'Pending Agreements',action:'agreements',bg:'linear-gradient(135deg, #E8D4B0 0%, #D4A574 100%)',border:'#C89010',text:'#2d1810',accent:'#2d1810'}
+  ];
+
+  let html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;padding:0">';
+  
+  cards.forEach(c=>{
+    html+='<div onclick="goToAdminStat(\''+c.action+'\')"';
+    html+=' style="padding:20px;background:'+c.bg+';border:2px solid '+c.border+';border-radius:12px;cursor:pointer;transition:all .3s ease;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;justify-content:space-between"';
+    html+=' onmouseover="this.style.transform=\'translateY(-6px)\';this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.15)\';this.style.borderColor=\''+c.accent+'\'"';
+    html+=' onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\';this.style.borderColor=\''+c.border+'\'">';
+    
+    html+='<div style="position:relative;z-index:1">';
+    html+='<div style="font-size:40px;margin-bottom:12px">'+c.icon+'</div>';
+    html+='<div style="font-size:28px;font-weight:600;color:'+c.text+';margin-bottom:4px">'+c.value+'</div>';
+    html+='<div style="font-size:12px;color:rgba('+(c.text==='#ffffff'?'255,255,255':'10,34,24')+',0.85);font-weight:500">'+c.label+'</div>';
+    html+='</div>';
+    
+    html+='</div>';
+  });
+  
+  html+='</div>';
+  
+  el.innerHTML=html;
 }
 
 function goToAdminStat(type){
@@ -3082,6 +3082,10 @@ function goToAdminStat(type){
       S.reportType='overdue';
       break;
     case 'messages':
+      // If a client is selected, automatically select it for messages
+      if(S.currentClient && isAdmin()){
+        S.selectedMsgClient=S.currentClient;
+      }
       S.tab='messages';
       break;
     case 'documents':
@@ -3109,41 +3113,108 @@ function rClientDash(el,cid){
   const hrs=S.hours.filter(h=>h.cid===cid).reduce((s,h)=>s+h.hrs,0);
   const unread=S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.deleted).length;
 
-  el.innerHTML=`
-  ${isAdmin()?`<div style="background:linear-gradient(135deg,rgba(10,34,24,0.15) 0%,rgba(77,168,118,0.1) 100%);border-left:4px solid #2d7a4f;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:12px;color:#0A2218;font-weight:600;display:flex;align-items:center;justify-content:space-between"><span>👁 <strong>CLIENT OVERVIEW</strong> — ${c?.name||'Client'}</span><span style="font-size:10px;color:#4da876;background:rgba(77,168,118,0.2);padding:4px 8px;border-radius:4px;font-weight:500">Admin View</span></div>`:`<div style="background:linear-gradient(135deg,rgba(200,144,16,0.1) 0%,rgba(200,144,16,0.05) 100%);border-left:4px solid #C89010;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:12px;color:#C89010;font-weight:600;display:flex;align-items:center;gap:8px"><span>👤 <strong>MY OVERVIEW</strong></span><span style="font-size:10px;color:#C89010;background:rgba(200,144,16,0.2);padding:4px 8px;border-radius:4px;font-weight:500">Client View</span></div>`}
-  <div class="kgrid">
-    <div class="kcard"><div class="kl">${t('total_paid')}</div><div class="kv" style="color:var(--green)">${FMT(paid)}</div></div>
-    <div class="kcard"><div class="kl">${t('outstanding')}</div><div class="kv" style="color:var(--orange)">${FMT(open)}</div></div>
-    ${over>0?`<div class="kcard"><div class="kl">${t('overdue')}</div><div class="kv" style="color:var(--red)">${FMT(over)}</div></div>`:''}
-    <div class="kcard"><div class="kl">${t('hours_logged')}</div><div class="kv">${hrs.toFixed(1)}h</div></div>
-    <div class="kcard"><div class="kl">${t('messages_from_anb')}</div><div class="kv">${unread}</div></div>
-  </div>
+  const isMobile=window.innerWidth<=860;
+  let html='';
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-    <div class="card" style="cursor:pointer" onclick="setTab('invoices')">
-      <div class="ch"><span class="ct">${t('recent_invoices')}</span><span style="font-size:11px;color:var(--t3)">${inv.length} total</span></div>
-      ${inv.length===0?`<div class="empty"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📄</span>No invoices yet</div>`:
-      inv.slice(0,4).map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--gr1)">
-        <div><div style="font-size:12px;font-weight:500">${i.desc}</div>
-        <div style="font-size:10px;color:var(--t3)">${FD(i.date)}</div></div>
-        <div style="text-align:right"><div style="font-size:12px;font-weight:600">${FMT(i.total)}</div>${bdg(i.status)}</div>
-      </div>`).join('')}
-    </div>
+  // Header banner
+  html+=isAdmin()?`<div style="background:linear-gradient(135deg,rgba(10,34,24,0.15) 0%,rgba(77,168,118,0.1) 100%);border-left:4px solid #2d7a4f;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:12px;color:#0A2218;font-weight:600;display:flex;align-items:center;justify-content:space-between"><span>👁 <strong>CLIENT OVERVIEW</strong> — ${c?.name||'Client'}</span><span style="font-size:10px;color:#4da876;background:rgba(77,168,118,0.2);padding:4px 8px;border-radius:4px;font-weight:500">[Admin View]</span></div>`:`<div style="background:linear-gradient(135deg,rgba(200,144,16,0.1) 0%,rgba(200,144,16,0.05) 100%);border-left:4px solid #C89010;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:12px;color:#C89010;font-weight:600;display:flex;align-items:center;gap:8px"><span>👤 <strong>MY OVERVIEW</strong></span><span style="font-size:10px;color:#C89010;background:rgba(200,144,16,0.2);padding:4px 8px;border-radius:4px;font-weight:500">[Client View]</span></div>`;
 
-    <div class="card" style="cursor:pointer" onclick="setTab('messages')">
-      <div class="ch"><span class="ct">${t('messages')}</span></div>
-      ${S.messages.filter(m=>m.cid===cid&&!m.deleted).slice(-3).map(m=>`
-      <div style="padding:9px 14px;border-bottom:1px solid var(--gr1)">
-        <div style="font-size:10px;font-weight:600;color:${m.from==='anb'?'var(--g1)':'var(--gold)'};margin-bottom:3px">
-          ${m.from==='anb'?'ANB Financial':t('my_account')} · ${m.time}
-        </div>
-        <div style="font-size:12px;color:var(--t2);line-height:1.4">${m.text.slice(0,60)}${m.text.length>60?'...':''}</div>
-      </div>`).join('')||`<div class="empty"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">💬</span>${t('empty_messages')}</div>`}
-    </div>
-  </div>`;
+  // Stats grid - تفاعلية
+  html+='<div style="display:grid;grid-template-columns:'+( isMobile?'1fr':'repeat(5,1fr)')+';gap:12px;margin-bottom:16px">';
+  
+  // Card 1: Total Paid
+  html+='<div style="padding:16px;background:rgba(77,168,118,0.1);border:2px solid #4dA876;border-radius:8px;transition:all .3s ease;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer" onclick="setTab(\'invoices\');renderApp()" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 10px 20px rgba(0,0,0,0.12)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.06)\';this.style.borderColor=\'#4dA876\'">';
+  html+='<div style="font-size:24px;margin-bottom:8px;opacity:0.9">✓</div>';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:500">'+t('total_paid')+'</div>';
+  html+='<div style="font-size:18px;font-weight:600;color:#4dA876">'+FMT(paid)+'</div>';
+  html+='<div style="margin-top:12px;font-size:10px;color:#4dA876;font-weight:500">→ Click to view</div>';
+  html+='</div>';
+  
+  // Card 2: Outstanding
+  html+='<div style="padding:16px;background:rgba(255,183,0,0.1);border:2px solid #FFB700;border-radius:8px;transition:all .3s ease;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer" onclick="setTab(\'invoices\');renderApp()" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 10px 20px rgba(0,0,0,0.12)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.06)\';this.style.borderColor=\'#FFB700\'">';
+  html+='<div style="font-size:24px;margin-bottom:8px;opacity:0.9">⏳</div>';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:500">'+t('outstanding')+'</div>';
+  html+='<div style="font-size:18px;font-weight:600;color:#FFB700">'+FMT(open)+'</div>';
+  html+='<div style="margin-top:12px;font-size:10px;color:#FFB700;font-weight:500">→ Click to view</div>';
+  html+='</div>';
+  
+  // Card 3: Overdue
+  html+='<div style="padding:16px;background:rgba(217,83,79,0.1);border:2px solid #d9534f;border-radius:8px;transition:all .3s ease;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer" onclick="setTab(\'invoices\');renderApp()" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 10px 20px rgba(0,0,0,0.12)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.06)\';this.style.borderColor=\'#d9534f\'">';
+  html+='<div style="font-size:24px;margin-bottom:8px;opacity:0.9">⚠️</div>';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:500">'+t('overdue')+'</div>';
+  html+='<div style="font-size:18px;font-weight:600;color:#d9534f">'+FMT(over)+'</div>';
+  html+='<div style="margin-top:12px;font-size:10px;color:#d9534f;font-weight:500">→ Click to view</div>';
+  html+='</div>';
+  
+  // Card 4: Hours Logged
+  html+='<div style="padding:16px;background:rgba(200,144,16,0.1);border:2px solid #C89010;border-radius:8px;transition:all .3s ease;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer" onclick="setTab(\'hours\');renderApp()" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 10px 20px rgba(0,0,0,0.12)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.06)\';this.style.borderColor=\'#C89010\'">';
+  html+='<div style="font-size:24px;margin-bottom:8px;opacity:0.9">⏱</div>';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:500">'+t('hours_logged')+'</div>';
+  html+='<div style="font-size:18px;font-weight:600;color:#C89010">'+hrs.toFixed(1)+'h</div>';
+  html+='<div style="margin-top:12px;font-size:10px;color:#C89010;font-weight:500">→ Click to view</div>';
+  html+='</div>';
+  
+  // Card 5: Messages
+  html+='<div style="padding:16px;background:rgba(77,168,118,0.1);border:2px solid #4da876;border-radius:8px;transition:all .3s ease;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer" onclick="setTab(\'messages\');renderApp()" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 10px 20px rgba(0,0,0,0.12)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.06)\';this.style.borderColor=\'#4da876\'">';
+  html+='<div style="font-size:24px;margin-bottom:8px;opacity:0.9">💬</div>';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:500">'+t('messages_from_anb')+'</div>';
+  html+='<div style="font-size:18px;font-weight:600;color:#4da876">'+unread+'</div>';
+  html+='<div style="margin-top:12px;font-size:10px;color:#4da876;font-weight:500">→ Click to view</div>';
+  html+='</div>';
+  
+  html+='</div>';
+
+  // Recent invoices and messages section
+  html+='<div style="display:grid;grid-template-columns:'+(isMobile?'1fr':'1fr 1fr')+';gap:12px">';
+  
+  // Invoices card - تفاعلية بالكامل
+  html+='<div style="background:linear-gradient(135deg,#0A2218 0%,#1a4d2e 100%);border:2px solid #2d7a4f;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:all .3s ease;cursor:pointer" onclick="setTab(\'invoices\');renderApp()" onmouseover="this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.15)\';this.style.transform=\'translateY(-4px)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\';this.style.transform=\'translateY(0)\';this.style.borderColor=\'#2d7a4f\'">';
+  html+='<div style="font-size:13px;font-weight:600;color:white;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:2px solid rgba(255,255,255,0.1)">';
+  html+='<span>📄 '+t('recent_invoices')+'</span><span style="font-size:11px;color:#FFD700;background:rgba(255,215,0,0.2);padding:4px 8px;border-radius:4px;font-weight:500">'+inv.length+' total</span>';
+  html+='</div>';
+  if(inv.length===0){
+    html+='<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.5);font-size:12px">No invoices yet</div>';
+  } else {
+    inv.slice(0,4).forEach(i=>{
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.1);color:white;font-size:11px;cursor:pointer;transition:all .2s" onmouseover="this.style.paddingLeft=\'8px\';this.style.color=\'#FFD700\'" onmouseout="this.style.paddingLeft=\'0\';this.style.color=\'white\'">';
+      html+='<div><div style="font-weight:500;margin-bottom:2px">'+i.desc+'</div><div style="font-size:9px;color:rgba(255,255,255,0.6)">'+FD(i.date)+'</div></div>';
+      html+='<div style="text-align:right"><div style="font-weight:600">'+FMT(i.total)+'</div></div>';
+      html+='</div>';
+    });
+  }
+  html+='<div style="margin-top:12px;padding-top:12px;border-top:2px solid rgba(255,255,255,0.1);color:#FFD700;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-block" onclick="setTab(\'invoices\');renderApp()" onmouseover="this.style.marginLeft=\'6px\'" onmouseout="this.style.marginLeft=\'0\'">View all invoices →</div>';
+  html+='</div>';
+  
+  // Messages card - تفاعلية بالكامل
+  html+='<div style="background:linear-gradient(135deg,#4da876 0%,#7dbfa3 100%);border:2px solid #7dbfa3;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:all .3s ease;color:white;cursor:pointer" onclick="setTab(\'messages\');renderApp()" onmouseover="this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.15)\';this.style.transform=\'translateY(-4px)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\';this.style.transform=\'translateY(0)\';this.style.borderColor=\'#7dbfa3\'">';
+  html+='<div style="font-size:13px;font-weight:600;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:2px solid rgba(255,255,255,0.2)">';
+  html+='<span>💬 '+t('messages')+'</span><span style="font-size:11px;color:#FFD700;background:rgba(255,215,0,0.2);padding:4px 8px;border-radius:4px;font-weight:500">'+unread+'</span>';
+  html+='</div>';
+  const msgs=S.messages.filter(m=>m.cid===cid&&!m.deleted).slice(-3);
+  if(msgs.length===0){
+    html+='<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.6);font-size:12px">No messages</div>';
+  } else {
+    msgs.forEach(m=>{
+      html+='<div style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.1);font-size:11px;cursor:pointer;transition:all .2s" onmouseover="this.style.paddingLeft=\'8px\'" onmouseout="this.style.paddingLeft=\'0\'">';
+      html+='<div style="font-weight:600;margin-bottom:3px;color:'+(m.from==='anb'?'#FFD700':'#FFE66D')+'">'+(m.from==='anb'?'ANB Financial':t('my_account'))+' · '+m.time+'</div>';
+      html+='<div style="color:rgba(255,255,255,0.9)">'+m.text.slice(0,60)+(m.text.length>60?'...':'')+'</div>';
+      html+='</div>';
+    });
+  }
+  html+='<div style="margin-top:12px;padding-top:12px;border-top:2px solid rgba(255,255,255,0.2);color:#FFD700;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-block" onclick="setTab(\'messages\');renderApp()" onmouseover="this.style.marginLeft=\'6px\'" onmouseout="this.style.marginLeft=\'0\'">View all messages →</div>';
+  html+='</div>';
+  
+  html+='</div>';
+
+  el.innerHTML=html;
 }
 
 /* ═══════════════════════════ SHARED VIEWS ═══════════════════════════ */
+function goBackToOverview(){
+  S.tab='client_overview';
+  renderApp();
+}
+
 function rInvoices(el,cid){
   cid=cid||S.currentClient;
   const c=S.clients.find(c=>c.id===cid);
@@ -3151,6 +3222,12 @@ function rInvoices(el,cid){
   const paid=inv.filter(i=>i.status==='Betaald').reduce((s,i)=>s+i.total,0);
   const open=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).reduce((s,i)=>s+i.total,0);
   el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:rgba(10,34,24,0.08);border-left:4px solid #0A2218;border-radius:6px">
+    <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:#0A2218;color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='#1a4d2e';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='#0A2218';this.style.transform='translateX(0)'">
+      ← ${t('back_to_overview')||'العودة للـ Overview'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
+  </div>
   <div class="kgrid">
     <div class="kcard"><div class="kl">${t('lbl_total')}</div><div class="kv">${inv.length}</div></div>
     <div class="kcard"><div class="kl">${t('revenue_collected')}</div><div class="kv" style="color:var(--green)">${FMT(paid)}</div></div>
@@ -3254,6 +3331,12 @@ function rExpenses(el,cid){
   const tot=exp.reduce((s,e)=>s+(e.amount||0),0);
   const bIn=exp.reduce((s,e)=>s+(e.btw||0),0);
   el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:rgba(10,34,24,0.08);border-left:4px solid #0A2218;border-radius:6px">
+    <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:#0A2218;color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='#1a4d2e';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='#0A2218';this.style.transform='translateX(0)'">
+      ← ${t('back_to_overview')||'العودة للـ Overview'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
+  </div>
   <div class="kgrid">
     <div class="kcard"><div class="kl">${t('dash_boekingen')}</div><div class="kv">${exp.length}</div></div>
     <div class="kcard"><div class="kl">${t('rep_expenses')}</div><div class="kv" style="color:var(--red)">${FMT(tot)}</div></div>
@@ -3284,6 +3367,12 @@ function rHours(el,cid){
   const totV=hrs.reduce((s,h)=>s+h.hrs*(h.rate||0),0);
   const tmr=S.timer;
   el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:rgba(200,144,16,0.08);border-left:4px solid #C89010;border-radius:6px">
+    <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:#C89010;color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='#E6B800';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='#C89010';this.style.transform='translateX(0)'">
+      ← ${t('back_to_overview')||'العودة للـ Overview'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
+  </div>
   <div class="kgrid">
     <div class="kcard"><div class="kl">${t('hours_logged')}</div><div class="kv">${totH.toFixed(1)}h</div></div>
     <div class="kcard"><div class="kl">${t('rep_revenue')}</div><div class="kv" style="color:var(--green)">${FMTi(totV)}</div></div>
@@ -3806,6 +3895,11 @@ function rMessages(el,cid){
   } else {
     // Client: Simple message view
     el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:rgba(77,168,118,0.08);border-left:4px solid #4da876;border-radius:6px">
+      <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:#4da876;color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='#7dbfa3';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='#4da876';this.style.transform='translateX(0)'">
+        ← ${t('back_to_overview')||'العودة للـ Overview'}
+      </button>
+    </div>
     <div class="card">
       <div class="ch"><span class="ct">💬 Messages with ANB</span></div>
       <div style="padding:16px;max-height:400px;overflow-y:auto">
@@ -5461,9 +5555,14 @@ function rReportsList(el,cid){
   const isMobile=window.innerWidth<=860;
   
   let html='<div style="padding:'+(isMobile?'12px':'20px')+'">';
+  html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:12px;background:rgba(10,34,24,0.08);border-left:4px solid #0A2218;border-radius:6px">';
+  html+='<button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:#0A2218;color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;white-space:nowrap" onmouseover="this.style.background=\'#1a4d2e\';this.style.transform=\'translateX(-4px)\'" onmouseout="this.style.background=\'#0A2218\';this.style.transform=\'translateX(0)\'">';
+  html+='← Back to Overview';
+  html+='</button>';
+  html+='<span style="font-size:11px;color:var(--t3);font-weight:500">'+c?.name+' — '+new Date().getFullYear()+'</span>';
+  html+='</div>';
   html+='<div style="margin-bottom:20px">';
   html+='<div style="font-size:'+(isMobile?'20px':'28px')+';font-weight:600;color:var(--t1);margin-bottom:4px">📊 Reports</div>';
-  html+='<div style="font-size:14px;color:var(--t3)">'+c?.name+' — '+new Date().getFullYear()+'</div>';
   html+='</div>';
   
   html+='<div style="display:grid;grid-template-columns:'+(isMobile?'1fr':'repeat(2,1fr)')+';gap:'+(isMobile?'12px':'16px')+'">';
