@@ -3742,8 +3742,8 @@ function selectCard(cardId){
     'assets':{bg:'rgba(23,162,184,0.08)',border:'#17A2B8',text:'#17A2B8',accent:'#FFD700'},
     'reports':{bg:'rgba(155,89,182,0.08)',border:'#9B59B6',text:'#9B59B6',accent:'#FFD700'},
     'bank':{bg:'rgba(52,152,219,0.08)',border:'#3498DB',text:'#3498DB',accent:'#FFD700'},
-    'debtors':{bg:'rgba(139,26,26,0.08)',border:'#8B1A1A',text:'#8B1A1A',accent:'#FFD700'},
-    'creditors':{bg:'rgba(122,0,112,0.08)',border:'#7A0070',text:'#7A0070',accent:'#FFD700'}
+    'debtors':{bg:'rgba(212,99,74,0.08)',border:'#D4634A',text:'#D4634A',accent:'#FFD700'},
+    'creditors':{bg:'rgba(139,123,168,0.08)',border:'#8B7BA8',text:'#8B7BA8',accent:'#FFD700'}
   };
   
   // إذا كان edit_client، افتح النموذج مباشرة
@@ -3838,6 +3838,28 @@ function rClientActionCards(el,cid){
       alerts:assets.length>0?[{icon:'📦',text:assets.length+' registered',color:'#FFD700'}]:[]
     },
     {
+      id:'debtors',
+      icon:'👥',
+      name:'Debtors',
+      desc:'Manage customer accounts',
+      bg:'linear-gradient(135deg, #D4634A 0%, #E67E5F 100%)',
+      border:'#C95234',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[]
+    },
+    {
+      id:'creditors',
+      icon:'🤝',
+      name:'Creditors',
+      desc:'Manage supplier accounts',
+      bg:'linear-gradient(135deg, #6B5B95 0%, #8B7BA8 100%)',
+      border:'#7B6BA0',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[]
+    },
+    {
       id:'hours',
       icon:'⏱',
       name:t('tab_hours'),
@@ -3880,28 +3902,6 @@ function rClientActionCards(el,cid){
       text:'#0A2218',
       accent:'#0A2218',
       alerts:pendingContracts>0?[{icon:'⏳',text:pendingContracts+' pending approval',color:'#0A2218'}]:[]
-    },
-    {
-      id:'debtors',
-      icon:'👥',
-      name:'Debtors',
-      desc:'Manage customer accounts',
-      bg:'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      border:'#5568b3',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:[]
-    },
-    {
-      id:'creditors',
-      icon:'🤝',
-      name:'Creditors',
-      desc:'Manage supplier accounts',
-      bg:'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      border:'#d94d6b',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:[]
     },
     {
       id:'edit_client',
@@ -4794,7 +4794,10 @@ function rDebtors(el,cid){
   const debtors=S.contacts.filter(c=>c.cid===cid&&c.type==='debtor'&&!c.deleted);
   el.innerHTML=`
   <div class="card">
-    <div class="ch"><span class="ct">👥 Debtors (Customers)</span></div>
+    <div class="ch" style="display:flex;justify-content:space-between;align-items:center">
+      <span class="ct">👥 Debtors (Customers)</span>
+      <button class="btn btn-xs" onclick="S.tab='client_overview';renderApp()" style="background:rgba(200,144,16,.15);color:#C89010;border:1px solid #C89010;padding:4px 8px;font-size:11px;cursor:pointer;border-radius:4px">← Back</button>
+    </div>
     <div style="padding:12px">
       <button class="btn btn-p btn-xs" onclick="openContactModal(null,'debtor')">➕ Add Debtor</button>
     </div>
@@ -4802,7 +4805,7 @@ function rDebtors(el,cid){
     `<table style="width:100%;font-size:11px">
       <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Email</th><th style="padding:8px;text-align:left">Account #</th><th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
-      ${debtors.map(d=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:#C89010">'+d.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button></td></tr>').join('')}
+      ${debtors.map(d=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:#D4634A">'+d.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button></td></tr>').join('')}
       </tbody>
     </table>`}
   </div>`;
@@ -4813,15 +4816,18 @@ function rCreditors(el,cid){
   const creditors=S.contacts.filter(c=>c.cid===cid&&c.type==='creditor'&&!c.deleted);
   el.innerHTML=`
   <div class="card">
-    <div class="ch"><span class="ct">🏢 Creditors (Suppliers)</span></div>
+    <div class="ch" style="display:flex;justify-content:space-between;align-items:center">
+      <span class="ct">🤝 Creditors (Suppliers)</span>
+      <button class="btn btn-xs" onclick="S.tab='client_overview';renderApp()" style="background:rgba(200,144,16,.15);color:#C89010;border:1px solid #C89010;padding:4px 8px;font-size:11px;cursor:pointer;border-radius:4px">← Back</button>
+    </div>
     <div style="padding:12px">
       <button class="btn btn-p btn-xs" onclick="openContactModal(null,'creditor')">➕ Add Creditor</button>
     </div>
-    ${creditors.length===0?`<div class="empty">🏢 No creditors yet</div>`:
+    ${creditors.length===0?`<div class="empty">🤝 No creditors yet</div>`:
     `<table style="width:100%;font-size:11px">
       <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Email</th><th style="padding:8px;text-align:left">Account #</th><th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
-      ${creditors.map(cr=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:#9B59B6">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button></td></tr>').join('')}
+      ${creditors.map(cr=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:#8B7BA8">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button></td></tr>').join('')}
       </tbody>
     </table>`}
   </div>`;
