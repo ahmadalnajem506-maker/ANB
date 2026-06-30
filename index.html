@@ -2737,67 +2737,196 @@ function openNewContractDialog(){
   const clients=S.clients||[];
   const opts=clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   showModal('Add Contract',`
-    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Select Client</label>
-    <select id="contract-client" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-      <option value="">-- Select Client --</option>
-      ${opts}
-    </select>
-    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Contract Title</label>
-    <input type="text" id="contract-title" placeholder="Contract Title" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Description</label>
-    <textarea id="contract-desc" placeholder="Description" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);height:60px;resize:none"></textarea>
-    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Type</label>
-    <select id="contract-type" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-      <option value="Standard">Standard Service</option>
-      <option value="Retainer">Retainer Agreement</option>
-      <option value="NDA">NDA</option>
-    </select>
-    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Start Date</label>
-    <input type="date" id="contract-start" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-    <label style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">End Date</label>
-    <input type="date" id="contract-end" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">👤 Select Client *</label>
+        <select id="contract-client" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+          <option value="">-- Choose a Client --</option>
+          ${opts}
+        </select>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📋 Contract Title *</label>
+        <input type="text" id="contract-title" placeholder="e.g., Service Agreement" 
+          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px">
+      </div>
+      
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📝 Description</label>
+        <textarea id="contract-desc" placeholder="Add any details about this contract..." 
+          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;height:70px;resize:none;font-family:inherit"></textarea>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan</label>
+          <select id="contract-plan" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+            <option value="">Select Plan</option>
+            <option value="100">Basic - €100/month</option>
+            <option value="150">Plus - €150/month</option>
+            <option value="200">Pro - €200/month</option>
+          </select>
+        </div>
+        
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📂 Contract Type</label>
+          <select id="contract-type" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+            <option value="Standard">Standard Service</option>
+            <option value="Retainer">Retainer Agreement</option>
+            <option value="Project">Project Contract</option>
+            <option value="NDA">NDA</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📅 Start Date</label>
+          <input type="date" id="contract-start" 
+            style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px">
+        </div>
+        
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">🏁 End Date</label>
+          <input type="date" id="contract-end" 
+            style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px">
+        </div>
+      </div>
+
+      <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3)">
+        ℹ️ Fields marked with * are required
+      </div>
+
+    </div>
   `, function(){
     const cid=document.getElementById('contract-client').value;
     if(!cid){alert('Please select a client');return;}
     const title=document.getElementById('contract-title').value;
+    if(!title){alert('Contract title required');return;}
     const desc=document.getElementById('contract-desc').value;
+    const plan=parseInt(document.getElementById('contract-plan').value||'0')||0;
     const type=document.getElementById('contract-type').value;
     const start=document.getElementById('contract-start').value;
     const end=document.getElementById('contract-end').value;
-    const con={id:UID(),cid,title,desc,type,startDate:start,endDate:end,status:'Draft',createdAt:NOW()};
-    S.contracts.push(con);
-    sv();renderApp();closeModal();
+    
+    if(!S.contracts)S.contracts=[];
+    S.contracts.push({
+      id:UID(),
+      cid,
+      title,
+      desc,
+      plan,
+      type,
+      startDate:start,
+      endDate:end,
+      status:'draft',
+      createdDate:TODAY()
+    });
+    sv();
+    renderApp();
+    closeModal();
   }, 'Create Contract');
 }
 
 function openAddContract(cid){
   showModal('Add Contract',`
-    <input type="text" id="contract-title" placeholder="Contract Title" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-    <textarea id="contract-desc" placeholder="Description" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);height:60px;resize:none"></textarea>
-    <select id="contract-type" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-      <option value="Standard">Standard Service</option>
-      <option value="Retainer">Retainer Agreement</option>
-      <option value="Project">Project Contract</option>
-      <option value="NDA">NDA</option>
-      <option value="Other">Other</option>
-    </select>
-    <input type="date" id="contract-start" placeholder="Start Date" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-    <input type="date" id="contract-end" placeholder="End Date" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-    <select id="contract-status" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-      <option value="draft">Draft</option>
-      <option value="active">Active</option>
-      <option value="completed">Completed</option>
-      <option value="terminated">Terminated</option>
-    </select>
-  `, ()=>saveContract(null,'${cid}'), 'Save Contract');
+    <div style="display:flex;flex-direction:column;gap:12px">
+      
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📋 Contract Title *</label>
+        <input type="text" id="contract-title" placeholder="e.g., Service Agreement" 
+          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px">
+      </div>
+      
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📝 Description</label>
+        <textarea id="contract-desc" placeholder="Add any details about this contract..." 
+          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;height:70px;resize:none;font-family:inherit"></textarea>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan</label>
+          <select id="contract-plan" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+            <option value="">Select Plan</option>
+            <option value="100">Basic - €100/month</option>
+            <option value="150">Plus - €150/month</option>
+            <option value="200">Pro - €200/month</option>
+          </select>
+        </div>
+        
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📂 Contract Type</label>
+          <select id="contract-type" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+            <option value="Standard">Standard Service</option>
+            <option value="Retainer">Retainer Agreement</option>
+            <option value="Project">Project Contract</option>
+            <option value="NDA">NDA</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📅 Start Date</label>
+          <input type="date" id="contract-start" 
+            style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px">
+        </div>
+        
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">🏁 End Date</label>
+          <input type="date" id="contract-end" 
+            style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px">
+        </div>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">✓ Status</label>
+        <select id="contract-status" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+          <option value="draft">📝 Draft</option>
+          <option value="active">✅ Active</option>
+          <option value="completed">🎉 Completed</option>
+          <option value="terminated">❌ Terminated</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3)">
+        ℹ️ Fields marked with * are required
+      </div>
+
+    </div>
+  `, ()=>{
+    const title=document.getElementById('contract-title').value;
+    const desc=document.getElementById('contract-desc').value;
+    const plan=parseInt(document.getElementById('contract-plan').value||'0')||0;
+    const type=document.getElementById('contract-type').value;
+    const start=document.getElementById('contract-start').value;
+    const end=document.getElementById('contract-end').value;
+    const status=document.getElementById('contract-status').value||'draft';
+    
+    if(!title){alert('Contract title required');return;}
+    
+    if(!S.contracts)S.contracts=[];
+    S.contracts.push({
+      id:UID(),
+      cid:'${cid}',
+      title,
+      desc,
+      plan,
+      type,
+      startDate:start,
+      endDate:end,
+      status,
+      createdDate:TODAY()
+    });
+    sv();
+    setTab('contracts');
+    closeModal();
+  }, 'Create Contract');
 }
 
 function openEditContract(contractId,cid){
@@ -2805,33 +2934,79 @@ function openEditContract(contractId,cid){
   if(!con)return;
   
   showModal('Edit Contract',`
-    <input type="text" id="contract-title" value="${con.title||''}" placeholder="Contract Title" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-    <textarea id="contract-desc" placeholder="Description" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);height:60px;resize:none">${con.desc||''}</textarea>
-    <select id="contract-type" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-      <option value="Standard" ${con.type==='Standard'?'selected':''}>Standard Service</option>
-      <option value="Retainer" ${con.type==='Retainer'?'selected':''}>Retainer Agreement</option>
-      <option value="Project" ${con.type==='Project'?'selected':''}>Project Contract</option>
-      <option value="NDA" ${con.type==='NDA'?'selected':''}>NDA</option>
-      <option value="Other" ${con.type==='Other'?'selected':''}>Other</option>
-    </select>
-    <input type="date" id="contract-start" value="${con.startDate||''}" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-    <input type="date" id="contract-end" value="${con.endDate||''}" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-    <select id="contract-status" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-      <option value="draft" ${con.status==='draft'?'selected':''}>Draft</option>
-      <option value="active" ${con.status==='active'?'selected':''}>Active</option>
-      <option value="completed" ${con.status==='completed'?'selected':''}>Completed</option>
-      <option value="terminated" ${con.status==='terminated'?'selected':''}>Terminated</option>
-    </select>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📋 Contract Title *</label>
+        <input type="text" id="contract-title" value="${con.title||''}" placeholder="e.g., Service Agreement" 
+          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px">
+      </div>
+      
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📝 Description</label>
+        <textarea id="contract-desc" placeholder="Add any details about this contract..." 
+          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;height:70px;resize:none;font-family:inherit">${con.desc||''}</textarea>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan</label>
+          <select id="contract-plan" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+            <option value="">Select Plan</option>
+            <option value="100" ${con.plan===100?'selected':''}>Basic - €100/month</option>
+            <option value="150" ${con.plan===150?'selected':''}>Plus - €150/month</option>
+            <option value="200" ${con.plan===200?'selected':''}>Pro - €200/month</option>
+          </select>
+        </div>
+        
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📂 Contract Type</label>
+          <select id="contract-type" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+            <option value="Standard" ${con.type==='Standard'?'selected':''}>Standard Service</option>
+            <option value="Retainer" ${con.type==='Retainer'?'selected':''}>Retainer Agreement</option>
+            <option value="Project" ${con.type==='Project'?'selected':''}>Project Contract</option>
+            <option value="NDA" ${con.type==='NDA'?'selected':''}>NDA</option>
+            <option value="Other" ${con.type==='Other'?'selected':''}>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📅 Start Date</label>
+          <input type="date" id="contract-start" value="${con.startDate||''}" 
+            style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px">
+        </div>
+        
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">🏁 End Date</label>
+          <input type="date" id="contract-end" value="${con.endDate||''}" 
+            style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px">
+        </div>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">✓ Status</label>
+        <select id="contract-status" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+          <option value="draft" ${con.status==='draft'?'selected':''}>📝 Draft</option>
+          <option value="active" ${con.status==='active'?'selected':''}>✅ Active</option>
+          <option value="completed" ${con.status==='completed'?'selected':''}>🎉 Completed</option>
+          <option value="terminated" ${con.status==='terminated'?'selected':''}>❌ Terminated</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3)">
+        ℹ️ Fields marked with * are required
+      </div>
+
+    </div>
   `, ()=>saveContract('${contractId}','${cid}'), 'Update Contract');
 }
 
 function saveContract(contractId,cid){
   const title=document.getElementById('contract-title')?.value||'';
   const desc=document.getElementById('contract-desc')?.value||'';
+  const plan=parseInt(document.getElementById('contract-plan')?.value||'0')||0;
   const type=document.getElementById('contract-type')?.value||'Standard';
   const startDate=document.getElementById('contract-start')?.value||'';
   const endDate=document.getElementById('contract-end')?.value||'';
@@ -2845,7 +3020,7 @@ function saveContract(contractId,cid){
     // Update existing
     const idx=S.contracts.findIndex(c=>c.id===contractId);
     if(idx>=0){
-      S.contracts[idx]={...S.contracts[idx],title,desc,type,startDate,endDate,status};
+      S.contracts[idx]={...S.contracts[idx],title,desc,plan,type,startDate,endDate,status};
     }
   }else{
     // Add new
@@ -2854,6 +3029,7 @@ function saveContract(contractId,cid){
       cid:cid,
       title:title,
       desc:desc,
+      plan:plan,
       type:type,
       startDate:startDate,
       endDate:endDate,
@@ -4894,95 +5070,171 @@ function openEditClient(id){openClientModal(S.clients.find(c=>c.id===id));}
 function openClientModal(c){
   const isN=!c;
   showModal(isN?t('add_client_title'):t('edit')+' '+t('tab_client').toLowerCase(),`
-    <div style="max-height:500px;overflow-y:auto">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      
       <!-- Basic Info Section -->
-      <div style="padding-bottom:12px;border-bottom:2px solid var(--gr2);margin-bottom:12px">
-        <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px">📋 ${t('basic_information')}</div>
-        <div class="fr2">
-          <div class="fg"><label>${t('company_name_label')}</label><input id="cf-n" value="${c?.name||''}" placeholder="Your company name"/></div>
-          <div class="fg"><label>${t('type_label')}</label><select id="cf-t">${['B2B','B2C','Expat','ZZP'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}</select></div>
+      <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px">📋 ${t('basic_information')}</div>
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Company Name *</label>
+            <input id="cf-n" value="${c?.name||''}" placeholder="Your company name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Client Type</label>
+            <select id="cf-t" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+              ${['B2B','B2C','Expat','ZZP'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}
+            </select>
+          </div>
         </div>
-        <div class="fg"><label>${t('email_label')}</label><input id="cf-e" value="${c?.email||''}" type="email" placeholder="info@company.nl"/></div>
-        <div class="fr2">
-          <div class="fg"><label>${t('phone_label')}</label><input id="cf-ph" value="${c?.phone||''}" placeholder="+31 6 12345678"/></div>
-          <div class="fg"><label>${t('contact_person_label')}</label><input id="cf-cp" value="${c?.contactPerson||''}" placeholder="Full name"/></div>
+
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Email Address *</label>
+          <input id="cf-e" value="${c?.email||''}" type="email" placeholder="info@company.nl" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Phone Number</label>
+            <input id="cf-ph" value="${c?.phone||''}" placeholder="+31 6 12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Contact Person *</label>
+            <input id="cf-cp" value="${c?.contactPerson||''}" placeholder="Full name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
         </div>
       </div>
 
       <!-- Business Info Section -->
-      <div style="padding-bottom:12px;border-bottom:2px solid var(--gr2);margin-bottom:12px">
-        <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px">🏢 ${t('business_information')}</div>
-        <div class="fr2">
-          <div class="fg"><label>${t('kvk_label')}</label><input id="cf-k" value="${c?.kvk||''}" placeholder="12345678"/></div>
-          <div class="fg"><label>${t('btw_label')}</label><input id="cf-b" value="${c?.btw||''}" placeholder="NL123456789B01"/></div>
+      <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px">🏢 ${t('business_information')}</div>
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">KVK Number *</label>
+            <input id="cf-k" value="${c?.kvk||''}" placeholder="12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">BTW/VAT Number *</label>
+            <input id="cf-b" value="${c?.btw||''}" placeholder="NL123456789B01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
         </div>
-        <div class="fr2">
-          <div class="fg"><label>${t('iban_label')}</label><input id="cf-i" value="${c?.iban||''}" placeholder="NL91ABNA0417164300"/></div>
-          <div class="fg"><label>${t('bic_label')}</label><input id="cf-bic" value="${c?.bic||''}" placeholder="ABNANL2A"/></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">IBAN *</label>
+            <input id="cf-i" value="${c?.iban||''}" placeholder="NL91ABNA0417164300" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">BIC</label>
+            <input id="cf-bic" value="${c?.bic||''}" placeholder="ABNANL2A" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
         </div>
       </div>
 
       <!-- Address Section -->
-      <div style="padding-bottom:12px;border-bottom:2px solid var(--gr2);margin-bottom:12px">
-        <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px">📍 ${t('address_information')}</div>
-        <div class="fg"><label>${t('street_label')}</label><input id="cf-addr" value="${c?.address||''}" placeholder="Straatnaam 123"/></div>
-        <div class="fr2">
-          <div class="fg"><label>${t('postal_code_label')}</label><input id="cf-zip" value="${c?.zipCode||''}" placeholder="1234 AB"/></div>
-          <div class="fg"><label>${t('city_label')}</label><input id="cf-city" value="${c?.city||''}" placeholder="Amsterdam"/></div>
+      <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px">📍 ${t('address_information')}</div>
+        
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Street Address *</label>
+          <input id="cf-addr" value="${c?.address||''}" placeholder="Straatnaam 123" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
         </div>
-        <div class="fr2">
-          <div class="fg"><label>${t('country_label')}</label><select id="cf-country"><option value="NL">Netherlands</option><option value="BE">Belgium</option><option value="DE">Germany</option><option value="Other">Other</option></select></div>
-          <div class="fg"><label>${t('registration_num_label')}</label><input id="cf-regnum" value="${c?.registrationNumber||''}"/></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Postal Code *</label>
+            <input id="cf-zip" value="${c?.zipCode||''}" placeholder="1234 AB" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">City *</label>
+            <input id="cf-city" value="${c?.city||''}" placeholder="Amsterdam" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Country</label>
+            <select id="cf-country" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+              <option value="NL" ${c?.country==='NL'?'selected':''}>Netherlands</option>
+              <option value="BE" ${c?.country==='BE'?'selected':''}>Belgium</option>
+              <option value="DE" ${c?.country==='DE'?'selected':''}>Germany</option>
+              <option value="Other" ${c?.country==='Other'?'selected':''}>Other</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Registration Number</label>
+            <input id="cf-regnum" value="${c?.registrationNumber||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
         </div>
       </div>
 
       <!-- Subscription Plan Section -->
-      <div style="padding-bottom:12px;border-bottom:2px solid var(--gr2);margin-bottom:12px">
-        <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px">💳 ${t('subscription_plan')}</div>
+      <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px">💳 ${t('subscription_plan')}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          <label style="border:2px solid var(--gr2);padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s">
+          <label style="border:2px solid var(--gr2);padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;hover:border-color:var(--green)">
             <input type="radio" name="plan" value="100" id="plan-100" ${c?.monthlyFee===100?'checked':''} style="cursor:pointer"/> 
-            <div style="font-weight:600;color:var(--t1);margin-top:6px">Basic</div>
+            <div style="font-weight:600;color:var(--t1);margin-top:6px;font-size:13px">Basic</div>
             <div style="font-size:9px;color:var(--t3)">€100/month</div>
           </label>
           <label style="border:2px solid #C89010;padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;background:rgba(200,144,16,0.05)">
             <input type="radio" name="plan" value="150" id="plan-150" ${c?.monthlyFee===150?'checked':''} style="cursor:pointer"/> 
-            <div style="font-weight:600;color:#C89010;margin-top:6px">Plus</div>
+            <div style="font-weight:600;color:#C89010;margin-top:6px;font-size:13px">Plus</div>
             <div style="font-size:9px;color:var(--t3)">€150/month</div>
           </label>
           <label style="border:2px solid var(--g1);padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;background:rgba(77,168,118,0.05)">
             <input type="radio" name="plan" value="200" id="plan-200" ${c?.monthlyFee===200?'checked':''} style="cursor:pointer"/> 
-            <div style="font-weight:600;color:var(--g1);margin-top:6px">Pro</div>
+            <div style="font-weight:600;color:var(--g1);margin-top:6px;font-size:13px">Pro</div>
             <div style="font-size:9px;color:var(--t3)">€200/month</div>
           </label>
         </div>
       </div>
 
       <!-- Contract Details Section -->
-      <div style="padding-bottom:12px;border-bottom:2px solid var(--gr2);margin-bottom:12px">
-        <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px">📜 ${t('contract_details')}</div>
-        <div class="fr2">
-          <div class="fg"><label>${t('start_date_label')} *</label><input type="date" id="cf-start" value="${c?.contractStartDate||TODAY()}" style="cursor:pointer"/></div>
-          <div class="fg"><label>${t('contract_duration_label')} *</label><select id="cf-duration">
-            <option value="12" ${c?.contractDuration===12?'selected':''}>12 months (1 year)</option>
-            <option value="24" ${c?.contractDuration===24?'selected':''}>24 months (2 years)</option>
-            <option value="36" ${c?.contractDuration===36?'selected':''}>36 months (3 years)</option>
-          </select></div>
+      <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px">📜 ${t('contract_details')}</div>
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Start Date *</label>
+            <input type="date" id="cf-start" value="${c?.contractStartDate||TODAY()}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Contract Duration *</label>
+            <select id="cf-duration" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+              <option value="12" ${c?.contractDuration===12?'selected':''}>12 months (1 year)</option>
+              <option value="24" ${c?.contractDuration===24?'selected':''}>24 months (2 years)</option>
+              <option value="36" ${c?.contractDuration===36?'selected':''}>36 months (3 years)</option>
+            </select>
+          </div>
         </div>
-        <div class="fr2">
-          <div class="fg"><label>${t('payment_terms_label')} *</label><select id="cf-payment">
-            <option value="15" ${c?.paymentTerms===15?'selected':''}>15 days</option>
-            <option value="30" ${c?.paymentTerms===30?'selected':''}>30 days</option>
-            <option value="45" ${c?.paymentTerms===45?'selected':''}>45 days</option>
-          </select></div>
-          <div class="fg"><label>${t('termination_notice_label')} *</label><select id="cf-termination">
-            <option value="1" ${c?.terminationNotice===1?'selected':''}>1 month</option>
-            <option value="2" ${c?.terminationNotice===2?'selected':''}>2 months</option>
-            <option value="3" ${c?.terminationNotice===3?'selected':''}>3 months</option>
-          </select></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Payment Terms *</label>
+            <select id="cf-payment" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+              <option value="15" ${c?.paymentTerms===15?'selected':''}>15 days</option>
+              <option value="30" ${c?.paymentTerms===30?'selected':''}>30 days</option>
+              <option value="45" ${c?.paymentTerms===45?'selected':''}>45 days</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Termination Notice *</label>
+            <select id="cf-termination" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+              <option value="1" ${c?.terminationNotice===1?'selected':''}>1 month</option>
+              <option value="2" ${c?.terminationNotice===2?'selected':''}>2 months</option>
+              <option value="3" ${c?.terminationNotice===3?'selected':''}>3 months</option>
+            </select>
+          </div>
         </div>
       </div>
+
+      <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3)">
+        ℹ️ Fields marked with * are required
       </div>
+
     </div>
   `,()=>{
     const n=document.getElementById('cf-n').value.trim();
