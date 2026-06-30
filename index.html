@@ -4791,21 +4791,26 @@ function rContacts(el){
 
 /* ═══════════════════════════ DEBTORS ═══════════════════════════ */
 function rDebtors(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
   const debtors=S.contacts.filter(c=>c.cid===cid&&c.type==='debtor'&&!c.deleted);
+  const theme=S.cardTheme||{bg:'rgba(212,99,74,0.08)',border:'#D4634A',text:'#D4634A',accent:'#FFD700'};
+  
   el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+    <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:500" onmouseover="this.style.background='${theme.accent}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.transform='translateX(0)'">
+      ← ${t('back_to_overview')||'Back to Overview'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Debtors'}</span>
+  </div>
   <div class="card">
-    <div class="ch" style="display:flex;justify-content:space-between;align-items:center">
-      <span class="ct">👥 Debtors (Customers)</span>
-      <button class="btn btn-xs" onclick="S.tab='client_overview';renderApp()" style="background:rgba(200,144,16,.15);color:#C89010;border:1px solid #C89010;padding:4px 8px;font-size:11px;cursor:pointer;border-radius:4px">← Back</button>
-    </div>
-    <div style="padding:12px">
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">👥 Debtors (Customers)</span>
       <button class="btn btn-p btn-xs" onclick="openContactModal(null,'debtor')">➕ Add Debtor</button>
     </div>
     ${debtors.length===0?`<div class="empty">👥 No debtors yet</div>`:
     `<table style="width:100%;font-size:11px">
       <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Email</th><th style="padding:8px;text-align:left">Account #</th><th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
-      ${debtors.map(d=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:#D4634A">'+d.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button></td></tr>').join('')}
+      ${debtors.map(d=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:${theme.border}">'+d.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button></td></tr>').join('')}
       </tbody>
     </table>`}
   </div>`;
@@ -4813,21 +4818,26 @@ function rDebtors(el,cid){
 
 /* ═══════════════════════════ CREDITORS ═══════════════════════════ */
 function rCreditors(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
   const creditors=S.contacts.filter(c=>c.cid===cid&&c.type==='creditor'&&!c.deleted);
+  const theme=S.cardTheme||{bg:'rgba(139,123,168,0.08)',border:'#8B7BA8',text:'#8B7BA8',accent:'#FFD700'};
+  
   el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+    <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:500" onmouseover="this.style.background='${theme.accent}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.transform='translateX(0)'">
+      ← ${t('back_to_overview')||'Back to Overview'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Creditors'}</span>
+  </div>
   <div class="card">
-    <div class="ch" style="display:flex;justify-content:space-between;align-items:center">
-      <span class="ct">🤝 Creditors (Suppliers)</span>
-      <button class="btn btn-xs" onclick="S.tab='client_overview';renderApp()" style="background:rgba(200,144,16,.15);color:#C89010;border:1px solid #C89010;padding:4px 8px;font-size:11px;cursor:pointer;border-radius:4px">← Back</button>
-    </div>
-    <div style="padding:12px">
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🤝 Creditors (Suppliers)</span>
       <button class="btn btn-p btn-xs" onclick="openContactModal(null,'creditor')">➕ Add Creditor</button>
     </div>
     ${creditors.length===0?`<div class="empty">🤝 No creditors yet</div>`:
     `<table style="width:100%;font-size:11px">
       <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Email</th><th style="padding:8px;text-align:left">Account #</th><th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
-      ${creditors.map(cr=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:#8B7BA8">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button></td></tr>').join('')}
+      ${creditors.map(cr=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:${theme.border}">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button></td></tr>').join('')}
       </tbody>
     </table>`}
   </div>`;
