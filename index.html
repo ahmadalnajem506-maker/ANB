@@ -476,6 +476,9 @@ tr:hover td{background:var(--gr1)}
   font-family:var(--fb);outline:none}
 .fg input:focus,.fg select:focus{border-color:var(--g1)}
 .fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){
+  .fr2{grid-template-columns:1fr;gap:8px}
+}
 .itot{background:var(--gold-light);border:1px solid rgba(200,144,16,.2);border-radius:var(--rs);padding:10px 12px;margin-top:8px}
 .itr{display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:var(--t2)}
 .itr.fin{font-size:15px;font-weight:600;color:var(--g1);padding-top:7px;
@@ -1365,6 +1368,7 @@ var I18N={
     not_synced:'Not synced yet', syncing:'Syncing…', synced:'Synced', sync_error:'Sync error', offline:'Offline',
     dashboard:'Dashboard', invoices:'Invoices', debtors:'Debtors', expenses:'Expenses', hours:'Hours', back_to_overview:'Back to Overview',
     journal:'Journal', bank:'Bank', reports:'Reports', documents:'Documents', messages:'Messages', client_info:'Client',
+    contracts:'Contracts', assets:'Assets',
     // Dashboard (admin)
     all_clients_overview:'All clients overview', active_clients:'Active clients', clients_list:'Clients List', revenue_collected:'Revenue collected',
     outstanding:'Outstanding', overdue:'Overdue', hours_logged:'Hours logged', btw_balance:'BTW balance',
@@ -1374,16 +1378,16 @@ var I18N={
     tab_journal:'Journal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Reports', tab_documents:'Documents', tab_contacts:'Contacts', tab_messages:'Messages', tab_client:'Client',
     // Card descriptions
-    card_invoices_desc:'View & manage invoices',
-    card_expenses_desc:'Track & categorize expenses',
-    card_bank_desc:'Manage bank transactions',
-    card_assets_desc:'Track business assets',
-    card_hours_desc:'Log & track hours worked',
-    card_reports_desc:'View financial reports',
-    card_messages_desc:'Communicate with client',
-    card_contracts_desc:'Manage service agreements',
+    card_invoices_desc:'View & Manage Invoices',
+    card_expenses_desc:'Track & Categorize Expenses',
+    card_bank_desc:'Manage Bank Transactions',
+    card_assets_desc:'Track Business Assets',
+    card_hours_desc:'Log & Track Hours Worked',
+    card_reports_desc:'View Financial Reports',
+    card_messages_desc:'Communicate With Client',
+    card_contracts_desc:'Manage Service Agreements',
     card_edit_client:'Edit Client',
-    card_edit_client_desc:'Update client details & settings',
+    card_edit_client_desc:'Update Client Details & Settings',
     // Dashboard admin cards
     dashboard_pending_invoices:'Pending Invoices',
     dashboard_overdue:'Overdue',
@@ -1395,13 +1399,26 @@ var I18N={
     // Sidebar messages
     sidebar_use_cards:'← Use the cards to navigate',
     sidebar_press_back:'Press ← Back in the tab to return',
+    back_to_reports:'Back to Reports',
+    exit_app:'Exit App?',
+    exit_confirmation:'Do you want to close the application?',
+    press_back_again:'Press back again to exit',
+    yes:'Yes',
+    no:'No',
     messages_with_anb:'Messages with ANB',
     btn_send:'Send',
+    // Field labels and headers
+    lbl_invoice_number:'Invoice Number',
+    lbl_client_overview:'Client Overview',
+    lbl_my_overview:'My Overview',
+    lbl_admin_view:'Admin View',
+    lbl_client_view:'Client View',
     // Expenses report labels
     expenses_by_category:'By Category',
     expenses_detailed_list:'Detailed List',
     // Topbar actions
     new_invoice:'+ New invoice', new_expense:'+ New expense', log_hours:'+ Log hours',
+    import_bank:'📥 Import Bank',
     send_message:'➤ Send message', new_request:'+ New request', add_expense:'+ Add expense',
     edit:'Edit', remove:'Remove',
     all_clients_overview_topbar:'📊 All clients overview', settings_topbar:'⚙️ Settings',
@@ -1441,7 +1458,7 @@ var I18N={
     rep_total_costs:'Total costs', rep_nettowinst:'Net profit',
     rep_activa:'Assets', rep_passiva:'Liabilities',
     // Settings
-    set_company_info:'Company information', set_admin_creds:'Admin login credentials',
+    set_company_info:'Company information', set_admin_creds:'Admin login credentials', manage_admins:'Manage Administrators',
     set_client_pw:'Client passwords', set_data_mgmt:'Data management', set_cloud_sync:'Cloud sync',
     set_backup:'Backup & restore', set_yearend:'Year-end closing',
     set_company_name:'Company name', set_tagline:'Tagline', set_address:'Address',
@@ -1558,21 +1575,22 @@ var I18N={
     not_synced:'Nog niet gesynchroniseerd', syncing:'Synchroniseren…', synced:'Gesynchroniseerd', sync_error:'Synchronisatiefout', offline:'Offline',
     dashboard:'Dashboard', invoices:'Facturen', debtors:'Debiteuren', expenses:'Onkosten', hours:'Uren', back_to_overview:'Terug naar overzicht',
     journal:'Journaal', bank:'Bank', reports:'Rapporten', documents:'Documenten', messages:'Berichten', client_info:'Klant',
+    contracts:'Overeenkomsten', assets:'Activa',
     tab_invoices:'Facturen', tab_debtors:'Debiteuren',
     tab_expenses:'Onkosten', tab_hours:'Uren',
     tab_journal:'Journaal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Rapporten', tab_documents:'Documenten', tab_contacts:'Contacten', tab_messages:'Berichten', tab_client:'Klant',
     // Card descriptions
-    card_invoices_desc:'Facturen weergeven en beheren',
-    card_expenses_desc:'Uitgaven bijhouden en categoriseren',
-    card_bank_desc:'Banktransacties beheren',
-    card_assets_desc:'Bedrijfsmiddelen bijhouden',
-    card_hours_desc:'Gewerkte uren registreren',
-    card_reports_desc:'Financiële rapporten weergeven',
-    card_messages_desc:'Communiceren met klant',
-    card_contracts_desc:'Serviceovereenkomsten beheren',
+    card_invoices_desc:'Facturen Weergeven En Beheren',
+    card_expenses_desc:'Uitgaven Bijhouden En Categoriseren',
+    card_bank_desc:'Banktransacties Beheren',
+    card_assets_desc:'Bedrijfsmiddelen Bijhouden',
+    card_hours_desc:'Gewerkte Uren Registreren',
+    card_reports_desc:'Financiële Rapporten Weergeven',
+    card_messages_desc:'Communiceren Met Klant',
+    card_contracts_desc:'Serviceovereenkomsten Beheren',
     card_edit_client:'Klant Bewerken',
-    card_edit_client_desc:'Klantgegevens en instellingen bijwerken',
+    card_edit_client_desc:'Klantgegevens En Instellingen Bijwerken',
     // Dashboard admin cards
     dashboard_pending_invoices:'Openstaande Facturen',
     dashboard_overdue:'Achterstallig',
@@ -1584,12 +1602,25 @@ var I18N={
     // Sidebar messages
     sidebar_use_cards:'← Gebruik de kaarten om te navigeren',
     sidebar_press_back:'Druk ← Terug in het tabblad om terug te keren',
+    back_to_reports:'Terug naar Rapporten',
+    exit_app:'App afsluiten?',
+    exit_confirmation:'Wil je de applicatie sluiten?',
+    press_back_again:'Druk nogmaals op Terug om af te sluiten',
+    yes:'Ja',
+    no:'Nee',
     messages_with_anb:'Berichten met ANB',
     btn_send:'Verzenden',
+    // Field labels and headers
+    lbl_invoice_number:'Factuurnummer',
+    lbl_client_overview:'Clientoverzicht',
+    lbl_my_overview:'Mijn Overzicht',
+    lbl_admin_view:'Admin Weergave',
+    lbl_client_view:'Klant Weergave',
     // Expenses report labels
     expenses_by_category:'Per Categorie',
     expenses_detailed_list:'Gedetailleerde Lijst',
     new_invoice:'+ Nieuwe factuur', new_expense:'+ Nieuwe onkost', log_hours:'+ Uren invoeren',
+    import_bank:'📥 Bank Importeren',
     send_message:'➤ Bericht sturen', new_request:'+ Nieuw verzoek', add_expense:'+ Onkost toevoegen',
     edit:'Bewerken', remove:'Verwijderen',
     all_clients_overview_topbar:'📊 Overzicht alle klanten', settings_topbar:'⚙️ Instellingen',
@@ -1623,7 +1654,7 @@ var I18N={
     rep_btw_balance:'BTW-saldo', rep_total_omzet:'Totale omzet',
     rep_total_costs:'Totale kosten', rep_nettowinst:'Nettowinst',
     rep_activa:'Activa', rep_passiva:'Passiva',
-    set_company_info:'Bedrijfsgegevens', set_admin_creds:'Admin inloggegevens',
+    set_company_info:'Bedrijfsgegevens', set_admin_creds:'Admin inloggegevens', manage_admins:'Beheer administrators',
     set_client_pw:'Klantwachtwoorden', set_data_mgmt:'Gegevensbeheer', set_cloud_sync:'Cloud synchronisatie',
     set_backup:'Backup & herstel', set_yearend:'Jaarafsluiting',
     set_company_name:'Bedrijfsnaam', set_tagline:'Slogan', set_address:'Adres',
@@ -1732,8 +1763,9 @@ var I18N={
     client_workspaces:'ملفات العملاء', my_account:'حسابي', administrator:'مسؤول النظام',
     viewing_client:'عرض العميل',
     not_synced:'لم تتم المزامنة بعد', syncing:'جارٍ المزامنة…', synced:'تمت المزامنة', sync_error:'خطأ في المزامنة', offline:'غير متصل',
-    dashboard:'لوحة التحكم', invoices:'الفواتير', debtors:'الديون', expenses:'المصاريف', hours:'ساعات العمل', back_to_overview:'العودة للـ Overview',
+    dashboard:'لوحة التحكم', invoices:'الفواتير', debtors:'الديون', expenses:'المصاريف', hours:'ساعات العمل', back_to_overview:'العودة إلى القائمة',
     journal:'اليومية', bank:'البنك', reports:'التقارير', documents:'المستندات', messages:'الرسائل', client_info:'العميل',
+    contracts:'العقود', assets:'الأصول',
     // Tab labels with tab_ prefix (used in topbar & sidebar)
     tab_invoices:'الفواتير', tab_debtors:'الديون (Debiteuren)',
     tab_expenses:'المصاريف', tab_hours:'ساعات العمل',
@@ -1741,7 +1773,7 @@ var I18N={
     tab_reports:'التقارير', tab_documents:'المستندات', tab_contacts:'جهات الاتصال', tab_messages:'الرسائل', tab_client:'العميل',
     // Card descriptions
     card_invoices_desc:'عرض وإدارة الفواتير',
-    card_expenses_desc:'تتبع ونقسيم المصاريف',
+    card_expenses_desc:'تتبع وتصنيف المصاريف',
     card_bank_desc:'إدارة معاملات البنك',
     card_assets_desc:'تتبع أصول الأعمال',
     card_hours_desc:'تسجيل وتتبع ساعات العمل',
@@ -1761,12 +1793,25 @@ var I18N={
     // Sidebar messages
     sidebar_use_cards:'← استخدم الكروت للتنقل',
     sidebar_press_back:'اضغط ← رجوع في التبويب للعودة',
+    back_to_reports:'العودة إلى التقارير',
+    exit_app:'إغلاق التطبيق؟',
+    exit_confirmation:'هل تريد إغلاق التطبيق؟',
+    press_back_again:'اضغط على الرجوع مرة أخرى للخروج',
+    yes:'موافق',
+    no:'لا',
     messages_with_anb:'الرسائل مع ANB',
     btn_send:'إرسال',
+    // Field labels and headers
+    lbl_invoice_number:'رقم الفاتورة',
+    lbl_client_overview:'نظرة عامة على العميل',
+    lbl_my_overview:'نظرتي العامة',
+    lbl_admin_view:'عرض المسؤول',
+    lbl_client_view:'عرض العميل',
     // Expenses report labels
     expenses_by_category:'حسب الفئة',
     expenses_detailed_list:'القائمة المفصلة',
     new_invoice:'+ فاتورة جديدة', new_expense:'+ مصروف جديد', log_hours:'+ تسجيل ساعات',
+    import_bank:'📥 استيراد البنك',
     send_message:'➤ إرسال رسالة', new_request:'+ طلب جديد', add_expense:'+ إضافة مصروف',
     edit:'تعديل', remove:'حذف',
     all_clients_overview_topbar:'📊 نظرة عامة على كل العملاء', settings_topbar:'⚙️ الإعدادات',
@@ -1800,7 +1845,7 @@ var I18N={
     rep_btw_balance:'رصيد الضريبة', rep_total_omzet:'إجمالي الإيراد',
     rep_total_costs:'إجمالي التكاليف', rep_nettowinst:'الربح الصافي (Nettowinst)',
     rep_activa:'الأصول (Activa)', rep_passiva:'الالتزامات (Passiva)',
-    set_company_info:'بيانات الشركة', set_admin_creds:'بيانات دخول الأدمن',
+    set_company_info:'بيانات الشركة', set_admin_creds:'بيانات دخول الأدمن', manage_admins:'إدارة المسؤولين',
     set_client_pw:'كلمات مرور العملاء', set_data_mgmt:'إدارة البيانات', set_cloud_sync:'المزامنة السحابية',
     set_backup:'النسخ الاحتياطي والاستعادة', set_yearend:'الإقفال السنوي',
     set_company_name:'اسم الشركة', set_tagline:'الشعار', set_address:'العنوان',
@@ -1961,8 +2006,11 @@ var S={
     kvk:'',btw:'',iban:'NL91ABNA0417164300',
     email:'info@anbfinancial.nl',phone:'+31 35 123 4567',
     tagline:'Nauwkeurigheid · Inzicht · Groei',
-    adminPw:'admin123',
+    adminPw:'admin123', // للتوافقية فقط
   },
+  admins:[
+    {id:'adm1',name:'Ahmad',email:'admin@anbfinancial.nl',phone:'+31 6 12345678',password:'admin123',role:'super_admin',createdDate:'2026-01-01',status:'active',lastLogin:'2026-06-30'}
+  ],
   timer:{running:false,seconds:0,task:'',cat:'',_iv:null},
   journal:[
     {id:'j1',cid:'c1',date:'2026-05-01',desc:'Verkoopfactuur ANB-2026-001',db:'0200',cr:'1000',amount:2400,btw:504,type:'invoice'},
@@ -2215,15 +2263,17 @@ function goStep2(){
   if(!id){showErr('login-err-1','Please enter your email or phone number');return;}
 
   if(selRoleVal==='admin'){
-    // Check against admin email or phone
-    const co=S.settings;
-    const match=(id===co.email||id===co.phone||id===co.adminIdentifier||
-                 id.toLowerCase()===co.email?.toLowerCase());
-    if(!match){showErr('login-err-1','Email or phone not found for admin account');return;}
-    authState={role:'admin',identifier:id,clientId:null,isFirstTime:!co.adminPwSet};
+    // تحقق من قائمة admins المتعددين
+    const admin=S.admins.find(a=>
+      (a.email&&a.email.toLowerCase()===id.toLowerCase())||
+      (a.phone===id)||
+      (a.status==='active')
+    );
+    if(!admin){showErr('login-err-1','Email or phone not found for admin account');return;}
+    authState={role:'admin',adminId:admin.id,identifier:id,clientId:null};
     const name=document.getElementById('step2-name');
     const sub=document.getElementById('step2-sub');
-    if(name)name.textContent='ANB Administrator';
+    if(name)name.textContent=admin.name+' · ANB Administrator';
     if(sub)sub.textContent='Enter your password to continue';
   } else {
     // Find client by email or phone
@@ -2251,9 +2301,16 @@ function doLogin(){
   if(!pw){showErr('login-err-2','Please enter your password');return;}
 
   if(authState.role==='admin'){
-    const stored=S.settings.adminPwCustom||S.settings.adminPw;
-    if(pw!==stored){showErr('login-err-2','Incorrect password');return;}
-    S.role='admin';S.currentClient=null;S.tab='dashboard';
+    // تحقق من كلمة المرور من قائمة admins
+    const admin=S.admins.find(a=>a.id===authState.adminId);
+    if(!admin||pw!==admin.password){showErr('login-err-2','Incorrect password');return;}
+    if(admin.status!=='active'){showErr('login-err-2','This admin account is not active');return;}
+    S.role='admin';
+    S.currentAdmin=admin.id;
+    S.currentClient=null;
+    S.tab='dashboard';
+    admin.lastLogin=TODAY();
+    sv(); // حفظ آخر تسجيل دخول
   } else {
     const c=S.clients.find(c=>c.id===authState.clientId);
     const stored=c.pwCustom||c.pw;
@@ -2588,10 +2645,13 @@ function renderTopbar(){
     // Hide tabs in topbar - use sidebar instead
     tabs.innerHTML='';
     const acts={
+      client_overview:'',
       invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_invoice')}</button>`,
       expenses:`<button class="btn btn-p btn-xs" onclick="openNewExpense()">${t('new_expense')}</button>`,
       hours:`<button class="btn btn-p btn-xs" onclick="openLogHours()">${t('log_hours')}</button>`,
       messages:`<button class="btn btn-p btn-xs" onclick="openSendMsg()">${t('send_message')}</button>`,
+      bank:`<button class="btn btn-p btn-xs" onclick="openImportBank()">📥 ${t('import_bank')||'Import'}</button>`,
+      import:`<button class="btn btn-p btn-xs" onclick="openImportBank()">📥 ${t('import_bank')||'Import'}</button>`,
       info:`<button class="btn btn-xs" onclick="openEditClient('${c?.id}')">✏ ${t('edit')}</button>
             <button class="btn btn-danger btn-xs" onclick="delClient('${c?.id}')">🗑 ${t('remove')}</button>`,
     };
@@ -2601,11 +2661,13 @@ function renderTopbar(){
     const clientTitles={dashboard:t('dashboard'),invoices:t('my_invoices'),expenses:t('my_expenses'),hours:t('hours_time'),documents:t('documents'),messages:t('messages')};
     left.innerHTML=`<span style="font-size:13px;font-weight:500;color:var(--t1)">${clientTitles[S.tab]||''}</span>`;
     tabs.innerHTML='';
+    // العميل لا يرى أزرار في dashboard - فقط في التبويبات الأخرى
     const cacts={
       invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_request')}</button>`,
       expenses:`<button class="btn btn-p btn-xs" onclick="openNewExpense()">${t('add_expense')}</button>`,
       hours:`<button class="btn btn-p btn-xs" onclick="openLogHours()">${t('log_hours')}</button>`,
       messages:`<button class="btn btn-p btn-xs" onclick="openSendMsg()">${t('send_message')}</button>`,
+      // dashboard: لا أزرار
     };
     right.innerHTML=cacts[S.tab]||'';
   }
@@ -3505,106 +3567,130 @@ function goToAdminStat(type){
 /* ═══════════════════════════ CLIENT DASHBOARD ═══════════════════════════ */
 function rClientDash(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const inv=S.invoices.filter(i=>i.cid===cid);
-  const paid=inv.filter(i=>i.status==='Betaald').reduce((s,i)=>s+i.total,0);
-  const open=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).reduce((s,i)=>s+i.total,0);
-  const over=inv.filter(i=>i.status==='Verlopen').reduce((s,i)=>s+i.total,0);
-  const hrs=S.hours.filter(h=>h.cid===cid).reduce((s,h)=>s+h.hrs,0);
-  const unread=S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.deleted).length;
-
-  const isMobile=window.innerWidth<=860;
-  let html='';
-
-  // Header banner
-  html+=isAdmin()?`<div style="background:linear-gradient(135deg,rgba(10,34,24,0.15) 0%,rgba(77,168,118,0.1) 100%);border-left:4px solid #2d7a4f;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:12px;color:#0A2218;font-weight:600;display:flex;align-items:center;justify-content:space-between"><span>👁 <strong>CLIENT OVERVIEW</strong> — ${c?.name||'Client'}</span><span style="font-size:10px;color:#4da876;background:rgba(77,168,118,0.2);padding:4px 8px;border-radius:4px;font-weight:500">[Admin View]</span></div>`:`<div style="background:linear-gradient(135deg,rgba(200,144,16,0.1) 0%,rgba(200,144,16,0.05) 100%);border-left:4px solid #C89010;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:12px;color:#C89010;font-weight:600;display:flex;align-items:center;gap:8px"><span>👤 <strong>MY OVERVIEW</strong></span><span style="font-size:10px;color:#C89010;background:rgba(200,144,16,0.2);padding:4px 8px;border-radius:4px;font-weight:500">[Client View]</span></div>`;
-
-  // Stats grid - تفاعلية
-  html+='<div style="display:grid;grid-template-columns:'+( isMobile?'1fr':'repeat(5,1fr)')+';gap:12px;margin-bottom:16px">';
   
-  // Card 1: Total Paid
-  html+='<div style="padding:16px;background:rgba(77,168,118,0.1);border:2px solid #4dA876;border-radius:8px;transition:all .3s ease;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer" onclick="setTab(\'invoices\');renderApp()" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 10px 20px rgba(0,0,0,0.12)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.06)\';this.style.borderColor=\'#4dA876\'">';
-  html+='<div style="font-size:24px;margin-bottom:8px;opacity:0.9">✓</div>';
-  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:500">'+t('total_paid')+'</div>';
-  html+='<div style="font-size:18px;font-weight:600;color:#4dA876">'+FMT(paid)+'</div>';
-  html+='<div style="margin-top:12px;font-size:10px;color:#4dA876;font-weight:500">→ Click to view</div>';
-  html+='</div>';
+  // حساب التنبيهات والبيانات
+  const inv=S.invoices.filter(i=>i.cid===cid&&!i.deleted);
+  const overdue=inv.filter(i=>i.status==='Verlopen').length;
+  const pending=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).length;
   
-  // Card 2: Outstanding
-  html+='<div style="padding:16px;background:rgba(255,183,0,0.1);border:2px solid #FFB700;border-radius:8px;transition:all .3s ease;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer" onclick="setTab(\'invoices\');renderApp()" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 10px 20px rgba(0,0,0,0.12)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.06)\';this.style.borderColor=\'#FFB700\'">';
-  html+='<div style="font-size:24px;margin-bottom:8px;opacity:0.9">⏳</div>';
-  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:500">'+t('outstanding')+'</div>';
-  html+='<div style="font-size:18px;font-weight:600;color:#FFB700">'+FMT(open)+'</div>';
-  html+='<div style="margin-top:12px;font-size:10px;color:#FFB700;font-weight:500">→ Click to view</div>';
-  html+='</div>';
+  const exp=S.expenses.filter(e=>e.cid===cid&&!e.deleted);
+  const expTotal=exp.length;
   
-  // Card 3: Overdue
-  html+='<div style="padding:16px;background:rgba(217,83,79,0.1);border:2px solid #d9534f;border-radius:8px;transition:all .3s ease;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer" onclick="setTab(\'invoices\');renderApp()" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 10px 20px rgba(0,0,0,0.12)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.06)\';this.style.borderColor=\'#d9534f\'">';
-  html+='<div style="font-size:24px;margin-bottom:8px;opacity:0.9">⚠️</div>';
-  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:500">'+t('overdue')+'</div>';
-  html+='<div style="font-size:18px;font-weight:600;color:#d9534f">'+FMT(over)+'</div>';
-  html+='<div style="margin-top:12px;font-size:10px;color:#d9534f;font-weight:500">→ Click to view</div>';
-  html+='</div>';
+  const hrs=S.hours.filter(h=>h.cid===cid&&!h.deleted);
+  const billableHrs=hrs.filter(h=>!h.invoiced).length;
   
-  // Card 4: Hours Logged
-  html+='<div style="padding:16px;background:rgba(200,144,16,0.1);border:2px solid #C89010;border-radius:8px;transition:all .3s ease;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer" onclick="setTab(\'hours\');renderApp()" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 10px 20px rgba(0,0,0,0.12)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.06)\';this.style.borderColor=\'#C89010\'">';
-  html+='<div style="font-size:24px;margin-bottom:8px;opacity:0.9">⏱</div>';
-  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:500">'+t('hours_logged')+'</div>';
-  html+='<div style="font-size:18px;font-weight:600;color:#C89010">'+hrs.toFixed(1)+'h</div>';
-  html+='<div style="margin-top:12px;font-size:10px;color:#C89010;font-weight:500">→ Click to view</div>';
-  html+='</div>';
+  const msgs=S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.isRead&&!m.deleted);
+  const unreadMsgs=msgs.length;
   
-  // Card 5: Messages
-  html+='<div style="padding:16px;background:rgba(77,168,118,0.1);border:2px solid #4da876;border-radius:8px;transition:all .3s ease;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer" onclick="setTab(\'messages\');renderApp()" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 10px 20px rgba(0,0,0,0.12)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.06)\';this.style.borderColor=\'#4da876\'">';
-  html+='<div style="font-size:24px;margin-bottom:8px;opacity:0.9">💬</div>';
-  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:500">'+t('messages_from_anb')+'</div>';
-  html+='<div style="font-size:18px;font-weight:600;color:#4da876">'+unread+'</div>';
-  html+='<div style="margin-top:12px;font-size:10px;color:#4da876;font-weight:500">→ Click to view</div>';
-  html+='</div>';
+  const docs=S.docs.filter(d=>d.cid===cid&&d.isNew);
+  const unreadDocs=docs.length;
   
-  html+='</div>';
-
-  // Recent invoices and messages section
-  html+='<div style="display:grid;grid-template-columns:'+(isMobile?'1fr':'1fr 1fr')+';gap:12px">';
+  // بطاقات العميل - مع تقييد الوصول
+  const cards=[
+    {
+      id:'invoices',
+      icon:'📄',
+      name:t('tab_invoices'),
+      desc:t('card_invoices_desc'),
+      bg:'linear-gradient(135deg, #0A2218 0%, #1a4d2e 100%)',
+      border:'#2d7a4f',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[
+        overdue>0?{icon:'⚠️',text:overdue+' overdue',color:'#d9534f'}:null,
+        pending>0?{icon:'⏳',text:pending+' pending',color:'#FFB700'}:null
+      ].filter(a=>a)
+    },
+    {
+      id:'expenses',
+      icon:'🧾',
+      name:t('tab_expenses'),
+      desc:t('card_expenses_desc'),
+      bg:'linear-gradient(135deg, #d9534f 0%, #e74c3c 100%)',
+      border:'#c9302c',
+      text:'#ffffff',
+      accent:'#FFE66D',
+      alerts:expTotal>0?[{icon:'📊',text:expTotal+' total',color:'#FFD700'}]:[]
+    },
+    {
+      id:'hours',
+      icon:'⏱',
+      name:t('hours_time')||'Hours',
+      desc:t('card_hours_desc'),
+      bg:'linear-gradient(135deg, #C89010 0%, #D4A520 100%)',
+      border:'#B8860B',
+      text:'#0A2218',
+      accent:'#0A2218',
+      alerts:billableHrs>0?[{icon:'💰',text:billableHrs+' unbilled',color:'#0A2218'}]:[]
+    },
+    {
+      id:'messages',
+      icon:'💬',
+      name:t('messages_with_anb'),
+      desc:'Communicate With ANB',
+      bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',
+      border:'#2d7a4f',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:unreadMsgs>0?[{icon:'🔔',text:unreadMsgs+' new',color:'#FFD700'}]:[]
+    },
+    {
+      id:'documents',
+      icon:'📁',
+      name:t('documents')||'Documents',
+      desc:'View Shared Documents',
+      bg:'linear-gradient(135deg, #17A2B8 0%, #20C997 100%)',
+      border:'#138496',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:unreadDocs>0?[{icon:'📄',text:unreadDocs+' new',color:'#FFD700'}]:[]
+    }
+  ];
   
-  // Invoices card - تفاعلية بالكامل
-  html+='<div style="background:linear-gradient(135deg,#0A2218 0%,#1a4d2e 100%);border:2px solid #2d7a4f;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:all .3s ease;cursor:pointer" onclick="setTab(\'invoices\');renderApp()" onmouseover="this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.15)\';this.style.transform=\'translateY(-4px)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\';this.style.transform=\'translateY(0)\';this.style.borderColor=\'#2d7a4f\'">';
-  html+='<div style="font-size:13px;font-weight:600;color:white;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:2px solid rgba(255,255,255,0.1)">';
-  html+='<span>📄 '+t('recent_invoices')+'</span><span style="font-size:11px;color:#FFD700;background:rgba(255,215,0,0.2);padding:4px 8px;border-radius:4px;font-weight:500">'+inv.length+' total</span>';
-  html+='</div>';
-  if(inv.length===0){
-    html+='<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.5);font-size:12px">'+t('empty_invoices')+'</div>';
-  } else {
-    inv.slice(0,4).forEach(i=>{
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.1);color:white;font-size:11px;cursor:pointer;transition:all .2s" onmouseover="this.style.paddingLeft=\'8px\';this.style.color=\'#FFD700\'" onmouseout="this.style.paddingLeft=\'0\';this.style.color=\'white\'">';
-      html+='<div><div style="font-weight:500;margin-bottom:2px">'+i.desc+'</div><div style="font-size:9px;color:rgba(255,255,255,0.6)">'+FD(i.date)+'</div></div>';
-      html+='<div style="text-align:right"><div style="font-weight:600">'+FMT(i.total)+'</div></div>';
+  // عرض الكروت بنفس الأسلوب
+  let html='<div style="display:grid;grid-template-columns:'+
+    (window.innerWidth<=640?'1fr':window.innerWidth<=960?'repeat(2,1fr)':'repeat(5,1fr)')+
+    ';gap:12px;padding:0">';
+  
+  cards.forEach(card=>{
+    html+='<div class="card" style="background:'+card.bg+';border:3px solid '+card.border+
+      ';cursor:pointer;transition:all .3s ease;position:relative;overflow:hidden" '+
+      'onclick="selectCard(\''+card.id+'\')" '+
+      'onmouseover="this.style.transform=\'translateY(-8px)\';this.style.boxShadow=\'0 12px 32px rgba(0,0,0,0.25)\';this.style.borderColor=\''+card.accent+'\'" '+
+      'onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\';this.style.borderColor=\''+card.border+'\'">';
+    
+    html+='<div style="position:absolute;top:0;left:0;right:0;bottom:0;background:'+card.accent+';opacity:0;transition:opacity .3s ease;pointer-events:none" class="card-overlay"></div>';
+    html+='<div style="padding:20px;color:'+card.text+';position:relative;z-index:1">';
+    
+    // Icon
+    html+='<div style="font-size:32px;margin-bottom:12px;opacity:0.9">'+card.icon+'</div>';
+    
+    // Title
+    html+='<div style="font-size:15px;font-weight:700;margin-bottom:6px;color:'+card.text+'">'+card.name+'</div>';
+    
+    // Description
+    html+='<div style="font-size:11px;margin-bottom:12px;opacity:0.85;color:'+card.text+'">'+card.desc+'</div>';
+    
+    // Alerts
+    if(card.alerts.length>0){
+      html+='<div style="display:flex;flex-direction:column;gap:4px">';
+      card.alerts.forEach(alert=>{
+        html+='<div style="font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px;color:'+alert.color+'">'+
+          alert.icon+' '+alert.text+'</div>';
+      });
       html+='</div>';
-    });
-  }
-  html+='<div style="margin-top:12px;padding-top:12px;border-top:2px solid rgba(255,255,255,0.1);color:#FFD700;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-block" onclick="setTab(\'invoices\');renderApp()" onmouseover="this.style.marginLeft=\'6px\'" onmouseout="this.style.marginLeft=\'0\'">View all invoices →</div>';
-  html+='</div>';
-  
-  // Messages card - تفاعلية بالكامل
-  html+='<div style="background:linear-gradient(135deg,#4da876 0%,#7dbfa3 100%);border:2px solid #7dbfa3;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:all .3s ease;color:white;cursor:pointer" onclick="setTab(\'messages\');renderApp()" onmouseover="this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.15)\';this.style.transform=\'translateY(-4px)\';this.style.borderColor=\'#FFD700\'" onmouseout="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\';this.style.transform=\'translateY(0)\';this.style.borderColor=\'#7dbfa3\'">';
-  html+='<div style="font-size:13px;font-weight:600;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:2px solid rgba(255,255,255,0.2)">';
-  html+='<span>💬 '+t('messages')+'</span><span style="font-size:11px;color:#FFD700;background:rgba(255,215,0,0.2);padding:4px 8px;border-radius:4px;font-weight:500">'+unread+'</span>';
-  html+='</div>';
-  const msgs=S.messages.filter(m=>m.cid===cid&&!m.deleted).slice(-3);
-  if(msgs.length===0){
-    html+='<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.6);font-size:12px">No messages</div>';
-  } else {
-    msgs.forEach(m=>{
-      html+='<div style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.1);font-size:11px;cursor:pointer;transition:all .2s" onmouseover="this.style.paddingLeft=\'8px\'" onmouseout="this.style.paddingLeft=\'0\'">';
-      html+='<div style="font-weight:600;margin-bottom:3px;color:'+(m.from==='anb'?'#FFD700':'#FFE66D')+'">'+(m.from==='anb'?'ANB Financial':t('my_account'))+' · '+m.time+'</div>';
-      html+='<div style="color:rgba(255,255,255,0.9)">'+m.text.slice(0,60)+(m.text.length>60?'...':'')+'</div>';
-      html+='</div>';
-    });
-  }
-  html+='<div style="margin-top:12px;padding-top:12px;border-top:2px solid rgba(255,255,255,0.2);color:#FFD700;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-block" onclick="setTab(\'messages\');renderApp()" onmouseover="this.style.marginLeft=\'6px\'" onmouseout="this.style.marginLeft=\'0\'">View all messages →</div>';
-  html+='</div>';
+    }
+    
+    html+='</div></div>';
+  });
   
   html+='</div>';
-
+  
+  // CSS for hover effect
+  html+='<style>'+
+    '.card:hover .card-overlay { opacity: 0.05 !important; }'+
+  '</style>';
+  
   el.innerHTML=html;
 }
 
@@ -4756,9 +4842,21 @@ function rInfo(el,cid){
 
 function rSettings(el){
   const s=S.settings;
-  el.innerHTML=`
-  <div style="max-width:560px">
-    <div class="settings-section">
+  const settingsTab=S.settingsTab||'company';
+  
+  // Navigation tabs
+  let html=`<div>
+    <div style="display:flex;gap:0;border-bottom:3px solid var(--bd2);margin-bottom:12px">
+      <button class="tab-btn ${settingsTab==='company'?'active':''}" onclick="S.settingsTab='company';renderContent()" title="${t('set_company_info')}" style="flex:1;padding:6px 2px;border:none;background:none;cursor:pointer;font-weight:${settingsTab==='company'?'700':'500'};color:${settingsTab==='company'?'var(--t1)':'var(--t3)'};border-bottom:${settingsTab==='company'?'3px solid #C89010':'none'};text-align:center;font-size:10px;line-height:1.3">🏢<br/>Co</button>
+      <button class="tab-btn ${settingsTab==='admins'?'active':''}" onclick="S.settingsTab='admins';renderContent()" title="${t('manage_admins')}" style="flex:1;padding:6px 2px;border:none;background:none;cursor:pointer;font-weight:${settingsTab==='admins'?'700':'500'};color:${settingsTab==='admins'?'var(--t1)':'var(--t3)'};border-bottom:${settingsTab==='admins'?'3px solid #C89010':'none'};text-align:center;font-size:10px;line-height:1.3">👥<br/>Ad</button>
+      <button class="tab-btn ${settingsTab==='credentials'?'active':''}" onclick="S.settingsTab='credentials';renderContent()" title="${t('set_client_pw')}" style="flex:1;padding:6px 2px;border:none;background:none;cursor:pointer;font-weight:${settingsTab==='credentials'?'700':'500'};color:${settingsTab==='credentials'?'var(--t1)':'var(--t3)'};border-bottom:${settingsTab==='credentials'?'3px solid #C89010':'none'};text-align:center;font-size:10px;line-height:1.3">🔐<br/>Pw</button>
+    </div>
+    
+    <div style="max-width:100%;overflow-x:hidden;padding:0 4px">`;
+
+  // ═══════════════════════════ TAB 1: COMPANY ═══════════════════════════
+  if(settingsTab==='company'){
+    html+=`<div class="settings-section">
       <h3>${t('set_company_info')}</h3>
       <div class="fr2">
         <div class="fg"><label>${t('set_company_name')}</label><input id="s-cn" value="${s.companyName}"/></div>
@@ -4775,93 +4873,83 @@ function rSettings(el){
       </div>
       <div class="fg"><label>${t('set_iban')}</label><input id="s-ib" value="${s.iban}"/></div>
       <button class="btn btn-p btn-xs" onclick="saveSettings()"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✓</span>${t('btn_save_settings')}</button>
-    </div>
-    <div class="settings-section">
-      <h3>${t('set_admin_creds')}</h3>
-      <div class="fr2">
-        <div class="fg"><label>${t('set_admin_email')}</label><input id="s-aem" value="${s.email}" placeholder="admin@anbfinancial.nl"/></div>
-        <div class="fg"><label>${t('set_admin_phone')}</label><input id="s-aph" value="${s.phone}" placeholder="+31 6 12345678"/></div>
-      </div>
-      <div class="fr2">
-        <div class="fg"><label>${t('set_new_pw')}</label><input type="password" id="s-ap" placeholder="${t('set_leave_blank')}"/></div>
-        <div class="fg"><label>Confirm password</label><input type="password" id="s-ap2" placeholder="${t('set_repeat_pw')}"/></div>
-      </div>
-      <div style="font-size:11px;color:var(--t3);margin-bottom:8px">${t('set_pw_status')}: ${s.adminPwCustom?'<span class=\"bdg b-paid\">'+t('rec_active')+' ✓</span>':'<span class=\"bdg b-draft\">'+t('set_leave_blank')+'</span>'}</div>
-      <button class="btn btn-p btn-xs" onclick="saveAdminAuth()"><span style="font-size:13px;display:inline-block;margin-right:3px">🔒</span>${t('btn_save_creds')}</button>
-    </div>
+    </div>`;
+  }
 
-    <div class="settings-section">
-      <h3>${t('set_client_pw')}</h3>
-      <div style="font-size:12px;color:var(--t3);margin-bottom:12px;line-height:1.6">
-        ${S.lang==='ar'?'يضبط العملاء كلمة مرورهم عبر "Forgot password" في شاشة الدخول. يمكنك إعادة ضبط كلمة مرور أي عميل أدناه.':S.lang==='nl'?'Klanten stellen hun eigen wachtwoord in via "Forgot password" op het inlogscherm. U kunt elk klantwachtwoord hieronder resetten.':'Clients set their own password via "Forgot password" on the login screen. You can reset any client password below.'}
-      </div>
-      <table style="margin-bottom:10px">
-        <thead><tr><th>${t('tab_client')}</th><th>${t('set_email')} / ${t('set_phone')}</th><th>${t('lbl_status')}</th><th></th></tr></thead>
+  // ═══════════════════════════ TAB 2: ADMINS ═══════════════════════════
+  else if(settingsTab==='admins'){
+    html+=`<div class="settings-section">
+      <h3>👥 ${t('manage_admins')}</h3>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Manage administrator accounts and their access</div>
+      
+      <!-- قائمة الـ admins -->
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table style="margin-bottom:16px;width:100%;font-size:11px;min-width:400px">
+        <thead><tr><th style="font-size:10px;padding:6px 4px">Name</th><th style="font-size:10px;padding:6px 4px">Email</th><th style="font-size:10px;padding:6px 4px">Role</th><th style="font-size:10px;padding:6px 4px">Status</th><th style="font-size:10px;padding:6px 4px"></th></tr></thead>
         <tbody>
-          ${S.clients.filter(c=>!c.deleted).map(c=>`<tr>
-            <td style="font-weight:500">${c.name}</td>
-            <td style="color:var(--t3);font-size:11px">${c.email||''}${c.phone?' · '+c.phone:''}</td>
-            <td>${c.pwSet?'<span class="bdg b-paid">Custom ✓</span>':'<span class="bdg b-draft">Not set</span>'}</td>
-            <td><button class="btn btn-xs btn-danger" onclick="resetClientPw('${c.id}')">Reset</button></td>
-          </tr>`).join('')}
+          ${S.admins.map(admin=>'<tr><td style="padding:6px 4px;font-weight:500;max-width:80px;overflow:hidden;text-overflow:ellipsis">'+admin.name+'</td><td style="padding:6px 4px;color:var(--t3);font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis">'+admin.email+'</td><td style="padding:6px 4px"><span class="bdg" style="background:'+(admin.role==='super_admin'?'#C89010':'#4da876')+';color:white;font-size:9px;font-weight:600;padding:2px 4px">'+(admin.role==='super_admin'?'Super':'Admin')+'</span></td><td style="padding:6px 4px"><span class="bdg '+(admin.status==='active'?'b-paid':'b-draft')+'" style="font-size:9px">'+admin.status+'</span></td><td style="text-align:right;padding:6px 4px">'+(admin.role!=='super_admin'?'<button class="btn btn-xs btn-danger" onclick="delAdmin(\''+admin.id+'\')">✕</button>':'')+'</td></tr>').join('')}
         </tbody>
       </table>
-    </div>
-    <div class="settings-section">
-      <h3>${t('set_data_mgmt')}</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-xs" onclick="exportCSV('invoices')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬇</span>${t('tab_invoices')} CSV</button>
-        <button class="btn btn-xs" onclick="exportCSV('expenses')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬇</span>${t('tab_expenses')} CSV</button>
-        <button class="btn btn-xs" onclick="exportCSV('hours')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬇</span>${t('tab_hours')} CSV</button>
-        <button class="btn btn-gold btn-xs" onclick="downloadApp()"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬇</span>${t('btn_download_app')}</button>
       </div>
-    </div>
-    <div class="settings-section">
-      <h3>${t('set_cloud_sync')}</h3>
-      <div style="font-size:12px;color:var(--t3);margin-bottom:12px;line-height:1.6">
-        ${t('sync_info')}
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <button class="btn btn-p btn-xs" onclick="syncNow()"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🔄</span>${t('btn_sync_now')}</button>
-        <span id="sync-badge-settings" style="font-size:12px;color:var(--t3)"></span>
-      </div>
-      <div style="font-size:11px;color:var(--t3)">${t('sync_last')} ${S.settings&&localStorage.getItem('anb5_synced_at')?FD(localStorage.getItem('anb5_synced_at')):t('sync_never')}</div>
-    </div>
-    <div class="settings-section">
-      <h3>${t('set_backup')}</h3>
-      <div style="font-size:12px;color:var(--t3);margin-bottom:12px;line-height:1.6">
-        ${t('backup_info')}
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <button class="btn btn-p btn-xs" onclick="exportBackup()"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬇</span>${t('btn_download_backup')}</button>
-        <button class="btn btn-xs" onclick="document.getElementById('restore-file-input').click()"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬆</span>${t('btn_restore')}</button>
-        <input type="file" id="restore-file-input" accept=".json,application/json" style="display:none" onchange="importBackup(event)"/>
-      </div>
-      <div style="font-size:11px;color:var(--t3)">${t('backup_last')} ${S.settings.lastBackup?FD(S.settings.lastBackup):t('backup_last_never')}</div>
-    </div>
-    <div class="settings-section">
-      <h3>${t('set_yearend')}</h3>
-      <div style="font-size:12px;color:var(--t3);margin-bottom:12px;line-height:1.6">
-        Close a financial year per client: locks all journal entries for that year and posts the net result to equity. Closed years are listed below.
-      </div>
-      <div class="fr2" style="margin-bottom:10px">
-        <div class="fg"><label>${t('ye_client')}</label>
-          <select id="ye-client" aria-label="${t('ye_client')}">${S.clients.filter(c=>!c.deleted).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>
+      
+      <!-- إضافة admin جديد -->
+      <div style="background:var(--bg2);border:2px dashed var(--bd2);border-radius:8px;padding:12px">
+        <div style="font-size:11px;font-weight:600;margin-bottom:8px">➕ Add New Admin</div>
+        <div class="fr2">
+          <div class="fg"><label>Name</label><input type="text" id="new-admin-name" placeholder="Admin name"/></div>
+          <div class="fg"><label>Email</label><input type="email" id="new-admin-email" placeholder="email@example.com"/></div>
         </div>
-        <div class="fg"><label>${t('ye_year')}</label>
-          <select id="ye-year" aria-label="${t('ye_year')}">${[2024,2025,2026].map(y=>`<option value="${y}" ${y===new Date().getFullYear()-1?'selected':''}>${y}</option>`).join('')}</select>
+        <div class="fr2">
+          <div class="fg"><label>Phone</label><input type="tel" id="new-admin-phone" placeholder="+31 6 12345678"/></div>
+          <div class="fg"><label>Password</label><input type="password" id="new-admin-pw" placeholder="Strong password"/></div>
+        </div>
+        <button class="btn btn-p btn-xs" onclick="addNewAdmin()">Create Admin Account</button>
+      </div>
+    </div>`;
+  }
+
+  // ═══════════════════════════ TAB 3: CREDENTIALS ═══════════════════════════
+  else if(settingsTab==='credentials'){
+    html+=`<div class="settings-section">
+      <h3>🔐 Access Control</h3>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">Manage login credentials for admins and clients</div>
+      
+      <!-- Admin Credentials -->
+      <div style="background:var(--bg2);border:2px solid var(--bd2);border-radius:8px;padding:12px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:12px;color:#C89010">👨‍💼 Admin Access Credentials</div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table style="width:100%;font-size:10px;min-width:350px">
+          <thead><tr><th style="padding:6px 4px;font-weight:600">Name</th><th style="padding:6px 4px;font-weight:600">Email</th><th style="padding:6px 4px;font-weight:600">Reset</th></tr></thead>
+          <tbody>
+            ${S.admins.map(admin=>'<tr style="border-top:1px solid var(--bd2)"><td style="padding:8px 4px;font-weight:500">'+admin.name+'</td><td style="padding:8px 4px;color:var(--t3);font-size:9px;max-width:140px;overflow:hidden;text-overflow:ellipsis">'+admin.email+'</td><td style="padding:8px 4px;text-align:center"><button class="btn btn-xs" onclick="resetAdminPassword(\''+admin.id+'\')">Reset</button></td></tr>').join('')}
+          </tbody>
+        </table>
         </div>
       </div>
-      <button class="btn btn-gold btn-xs" onclick="openYearEndClosing()"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🔒</span>${t('btn_review_close')}</button>
-      ${(S.yearClosings||[]).length?`<table style="margin-top:14px">
-        <thead><tr><th>${t('ye_client')}</th><th>${t('ye_year')}</th><th>${t('ye_closed_on')}</th><th>${t('ye_net_result')}</th></tr></thead>
-        <tbody>${(S.yearClosings||[]).map(yc=>{
-          const c=S.clients.find(x=>x.id===yc.cid);
-          return `<tr><td>${c?c.name:'—'}</td><td>${yc.year}</td><td>${FD(yc.closedOn)}</td><td>${FMT(yc.netResult)}</td></tr>`;
-        }).join('')}</tbody>
-      </table>`:''}
-    </div>
-  </div>`;
+      
+      <!-- Client Credentials -->
+      <div style="background:var(--bg2);border:2px solid var(--bd2);border-radius:8px;padding:12px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:12px;color:#4da876">👤 Client Access Credentials</div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:12px;line-height:1.6">
+          Clients set their own password via "Forgot password" on login.
+        </div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table style="width:100%;font-size:10px;min-width:350px">
+          <thead><tr><th style="padding:6px 4px;font-weight:600">${t('tab_client')}</th><th style="padding:6px 4px;font-weight:600">Email</th><th style="padding:6px 4px;font-weight:600">Reset</th></tr></thead>
+          <tbody>
+            ${S.clients.filter(c=>!c.deleted).map(c=>'<tr style="border-top:1px solid var(--bd2)"><td style="padding:8px 4px;font-weight:500">'+c.name+'</td><td style="padding:8px 4px;color:var(--t3);font-size:9px;max-width:140px;overflow:hidden;text-overflow:ellipsis">'+(c.email||'')+'</td><td style="padding:8px 4px;text-align:center"><button class="btn btn-xs btn-danger" onclick="resetClientPw(\''+c.id+'\')">✕</button></td></tr>').join('')}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ═══════════════════════════ TAB 4: DATA ═══════════════════════════
+  // Default to company tab if invalid
+  
+  html+=`</div></div>`;
+  el.innerHTML=html;
 }
 
 /* ═══ ACTIONS ═══ */
@@ -4885,6 +4973,87 @@ function resetClientPw(cid){
   sv();toast('Password reset — client must set new password','✓');renderContent();
 }
 
+// ─────────────────── MANAGE ADMINS ───────────────────
+function addNewAdmin(){
+  const name=document.getElementById('new-admin-name')?.value?.trim();
+  const email=document.getElementById('new-admin-email')?.value?.trim();
+  const phone=document.getElementById('new-admin-phone')?.value?.trim();
+  const pw=document.getElementById('new-admin-pw')?.value;
+  
+  if(!name||!email||!pw){toast('⚠ Please fill all required fields','⚠');return;}
+  if(pw.length<6){toast('⚠ Password must be at least 6 characters','⚠');return;}
+  if(S.admins.find(a=>a.email===email)){toast('⚠ Email already in use','⚠');return;}
+  
+  const newAdmin={
+    id:UID(),
+    name:name,
+    email:email,
+    phone:phone||'',
+    password:pw,
+    role:'admin',
+    status:'active',
+    createdDate:TODAY(),
+    lastLogin:null
+  };
+  
+  S.admins.push(newAdmin);
+  sv();
+  
+  document.getElementById('new-admin-name').value='';
+  document.getElementById('new-admin-email').value='';
+  document.getElementById('new-admin-phone').value='';
+  document.getElementById('new-admin-pw').value='';
+  
+  toast('✓ Admin account created successfully','✓');
+  renderContent();
+}
+
+function delAdmin(adminId){
+  const admin=S.admins.find(a=>a.id===adminId);
+  if(!admin)return;
+  
+  if(admin.role==='super_admin'){
+    toast('⚠ Cannot delete Super Admin','⚠');
+    return;
+  }
+  
+  if(!confirm('Remove '+admin.name+' from admin accounts? This action cannot be undone.')){
+    return;
+  }
+  
+  S.admins=S.admins.filter(a=>a.id!==adminId);
+  sv();
+  toast('✓ Admin account removed','✓');
+  renderContent();
+}
+
+function resetAdminPassword(adminId){
+  const admin=S.admins.find(a=>a.id===adminId);
+  if(!admin)return;
+  
+  if(admin.role==='super_admin'){
+    toast('⚠ Cannot reset Super Admin password here','⚠');
+    return;
+  }
+  
+  const newPw=prompt('Enter new password for '+admin.name+':');
+  if(!newPw||newPw.length<6){
+    if(newPw)toast('⚠ Password must be at least 6 characters','⚠');
+    return;
+  }
+  
+  const confirm2=prompt('Confirm password:');
+  if(confirm2!==newPw){
+    toast('⚠ Passwords do not match','⚠');
+    return;
+  }
+  
+  admin.password=newPw;
+  sv();
+  toast('✓ Password reset successfully','✓');
+  renderContent();
+}
+
 function saveSettings(){
   S.settings.companyName=document.getElementById('s-cn')?.value||S.settings.companyName;
   S.settings.tagline=document.getElementById('s-tl')?.value||S.settings.tagline;
@@ -4898,14 +5067,24 @@ function saveSettings(){
   sv();toast(t('settings_nav')+' ✓','ti-check');
 }
 
+function openImportBank(){
+  if(!S.currentClient) return;
+  const el=document.getElementById('bank-import-input-'+S.currentClient);
+  if(el) el.click();
+}
 function openSendMsg(){
-  // For Admin only - open modal to send message to a client
-  if(!isAdmin()){
-    alert('Only admin can send messages');
-    return;
+  // Open message sending modal/form
+  const cid=S.currentClient;
+  if(!cid) return;
+  
+  // Check if user is admin or client
+  if(isAdmin()){
+    // Admin mode - open modal to send message to client
+    setTab('messages');
+  } else {
+    // Client mode - send message to ANB
+    setTab('messages');
   }
-  // Switch to messages tab
-  setTab('messages');
 }
 function hasNewActivity(cid){
   // Check if there are new documents for this client without isViewed flag
@@ -5165,7 +5344,16 @@ function showModal(title,body,onSave,saveLabel='Save'){
 }
 function closeModal(){document.getElementById('mo').style.display='none';}
 function modalSave(){if(window._ms)window._ms();}
-document.getElementById('mo').addEventListener('click',e=>{if(e.target===document.getElementById('mo'))closeModal();});
+// Delay modal listener until DOM is ready
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',()=>{
+    const mo=document.getElementById('mo');
+    if(mo)mo.addEventListener('click',e=>{if(e.target===mo)closeModal();});
+  });
+} else {
+  const mo=document.getElementById('mo');
+  if(mo)mo.addEventListener('click',e=>{if(e.target===mo)closeModal();});
+}
 
 function openAddClient(){openClientModal(null);}
 function openEditClient(id){
@@ -5186,7 +5374,7 @@ function rEditClient(el,cid){
     <!-- Header -->
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
       <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:500" onmouseover="this.style.background='${theme.accent}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.transform='translateX(0)'">
-        ← Back to Overview
+        ← ${t('back_to_overview')}
       </button>
       <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
     </div>
@@ -5296,8 +5484,8 @@ function rEditClient(el,cid){
 
         <!-- Buttons -->
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button class="btn" onclick="goBackToOverview()" style="background:var(--gr2);color:var(--t1);border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s" onmouseover="this.style.background=\\"var(--gr3)\\"" onmouseout="this.style.background=\\"var(--gr2)\\">Cancel</button>
-          <button class="btn" onclick="saveEditClientFromTab('${c.id}')" style="background:${theme.border};color:white;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s" onmouseover="this.style.background=\\"${theme.accent}\\"" onmouseout="this.style.background=\\"${theme.border}\\">Save Changes</button>
+          <button class="btn" onclick="goBackToOverview()" style="background:var(--gr2);color:var(--t1);border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s" onmouseover="this.style.background='var(--gr3)'" onmouseout="this.style.background='var(--gr2)'">Cancel</button>
+          <button class="btn" onclick="saveEditClientFromTab('${c.id}')" style="background:${theme.border};color:white;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s" onmouseover="this.style.background='${theme.accent}'" onmouseout="this.style.background='${theme.border}'">Save Changes</button>
         </div>
       </div>
     </div>
@@ -5357,7 +5545,7 @@ function openClientModal(c){
       <!-- Back Button -->
       ${!isN?`<div style="margin-bottom:8px">
         <button onclick="closeModal();goBackToOverview()" style="background:#4da876;color:white;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='#0A2218'" onmouseout="this.style.background='#4da876'">
-          ← Back to Overview
+          ← ${t('back_to_overview')}
         </button>
       </div>`:''}
       
@@ -5550,13 +5738,7 @@ function nextNum(clientId){
   return `${clientName}-${String(clientInvoices.length+1).padStart(3,'0')}`;
 }
 function openNewInvoice(){
-  // Check if there are any debtors in contacts for current client
-  const cid=S.currentClient;
-  const debtors=S.contacts.filter(c=>c.cid===cid&&c.type==='debtor');
-  if(debtors.length===0){
-    alert('❌ Cannot create invoice:\n\nNo customers (Debtors) found.\n\nPlease add a customer first:\nContacts → + Debtor');
-    return;
-  }
+  // Allow creating invoice even without pre-defined debtors
   openInvoiceModal(null);
 }
 function editInvoice(id){openInvoiceModal(S.invoices.find(i=>i.id===id));}
@@ -6370,7 +6552,7 @@ function rReportsList(el,cid){
   let html='<div style="padding:16px">';
   html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:12px;background:rgba(10,34,24,0.08);border-left:4px solid #0A2218;border-radius:6px">';
   html+='<button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:#0A2218;color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;white-space:nowrap" onmouseover="this.style.background=\'#1a4d2e\';this.style.transform=\'translateX(-4px)\'" onmouseout="this.style.background=\'#0A2218\';this.style.transform=\'translateX(0)\'">';
-  html+='← Back to Overview';
+  html+='← '+t('back_to_overview');
   html+='</button>';
   html+='<span style="font-size:11px;color:var(--t3);font-weight:500">'+c?.name+' — '+new Date().getFullYear()+'</span>';
   html+='</div>';
@@ -6417,7 +6599,7 @@ function rReportCashFlow(el,cid){
   const netCashFlow=cashIn-cashOut;
   
   let html='<div style="padding:16px">';
-  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← '+t('back_to_reports')+'</button>';
   html+='<div class="card"><div class="ch"><span class="ct">💵 Cash Flow Report</span>';
   html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'cashflow\',\''+cid+'\')">📥 PDF</button>';
   html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'cashflow\',\''+cid+'\')">📊 Excel</button></div>';
@@ -6478,7 +6660,7 @@ function rReportSummary(el,cid){
   const btwPayable=inv.reduce((s,i)=>s+(i.btw||0),0)-exp.reduce((s,e)=>s+(e.btw||0),0);
 
   let html='<div style="padding:16px">';
-  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← '+t('back_to_reports')+'</button>';
   html+='<div class="card"><div class="ch"><span class="ct">📊 '+(t('rep_summary')||'Summary')+' — '+c?.name+'</span>';
   html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'summary\',\''+cid+'\')">📥 PDF</button>';
   html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'summary\',\''+cid+'\')">📊 Excel</button></div>';
@@ -6517,8 +6699,8 @@ function rReportPL(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
-  html+='<button onclick="goBackToOverview()" style="padding:8px 16px;background:var(--g1);border:1px solid var(--gold);border-radius:6px;cursor:pointer;color:var(--bg1);font-size:12px;font-weight:500;transition:all .2s" onmouseover="this.style.background=\'#E6B800\'" onmouseout="this.style.background=\'var(--g1)\'">← Back to Overview</button>';
-  html+='<button onclick="goBackToReportsList()" style="padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<button onclick="goBackToOverview()" style="padding:8px 16px;background:var(--g1);border:1px solid var(--gold);border-radius:6px;cursor:pointer;color:var(--bg1);font-size:12px;font-weight:500;transition:all .2s" onmouseover="this.style.background=\'#E6B800\'" onmouseout="this.style.background=\'var(--g1)\'">← '+t('back_to_overview')+'</button>';
+  html+='<button onclick="goBackToReportsList()" style="padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← '+t('back_to_reports')+'</button>';
   html+='</div>';
   html+='<div class="card">';
   html+='<div class="ch"><span class="ct">📈 Profit & Loss Statement</span>';
@@ -6564,7 +6746,7 @@ function rReportBTW(el,cid){
   const btwPayable=btwOut-btwIn;
 
   let html='<div style="padding:16px">';
-  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← '+t('back_to_reports')+'</button>';
   html+='<div class="card"><div class="ch"><span class="ct">💰 BTW Return (VAT)</span>';
   html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'btw\',\''+cid+'\')">📥 PDF</button>';
   html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'btw\',\''+cid+'\')">📊 Excel</button></div>';
@@ -6591,7 +6773,7 @@ function rReportDebtors(el,cid){
   const total=invoices.reduce((s,i)=>s+i.total,0);
 
   let html='<div style="padding:16px">';
-  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← '+t('back_to_reports')+'</button>';
   html+='<div class="card"><div class="ch"><span class="ct">👥 Debtors Aging Report</span>';
   html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'debtors\',\''+cid+'\')">📥 PDF</button>';
   html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'debtors\',\''+cid+'\')">📊 Excel</button></div>';
@@ -6627,7 +6809,7 @@ function rReportExpenses(el,cid){
   expenses.forEach(e=>{const k=e.cat||'Other';expByCat[k]=(expByCat[k]||0)+(e.amount||0);});
 
   let html='<div style="padding:16px">';
-  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← Back to Reports</button>';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:var(--bg1);border:1px solid var(--gr2);border-radius:6px;cursor:pointer;color:var(--t1);font-size:12px">← '+t('back_to_reports')+'</button>';
   html+='<div class="card"><div class="ch"><span class="ct">🧾 Expenses Report</span>';
   html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'expenses\',\''+cid+'\')">📥 PDF</button>';
   html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'expenses\',\''+cid+'\')">📊 Excel</button></div>';
@@ -7369,18 +7551,97 @@ function rejectPendingAgreement(agreementId){
   }
 }
 
-/* ═══════════════════════════ AUTO LOGOUT ON CLOSE ═══════════════════════════ */
-// تسجيل خروج فقط عند إغلاق المتصفح/التطبيق الفعلي
-// (بدون تحديث أو تغيير صفحة)
-window.addEventListener('unload',()=>{
-  if(S.role){
-    // محاولة إرسال طلب للخادم لتسجيل الخروج
-    navigator.sendBeacon('/api/logout',JSON.stringify({role:S.role}));
-    // مسح البيانات المحلية
-    S.role=null;
-    S.currentClient=null;
-    authState={role:null,identifier:'',clientId:null};
-    localStorage.removeItem('anb5');
+/* ═══════════════════════════ MOBILE BACK BUTTON HANDLING ═══════════════════════════ */
+let backStack=[];  // Navigation history
+let lastBackPressTime=0;
+const BACK_PRESS_DELAY=2000;  // 2 seconds between presses
+
+function pushNavState(){
+  // Store current state in back stack
+  backStack.push({tab:S.tab,currentClient:S.currentClient});
+}
+
+function handleBackButton(){
+  const now=Date.now();
+  const isDoubleTap=now-lastBackPressTime<BACK_PRESS_DELAY;
+  lastBackPressTime=now;
+  
+  if(isDoubleTap){
+    // Double tap - show confirmation dialog
+    showConfirmDialog(t('exit_app'),t('exit_confirmation'),
+      ()=>{doLogout();},
+      ()=>{/* Do nothing */}
+    );
+    lastBackPressTime=0;  // Reset timer
+  } else {
+    // Single tap - go back one step
+    if(isAdmin()){
+      // ADMIN MODE
+      if(S.currentClient){
+        // If viewing a client's data, go back to clients list
+        gotoOverview();
+      } else if(S.tab!=='dashboard'){
+        // If on different tab, go to dashboard
+        setTab('dashboard');
+      } else {
+        // If already on dashboard, prepare for double-tap exit
+        toast(t('press_back_again'),null,2000);
+      }
+    } else {
+      // CLIENT MODE
+      if(S.tab!=='dashboard'){
+        // If on different tab, go to dashboard
+        setTab('dashboard');
+      } else {
+        // If already on dashboard, prepare for double-tap exit
+        toast(t('press_back_again'),null,2000);
+      }
+    }
+  }
+}
+
+function showConfirmDialog(title,message,onConfirm,onCancel){
+  const html=`
+    <div style="text-align:center;padding:20px;background:var(--bg2);border-radius:8px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--t1)">${title}</div>
+      <div style="font-size:13px;color:var(--t2);margin-bottom:20px">${message}</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="btn btn-danger" onclick="window._onConfirm && window._onConfirm()" style="flex:1">${t('yes')}</button>
+        <button class="btn" onclick="window._onCancel && window._onCancel();closeModal()" style="flex:1;background:var(--gr2);color:var(--t1)">${t('no')}</button>
+      </div>
+    </div>
+  `;
+  
+  window._onConfirm=()=>{closeModal();if(onConfirm)onConfirm();};
+  window._onCancel=onCancel;
+  
+  document.getElementById('mo-t').textContent='';
+  document.getElementById('mo-b').innerHTML=html;
+  document.getElementById('mo').style.display='flex';
+  document.getElementById('mo-s').style.display='none';
+}
+
+// Handle hardware back button
+if(typeof cordova!=='undefined'){
+  // Cordova app
+  document.addEventListener('backbutton',handleBackButton,false);
+} else {
+  // Web app - use popstate
+  window.addEventListener('popstate',handleBackButton);
+  
+  // Also handle ESC key
+  document.addEventListener('keydown',(e)=>{
+    if(e.key==='Escape'){
+      e.preventDefault();
+      handleBackButton();
+    }
+  });
+}
+
+// Push initial state
+window.addEventListener('load',()=>{
+  if(typeof history!=='undefined'&&history.pushState){
+    history.pushState({tab:S.tab},'',window.location.href);
   }
 });
 
