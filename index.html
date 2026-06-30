@@ -3527,6 +3527,7 @@ function rClientDash(el,cid){
 /* ═══════════════════════════ CLIENT ACTION CARDS ═══════════════════════════ */
 function selectCard(cardId){
   const cardThemes={
+    'edit_client':{bg:'rgba(243,156,18,0.08)',border:'#F39C12',text:'#F39C12',accent:'#ffffff'},
     'invoices':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',text:'#0A2218',accent:'#FFD700'},
     'expenses':{bg:'rgba(217,83,79,0.08)',border:'#d9534f',text:'#d9534f',accent:'#FFE66D'},
     'hours':{bg:'rgba(200,144,16,0.08)',border:'#C89010',text:'#C89010',accent:'#0A2218'},
@@ -3536,6 +3537,12 @@ function selectCard(cardId){
     'reports':{bg:'rgba(155,89,182,0.08)',border:'#9B59B6',text:'#9B59B6',accent:'#FFD700'},
     'bank':{bg:'rgba(52,152,219,0.08)',border:'#3498DB',text:'#3498DB',accent:'#FFD700'}
   };
+  
+  // إذا كان edit_client، افتح النموذج مباشرة
+  if(cardId==='edit_client'){
+    openEditClient(S.currentClient);
+    return;
+  }
   
   S.cardTheme=cardThemes[cardId];
   
@@ -3601,6 +3608,28 @@ function rClientActionCards(el,cid){
       alerts:expTotal>0?[{icon:'📊',text:expTotal+' total',color:'#FFD700'}]:[]
     },
     {
+      id:'bank',
+      icon:'🏦',
+      name:t('tab_bank')||'Bank',
+      desc:'Manage bank transactions',
+      bg:'linear-gradient(135deg, #3498DB 0%, #2980B9 100%)',
+      border:'#2471A3',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[]
+    },
+    {
+      id:'assets',
+      icon:'🏢',
+      name:t('assets')||'Assets',
+      desc:'Track business assets',
+      bg:'linear-gradient(135deg, #17A2B8 0%, #20C997 100%)',
+      border:'#138496',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:assets.length>0?[{icon:'📦',text:assets.length+' registered',color:'#FFD700'}]:[]
+    },
+    {
       id:'hours',
       icon:'⏱',
       name:t('tab_hours'),
@@ -3610,6 +3639,17 @@ function rClientActionCards(el,cid){
       text:'#0A2218',
       accent:'#0A2218',
       alerts:billableHrs>0?[{icon:'💰',text:billableHrs+' billable hours',color:'#0A2218'}]:[]
+    },
+    {
+      id:'reports',
+      icon:'📈',
+      name:t('tab_reports'),
+      desc:'View financial reports',
+      bg:'linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%)',
+      border:'#7D3C98',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[]
     },
     {
       id:'messages',
@@ -3634,36 +3674,14 @@ function rClientActionCards(el,cid){
       alerts:pendingContracts>0?[{icon:'⏳',text:pendingContracts+' pending approval',color:'#0A2218'}]:[]
     },
     {
-      id:'assets',
-      icon:'🏢',
-      name:t('assets')||'Assets',
-      desc:'Track business assets',
-      bg:'linear-gradient(135deg, #17A2B8 0%, #20C997 100%)',
-      border:'#138496',
+      id:'edit_client',
+      icon:'✏️',
+      name:'Edit Client',
+      desc:'Update client details & settings',
+      bg:'linear-gradient(135deg, #F39C12 0%, #E67E22 100%)',
+      border:'#D68910',
       text:'#ffffff',
-      accent:'#FFD700',
-      alerts:assets.length>0?[{icon:'📦',text:assets.length+' registered',color:'#FFD700'}]:[]
-    },
-    {
-      id:'reports',
-      icon:'📈',
-      name:t('tab_reports'),
-      desc:'View financial reports',
-      bg:'linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%)',
-      border:'#7D3C98',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:[]
-    },
-    {
-      id:'bank',
-      icon:'🏦',
-      name:t('tab_bank')||'Bank',
-      desc:'Manage bank transactions',
-      bg:'linear-gradient(135deg, #3498DB 0%, #2980B9 100%)',
-      border:'#2471A3',
-      text:'#ffffff',
-      accent:'#FFD700',
+      accent:'#ffffff',
       alerts:[]
     }
   ];
