@@ -2358,10 +2358,17 @@ function renderSidebar(){
       {id:'assets',icon:'🏢',key:'assets'},
     ];
     const unreadMsgs=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='anb'&&!m.isRead&&!m.deleted).length;
-    clients.innerHTML+=adminTabs.map(tab=>{
-      const badge=tab.id==='messages'&&unreadMsgs>0?` <span style="background:var(--red);color:white;font-size:8px;padding:1px 4px;border-radius:4px;margin-left:4px">${unreadMsgs}</span>`:'';
-      return `<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block">${tab.icon}</span> ${t(tab.key)}${badge}</button>`;
-    }).join('');
+    
+    // ✅ إذا كان في صفحة البطاقات، لا نعرض الخيارات في الـ Sidebar
+    if(S.tab==='client_overview'){
+      clients.innerHTML+='<div style="padding:12px 8px;font-size:11px;color:rgba(255,255,255,.4);text-align:center;margin-top:12px;font-style:italic">← Use the cards to navigate</div>';
+    } else {
+      // ✅ عرض الخيارات العادية عند فتح أي تبويب
+      clients.innerHTML+=adminTabs.map(tab=>{
+        const badge=tab.id==='messages'&&unreadMsgs>0?` <span style="background:var(--red);color:white;font-size:8px;padding:1px 4px;border-radius:4px;margin-left:4px">${unreadMsgs}</span>`:'';
+        return `<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block">${tab.icon}</span> ${t(tab.key)}${badge}</button>`;
+      }).join('');
+    }
     
     // Admin main tabs at bottom
     const adminMainTabs=[
@@ -2389,7 +2396,7 @@ function renderSidebar(){
 
 function selClient(id){
   S.currentClient=id;
-  S.tab='dashboard';
+  S.tab='client_overview';  // ✅ عرض البطاقات الذكية بدلاً من الـ Sidebar
   S.reportTab=null;  // ✅ Reset report tab when switching clients
   S.selectedMsgClient=id;  // ✅ Set selected client for messages
   // Mark all documents as viewed
@@ -2520,8 +2527,8 @@ function renderContent(){
       rAdminDash(el);return;
     }
     // Admin manages client's content: dashboard (client dash), invoices, expenses, etc.
-    const fn={client_overview:rClientDash,dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets};
-    (fn[S.tab]||rClientDash)(el,cid);
+    const fn={action_cards:rClientActionCards,client_overview:rClientActionCards,dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets};
+    (fn[S.tab]||rClientActionCards)(el,cid);
   } else {
     // Client can see: dashboard, invoices, expenses, hours, documents, messages
     const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,documents:rDocs,messages:rMessages};
@@ -2978,10 +2985,17 @@ function saveAsset(cid){
 /* ── BACK TO CLIENTS BUTTON IN SIDEBAR ── */
 function rClientsLis(el){
   el.innerHTML=`
-  <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center">
+  <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
     <input type="text" id="client-search" placeholder="${t('search')} ${t('clients_list')}..." 
-      style="flex:1;padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1)"
+      style="flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1)"
       oninput="filterClients(this.value)">
+    <select id="plan-filter" style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1);cursor:pointer"
+      onchange="filterClients(document.getElementById('client-search').value)">
+      <option value="">All Plans</option>
+      <option value="€100">€100/month</option>
+      <option value="€150">€150/month</option>
+      <option value="€200">€200/month</option>
+    </select>
   </div>
   <div id="clients-list-container"></div>`;
   
@@ -2993,29 +3007,85 @@ function renderClientsList(searchTerm){
   if(!container)return;
   
   const term=searchTerm.toLowerCase().trim();
-  const filtered=S.clients.filter(c=>!c.deleted&&(term===''||c.name.toLowerCase().includes(term)||c.email.toLowerCase().includes(term)||c.phone.includes(term)));
+  const planFilter=document.getElementById('plan-filter')?.value||'';
+  
+  // فلترة حسب البحث والباقة
+  const filtered=S.clients.filter(c=>{
+    if(c.deleted)return false;
+    const matchesSearch=term===''||c.name.toLowerCase().includes(term)||c.email.toLowerCase().includes(term)||c.phone.includes(term);
+    const matchesPlan=planFilter===''||c.monthlyFee===planFilter;
+    return matchesSearch&&matchesPlan;
+  });
   
   if(filtered.length===0){
     container.innerHTML=`<div style="text-align:center;padding:32px;color:var(--t3)">${t('no_data')}</div>`;
     return;
   }
   
+  // ألوان الباقات - محسّنة وأكثر تمييزاً
+  const planColors={
+    '€100':'#0A2218',
+    '€150':'#4da876',
+    '€200':'#9B59B6'
+  };
+  
+  const planBgColors={
+    '€100':'#E8F4F0',    // تفاحي أخضر فاتح
+    '€150':'#E0F5ED',    // نعناعي فاتح
+    '€200':'#F3E8FB'     // بنفسجي فاتح
+  };
+  
+  const planBorderColors={
+    '€100':'#2d7a4f',    // أخضر متوسط
+    '€150':'#3FA384',    // أخضر ناعم متوسط
+    '€200':'#B59CC8'     // بنفسجي متوسط
+  };
+  
   container.innerHTML=filtered.map(c=>{
-    const inv=S.invoices.filter(i=>i.cid===c.id).length;
+    // حساب التنبيهات
+    const inv=S.invoices.filter(i=>i.cid===c.id&&!i.deleted);
+    const overdue=inv.filter(i=>i.status==='Verlopen').length;
+    const pending=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).length;
+    const exp=S.expenses.filter(e=>e.cid===c.id&&!e.deleted).length;
+    const msgs=S.messages.filter(m=>m.cid===c.id&&m.from==='anb'&&!m.isRead&&!m.deleted).length;
+    
+    // حساب إجمالي التنبيهات
+    const totalAlerts=overdue+pending+(exp>0?1:0)+(msgs>0?1:0);
+    
+    // نوع الباقة
+    const planType=c.monthlyFee||'Standard';
+    const planColor=planColors[planType]||'#0A2218';
+    const planBg=planBgColors[planType]||'#E8F4F0';
+    const planBorder=planBorderColors[planType]||'#2d7a4f';
+    
     return `
-    <button onclick="selClient('${c.id}')" style="width:100%;padding:14px;background:var(--bg1);border:1px solid var(--gr2);border-radius:8px;margin-bottom:10px;cursor:pointer;text-align:left;transition:all .3s;display:flex;align-items:center;gap:12px"
-      onmouseover="this.style.borderColor='var(--g1)';this.style.background='rgba(200,144,16,.08)'" 
-      onmouseout="this.style.borderColor='var(--gr2)';this.style.background='var(--bg1)'">
-      <div class="cb-av" style="width:40px;height:40px;font-size:14px;flex-shrink:0;background:${c.color}22;color:${c.color}">${INI(c.name)}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;color:var(--t1);margin-bottom:2px">${c.name}</div>
-        <div style="font-size:11px;color:var(--t3)">${c.type} • ${c.email}</div>
+    <div onclick="selClient('${c.id}')" style="padding:16px;background:${planBg};border:3px solid ${planBorder};border-radius:12px;margin-bottom:12px;cursor:pointer;transition:all .3s ease;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)"
+      onmouseover="this.style.transform='translateX(8px)';this.style.boxShadow='0 8px 16px rgba(0,0,0,0.12)';this.style.borderColor='${planColor}';this.style.borderWidth='3px'" 
+      onmouseout="this.style.transform='translateX(0)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)';this.style.borderColor='${planBorder}';this.style.borderWidth='3px'">
+      
+      <div style="flex:1;display:flex;gap:12px;align-items:center">
+        <div class="cb-av" style="width:48px;height:48px;font-size:18px;flex-shrink:0;background:${c.color}22;color:${c.color};border:3px solid ${c.color}">${INI(c.name)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;color:var(--t1);margin-bottom:4px;display:flex;align-items:center;gap:8px;font-size:14px">
+            ${c.name}
+            <span style="font-size:11px;background:${planColor};color:white;padding:4px 10px;border-radius:6px;font-weight:600">${planType}</span>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:6px">${c.email}${c.phone?' • '+c.phone:''}</div>
+          <div style="font-size:11px;color:var(--t3);display:flex;gap:10px;flex-wrap:wrap">
+            ${inv.length>0?'<span style="background:rgba(77,168,118,0.15);padding:2px 6px;border-radius:3px">📄 '+inv.length+'</span>':''}
+            ${exp>0?'<span style="background:rgba(217,83,79,0.15);padding:2px 6px;border-radius:3px">🧾 '+exp+'</span>':''}
+            ${c.contractStartDate?'<span style="background:rgba(200,144,16,0.15);padding:2px 6px;border-radius:3px">📋 Active</span>':''}
+          </div>
+        </div>
       </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:12px;color:var(--g1);font-weight:600">${inv}</div>
-        <div style="font-size:10px;color:var(--t3)">${t('tab_invoices')}</div>
+      
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
+        ${totalAlerts>0?'<div style="background:#d9534f;color:white;font-weight:700;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(217,83,79,0.3)">'+totalAlerts+'</div>':''}
+        ${overdue>0?'<div style="background:#ffcdd2;color:#c62828;font-size:11px;padding:4px 8px;border-radius:5px;font-weight:600">⚠️ '+overdue+'</div>':''}
+        ${pending>0?'<div style="background:#ffe0b2;color:#e65100;font-size:11px;padding:4px 8px;border-radius:5px;font-weight:600">⏳ '+pending+'</div>':''}
+        ${msgs>0?'<div style="background:#c8e6c9;color:#1b5e20;font-size:11px;padding:4px 8px;border-radius:5px;font-weight:600">💬 '+msgs+'</div>':''}
       </div>
-    </button>`;
+    </div>`;
   }).join('');
 }
 
@@ -3206,6 +3276,169 @@ function rClientDash(el,cid){
   
   html+='</div>';
 
+  el.innerHTML=html;
+}
+
+/* ═══════════════════════════ CLIENT ACTION CARDS ═══════════════════════════ */
+function rClientActionCards(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  
+  // حساب التنبيهات
+  const inv=S.invoices.filter(i=>i.cid===cid&&!i.deleted);
+  const overdue=inv.filter(i=>i.status==='Verlopen').length;
+  const pending=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).length;
+  
+  const exp=S.expenses.filter(e=>e.cid===cid&&!e.deleted);
+  const expTotal=exp.length;
+  
+  const hrs=S.hours.filter(h=>h.cid===cid&&!h.deleted);
+  const billableHrs=hrs.filter(h=>!h.invoiced).length;
+  
+  const msgs=S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.isRead&&!m.deleted);
+  const unreadMsgs=msgs.length;
+  
+  const contracts=S.contracts?.filter(c=>c.cid===cid&&c.status==='pending_review')||[];
+  const pendingContracts=contracts.length;
+  
+  const assets=S.assets?.filter(a=>a.cid===cid)||[];
+  
+  // بطاقات الخيارات مع الألوان المتسقة
+  const cards=[
+    {
+      id:'invoices',
+      icon:'📄',
+      name:t('tab_invoices'),
+      desc:'View & manage invoices',
+      bg:'linear-gradient(135deg, #0A2218 0%, #1a4d2e 100%)',
+      border:'#2d7a4f',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[
+        overdue>0?{icon:'⚠️',text:overdue+' overdue',color:'#d9534f'}:null,
+        pending>0?{icon:'⏳',text:pending+' pending',color:'#FFB700'}:null
+      ].filter(a=>a),
+      action:'setTab(\'invoices\');renderApp()'
+    },
+    {
+      id:'expenses',
+      icon:'🧾',
+      name:t('tab_expenses'),
+      desc:'Track & categorize expenses',
+      bg:'linear-gradient(135deg, #d9534f 0%, #e74c3c 100%)',
+      border:'#c9302c',
+      text:'#ffffff',
+      accent:'#FFE66D',
+      alerts:expTotal>0?[{icon:'📊',text:expTotal+' total',color:'#FFD700'}]:[],
+      action:'setTab(\'expenses\');renderApp()'
+    },
+    {
+      id:'hours',
+      icon:'⏱',
+      name:t('tab_hours'),
+      desc:'Log & track hours worked',
+      bg:'linear-gradient(135deg, #C89010 0%, #E6B800 100%)',
+      border:'#E6A800',
+      text:'#0A2218',
+      accent:'#0A2218',
+      alerts:billableHrs>0?[{icon:'💰',text:billableHrs+' billable hours',color:'#0A2218'}]:[],
+      action:'setTab(\'hours\');renderApp()'
+    },
+    {
+      id:'messages',
+      icon:'💬',
+      name:t('messages'),
+      desc:'Communicate with client',
+      bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',
+      border:'#7dbfa3',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:unreadMsgs>0?[{icon:'🔔',text:unreadMsgs+' unread',color:'#FFD700'}]:[],
+      action:'S.selectedMsgClient=cid;setTab(\'messages\');renderApp()'
+    },
+    {
+      id:'contracts',
+      icon:'📋',
+      name:t('contracts')||'Contracts',
+      desc:'Manage service agreements',
+      bg:'linear-gradient(135deg, #B8E6D1 0%, #7dbfa3 100%)',
+      border:'#4da876',
+      text:'#0A2218',
+      accent:'#0A2218',
+      alerts:pendingContracts>0?[{icon:'⏳',text:pendingContracts+' pending approval',color:'#0A2218'}]:[],
+      action:'setTab(\'contracts\');renderApp()'
+    },
+    {
+      id:'assets',
+      icon:'🏢',
+      name:t('assets')||'Assets',
+      desc:'Track business assets',
+      bg:'linear-gradient(135deg, #17A2B8 0%, #20C997 100%)',
+      border:'#138496',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:assets.length>0?[{icon:'📦',text:assets.length+' registered',color:'#FFD700'}]:[],
+      action:'setTab(\'assets\');renderApp()'
+    },
+    {
+      id:'reports',
+      icon:'📈',
+      name:t('tab_reports'),
+      desc:'View financial reports',
+      bg:'linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%)',
+      border:'#7D3C98',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[],
+      action:'setTab(\'reports\');S.reportTab=null;renderApp()'
+    },
+    {
+      id:'bank',
+      icon:'🏦',
+      name:t('tab_bank')||'Bank',
+      desc:'Manage bank transactions',
+      bg:'linear-gradient(135deg, #3498DB 0%, #2980B9 100%)',
+      border:'#2471A3',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[],
+      action:'setTab(\'bank\');renderApp()'
+    }
+  ];
+  
+  let html='<div style="padding:16px">';
+  
+  cards.forEach(card=>{
+    // كارت مع تأثيرات
+    html+='<div style="margin-bottom:12px;padding:16px;background:'+card.bg+';border:2px solid '+card.border+';border-radius:10px;cursor:pointer;transition:all .3s ease;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;justify-content:space-between;align-items:center" onclick="'+card.action+'" onmouseover="this.style.transform=\'translateX(6px)\';this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.15)\';this.style.borderColor=\''+card.accent+'\'" onmouseout="this.style.transform=\'translateX(0)\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\';this.style.borderColor=\''+card.border+'\'">';
+    
+    // الجزء الأيسر: الأيقونة والنص
+    html+='<div style="flex:1">';
+    html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">';
+    html+='<div style="font-size:28px">'+card.icon+'</div>';
+    html+='<div>';
+    html+='<div style="font-size:14px;font-weight:600;color:'+card.text+'">'+card.name+'</div>';
+    html+='<div style="font-size:11px;color:rgba('+(card.text==='#ffffff'?'255,255,255':'10,34,24')+',0.7)">'+card.desc+'</div>';
+    html+='</div>';
+    html+='</div>';
+    html+='</div>';
+    
+    // الجزء الأيمن: التنبيهات
+    if(card.alerts.length>0){
+      html+='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">';
+      card.alerts.forEach(alert=>{
+        html+='<div style="background:rgba('+alert.color.substring(1).match(/.{1,2}/g).map(x=>parseInt(x,16)).join(',')+',0.2);border:1px solid '+alert.color+';padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600;color:'+alert.color+';white-space:nowrap;display:flex;align-items:center;gap:4px">';
+        html+=alert.icon+' '+alert.text;
+        html+='</div>';
+      });
+      html+='</div>';
+    } else {
+      html+='<div style="font-size:12px;color:rgba('+(card.text==='#ffffff'?'255,255,255':'10,34,24')+',0.5);font-weight:500">→</div>';
+    }
+    
+    html+='</div>';
+  });
+  
+  html+='</div>';
   el.innerHTML=html;
 }
 
@@ -6561,6 +6794,21 @@ function rejectPendingAgreement(agreementId){
     renderContent();
   }
 }
+
+/* ═══════════════════════════ AUTO LOGOUT ON CLOSE ═══════════════════════════ */
+// تسجيل خروج فقط عند إغلاق المتصفح/التطبيق الفعلي
+// (بدون تحديث أو تغيير صفحة)
+window.addEventListener('unload',()=>{
+  if(S.role){
+    // محاولة إرسال طلب للخادم لتسجيل الخروج
+    navigator.sendBeacon('/api/logout',JSON.stringify({role:S.role}));
+    // مسح البيانات المحلية
+    S.role=null;
+    S.currentClient=null;
+    authState={role:null,identifier:'',clientId:null};
+    localStorage.removeItem('anb5');
+  }
+});
 
 </script>
 
