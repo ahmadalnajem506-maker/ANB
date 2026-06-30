@@ -2542,7 +2542,7 @@ function renderContent(){
       rAdminDash(el);return;
     }
     // Admin manages client's content: dashboard (client dash), invoices, expenses, etc.
-    const fn={action_cards:rClientActionCards,client_overview:rClientActionCards,dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets};
+    const fn={action_cards:rClientActionCards,client_overview:rClientActionCards,dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets,edit_client:rEditClient};
     (fn[S.tab]||rClientActionCards)(el,cid);
   } else {
     // Client can see: dashboard, invoices, expenses, hours, documents, messages
@@ -5084,7 +5084,187 @@ function modalSave(){if(window._ms)window._ms();}
 document.getElementById('mo').addEventListener('click',e=>{if(e.target===document.getElementById('mo'))closeModal();});
 
 function openAddClient(){openClientModal(null);}
-function openEditClient(id){openClientModal(S.clients.find(c=>c.id===id));}
+function openEditClient(id){
+  S.currentClient=id;
+  setTab('edit_client');
+  renderApp();
+}
+
+function rEditClient(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  if(!c)return;
+  
+  // الألوان من الكرت المختار أو استخدام الافتراضي
+  const theme=S.cardTheme||{bg:'rgba(243,156,18,0.08)',border:'#F39C12',text:'#F39C12',accent:'#ffffff'};
+  
+  el.innerHTML=`
+  <div>
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+      <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:500" onmouseover="this.style.background='${theme.accent}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.transform='translateX(0)'">
+        ← Back to Overview
+      </button>
+      <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
+    </div>
+
+    <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">✏️ ${t('edit')} Client Details</span></div>
+      
+      <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+        
+        <!-- Basic Info Section -->
+        <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px">📋 ${t('basic_information')}</div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Company Name *</label>
+              <input id="cf-n" value="${c?.name||''}" placeholder="Your company name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Client Type</label>
+              <select id="cf-t" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+                ${['B2B','B2C','Expat','ZZP'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Email Address *</label>
+            <input id="cf-e" value="${c?.email||''}" type="email" placeholder="info@company.nl" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Phone Number</label>
+              <input id="cf-ph" value="${c?.phone||''}" placeholder="+31 6 12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Contact Person *</label>
+              <input id="cf-cp" value="${c?.contactPerson||''}" placeholder="Full name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Business Info Section -->
+        <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px">🏢 ${t('business_information')}</div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">KVK Number *</label>
+              <input id="cf-k" value="${c?.kvk||''}" placeholder="12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">BTW/VAT Number *</label>
+              <input id="cf-b" value="${c?.btw||''}" placeholder="NL123456789B01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">IBAN *</label>
+              <input id="cf-i" value="${c?.iban||''}" placeholder="NL91ABNA0417164300" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">BIC</label>
+              <input id="cf-bic" value="${c?.bic||''}" placeholder="ABNANL2A" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Address Section -->
+        <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px">📍 ${t('address_information')}</div>
+          
+          <div style="margin-bottom:12px">
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Street Address *</label>
+            <input id="cf-addr" value="${c?.address||''}" placeholder="Straatnaam 123" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Postal Code *</label>
+              <input id="cf-zip" value="${c?.zipCode||''}" placeholder="1234 AB" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">City *</label>
+              <input id="cf-city" value="${c?.city||''}" placeholder="Amsterdam" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Country</label>
+              <select id="cf-country" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+                <option value="NL" ${c?.country==='NL'?'selected':''}>Netherlands</option>
+                <option value="BE" ${c?.country==='BE'?'selected':''}>Belgium</option>
+                <option value="DE" ${c?.country==='DE'?'selected':''}>Germany</option>
+                <option value="Other" ${c?.country==='Other'?'selected':''}>Other</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Registration Number</label>
+              <input id="cf-regnum" value="${c?.registrationNumber||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn" onclick="goBackToOverview()" style="background:var(--gr2);color:var(--t1);border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s" onmouseover="this.style.background=\\"var(--gr3)\\"" onmouseout="this.style.background=\\"var(--gr2)\\">Cancel</button>
+          <button class="btn" onclick="saveEditClientFromTab('${c.id}')" style="background:${theme.border};color:white;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s" onmouseover="this.style.background=\\"${theme.accent}\\"" onmouseout="this.style.background=\\"${theme.border}\\">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function saveEditClientFromTab(clientId){
+  const c=S.clients.find(c=>c.id===clientId);
+  if(!c)return;
+  
+  const n=document.getElementById('cf-n').value.trim();
+  const e=document.getElementById('cf-e').value.trim();
+  const cp=document.getElementById('cf-cp').value.trim();
+  const k=document.getElementById('cf-k').value.trim();
+  const b=document.getElementById('cf-b').value.trim();
+  const i=document.getElementById('cf-i').value.trim();
+  const addr=document.getElementById('cf-addr').value.trim();
+  const zip=document.getElementById('cf-zip').value.trim();
+  const city=document.getElementById('cf-city').value.trim();
+
+  if(!n){alert('❌ Company name required');return;}
+  if(!e){alert('❌ Email required');return;}
+  if(!cp){alert('❌ Contact person name required');return;}
+  if(!k){alert('❌ KVK registration number required');return;}
+  if(!b){alert('❌ BTW/VAT number required');return;}
+  if(!i){alert('❌ IBAN required');return;}
+  if(!addr||!zip||!city){alert('❌ Complete address required');return;}
+
+  const updatedClient={
+    ...c,
+    name:n,
+    type:document.getElementById('cf-t').value,
+    email:e,
+    phone:document.getElementById('cf-ph').value,
+    contactPerson:cp,
+    kvk:k,
+    btw:b,
+    iban:i,
+    bic:document.getElementById('cf-bic').value,
+    address:addr,
+    zipCode:zip,
+    city:city,
+    country:document.getElementById('cf-country').value,
+    registrationNumber:document.getElementById('cf-regnum').value
+  };
+  
+  S.clients=S.clients.map(x=>x.id===updatedClient.id?updatedClient:x);
+  sv();
+  goBackToOverview();
+  toast(t('edit')+' ✓','ti-check');
+}
 function openClientModal(c){
   const isN=!c;
   showModal(isN?t('add_client_title'):t('edit')+' '+t('tab_client').toLowerCase(),`
@@ -5195,28 +5375,6 @@ function openClientModal(c){
         </div>
       </div>
 
-      <!-- Subscription Plan Section -->
-      <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
-        <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px">💳 ${t('subscription_plan')}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          <label style="border:2px solid var(--gr2);padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;hover:border-color:var(--green)">
-            <input type="radio" name="plan" value="100" id="plan-100" ${c?.monthlyFee===100?'checked':''} style="cursor:pointer"/> 
-            <div style="font-weight:600;color:var(--t1);margin-top:6px;font-size:13px">Basic</div>
-            <div style="font-size:9px;color:var(--t3)">€100/month</div>
-          </label>
-          <label style="border:2px solid #C89010;padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;background:rgba(200,144,16,0.05)">
-            <input type="radio" name="plan" value="150" id="plan-150" ${c?.monthlyFee===150?'checked':''} style="cursor:pointer"/> 
-            <div style="font-weight:600;color:#C89010;margin-top:6px;font-size:13px">Plus</div>
-            <div style="font-size:9px;color:var(--t3)">€150/month</div>
-          </label>
-          <label style="border:2px solid var(--g1);padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;background:rgba(77,168,118,0.05)">
-            <input type="radio" name="plan" value="200" id="plan-200" ${c?.monthlyFee===200?'checked':''} style="cursor:pointer"/> 
-            <div style="font-weight:600;color:var(--g1);margin-top:6px;font-size:13px">Pro</div>
-            <div style="font-size:9px;color:var(--t3)">€200/month</div>
-          </label>
-        </div>
-      </div>
-
       <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3)">
         ℹ️ Fields marked with * are required
       </div>
@@ -5232,7 +5390,6 @@ function openClientModal(c){
     const addr=document.getElementById('cf-addr').value.trim();
     const zip=document.getElementById('cf-zip').value.trim();
     const city=document.getElementById('cf-city').value.trim();
-    const monthlyFee=parseInt(document.querySelector('input[name="plan"]:checked')?.value||'150')||150;
 
     if(!n){alert('❌ Company name required');return;}
     if(!e){alert('❌ Email required');return;}
@@ -5260,7 +5417,7 @@ function openClientModal(c){
         city:city,
         country:document.getElementById('cf-country').value,
         registrationNumber:document.getElementById('cf-regnum').value,
-        monthlyFee:monthlyFee,
+        monthlyFee:150,
         contractStartDate:TODAY(),
         contractDuration:12,
         paymentTerms:30,
@@ -5290,8 +5447,7 @@ function openClientModal(c){
         zipCode:zip,
         city:city,
         country:document.getElementById('cf-country').value,
-        registrationNumber:document.getElementById('cf-regnum').value,
-        monthlyFee:monthlyFee
+        registrationNumber:document.getElementById('cf-regnum').value
       };
       S.clients=S.clients.map(x=>x.id===updatedClient.id?updatedClient:x);
       sv();
