@@ -1384,6 +1384,22 @@ var I18N={
     card_contracts_desc:'Manage service agreements',
     card_edit_client:'Edit Client',
     card_edit_client_desc:'Update client details & settings',
+    // Dashboard admin cards
+    dashboard_pending_invoices:'Pending Invoices',
+    dashboard_overdue:'Overdue',
+    dashboard_new_messages:'New Messages',
+    dashboard_new_documents:'New Documents',
+    dashboard_hours_logged:'Hours Logged',
+    dashboard_active_contracts:'Active Contracts',
+    dashboard_pending_agreements:'Pending Agreements',
+    // Sidebar messages
+    sidebar_use_cards:'← Use the cards to navigate',
+    sidebar_press_back:'Press ← Back in the tab to return',
+    messages_with_anb:'Messages with ANB',
+    btn_send:'Send',
+    // Expenses report labels
+    expenses_by_category:'By Category',
+    expenses_detailed_list:'Detailed List',
     // Topbar actions
     new_invoice:'+ New invoice', new_expense:'+ New expense', log_hours:'+ Log hours',
     send_message:'➤ Send message', new_request:'+ New request', add_expense:'+ Add expense',
@@ -1411,10 +1427,11 @@ var I18N={
     btn_remind:'🔔 Remind', btn_mark_paid:'✓ Mark paid', btn_pause:'Pause', btn_resume:'Resume',
     btn_new_invoice:'+ New invoice',
     // Empty states
-    empty_invoices:t('empty_invoices'), empty_expenses:'No expenses yet',
+    empty_invoices:'No invoices yet', empty_expenses:'No expenses yet',
     empty_hours:'No hours logged yet', empty_docs:'No documents yet',
     empty_journal:'No journal entries', empty_bank:'No bank transactions',
-    empty_messages:'No messages yet', empty_open:t('empty_open'),
+    empty_messages:'No messages yet', empty_open:'No open invoices',
+    empty_debtors:'No debtors yet',
     // Dashboard stats
     dash_boekingen:'Entries', dash_accounts:'Accounts', dash_transactions:'Transactions',
     dash_balance:'Balance', dash_unmatched:'Unmatched',
@@ -1556,6 +1573,22 @@ var I18N={
     card_contracts_desc:'Serviceovereenkomsten beheren',
     card_edit_client:'Klant Bewerken',
     card_edit_client_desc:'Klantgegevens en instellingen bijwerken',
+    // Dashboard admin cards
+    dashboard_pending_invoices:'Openstaande Facturen',
+    dashboard_overdue:'Achterstallig',
+    dashboard_new_messages:'Nieuwe Berichten',
+    dashboard_new_documents:'Nieuwe Documenten',
+    dashboard_hours_logged:'Gewerkte Uren',
+    dashboard_active_contracts:'Actieve Overeenkomsten',
+    dashboard_pending_agreements:'Hangende Akkoorden',
+    // Sidebar messages
+    sidebar_use_cards:'← Gebruik de kaarten om te navigeren',
+    sidebar_press_back:'Druk ← Terug in het tabblad om terug te keren',
+    messages_with_anb:'Berichten met ANB',
+    btn_send:'Verzenden',
+    // Expenses report labels
+    expenses_by_category:'Per Categorie',
+    expenses_detailed_list:'Gedetailleerde Lijst',
     new_invoice:'+ Nieuwe factuur', new_expense:'+ Nieuwe onkost', log_hours:'+ Uren invoeren',
     send_message:'➤ Bericht sturen', new_request:'+ Nieuw verzoek', add_expense:'+ Onkost toevoegen',
     edit:'Bewerken', remove:'Verwijderen',
@@ -1583,6 +1616,7 @@ var I18N={
     empty_hours:'Nog geen uren ingevoerd', empty_docs:'Nog geen documenten',
     empty_journal:'Geen journaalboekingen', empty_bank:'Geen banktransacties',
     empty_messages:'Nog geen berichten', empty_open:'Geen openstaande facturen',
+    empty_debtors:'Nog geen debiteuren',
     dash_boekingen:'Boekingen', dash_accounts:'Rekeningen', dash_transactions:'Transacties',
     dash_balance:'Saldo', dash_unmatched:'Ongematch',
     rep_revenue:'Omzet', rep_expenses:'Kosten', rep_net_profit:'Nettowinst',
@@ -1716,6 +1750,22 @@ var I18N={
     card_contracts_desc:'إدارة اتفاقيات الخدمة',
     card_edit_client:'تعديل العميل',
     card_edit_client_desc:'تحديث بيانات العميل والإعدادات',
+    // Dashboard admin cards
+    dashboard_pending_invoices:'الفواتير المعلقة',
+    dashboard_overdue:'المتأخرة',
+    dashboard_new_messages:'الرسائل الجديدة',
+    dashboard_new_documents:'المستندات الجديدة',
+    dashboard_hours_logged:'ساعات العمل المسجلة',
+    dashboard_active_contracts:'الاتفاقيات النشطة',
+    dashboard_pending_agreements:'الاتفاقيات المعلقة',
+    // Sidebar messages
+    sidebar_use_cards:'← استخدم الكروت للتنقل',
+    sidebar_press_back:'اضغط ← رجوع في التبويب للعودة',
+    messages_with_anb:'الرسائل مع ANB',
+    btn_send:'إرسال',
+    // Expenses report labels
+    expenses_by_category:'حسب الفئة',
+    expenses_detailed_list:'القائمة المفصلة',
     new_invoice:'+ فاتورة جديدة', new_expense:'+ مصروف جديد', log_hours:'+ تسجيل ساعات',
     send_message:'➤ إرسال رسالة', new_request:'+ طلب جديد', add_expense:'+ إضافة مصروف',
     edit:'تعديل', remove:'حذف',
@@ -1743,6 +1793,7 @@ var I18N={
     empty_hours:'لم تُسجَّل ساعات بعد', empty_docs:'لا توجد مستندات بعد',
     empty_journal:'لا توجد قيود في اليومية', empty_bank:'لا توجد معاملات بنكية',
     empty_messages:'لا توجد رسائل بعد', empty_open:'لا توجد فواتير مفتوحة',
+    empty_debtors:'لا توجد ديون بعد',
     dash_boekingen:'القيود', dash_accounts:'الحسابات', dash_transactions:'المعاملات',
     dash_balance:'الرصيد', dash_unmatched:'غير مُطابَق',
     rep_revenue:'الإيراد (Omzet)', rep_expenses:'التكاليف', rep_net_profit:'الربح الصافي',
@@ -2394,10 +2445,10 @@ function renderSidebar(){
     
     // ✅ إذا كان في صفحة البطاقات، لا نعرض الخيارات في الـ Sidebar
     if(S.tab==='client_overview'){
-      clients.innerHTML+='<div style="padding:12px 8px;font-size:11px;color:rgba(255,255,255,.4);text-align:center;margin-top:12px;font-style:italic">← Use the cards to navigate</div>';
+      clients.innerHTML+='<div style="padding:12px 8px;font-size:11px;color:rgba(255,255,255,.4);text-align:center;margin-top:12px;font-style:italic">'+t('sidebar_use_cards')+'</div>';
     } else {
       // ✅ لا نعرض قائمة التبويبات - فقط رسالة بسيطة
-      clients.innerHTML+='<div style="padding:12px 8px;font-size:11px;color:rgba(255,255,255,.5);text-align:center;margin-top:12px">Press ← Back in the tab to return</div>';
+      clients.innerHTML+='<div style="padding:12px 8px;font-size:11px;color:rgba(255,255,255,.5);text-align:center;margin-top:12px">'+t('sidebar_press_back')+'</div>';
     }
     
     // Admin main tabs at bottom
@@ -3362,13 +3413,13 @@ function rAdminDash(el){
 
   const cards=[
     {icon:'👥',value:totalClients,label:t('active_clients'),action:'clients',bg:'linear-gradient(135deg, #0A2218 0%, #1a4d2e 100%)',border:'#2d7a4f',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(10,34,24,0.1)'},
-    {icon:'📄',value:pendingInvoices,label:'Pending Invoices',action:'invoices',bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#4da876',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(77,168,118,0.1)'},
-    {icon:'⚠️',value:overdueInvoices,label:'Overdue',action:'overdue',bg:'linear-gradient(135deg, #d9534f 0%, #c9302c 100%)',border:'#d9534f',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(217,83,79,0.1)'},
-    {icon:'💬',value:newMessages,label:'New Messages',action:'messages',bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#7dbfa3',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(77,168,118,0.1)'},
-    {icon:'📁',value:newDocuments,label:'New Documents',action:'documents',bg:'linear-gradient(135deg, #FFB700 0%, #FFC700 100%)',border:'#FF9500',text:'#0A2218',accent:'#0A2218',lightBg:'rgba(255,183,0,0.1)'},
-    {icon:'⏱',value:totalHours.toFixed(0),label:'Hours Logged',action:'hours',bg:'linear-gradient(135deg, #FFEB99 0%, #FFE66D 100%)',border:'#FFC700',text:'#0A2218',accent:'#0A2218',lightBg:'rgba(255,235,153,0.2)'},
-    {icon:'📋',value:totalContracts,label:'Active Contracts',action:'contracts',bg:'linear-gradient(135deg, #B8E6D1 0%, #7dbfa3 100%)',border:'#4da876',text:'#0A2218',accent:'#C89010',lightBg:'rgba(184,230,209,0.15)'},
-    {icon:'📜',value:pendingAgreements,label:'Pending Agreements',action:'agreements',bg:'linear-gradient(135deg, #E8D4B0 0%, #D4A574 100%)',border:'#C89010',text:'#2d1810',accent:'#2d1810',lightBg:'rgba(232,212,176,0.15)'}
+    {icon:'📄',value:pendingInvoices,label:t('dashboard_pending_invoices'),action:'invoices',bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#4da876',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(77,168,118,0.1)'},
+    {icon:'⚠️',value:overdueInvoices,label:t('dashboard_overdue'),action:'overdue',bg:'linear-gradient(135deg, #d9534f 0%, #c9302c 100%)',border:'#d9534f',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(217,83,79,0.1)'},
+    {icon:'💬',value:newMessages,label:t('dashboard_new_messages'),action:'messages',bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#7dbfa3',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(77,168,118,0.1)'},
+    {icon:'📁',value:newDocuments,label:t('dashboard_new_documents'),action:'documents',bg:'linear-gradient(135deg, #FFB700 0%, #FFC700 100%)',border:'#FF9500',text:'#0A2218',accent:'#0A2218',lightBg:'rgba(255,183,0,0.1)'},
+    {icon:'⏱',value:totalHours.toFixed(0),label:t('dashboard_hours_logged'),action:'hours',bg:'linear-gradient(135deg, #FFEB99 0%, #FFE66D 100%)',border:'#FFC700',text:'#0A2218',accent:'#0A2218',lightBg:'rgba(255,235,153,0.2)'},
+    {icon:'📋',value:totalContracts,label:t('dashboard_active_contracts'),action:'contracts',bg:'linear-gradient(135deg, #B8E6D1 0%, #7dbfa3 100%)',border:'#4da876',text:'#0A2218',accent:'#C89010',lightBg:'rgba(184,230,209,0.15)'},
+    {icon:'📜',value:pendingAgreements,label:t('dashboard_pending_agreements'),action:'agreements',bg:'linear-gradient(135deg, #E8D4B0 0%, #D4A574 100%)',border:'#C89010',text:'#2d1810',accent:'#2d1810',lightBg:'rgba(232,212,176,0.15)'}
   ];
 
   let html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:0">';
@@ -3521,7 +3572,7 @@ function rClientDash(el,cid){
   html+='<span>📄 '+t('recent_invoices')+'</span><span style="font-size:11px;color:#FFD700;background:rgba(255,215,0,0.2);padding:4px 8px;border-radius:4px;font-weight:500">'+inv.length+' total</span>';
   html+='</div>';
   if(inv.length===0){
-    html+='<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.5);font-size:12px">No invoices yet</div>';
+    html+='<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.5);font-size:12px">'+t('empty_invoices')+'</div>';
   } else {
     inv.slice(0,4).forEach(i=>{
       html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.1);color:white;font-size:11px;cursor:pointer;transition:all .2s" onmouseover="this.style.paddingLeft=\'8px\';this.style.color=\'#FFD700\'" onmouseout="this.style.paddingLeft=\'0\';this.style.color=\'white\'">';
@@ -4463,9 +4514,9 @@ function rMessages(el,cid){
       </button>
     </div>
     <div class="card">
-      <div class="ch"><span class="ct">💬 Messages with ANB</span></div>
+      <div class="ch"><span class="ct">💬 ${t('messages_with_anb')}</span></div>
       <div style="padding:16px;max-height:400px;overflow-y:auto">
-        ${S.messages.filter(m=>m.cid===cid&&!m.deleted).length===0?`<div style="color:var(--t3);text-align:center">No messages yet</div>`:
+        ${S.messages.filter(m=>m.cid===cid&&!m.deleted).length===0?`<div style="color:var(--t3);text-align:center">${t('empty_messages')}</div>`:
         S.messages.filter(m=>m.cid===cid&&!m.deleted).map(m=>`<div style="margin-bottom:12px;align-self:${m.from==='anb'?'flex-start':'flex-end'};max-width:75%">
           <div style="background:${m.from==='anb'?'#C89010':'#0A2218'};color:${m.from==='anb'?'#0A2218':'#C89010'};padding:10px 12px;border-radius:6px;line-height:1.4;font-size:13px">${m.text}</div>
           <div style="font-size:9px;opacity:0.6;margin-top:2px">${m.date} ${m.time}</div>
@@ -4474,7 +4525,7 @@ function rMessages(el,cid){
       </div>
       <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px">
         <input type="text" id="msg-input-client" placeholder="Message..." style="flex:1;padding:8px;border:1px solid var(--gr1);border-radius:4px"/>
-        <button onclick="sendMsgClient('${cid}')" style="padding:8px 16px;background:#0A2218;color:#C89010;border:none;border-radius:4px;cursor:pointer;font-weight:600">Send</button>
+        <button onclick="sendMsgClient('${cid}')" style="padding:8px 16px;background:#0A2218;color:#C89010;border:none;border-radius:4px;cursor:pointer;font-weight:600">${t('btn_send')}</button>
       </div>
     </div>`;
     
@@ -4571,7 +4622,7 @@ function rContacts(el){
         </div>
       </div>
     </div>
-  `).join('')||'<span style="color:var(--t3);font-size:12px">No debtors yet</span>';
+  `).join('')||'<span style="color:var(--t3);font-size:12px">'+t('empty_debtors')+'</span>';
   
   // Render creditors
   const creditorsList=document.getElementById('creditors-list');
@@ -6586,7 +6637,7 @@ function rReportExpenses(el,cid){
   html+='<div style="font-size:24px;font-weight:600;color:var(--red)">'+FMT(total)+'</div></div>';
   
   html+='<div style="margin-bottom:16px">';
-  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--red)">By Category</div>';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--red)">'+t('expenses_by_category')+'</div>';
   Object.entries(expByCat).forEach(([cat,amt])=>{
     html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)">';
     html+='<span>'+cat+'</span><span style="color:var(--red)">-'+FMT(amt)+'</span></div>';
@@ -6594,9 +6645,9 @@ function rReportExpenses(el,cid){
   html+='</div>';
   
   html+='<div style="margin-bottom:16px">';
-  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gray)">Detailed List</div>';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gray)">'+t('expenses_detailed_list')+'</div>';
   if(expenses.length===0){
-    html+='<div style="text-align:center;padding:16px;color:var(--t3)">No expenses</div>';
+    html+='<div style="text-align:center;padding:16px;color:var(--t3)">'+t('empty_expenses')+'</div>';
   } else {
     expenses.forEach(e=>{
       html+='<div style="padding:10px;border-bottom:1px solid var(--gr2);display:flex;justify-content:space-between;align-items:center">';
