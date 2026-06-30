@@ -3025,9 +3025,9 @@ function rClientsLis(el){
     <select id="plan-filter" style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1);cursor:pointer"
       onchange="filterClients(document.getElementById('client-search').value)">
       <option value="">All Plans</option>
-      <option value="€100">€100/month</option>
-      <option value="€150">€150/month</option>
-      <option value="€200">€200/month</option>
+      <option value="100">Basic</option>
+      <option value="150">Plus</option>
+      <option value="200">Pro</option>
     </select>
   </div>
   <div id="clients-list-container"></div>`;
@@ -3046,7 +3046,7 @@ function renderClientsList(searchTerm){
   const filtered=S.clients.filter(c=>{
     if(c.deleted)return false;
     const matchesSearch=term===''||c.name.toLowerCase().includes(term)||c.email.toLowerCase().includes(term)||c.phone.includes(term);
-    const matchesPlan=planFilter===''||c.monthlyFee===planFilter;
+    const matchesPlan=planFilter===''||parseInt(c.monthlyFee)===parseInt(planFilter);
     return matchesSearch&&matchesPlan;
   });
   
@@ -3057,21 +3057,30 @@ function renderClientsList(searchTerm){
   
   // ألوان الباقات - محسّنة وأكثر تمييزاً
   const planColors={
-    '€100':'#0A2218',
-    '€150':'#4da876',
-    '€200':'#9B59B6'
+    'Basic':'#0A2218',
+    'Plus':'#4da876',
+    'Pro':'#9B59B6',
+    100:'#0A2218',
+    150:'#4da876',
+    200:'#9B59B6'
   };
   
   const planBgColors={
-    '€100':'#E8F4F0',    // تفاحي أخضر فاتح
-    '€150':'#E0F5ED',    // نعناعي فاتح
-    '€200':'#F3E8FB'     // بنفسجي فاتح
+    'Basic':'#E8F4F0',    // تفاحي أخضر فاتح
+    'Plus':'#E0F5ED',    // نعناعي فاتح
+    'Pro':'#F3E8FB',     // بنفسجي فاتح
+    100:'#E8F4F0',
+    150:'#E0F5ED',
+    200:'#F3E8FB'
   };
   
   const planBorderColors={
-    '€100':'#2d7a4f',    // أخضر متوسط
-    '€150':'#3FA384',    // أخضر ناعم متوسط
-    '€200':'#B59CC8'     // بنفسجي متوسط
+    'Basic':'#2d7a4f',    // أخضر متوسط
+    'Plus':'#3FA384',    // أخضر ناعم متوسط
+    'Pro':'#B59CC8',     // بنفسجي متوسط
+    100:'#2d7a4f',
+    150:'#3FA384',
+    200:'#B59CC8'
   };
   
   container.innerHTML=filtered.map(c=>{
@@ -3086,22 +3095,24 @@ function renderClientsList(searchTerm){
     const totalAlerts=overdue+pending+(exp>0?1:0)+(msgs>0?1:0);
     
     // نوع الباقة
-    const planType=c.monthlyFee||'Standard';
-    const planColor=planColors[planType]||'#0A2218';
-    const planBg=planBgColors[planType]||'#E8F4F0';
-    const planBorder=planBorderColors[planType]||'#2d7a4f';
+    // خريطة الأسماء
+    const planNames={100:'Basic',150:'Plus',200:'Pro'};
+    const monthlyFeeInt=parseInt(c.monthlyFee)||0;
+    const planType=planNames[monthlyFeeInt]||'Standard';
+    const planColor=planColors[monthlyFeeInt]||'#0A2218';
+    const planBg=planBgColors[monthlyFeeInt]||'#E8F4F0';
+    const planBorder=planBorderColors[monthlyFeeInt]||'#2d7a4f';
     
     return `
-    <div onclick="selClient('${c.id}')" style="padding:16px;background:${planBg};border:3px solid ${planBorder};border-radius:12px;margin-bottom:12px;cursor:pointer;transition:all .3s ease;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)"
-      onmouseover="this.style.transform='translateX(8px)';this.style.boxShadow='0 8px 16px rgba(0,0,0,0.12)';this.style.borderColor='${planColor}';this.style.borderWidth='3px'" 
-      onmouseout="this.style.transform='translateX(0)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)';this.style.borderColor='${planBorder}';this.style.borderWidth='3px'">
+    <div onclick="selClient('${c.id}')" style="padding:16px;background:${planBg};border:3px solid ${planBorder};border-radius:12px;margin-bottom:12px;cursor:pointer;transition:all .3s ease;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.06);gap:12px"
+      onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 16px rgba(0,0,0,0.12)';this.style.borderColor='${planColor}';this.style.borderWidth='3px'" 
+      onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)';this.style.borderColor='${planBorder}';this.style.borderWidth='3px'">
       
-      <div style="flex:1;display:flex;gap:12px;align-items:center">
-        <div class="cb-av" style="width:48px;height:48px;font-size:18px;flex-shrink:0;background:${c.color}22;color:${c.color};border:3px solid ${c.color}">${INI(c.name)}</div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div class="cb-av" style="width:48px;height:48px;font-size:18px;flex-shrink:0;background:${c.color}22;color:${c.color};border:3px solid ${c.color};margin-top:0">${INI(c.name)}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;color:var(--t1);margin-bottom:4px;display:flex;align-items:center;gap:8px;font-size:14px">
+          <div style="font-weight:700;color:var(--t1);margin-bottom:4px;font-size:14px">
             ${c.name}
-            <span style="font-size:11px;background:${planColor};color:white;padding:4px 10px;border-radius:6px;font-weight:600">${planType}</span>
           </div>
           <div style="font-size:11px;color:var(--t3);margin-bottom:6px">${c.email}${c.phone?' • '+c.phone:''}</div>
           <div style="font-size:11px;color:var(--t3);display:flex;gap:10px;flex-wrap:wrap">
@@ -3112,11 +3123,14 @@ function renderClientsList(searchTerm){
         </div>
       </div>
       
-      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
-        ${totalAlerts>0?'<div style="background:#d9534f;color:white;font-weight:700;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(217,83,79,0.3)">'+totalAlerts+'</div>':''}
-        ${overdue>0?'<div style="background:#ffcdd2;color:#c62828;font-size:11px;padding:4px 8px;border-radius:5px;font-weight:600">⚠️ '+overdue+'</div>':''}
-        ${pending>0?'<div style="background:#ffe0b2;color:#e65100;font-size:11px;padding:4px 8px;border-radius:5px;font-weight:600">⏳ '+pending+'</div>':''}
-        ${msgs>0?'<div style="background:#c8e6c9;color:#1b5e20;font-size:11px;padding:4px 8px;border-radius:5px;font-weight:600">💬 '+msgs+'</div>':''}
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="background:${planColor};color:white;font-size:10px;padding:6px 10px;border-radius:5px;font-weight:600;white-space:nowrap;text-transform:uppercase;letter-spacing:0.5px">💳 ${planType}</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${totalAlerts>0?'<div style="background:#d9534f;color:white;font-weight:700;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 6px rgba(217,83,79,0.3)">'+totalAlerts+'</div>':''}
+          ${overdue>0?'<div style="background:#ffcdd2;color:#c62828;font-size:9px;padding:3px 6px;border-radius:4px;font-weight:600;white-space:nowrap">⚠️ '+overdue+'</div>':''}
+          ${pending>0?'<div style="background:#ffe0b2;color:#e65100;font-size:9px;padding:3px 6px;border-radius:4px;font-weight:600;white-space:nowrap">⏳ '+pending+'</div>':''}
+          ${msgs>0?'<div style="background:#c8e6c9;color:#1b5e20;font-size:9px;padding:3px 6px;border-radius:4px;font-weight:600;white-space:nowrap">💬 '+msgs+'</div>':''}
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -4928,18 +4942,18 @@ function openClientModal(c){
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
           <label style="border:2px solid var(--gr2);padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s">
             <input type="radio" name="plan" value="100" id="plan-100" ${c?.monthlyFee===100?'checked':''} style="cursor:pointer"/> 
-            <div style="font-weight:600;color:var(--t1);margin-top:6px">€100</div>
-            <div style="font-size:9px;color:var(--t3)">/month</div>
+            <div style="font-weight:600;color:var(--t1);margin-top:6px">Basic</div>
+            <div style="font-size:9px;color:var(--t3)">€100/month</div>
           </label>
           <label style="border:2px solid #C89010;padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;background:rgba(200,144,16,0.05)">
             <input type="radio" name="plan" value="150" id="plan-150" ${c?.monthlyFee===150?'checked':''} style="cursor:pointer"/> 
-            <div style="font-weight:600;color:#C89010;margin-top:6px">€150</div>
-            <div style="font-size:9px;color:var(--t3)">/month</div>
+            <div style="font-weight:600;color:#C89010;margin-top:6px">Plus</div>
+            <div style="font-size:9px;color:var(--t3)">€150/month</div>
           </label>
           <label style="border:2px solid var(--g1);padding:12px;border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;background:rgba(77,168,118,0.05)">
             <input type="radio" name="plan" value="200" id="plan-200" ${c?.monthlyFee===200?'checked':''} style="cursor:pointer"/> 
-            <div style="font-weight:600;color:var(--g1);margin-top:6px">€200</div>
-            <div style="font-size:9px;color:var(--t3)">/month</div>
+            <div style="font-weight:600;color:var(--g1);margin-top:6px">Pro</div>
+            <div style="font-size:9px;color:var(--t3)">€200/month</div>
           </label>
         </div>
       </div>
