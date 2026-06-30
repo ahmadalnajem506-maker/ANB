@@ -2525,8 +2525,15 @@ function renderSidebar(){
     badge.innerHTML=`<span class="sb-role-badge badge-client">👤 ${c?.name||'Client'}</span>`;
     lbl.textContent=t('my_account');
     clients.innerHTML=`<div style="padding:8px 4px"><div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(200,144,16,.12);border-radius:var(--rs)"><div class="cb-av" style="width:28px;height:28px;font-size:11px;background:${c?.color||'#888'}22;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div><div><div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.9)">${c?.name}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${c?.type||'Client'}</div></div></div></div>`;
-    const clientTabDefs=[{id:'dashboard',icon:'◼',key:'dashboard'},{id:'invoices',icon:'📄',key:'tab_invoices'},{id:'expenses',icon:'🧾',key:'tab_expenses'},{id:'hours',icon:'⏱',key:'tab_hours'},{id:'documents',icon:'📁',key:'documents'},{id:'messages',icon:'💬',key:'tab_messages'}];
-    clients.innerHTML+=clientTabDefs.map(tab=>`<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block">${tab.icon}</span> ${t(tab.key)}</button>`).join('');
+    
+    // إذا كان العميل على dashboard، لا نعرض التبويبات - استخدم الكروت بدلاً منها
+    if(S.tab==='dashboard'){
+      clients.innerHTML+=`<div style="padding:12px 8px;font-size:11px;color:rgba(255,255,255,.4);text-align:center;margin-top:12px;font-style:italic">Use the cards to navigate</div>`;
+    } else {
+      // عندما يكون على صفحة أخرى، عرض التبويبات
+      const clientTabDefs=[{id:'dashboard',icon:'◼',key:'dashboard'},{id:'invoices',icon:'📄',key:'tab_invoices'},{id:'expenses',icon:'🧾',key:'tab_expenses'},{id:'hours',icon:'⏱',key:'tab_hours'},{id:'documents',icon:'📁',key:'documents'},{id:'messages',icon:'💬',key:'tab_messages'}];
+      clients.innerHTML+=clientTabDefs.map(tab=>`<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block">${tab.icon}</span> ${t(tab.key)}</button>`).join('');
+    }
     foot.innerHTML=`${langBar}<button class="logout-btn" onclick="doLogout()">⬅ ${t('sign_out')}</button>`;
     updateSyncBadge();
   }
@@ -2659,7 +2666,14 @@ function renderTopbar(){
   } else {
     const c=S.clients.find(c=>c.id===S.currentClient);
     const clientTitles={dashboard:t('dashboard'),invoices:t('my_invoices'),expenses:t('my_expenses'),hours:t('hours_time'),documents:t('documents'),messages:t('messages')};
-    left.innerHTML=`<span style="font-size:13px;font-weight:500;color:var(--t1)">${clientTitles[S.tab]||''}</span>`;
+    
+    // إذا لم يكن على dashboard، أضف زر العودة
+    if(S.tab!=='dashboard'){
+      left.innerHTML=`<button class="btn btn-xs" onclick="setTab('dashboard')" style="background:rgba(200,144,16,.15);color:#C89010;border:1px solid #C89010;margin-right:12px">← ${t('back_to_overview')}</button><span style="font-size:13px;font-weight:500;color:var(--t1)">${clientTitles[S.tab]||''}</span>`;
+    } else {
+      left.innerHTML=`<span style="font-size:13px;font-weight:500;color:var(--t1)">${clientTitles[S.tab]||''}</span>`;
+    }
+    
     tabs.innerHTML='';
     // العميل لا يرى أزرار في dashboard - فقط في التبويبات الأخرى
     const cacts={
@@ -2688,7 +2702,7 @@ function renderContent(){
       rAdminDash(el);return;
     }
     // Admin manages client's content: dashboard (client dash), invoices, expenses, etc.
-    const fn={action_cards:rClientActionCards,client_overview:rClientActionCards,dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets,edit_client:rEditClient};
+    const fn={action_cards:rClientActionCards,client_overview:rClientActionCards,dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets,edit_client:rEditClient,debtors:rDebtors,creditors:rCreditors};
     (fn[S.tab]||rClientActionCards)(el,cid);
   } else {
     // Client can see: dashboard, invoices, expenses, hours, documents, messages
@@ -2949,9 +2963,9 @@ function openNewContractDialog(){
     </div>
   `, function(){
     const cid=document.getElementById('contract-client').value;
-    if(!cid){alert('Please select a client');return;}
+    if(!cid){toast('Please select a client');return;}
     const title=document.getElementById('contract-title').value;
-    if(!title){alert('Contract title required');return;}
+    if(!title){toast('Contract title required');return;}
     const desc=document.getElementById('contract-desc').value;
     const plan=parseInt(document.getElementById('contract-plan').value||'0')||0;
     const type=document.getElementById('contract-type').value;
@@ -3054,7 +3068,7 @@ function openAddContract(cid){
     const end=document.getElementById('contract-end').value;
     const status=document.getElementById('contract-status').value||'draft';
     
-    if(!title){alert('Contract title required');return;}
+    if(!title){toast('Contract title required');return;}
     
     if(!S.contracts)S.contracts=[];
     S.contracts.push({
@@ -3158,7 +3172,7 @@ function saveContract(contractId,cid){
   const endDate=document.getElementById('contract-end')?.value||'';
   const status=document.getElementById('contract-status')?.value||'draft';
   
-  if(!title){alert('Contract title required');return;}
+  if(!title){toast('Contract title required');return;}
   
   if(!S.contracts)S.contracts=[];
   
@@ -3320,7 +3334,7 @@ function saveAsset(cid){
   const desc=document.getElementById('asset-desc')?.value||'';
   const value=parseFloat(document.getElementById('asset-value')?.value||0);
   
-  if(!name){alert('Asset name required');return;}
+  if(!name){toast('Asset name required');return;}
   
   if(!S.assets)S.assets=[];
   S.assets.push({
@@ -3644,6 +3658,28 @@ function rClientDash(el,cid){
       text:'#ffffff',
       accent:'#FFD700',
       alerts:unreadDocs>0?[{icon:'📄',text:unreadDocs+' new',color:'#FFD700'}]:[]
+    },
+    {
+      id:'debtors',
+      icon:'👥',
+      name:'Debtors',
+      desc:'Manage Customer Accounts',
+      bg:'linear-gradient(135deg, #8B1A1A 0%, #b8322f 100%)',
+      border:'#c9302c',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[]
+    },
+    {
+      id:'creditors',
+      icon:'🏢',
+      name:'Creditors',
+      desc:'Manage Supplier Accounts',
+      bg:'linear-gradient(135deg, #7A0070 0%, #a00ea0 100%)',
+      border:'#9B59B6',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[]
     }
   ];
   
@@ -3705,7 +3741,9 @@ function selectCard(cardId){
     'contracts':{bg:'rgba(77,168,118,0.08)',border:'#4da876',text:'#4da876',accent:'#0A2218'},
     'assets':{bg:'rgba(23,162,184,0.08)',border:'#17A2B8',text:'#17A2B8',accent:'#FFD700'},
     'reports':{bg:'rgba(155,89,182,0.08)',border:'#9B59B6',text:'#9B59B6',accent:'#FFD700'},
-    'bank':{bg:'rgba(52,152,219,0.08)',border:'#3498DB',text:'#3498DB',accent:'#FFD700'}
+    'bank':{bg:'rgba(52,152,219,0.08)',border:'#3498DB',text:'#3498DB',accent:'#FFD700'},
+    'debtors':{bg:'rgba(139,26,26,0.08)',border:'#8B1A1A',text:'#8B1A1A',accent:'#FFD700'},
+    'creditors':{bg:'rgba(122,0,112,0.08)',border:'#7A0070',text:'#7A0070',accent:'#FFD700'}
   };
   
   // إذا كان edit_client، افتح النموذج مباشرة
@@ -3842,6 +3880,28 @@ function rClientActionCards(el,cid){
       text:'#0A2218',
       accent:'#0A2218',
       alerts:pendingContracts>0?[{icon:'⏳',text:pendingContracts+' pending approval',color:'#0A2218'}]:[]
+    },
+    {
+      id:'debtors',
+      icon:'👥',
+      name:'Debtors',
+      desc:'Manage customer accounts',
+      bg:'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      border:'#5568b3',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[]
+    },
+    {
+      id:'creditors',
+      icon:'🤝',
+      name:'Creditors',
+      desc:'Manage supplier accounts',
+      bg:'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      border:'#d94d6b',
+      text:'#ffffff',
+      accent:'#FFD700',
+      alerts:[]
     },
     {
       id:'edit_client',
@@ -4729,6 +4789,44 @@ function rContacts(el){
   `).join('')||'<span style="color:var(--t3);font-size:12px">No creditors yet</span>';
 }
 
+/* ═══════════════════════════ DEBTORS ═══════════════════════════ */
+function rDebtors(el,cid){
+  const debtors=S.contacts.filter(c=>c.cid===cid&&c.type==='debtor'&&!c.deleted);
+  el.innerHTML=`
+  <div class="card">
+    <div class="ch"><span class="ct">👥 Debtors (Customers)</span></div>
+    <div style="padding:12px">
+      <button class="btn btn-p btn-xs" onclick="openContactModal(null,'debtor')">➕ Add Debtor</button>
+    </div>
+    ${debtors.length===0?`<div class="empty">👥 No debtors yet</div>`:
+    `<table style="width:100%;font-size:11px">
+      <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Email</th><th style="padding:8px;text-align:left">Account #</th><th style="text-align:right;padding:8px">Actions</th></tr></thead>
+      <tbody>
+      ${debtors.map(d=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:#C89010">'+d.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button></td></tr>').join('')}
+      </tbody>
+    </table>`}
+  </div>`;
+}
+
+/* ═══════════════════════════ CREDITORS ═══════════════════════════ */
+function rCreditors(el,cid){
+  const creditors=S.contacts.filter(c=>c.cid===cid&&c.type==='creditor'&&!c.deleted);
+  el.innerHTML=`
+  <div class="card">
+    <div class="ch"><span class="ct">🏢 Creditors (Suppliers)</span></div>
+    <div style="padding:12px">
+      <button class="btn btn-p btn-xs" onclick="openContactModal(null,'creditor')">➕ Add Creditor</button>
+    </div>
+    ${creditors.length===0?`<div class="empty">🏢 No creditors yet</div>`:
+    `<table style="width:100%;font-size:11px">
+      <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Email</th><th style="padding:8px;text-align:left">Account #</th><th style="text-align:right;padding:8px">Actions</th></tr></thead>
+      <tbody>
+      ${creditors.map(cr=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:#9B59B6">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button></td></tr>').join('')}
+      </tbody>
+    </table>`}
+  </div>`;
+}
+
 function openContactModal(id, forceType){
   const cid=S.currentClient;
   const cont=S.contacts.find(c=>c.id===id&&c.cid===cid); // Filter by cid too
@@ -4782,7 +4880,7 @@ function openContactModal(id, forceType){
       createdAt:cont?.createdAt||TODAY(),
       isActive:true
     };
-    if(!nc.name){alert('Name required');return;}
+    if(!nc.name){toast('Name required');return;}
     if(isNew)S.contacts.push(nc);else S.contacts=S.contacts.map(c=>c.id===nc.id?nc:c);
     sv();closeModal();renderContent();toast('Contact saved ✓','ti-check');
   });
@@ -5506,13 +5604,13 @@ function saveEditClientFromTab(clientId){
   const zip=document.getElementById('cf-zip').value.trim();
   const city=document.getElementById('cf-city').value.trim();
 
-  if(!n){alert('❌ Company name required');return;}
-  if(!e){alert('❌ Email required');return;}
-  if(!cp){alert('❌ Contact person name required');return;}
-  if(!k){alert('❌ KVK registration number required');return;}
-  if(!b){alert('❌ BTW/VAT number required');return;}
-  if(!i){alert('❌ IBAN required');return;}
-  if(!addr||!zip||!city){alert('❌ Complete address required');return;}
+  if(!n){toast('❌ Company name required');return;}
+  if(!e){toast('❌ Email required');return;}
+  if(!cp){toast('❌ Contact person name required');return;}
+  if(!k){toast('❌ KVK registration number required');return;}
+  if(!b){toast('❌ BTW/VAT number required');return;}
+  if(!i){toast('❌ IBAN required');return;}
+  if(!addr||!zip||!city){toast('❌ Complete address required');return;}
 
   const updatedClient={
     ...c,
@@ -5663,13 +5761,13 @@ function openClientModal(c){
     const zip=document.getElementById('cf-zip').value.trim();
     const city=document.getElementById('cf-city').value.trim();
 
-    if(!n){alert('❌ Company name required');return;}
-    if(!e){alert('❌ Email required');return;}
-    if(!cp){alert('❌ Contact person name required');return;}
-    if(!k){alert('❌ KVK registration number required');return;}
-    if(!b){alert('❌ BTW/VAT number required');return;}
-    if(!i){alert('❌ IBAN required');return;}
-    if(!addr||!zip||!city){alert('❌ Complete address required');return;}
+    if(!n){toast('❌ Company name required');return;}
+    if(!e){toast('❌ Email required');return;}
+    if(!cp){toast('❌ Contact person name required');return;}
+    if(!k){toast('❌ KVK registration number required');return;}
+    if(!b){toast('❌ BTW/VAT number required');return;}
+    if(!i){toast('❌ IBAN required');return;}
+    if(!addr||!zip||!city){toast('❌ Complete address required');return;}
 
     // If adding new client, generate contract instead of directly adding
     if(isN){
@@ -5738,7 +5836,17 @@ function nextNum(clientId){
   return `${clientName}-${String(clientInvoices.length+1).padStart(3,'0')}`;
 }
 function openNewInvoice(){
-  // Allow creating invoice even without pre-defined debtors
+  const cid=S.currentClient;
+  const debtors=(S.contacts||[]).filter(c=>c.cid===cid&&c.type==='debtor'&&!c.deleted);
+  
+  // Check if there are any debtors
+  if(debtors.length===0){
+    toast('❌ No debtors found. Please add a debtor first.','⚠',3000);
+    S.tab='debtors';
+    renderApp();
+    return;
+  }
+  
   openInvoiceModal(null);
 }
 function editInvoice(id){openInvoiceModal(S.invoices.find(i=>i.id===id));}
@@ -5811,7 +5919,7 @@ function openInvoiceModal(inv){
     if(a<=0)errors.push('💶 Amount must be greater than 0');
     
     if(errors.length>0){
-      alert('❌ Please complete all required fields:\n\n'+errors.join('\n'));
+      toast('❌ Please complete all required fields:\n\n'+errors.join('\n'));
       return;
     }
     if(isN)S.invoices.push(ni);else S.invoices=S.invoices.map(i=>i.id===ni.id?ni:i);
@@ -5904,7 +6012,7 @@ function openNewExpense(){
     if(currentMode==='manual'){
       const a=parseFloat(document.getElementById('ex-a').value)||0;
       const r=parseFloat(document.getElementById('ex-r').value);
-      if(!document.getElementById('ex-desc').value.trim()){alert('Description required');return;}
+      if(!document.getElementById('ex-desc').value.trim()){toast('Description required');return;}
       S.expenses.push({id:UID(),cid,date:document.getElementById('ex-d').value,
         supplier:document.getElementById('ex-s').value,desc:document.getElementById('ex-desc').value,
         cat:document.getElementById('ex-c').value,amount:a,btw:a*(r/100)});
@@ -6855,19 +6963,58 @@ function exportReportPDF(type,cid){
   const W=210,M=15,lineHeight=7;
   let y=M;
   
-  // Header
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(16);
-  doc.text(`${c?.name||'Report'}`,M,y);
-  y+=12;
+  // ═══════════════════ HEADER WITH BRANDING ═══════════════════
+  doc.setDrawColor(10,34,24); // Dark green border
+  doc.setLineWidth(0.5);
+  doc.rect(M,y,W-2*M,20);
   
-  doc.setFontSize(10);
+  // Background color for header
+  doc.setFillColor(10,34,24);
+  doc.rect(M,y,W-2*M,20,'F');
+  
+  // Title
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);
+  doc.setTextColor(200,144,16); // Gold
+  doc.text('ANB FINANCIAL SERVICES',M+5,y+8);
+  
+  // Client name
+  doc.setFontSize(11);
+  doc.setTextColor(255,255,255);
+  doc.text(`Client: ${c?.name||'Report'}`,M+5,y+15);
+  
+  y+=25;
+  
+  // Report title
+  const titles={
+    'summary':'📊 Financial Summary Report',
+    'pl':'📈 Profit & Loss Statement',
+    'btw':'💰 VAT/BTW Tax Return',
+    'debtors':'👥 Debtors Aging Report',
+    'expenses':'🧾 Expenses Report',
+    'cashflow':'💵 Cash Flow Analysis'
+  };
+  
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(14);
+  doc.setTextColor(10,34,24);
+  doc.text(titles[type]||'Report',M,y);
+  y+=8;
+  
+  // Generated date
   doc.setFont('helvetica','normal');
-  doc.text(`Report Type: ${type.toUpperCase()} | Generated: ${FD(new Date())}`,M,y);
+  doc.setFontSize(9);
+  doc.setTextColor(100,100,100);
+  doc.text(`Generated: ${FD(new Date())} | Financial Year: ${new Date().getFullYear()}`,M,y);
   y+=10;
   
+  // Separator line
+  doc.setDrawColor(200,144,16);
+  doc.setLineWidth(1.5);
   doc.line(M,y,W-M,y);
   y+=8;
+  
+  doc.setTextColor(0,0,0);
   
   // Content based on type
   if(type==='summary'){
@@ -6879,18 +7026,362 @@ function exportReportPDF(type,cid){
     
     doc.setFont('helvetica','bold');
     doc.setFontSize(12);
-    doc.text('Financial Summary',M,y);y+=10;
+    doc.text('Financial Overview',M,y);y+=12;
+    
+    // Summary boxes
+    const boxH=20, boxW=(W-3*M)/3;
+    
+    // Revenue box
+    doc.setFillColor(10,34,24);
+    doc.rect(M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.text('Total Revenue',M+3,y+6);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.text(`€${revenue.toFixed(2)}`,M+3,y+14);
+    
+    // Expenses box
+    doc.setFillColor(217,83,79);
+    doc.rect(M+boxW+M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.text('Total Expenses',M+boxW+M+3,y+6);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.text(`€${expenses.toFixed(2)}`,M+boxW+M+3,y+14);
+    
+    // Profit box
+    doc.setFillColor(77,168,118);
+    doc.rect(M+2*boxW+2*M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.text('Net Profit',M+2*boxW+2*M+3,y+6);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.text(`€${profit.toFixed(2)}`,M+2*boxW+2*M+3,y+14);
+    
+    y+=30;
+    
+    // Additional details
+    doc.setDrawColor(200,144,16);
+    doc.setLineWidth(0.5);
+    doc.line(M,y,W-M,y);
+    y+=8;
     
     doc.setFont('helvetica','normal');
     doc.setFontSize(10);
-    doc.text(`Total Revenue: ${FMT(revenue)}`,M,y);y+=lineHeight;
-    doc.text(`Total Expenses: ${FMT(expenses)}`,M,y);y+=lineHeight;
+    doc.setTextColor(0,0,0);
+    doc.text(`Number of Invoices: ${inv.length}`,M,y);y+=7;
+    doc.text(`Number of Expenses: ${exp.length}`,M,y);y+=7;
+    doc.text(`Profit Margin: ${((profit/revenue)*100).toFixed(1)}%`,M,y);
+  }
+  else if(type==='pl'){
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
+    const exp=S.expenses.filter(e=>e.cid===cid);
+    const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
+    const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const profit=revenue-expenses;
+    
+    // Revenue section
     doc.setFont('helvetica','bold');
-    doc.text(`Net Profit: ${FMT(profit)}`,M,y);y+=lineHeight;
+    doc.setFontSize(11);
+    doc.setFillColor(10,34,24);
+    doc.setTextColor(255,255,255);
+    doc.rect(M,y,W-2*M,6,'F');
+    doc.text('REVENUE',M+3,y+5);
+    y+=8;
+    
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    doc.setTextColor(0,0,0);
+    doc.text(`Total Invoiced Revenue`,M,y);
+    doc.setFont('helvetica','bold');
+    doc.text(`€${revenue.toFixed(2)}`,W-M-30,y);
+    y+=10;
+    
+    // Expenses section
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.setFillColor(217,83,79);
+    doc.setTextColor(255,255,255);
+    doc.rect(M,y,W-2*M,6,'F');
+    doc.text('EXPENSES',M+3,y+5);
+    y+=8;
+    
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    doc.setTextColor(0,0,0);
+    
+    const categories={};
+    exp.forEach(e=>{
+      const cat=e.cat||'Other';
+      categories[cat]=(categories[cat]||0)+e.amount;
+    });
+    
+    Object.entries(categories).forEach(([cat,amt])=>{
+      if(y>270){doc.addPage();y=M;}
+      doc.text(`${cat}`,M+5,y);
+      doc.setFont('helvetica','normal');
+      doc.text(`€${amt.toFixed(2)}`,W-M-30,y);
+      y+=7;
+    });
+    
+    y+=5;
+    doc.text('Total Expenses',M,y);
+    doc.setFont('helvetica','bold');
+    doc.text(`€${expenses.toFixed(2)}`,W-M-30,y);
+    y+=10;
+    
+    // Net Profit
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.setFillColor(77,168,118);
+    doc.setTextColor(255,255,255);
+    doc.rect(M,y,W-2*M,8,'F');
+    doc.text(`NET PROFIT/LOSS: €${profit.toFixed(2)}`,M+3,y+6);
+  }
+  else if(type==='btw'){
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
+    const exp=S.expenses.filter(e=>e.cid===cid);
+    const btwOut=inv.reduce((s,i)=>s+(parseFloat(i.btw)||0),0);
+    const btwIn=exp.reduce((s,e)=>s+(parseFloat(e.btw)||0),0);
+    const btwPayable=btwOut-btwIn;
+    
+    const boxH=18, boxW=(W-3*M)/3;
+    
+    // VAT Output
+    doc.setFillColor(10,34,24);
+    doc.rect(M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.text('VAT Output (Sales)',M+3,y+5);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.text(`€${btwOut.toFixed(2)}`,M+3,y+12);
+    
+    // VAT Input
+    doc.setFillColor(200,144,16);
+    doc.rect(M+boxW+M,y,boxW,boxH,'F');
+    doc.setTextColor(0,0,0);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.text('VAT Input (Purchases)',M+boxW+M+3,y+5);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.text(`€${btwIn.toFixed(2)}`,M+boxW+M+3,y+12);
+    
+    // VAT Payable
+    const btwColor=btwPayable>0?[217,83,79]:[77,168,118];
+    doc.setFillColor(...btwColor);
+    doc.rect(M+2*boxW+2*M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.text('VAT Payable/Recoverable',M+2*boxW+2*M+3,y+5);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.text(`€${btwPayable.toFixed(2)}`,M+2*boxW+2*M+3,y+12);
+    
+    y+=25;
+    
+    doc.setDrawColor(200,144,16);
+    doc.setLineWidth(0.5);
+    doc.line(M,y,W-M,y);
+    y+=8;
+    
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    doc.setTextColor(0,0,0);
+    doc.text(`Invoices with VAT: ${inv.length}`,M,y);y+=7;
+    doc.text(`Expenses with VAT: ${exp.length}`,M,y);
+  }
+  else if(type==='debtors'){
+    const invoices=S.invoices.filter(i=>i.cid===cid&&['Openstaand','Verzonden','Verlopen'].includes(i.status));
+    
+    if(invoices.length===0){
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(12);
+      doc.text('No outstanding invoices',M,y);
+    }else{
+      // Table header
+      doc.setFillColor(10,34,24);
+      doc.setTextColor(255,255,255);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(9);
+      
+      const colW=[30,30,40,40,30];
+      doc.rect(M,y,colW[0],6,'F');
+      doc.text('Invoice #',M+2,y+5);
+      doc.rect(M+colW[0],y,colW[1],6,'F');
+      doc.text('Date',M+colW[0]+2,y+5);
+      doc.rect(M+colW[0]+colW[1],y,colW[2],6,'F');
+      doc.text('Amount',M+colW[0]+colW[1]+2,y+5);
+      doc.rect(M+colW[0]+colW[1]+colW[2],y,colW[3],6,'F');
+      doc.text('Status',M+colW[0]+colW[1]+colW[2]+2,y+5);
+      doc.rect(M+colW[0]+colW[1]+colW[2]+colW[3],y,colW[4],6,'F');
+      doc.text('Days',M+colW[0]+colW[1]+colW[2]+colW[3]+2,y+5);
+      y+=7;
+      
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(9);
+      doc.setTextColor(0,0,0);
+      
+      invoices.forEach((inv,idx)=>{
+        if(y>270){doc.addPage();y=M;}
+        
+        const bg=idx%2===0?[245,245,245]:[255,255,255];
+        doc.setFillColor(...bg);
+        doc.rect(M,y,W-2*M,6,'F');
+        
+        const daysDiff=Math.floor((new Date()-new Date(inv.date||new Date()))/(1000*60*60*24));
+        
+        doc.text(inv.num,M+2,y+5);
+        doc.text(inv.date,M+colW[0]+2,y+5);
+        doc.text(`€${inv.amount.toFixed(2)}`,M+colW[0]+colW[1]+2,y+5);
+        
+        const statusColor=inv.status==='Verlopen'?[217,83,79]:[255,167,38];
+        doc.setTextColor(...statusColor);
+        doc.text(inv.status,M+colW[0]+colW[1]+colW[2]+2,y+5);
+        doc.setTextColor(0,0,0);
+        
+        doc.text(daysDiff.toString(),M+colW[0]+colW[1]+colW[2]+colW[3]+2,y+5);
+        y+=7;
+      });
+      
+      y+=5;
+      doc.setDrawColor(200,144,16);
+      doc.setLineWidth(1);
+      doc.line(M,y,W-M,y);
+      y+=8;
+      
+      const total=invoices.reduce((s,i)=>s+(i.amount||0),0);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(11);
+      doc.setTextColor(217,83,79);
+      doc.text(`TOTAL OUTSTANDING: €${total.toFixed(2)}`,M,y);
+    }
+  }
+  else if(type==='expenses'){
+    const expenses=S.expenses.filter(e=>e.cid===cid);
+    
+    if(expenses.length===0){
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(12);
+      doc.text('No expenses recorded',M,y);
+    }else{
+      // Table header
+      doc.setFillColor(217,83,79);
+      doc.setTextColor(255,255,255);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(9);
+      
+      const colW=[25,30,35,40,35];
+      doc.rect(M,y,colW[0],6,'F');
+      doc.text('Date',M+2,y+5);
+      doc.rect(M+colW[0],y,colW[1],6,'F');
+      doc.text('Category',M+colW[0]+2,y+5);
+      doc.rect(M+colW[0]+colW[1],y,colW[2],6,'F');
+      doc.text('Supplier',M+colW[0]+colW[1]+2,y+5);
+      doc.rect(M+colW[0]+colW[1]+colW[2],y,colW[3],6,'F');
+      doc.text('Description',M+colW[0]+colW[1]+colW[2]+2,y+5);
+      doc.rect(M+colW[0]+colW[1]+colW[2]+colW[3],y,colW[4],6,'F');
+      doc.text('Amount',M+colW[0]+colW[1]+colW[2]+colW[3]+2,y+5);
+      y+=7;
+      
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(8);
+      doc.setTextColor(0,0,0);
+      
+      expenses.forEach((e,idx)=>{
+        if(y>270){doc.addPage();y=M;}
+        
+        const bg=idx%2===0?[245,245,245]:[255,255,255];
+        doc.setFillColor(...bg);
+        doc.rect(M,y,W-2*M,6,'F');
+        
+        doc.text(e.date,M+2,y+5);
+        doc.text(e.cat||'Other',M+colW[0]+2,y+5);
+        doc.text((e.supplier||'').substring(0,10),M+colW[0]+colW[1]+2,y+5);
+        doc.text((e.desc||'').substring(0,12),M+colW[0]+colW[1]+colW[2]+2,y+5);
+        doc.text(`€${e.amount.toFixed(2)}`,M+colW[0]+colW[1]+colW[2]+colW[3]+2,y+5);
+        y+=7;
+      });
+      
+      y+=5;
+      doc.setDrawColor(217,83,79);
+      doc.setLineWidth(1);
+      doc.line(M,y,W-M,y);
+      y+=8;
+      
+      const total=expenses.reduce((s,e)=>s+(e.amount||0),0);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(11);
+      doc.setTextColor(217,83,79);
+      doc.text(`TOTAL EXPENSES: €${total.toFixed(2)}`,M,y);
+    }
+  }
+  else if(type==='cashflow'){
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
+    const exp=S.expenses.filter(e=>e.cid===cid);
+    const inflow=inv.reduce((s,i)=>s+(i.amount||0),0);
+    const outflow=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const netflow=inflow-outflow;
+    
+    const boxH=22, boxW=(W-3*M)/2;
+    
+    // Inflow
+    doc.setFillColor(77,168,118);
+    doc.rect(M,y,boxW+M/2,boxH,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    doc.text('💰 Cash Inflow',M+3,y+6);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(13);
+    doc.text(`€${inflow.toFixed(2)}`,M+3,y+15);
+    
+    // Outflow
+    doc.setFillColor(217,83,79);
+    doc.rect(M+boxW+M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    doc.text('📉 Cash Outflow',M+boxW+M+3,y+6);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(13);
+    doc.text(`€${outflow.toFixed(2)}`,M+boxW+M+3,y+15);
+    
+    y+=28;
+    
+    // Net flow
+    doc.setFillColor(10,34,24);
+    doc.rect(M,y,W-2*M,12,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.text(`📊 NET CASH FLOW: €${netflow.toFixed(2)}`,M+3,y+8);
   }
   
+  // Footer
+  y=270;
+  doc.setDrawColor(200,144,16);
+  doc.setLineWidth(0.5);
+  doc.line(M,y,W-M,y);
+  y+=5;
+  
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.setTextColor(100,100,100);
+  doc.text('ANB Financial Services | www.anbfinancial.nl | Confidential',M,y);
+  doc.text(new Date().toLocaleString(),W-M-50,y);
+  
   doc.save(`Report_${type}_${c?.name}_${new Date().getFullYear()}.pdf`);
-  toast('PDF exported successfully!');
+  toast('✓ PDF exported successfully!');
 }
 
 function exportReportExcel(type,cid){
@@ -6907,16 +7398,24 @@ function exportReportExcel(type,cid){
     const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
     const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
     const profit=revenue-expenses;
+    const margin=(profit/revenue)*100||0;
     
     data=[
-      ['Financial Summary Report'],
+      ['📊 FINANCIAL SUMMARY REPORT'],
       ['Client',c?.name],
-      ['Date Generated',FD(new Date())],
+      ['Report Date',FD(new Date())],
+      ['Fiscal Year',new Date().getFullYear()],
       [],
-      ['Metric','Amount'],
-      ['Total Revenue',revenue],
-      ['Total Expenses',expenses],
-      ['Net Profit',profit]
+      ['Key Metrics','Amount','Percentage'],
+      ['Total Revenue',revenue,'100%'],
+      ['Total Expenses',expenses,((expenses/revenue)*100).toFixed(1)+'%'],
+      ['Net Profit',profit,margin.toFixed(1)+'%'],
+      [],
+      ['Additional Information','Value'],
+      ['Number of Invoices',inv.length],
+      ['Number of Expenses',exp.length],
+      ['Average Invoice',revenue/inv.length||0],
+      ['Average Expense',expenses/exp.length||0]
     ];
     sheets['Summary']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='pl'){
@@ -6927,19 +7426,23 @@ function exportReportExcel(type,cid){
     const profit=revenue-expenses;
     
     data=[
-      ['Profit & Loss Statement'],
+      ['📈 PROFIT & LOSS STATEMENT'],
       ['Client',c?.name],
       [],
-      ['REVENUE'],
-      ['Description','Amount'],
-      ['Total Revenue',revenue],
+      ['REVENUE','Amount'],
+      ['Invoiced Revenue',revenue],
       [],
-      ['EXPENSES'],
-      ['Category','Amount']
+      ['EXPENSES','Amount']
     ];
     
+    const categories={};
     exp.forEach(e=>{
-      data.push([e.cat||'Other',e.amount]);
+      const cat=e.cat||'Other';
+      categories[cat]=(categories[cat]||0)+e.amount;
+    });
+    
+    Object.entries(categories).forEach(([cat,amt])=>{
+      data.push([cat,amt]);
     });
     
     data.push([]);
@@ -6951,48 +7454,116 @@ function exportReportExcel(type,cid){
   }else if(type==='btw'){
     const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
     const exp=S.expenses.filter(e=>e.cid===cid);
-    const btwOut=inv.reduce((s,i)=>s+(i.btw||0),0);
-    const btwIn=exp.reduce((s,e)=>s+(e.btw||0),0);
+    const btwOut=inv.reduce((s,i)=>s+(parseFloat(i.btw)||0),0);
+    const btwIn=exp.reduce((s,e)=>s+(parseFloat(e.btw)||0),0);
     const btwPayable=btwOut-btwIn;
     
     data=[
-      ['VAT/BTW Return'],
+      ['💰 VAT/BTW TAX RETURN'],
       ['Client',c?.name],
+      ['Report Period',new Date().getFullYear()],
       [],
-      ['Item','Amount'],
-      ['VAT Output',btwOut],
-      ['VAT Input',btwIn],
+      ['VAT Item','Amount','EUR'],
+      ['VAT Output (Sales Tax)',btwOut,'€'+btwOut.toFixed(2)],
+      ['VAT Input (Purchase Tax)',btwIn,'€'+btwIn.toFixed(2)],
       [],
-      ['VAT Payable',btwPayable]
+      ['VAT Status',btwPayable>0?'Payable':'Recoverable',''],
+      ['VAT Payable/Recoverable',btwPayable,'€'+Math.abs(btwPayable).toFixed(2)],
+      [],
+      ['Supporting Information',''],
+      ['Invoices with VAT',inv.length],
+      ['Expenses with VAT',exp.length]
     ];
     sheets['BTW']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='expenses'){
     const expenses=S.expenses.filter(e=>e.cid===cid);
+    
     data=[
-      ['Expenses Report'],
+      ['🧾 EXPENSES REPORT'],
       ['Client',c?.name],
+      ['Report Date',FD(new Date())],
       [],
-      ['Date','Supplier','Description','Category','Amount']
+      ['Date','Supplier','Description','Category','Amount','Notes']
     ];
     
+    let categoryTotal={};
     expenses.forEach(e=>{
-      data.push([e.date,e.supplier,e.desc,e.cat||'Other',e.amount]);
+      const cat=e.cat||'Other';
+      categoryTotal[cat]=(categoryTotal[cat]||0)+e.amount;
+      data.push([e.date,e.supplier,e.desc,cat,e.amount,'']);
     });
     
     const total=expenses.reduce((s,e)=>s+e.amount,0);
     data.push([]);
-    data.push(['TOTAL','','','',total]);
+    data.push(['','','','TOTAL EXPENSES',total,'']);
+    data.push([]);
+    data.push(['Category Breakdown','Amount']);
+    Object.entries(categoryTotal).forEach(([cat,amt])=>{
+      data.push([cat,amt]);
+    });
     
     sheets['Expenses']=XLSX.utils.aoa_to_sheet(data);
+  }else if(type==='debtors'){
+    const invoices=S.invoices.filter(i=>i.cid===cid&&['Openstaand','Verzonden','Verlopen'].includes(i.status));
+    
+    data=[
+      ['👥 DEBTORS AGING REPORT'],
+      ['Client',c?.name],
+      ['Report Date',FD(new Date())],
+      [],
+      ['Invoice #','Date','Amount','Status','Days Outstanding','Amount EUR']
+    ];
+    
+    invoices.forEach(inv=>{
+      const daysDiff=Math.floor((new Date()-new Date(inv.date||new Date()))/(1000*60*60*24));
+      data.push([inv.num,inv.date,inv.amount,inv.status,daysDiff,'€'+inv.amount.toFixed(2)]);
+    });
+    
+    const total=invoices.reduce((s,i)=>s+(i.amount||0),0);
+    data.push([]);
+    data.push(['TOTAL OUTSTANDING INVOICES','','',total,'','€'+total.toFixed(2)]);
+    data.push([]);
+    data.push(['Summary','Count','Total Amount']);
+    data.push(['Current',invoices.filter(i=>i.status==='Openstaand').length,invoices.filter(i=>i.status==='Openstaand').reduce((s,i)=>s+(i.amount||0),0)]);
+    data.push(['Overdue',invoices.filter(i=>i.status==='Verlopen').length,invoices.filter(i=>i.status==='Verlopen').reduce((s,i)=>s+(i.amount||0),0)]);
+    
+    sheets['Debtors']=XLSX.utils.aoa_to_sheet(data);
+  }else if(type==='cashflow'){
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
+    const exp=S.expenses.filter(e=>e.cid===cid);
+    const inflow=inv.reduce((s,i)=>s+(i.amount||0),0);
+    const outflow=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const netflow=inflow-outflow;
+    
+    data=[
+      ['💵 CASH FLOW ANALYSIS'],
+      ['Client',c?.name],
+      ['Report Date',FD(new Date())],
+      [],
+      ['Cash Flow Item','Amount','EUR','Percentage'],
+      ['Cash Inflow (Paid Invoices)',inflow,'€'+inflow.toFixed(2),'100%'],
+      ['Cash Outflow (Expenses)',outflow,'€'+outflow.toFixed(2),((outflow/inflow)*100).toFixed(1)+'%'],
+      [],
+      ['NET CASH FLOW',netflow,'€'+netflow.toFixed(2),((netflow/inflow)*100).toFixed(1)+'%'],
+      [],
+      ['Metrics','Value'],
+      ['Average Inflow per Transaction',inflow/inv.length||0],
+      ['Average Outflow per Transaction',outflow/exp.length||0],
+      ['Cash Position Strength',netflow>0?'Positive':'Negative'],
+      ['Liquidity Ratio',((inflow/outflow)*100).toFixed(1)+'%']
+    ];
+    
+    sheets['Cash Flow']=XLSX.utils.aoa_to_sheet(data);
   }
   
   const workbook=XLSX.utils.book_new();
   Object.entries(sheets).forEach(([name,sheet])=>{
+    sheet['!cols']=[{wch:15},{wch:20},{wch:25},{wch:15},{wch:15},{wch:15},{wch:15},{wch:15}];
     XLSX.utils.book_append_sheet(workbook,sheet,name);
   });
   
   XLSX.writeFile(workbook,`Report_${type}_${c?.name}_${new Date().getFullYear()}.xlsx`);
-  toast('Excel exported successfully!');
+  toast('✓ Excel exported successfully!');
 }
 
 // ═══════════════ NEW MODAL FUNCTIONS ═══════════════
@@ -7203,7 +7774,7 @@ function signAgreement(agreementId, token){
     const agreedPrivacy=document.getElementById('agree-privacy').checked;
     
     if(!agreedTerms||!agreedPrivacy){
-      alert('❌ '+t('must_agree_first'));
+      toast('❌ '+t('must_agree_first'));
       return;
     }
     
@@ -7232,7 +7803,7 @@ function showRequestChangesForm(agreementId, token){
   `, ()=>{
     const notes=document.getElementById('changes-notes').value.trim();
     if(!notes){
-      alert('❌ '+t('please_enter_changes'));
+      toast('❌ '+t('please_enter_changes'));
       return;
     }
     
@@ -7404,19 +7975,19 @@ function generateDutchContractHTML(client){
 
 function viewPendingAgreements(){
   if(!isAdmin()){
-    alert('Only admins can view pending agreements');
+    toast('Only admins can view pending agreements');
     return;
   }
   
   if(!S.serviceAgreements||S.serviceAgreements.length===0){
-    alert('No pending agreements');
+    toast('No pending agreements');
     return;
   }
   
   const pending=S.serviceAgreements.filter(a=>a.status==='client_signed'||a.status==='pending_signature');
   
   if(pending.length===0){
-    alert('No pending agreements to review');
+    toast('No pending agreements to review');
     return;
   }
   
@@ -7488,10 +8059,10 @@ function showAgreementDetails(agreementId){
 
 function approvePendingAgreement(agreementId){
   const agreement=S.serviceAgreements.find(a=>a.id===agreementId);
-  if(!agreement){alert('Agreement not found');return;}
+  if(!agreement){toast('Agreement not found');return;}
   
   if(agreement.status!=='client_signed'){
-    alert('Agreement must be signed by client first');
+    toast('Agreement must be signed by client first');
     return;
   }
   
