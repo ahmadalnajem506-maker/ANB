@@ -5090,6 +5090,13 @@ function openClientModal(c){
   showModal(isN?t('add_client_title'):t('edit')+' '+t('tab_client').toLowerCase(),`
     <div style="display:flex;flex-direction:column;gap:16px">
       
+      <!-- Back Button -->
+      ${!isN?`<div style="margin-bottom:8px">
+        <button onclick="closeModal();goBackToOverview()" style="background:#4da876;color:white;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='#0A2218'" onmouseout="this.style.background='#4da876'">
+          ← Back to Overview
+        </button>
+      </div>`:''}
+      
       <!-- Basic Info Section -->
       <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
         <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px">📋 ${t('basic_information')}</div>
@@ -5210,45 +5217,6 @@ function openClientModal(c){
         </div>
       </div>
 
-      <!-- Contract Details Section -->
-      <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
-        <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px">📜 ${t('contract_details')}</div>
-        
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Start Date *</label>
-            <input type="date" id="cf-start" value="${c?.contractStartDate||TODAY()}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Contract Duration *</label>
-            <select id="cf-duration" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
-              <option value="12" ${c?.contractDuration===12?'selected':''}>12 months (1 year)</option>
-              <option value="24" ${c?.contractDuration===24?'selected':''}>24 months (2 years)</option>
-              <option value="36" ${c?.contractDuration===36?'selected':''}>36 months (3 years)</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Payment Terms *</label>
-            <select id="cf-payment" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
-              <option value="15" ${c?.paymentTerms===15?'selected':''}>15 days</option>
-              <option value="30" ${c?.paymentTerms===30?'selected':''}>30 days</option>
-              <option value="45" ${c?.paymentTerms===45?'selected':''}>45 days</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Termination Notice *</label>
-            <select id="cf-termination" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
-              <option value="1" ${c?.terminationNotice===1?'selected':''}>1 month</option>
-              <option value="2" ${c?.terminationNotice===2?'selected':''}>2 months</option>
-              <option value="3" ${c?.terminationNotice===3?'selected':''}>3 months</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
       <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3)">
         ℹ️ Fields marked with * are required
       </div>
@@ -5265,10 +5233,6 @@ function openClientModal(c){
     const zip=document.getElementById('cf-zip').value.trim();
     const city=document.getElementById('cf-city').value.trim();
     const monthlyFee=parseInt(document.querySelector('input[name="plan"]:checked')?.value||'150')||150;
-    const contractStartDate=document.getElementById('cf-start').value;
-    const contractDuration=parseInt(document.getElementById('cf-duration').value)||12;
-    const paymentTerms=parseInt(document.getElementById('cf-payment').value)||15;
-    const terminationNotice=parseInt(document.getElementById('cf-termination').value)||1;
 
     if(!n){alert('❌ Company name required');return;}
     if(!e){alert('❌ Email required');return;}
@@ -5297,10 +5261,10 @@ function openClientModal(c){
         country:document.getElementById('cf-country').value,
         registrationNumber:document.getElementById('cf-regnum').value,
         monthlyFee:monthlyFee,
-        contractStartDate:contractStartDate,
-        contractDuration:contractDuration,
-        paymentTerms:paymentTerms,
-        terminationNotice:terminationNotice,
+        contractStartDate:TODAY(),
+        contractDuration:12,
+        paymentTerms:30,
+        terminationNotice:1,
         createdDate:TODAY(),
         status:'pending'  // Pending signature
       };
@@ -5327,11 +5291,7 @@ function openClientModal(c){
         city:city,
         country:document.getElementById('cf-country').value,
         registrationNumber:document.getElementById('cf-regnum').value,
-        monthlyFee:monthlyFee,
-        contractStartDate:contractStartDate,
-        contractDuration:contractDuration,
-        paymentTerms:paymentTerms,
-        terminationNotice:terminationNotice
+        monthlyFee:monthlyFee
       };
       S.clients=S.clients.map(x=>x.id===updatedClient.id?updatedClient:x);
       sv();
@@ -5339,7 +5299,7 @@ function openClientModal(c){
       renderApp();
       toast(t('edit')+' ✓','ti-check');
     }
-  },'Generate Contract','Save Changes');
+  },'Save Changes');
 }
 
 function nextNum(clientId){
