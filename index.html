@@ -14,6 +14,13 @@
 <!-- Tabler icons replaced with inline symbols -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if(typeof pdfjsLib!=='undefined'){
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
 <style>
 :root{
   --g1:#0A2218;--g2:#0F3025;--g3:#1A4A2A;--g4:#2A6040;
@@ -665,7 +672,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.19">
+<link rel="manifest" href="manifest.json?v=2.23">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -1375,6 +1382,7 @@ var I18N={
     // Tab labels
     tab_invoices:'Invoices', tab_debtors:'Debtors',
     tab_expenses:'Expenses', tab_hours:'Hours',
+    card_invoices_title:'Invoices - Cash In', card_expenses_title:'Expenses - Cash Out',
     tab_journal:'Journal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Reports', tab_documents:'Documents', tab_contacts:'Contacts', tab_messages:'Messages', tab_client:'Client',
     // Card descriptions
@@ -1444,7 +1452,7 @@ var I18N={
     btn_remind:'🔔 Remind', btn_mark_paid:'✓ Mark paid', btn_pause:'Pause', btn_resume:'Resume',
     btn_new_invoice:'+ New invoice',
     // Empty states
-    empty_invoices:'No invoices yet', empty_expenses:'No expenses yet',
+    empty_invoices:'No invoices yet', empty_expenses:'No expenses yet', view_attachment:'View attachment',
     empty_hours:'No hours logged yet', empty_docs:'No documents yet',
     empty_journal:'No journal entries', empty_bank:'No bank transactions',
     empty_messages:'No messages yet', empty_open:'No open invoices',
@@ -1578,6 +1586,7 @@ var I18N={
     contracts:'Overeenkomsten', assets:'Activa',
     tab_invoices:'Facturen', tab_debtors:'Debiteuren',
     tab_expenses:'Onkosten', tab_hours:'Uren',
+    card_invoices_title:'Facturen - Geld in', card_expenses_title:'Onkosten - Geld uit',
     tab_journal:'Journaal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Rapporten', tab_documents:'Documenten', tab_contacts:'Contacten', tab_messages:'Berichten', tab_client:'Klant',
     // Card descriptions
@@ -1643,7 +1652,7 @@ var I18N={
     btn_review_close:'🔒 Boekjaar afsluiten', btn_sync_now:'🔄 Nu synchroniseren',
     btn_remind:'🔔 Herinnering sturen', btn_mark_paid:'✓ Betaald markeren', btn_pause:'Pauzeren', btn_resume:'Hervatten',
     btn_new_invoice:'+ Nieuwe factuur',
-    empty_invoices:'Nog geen facturen', empty_expenses:'Nog geen onkosten',
+    empty_invoices:'Nog geen facturen', empty_expenses:'Nog geen onkosten', view_attachment:'Bijlage bekijken',
     empty_hours:'Nog geen uren ingevoerd', empty_docs:'Nog geen documenten',
     empty_journal:'Geen journaalboekingen', empty_bank:'Geen banktransacties',
     empty_messages:'Nog geen berichten', empty_open:'Geen openstaande facturen',
@@ -1769,6 +1778,7 @@ var I18N={
     // Tab labels with tab_ prefix (used in topbar & sidebar)
     tab_invoices:'الفواتير', tab_debtors:'الديون (Debiteuren)',
     tab_expenses:'المصاريف', tab_hours:'ساعات العمل',
+    card_invoices_title:'الفواتير - الوارد النقدي', card_expenses_title:'المصاريف - الصادر النقدي',
     tab_journal:'اليومية (Journal)', tab_bank:'البنك', tab_btw:'ضريبة القيمة المضافة (BTW)',
     tab_reports:'التقارير', tab_documents:'المستندات', tab_contacts:'جهات الاتصال', tab_messages:'الرسائل', tab_client:'العميل',
     // Card descriptions
@@ -1834,7 +1844,7 @@ var I18N={
     btn_review_close:'🔒 مراجعة وإقفال السنة', btn_sync_now:'🔄 مزامنة الآن',
     btn_remind:'🔔 تذكير', btn_mark_paid:'✓ تحديد كمدفوعة', btn_pause:'إيقاف مؤقت', btn_resume:'استئناف',
     btn_new_invoice:'+ فاتورة جديدة',
-    empty_invoices:'لا توجد فواتير بعد', empty_expenses:'لا توجد مصاريف بعد',
+    empty_invoices:'لا توجد فواتير بعد', empty_expenses:'لا توجد مصاريف بعد', view_attachment:'عرض المرفق',
     empty_hours:'لم تُسجَّل ساعات بعد', empty_docs:'لا توجد مستندات بعد',
     empty_journal:'لا توجد قيود في اليومية', empty_bank:'لا توجد معاملات بنكية',
     empty_messages:'لا توجد رسائل بعد', empty_open:'لا توجد فواتير مفتوحة',
@@ -3602,7 +3612,7 @@ function rClientDash(el,cid){
     {
       id:'invoices',
       icon:'📄',
-      name:t('tab_invoices'),
+      name:t('card_invoices_title'),
       desc:t('card_invoices_desc'),
       bg:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',
       border:'#C89010',
@@ -3616,7 +3626,7 @@ function rClientDash(el,cid){
     {
       id:'expenses',
       icon:'🧾',
-      name:t('tab_expenses'),
+      name:t('card_expenses_title'),
       desc:t('card_expenses_desc'),
       bg:'linear-gradient(135deg, #0F3025 0%, #1B5E35 100%)',
       border:'#C89010',
@@ -3792,7 +3802,7 @@ function rClientActionCards(el,cid){
     {
       id:'invoices',
       icon:'📄',
-      name:t('tab_invoices'),
+      name:t('card_invoices_title'),
       desc:t('card_invoices_desc'),
       bg:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',
       border:'#C89010',
@@ -3806,7 +3816,7 @@ function rClientActionCards(el,cid){
     {
       id:'expenses',
       icon:'🧾',
-      name:t('tab_expenses'),
+      name:t('card_expenses_title'),
       desc:t('card_expenses_desc'),
       bg:'linear-gradient(135deg, #0F3025 0%, #1A4A2A 100%)',
       border:'#C89010',
@@ -4097,7 +4107,7 @@ function rExpenses(el,cid){
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${isAdmin()?c?.name+' — ':''} ${t('tab_expenses')}</span>
     </div>
     ${exp.length===0?`<div class="empty"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🧾</span>${t('empty_expenses')}</div>`:
-    `<table><thead><tr><th>${t('lbl_date')}</th><th>${t('lbl_from')}</th><th>${t('lbl_description')}</th><th>${t('lbl_category')}</th><th>${t('lbl_amount')}</th><th>${t('lbl_btw')}</th>${isAdmin()?'<th></th>':''}</tr></thead>
+    `<table><thead><tr><th>${t('lbl_date')}</th><th>${t('lbl_from')}</th><th>${t('lbl_description')}</th><th>${t('lbl_category')}</th><th>${t('lbl_amount')}</th><th>${t('lbl_btw')}</th><th></th>${isAdmin()?'<th></th>':''}</tr></thead>
     <tbody>${exp.map(e=>`<tr>
       <td style="color:var(--t3)">${FD(e.date)}</td>
       <td style="font-weight:500">${e.supplier}</td>
@@ -4105,6 +4115,7 @@ function rExpenses(el,cid){
       <td><span class="bdg b-draft">${e.cat}</span></td>
       <td style="color:var(--red)">${FMT(e.amount)}</td>
       <td style="color:var(--blue)">${FMT(e.btw)}</td>
+      <td>${e.receiptDocId?`<button class="btn btn-xs" onclick="viewReceipt('${e.receiptDocId}')" title="${t('view_attachment')||'View attachment'}">📎</button>`:''}</td>
       ${isAdmin()?`<td><button class="btn btn-xs btn-danger" onclick="delExpense('${e.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🗑</span></button></td>`:''}
     </tr>`).join('')}</tbody></table>`}
   </div>`;
@@ -4502,6 +4513,78 @@ function readAsDataURL(file){
     reader.onerror=reject;
     reader.readAsDataURL(file);
   });
+}
+
+/* ── OCR: قراءة بيانات الفاتورة تلقائيًا من الصورة ── */
+function parseReceiptText(text){
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const out={amount:null,date:null,supplier:null};
+
+  // المورد: أول سطر يحتوي أحرفًا فعلية (غالبًا اسم المتجر أعلى الفاتورة)
+  for(const line of lines){
+    if(/[A-Za-z\u0600-\u06FF]{3,}/.test(line)){
+      out.supplier=line.slice(0,60);
+      break;
+    }
+  }
+
+  // المبلغ: نبحث عن كلمات مفتاحية (Totaal/Total/Bedrag...) وإلا نأخذ أكبر رقم مالي بالفاتورة
+  const numRe=/(\d{1,4}(?:[.,]\d{2}))(?!\d)/g;
+  const kwRe=/(totaal|total|te betalen|amount due|bedrag|grand ?total|eindtotaal|som|subtotal)/i;
+  let best=null,bestKw=false;
+  for(const line of lines){
+    const isKw=kwRe.test(line);
+    let m;
+    numRe.lastIndex=0;
+    while((m=numRe.exec(line))){
+      const val=parseFloat(m[1].replace(',','.'));
+      if(isNaN(val))continue;
+      if(best===null||(isKw&&!bestKw)||(isKw===bestKw&&val>best)){
+        best=val;bestKw=isKw;
+      }
+    }
+  }
+  out.amount=best;
+
+  // التاريخ: yyyy-mm-dd أو dd-mm-yyyy أو dd/mm/yyyy
+  const dateRe2=/(\d{4})-(\d{1,2})-(\d{1,2})/;
+  const dateRe1=/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/;
+  for(const line of lines){
+    let m=line.match(dateRe2);
+    if(m){out.date=`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;break;}
+    m=line.match(dateRe1);
+    if(m){
+      let d=m[1],mo=m[2],y=m[3];
+      if(y.length===2)y=(parseInt(y)>50?'19':'20')+y;
+      out.date=`${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      break;
+    }
+  }
+  return out;
+}
+
+async function ocrReceiptImage(dataUrl){
+  if(typeof Tesseract==='undefined'){
+    throw new Error('OCR engine not available');
+  }
+  const {data:{text}}=await Tesseract.recognize(dataUrl,'eng+nld');
+  return parseReceiptText(text);
+}
+
+async function pdfFirstPageToDataURL(file){
+  if(typeof pdfjsLib==='undefined'){
+    throw new Error('PDF engine not available');
+  }
+  const arrayBuffer=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+  const page=await pdf.getPage(1);
+  const viewport=page.getViewport({scale:2.5});
+  const canvas=document.createElement('canvas');
+  canvas.width=viewport.width;
+  canvas.height=viewport.height;
+  const ctx=canvas.getContext('2d');
+  await page.render({canvasContext:ctx,viewport}).promise;
+  return canvas.toDataURL('image/jpeg',0.85);
 }
 
 async function handleDocUpload(ev,cid){
@@ -5456,6 +5539,24 @@ function showModal(title,body,onSave,saveLabel='Save'){
   window._ms=onSave;
 }
 function closeModal(){document.getElementById('mo').style.display='none';}
+
+function viewReceipt(docId){
+  const doc=(S.docs||[]).find(d=>d.id===docId);
+  if(!doc){toast('Attachment not found');return;}
+  if(doc.type&&doc.type.startsWith('image/')){
+    showModal('📎 '+(doc.name||'Receipt'),
+      `<div style="text-align:center"><img src="${doc.data}" style="max-width:100%;border-radius:8px;box-shadow:var(--sh)"/></div>`,
+      closeModal,'Close');
+  }else if(doc.type==='application/pdf'){
+    showModal('📎 '+(doc.name||'Receipt'),
+      `<iframe src="${doc.data}" style="width:100%;height:70vh;border:1px solid var(--gr2);border-radius:8px"></iframe>`,
+      closeModal,'Close');
+  }else{
+    const w=window.open();
+    if(w){w.document.write(`<title>${doc.name||'Attachment'}</title><body style="margin:0"><iframe src="${doc.data}" style="width:100%;height:100vh;border:none"></iframe></body>`);}
+  }
+}
+
 function modalSave(){if(window._ms)window._ms();}
 // Delay modal listener until DOM is ready
 if(document.readyState==='loading'){
@@ -5980,6 +6081,7 @@ function uIT(){
 function openNewExpense(){
   const cid=S.currentClient;
   let currentMode='manual';
+  let attachedDocId=null;
   
   // Create global file inputs once (persistent across modals)
   if(!window._expenseFileInput){
@@ -6018,10 +6120,10 @@ function openNewExpense(){
       </div>
     </div>
     <div id="ex-upload-msg" style="display:none;text-align:center;padding:20px;color:var(--t3)">
-      📁 Choose a file (PDF or image) to upload<br/><span style="font-size:11px">File will be saved as expense document</span>
+      📁 Choose a file (PDF or image) to upload<br/><span style="font-size:11px">Amount, date and supplier are read automatically for your review</span>
     </div>
     <div id="ex-camera-msg" style="display:none;text-align:center;padding:20px;color:var(--t3)">
-      📸 Take a photo of your receipt<br/><span style="font-size:11px">Photo will be saved as expense document</span>
+      📸 Take a photo of your receipt<br/><span style="font-size:11px">Data (amount, date, supplier) will be read automatically for your review</span>
     </div>
   `,()=>{
     if(currentMode==='manual'){
@@ -6030,7 +6132,7 @@ function openNewExpense(){
       if(!document.getElementById('ex-desc').value.trim()){toast('Description required');return;}
       S.expenses.push({id:UID(),cid,date:document.getElementById('ex-d').value,
         supplier:document.getElementById('ex-s').value,desc:document.getElementById('ex-desc').value,
-        cat:document.getElementById('ex-c').value,amount:a,btw:a*(r/100)});
+        cat:document.getElementById('ex-c').value,amount:a,btw:a*(r/100),receiptDocId:attachedDocId});
       sv();closeModal();renderContent();toast(t('tab_expenses')+' ✓','ti-check');
     }
   },'Save Expense');
@@ -6096,13 +6198,47 @@ function openNewExpense(){
           sizeBytes=file.size;
         }
         if(!S.docs)S.docs=[];
-        S.docs.push({id:UID(),cid:S.currentClient,name:file.name,type:file.type||'application/octet-stream',
+        const docId=UID();
+        S.docs.push({id:docId,cid:S.currentClient,name:file.name,type:file.type||'application/octet-stream',
           date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),data:dataUrl,isNew:true});
+        attachedDocId=docId;
         sv();
-        closeModal();
-        renderContent();
-        toast('✓ Document added');
         window._expenseFileInput.value='';
+
+        if(file.type.startsWith('image/')){
+          if(uploadMsg)uploadMsg.innerHTML='⏳ Reading receipt automatically…<br/><span style="font-size:11px">This may take a few seconds</span>';
+          try{
+            const extracted=await ocrReceiptImage(dataUrl);
+            switchMode('manual');
+            if(extracted.date)document.getElementById('ex-d').value=extracted.date;
+            if(extracted.supplier)document.getElementById('ex-s').value=extracted.supplier;
+            if(extracted.amount!=null)document.getElementById('ex-a').value=extracted.amount;
+            if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=extracted.supplier||('Receipt '+TODAY());
+            toast('🔍 Data extracted automatically — please review before saving');
+          }catch(ocrErr){
+            switchMode('manual');
+            toast('✓ Document added — auto-read failed, please enter manually');
+          }
+        }else if(file.type==='application/pdf'){
+          if(uploadMsg)uploadMsg.innerHTML='⏳ Reading PDF automatically…<br/><span style="font-size:11px">This may take a few seconds</span>';
+          try{
+            const pageImg=await pdfFirstPageToDataURL(file);
+            const extracted=await ocrReceiptImage(pageImg);
+            switchMode('manual');
+            if(extracted.date)document.getElementById('ex-d').value=extracted.date;
+            if(extracted.supplier)document.getElementById('ex-s').value=extracted.supplier;
+            if(extracted.amount!=null)document.getElementById('ex-a').value=extracted.amount;
+            if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=extracted.supplier||('Receipt '+TODAY());
+            toast('🔍 Data extracted automatically — please review before saving');
+          }catch(ocrErr){
+            switchMode('manual');
+            toast('✓ Document added — auto-read failed, please enter manually');
+          }
+        }else{
+          closeModal();
+          renderContent();
+          toast('✓ Document added');
+        }
       }catch(err){
         toast('Error: '+err.message);
       }
@@ -6120,13 +6256,26 @@ function openNewExpense(){
         const dataUrl=await compressImage(file);
         const sizeBytes=Math.round(dataUrl.length*0.75);
         if(!S.docs)S.docs=[];
-        S.docs.push({id:UID(),cid:S.currentClient,name:'Receipt_'+TODAY()+'_'+UID().slice(0,4)+'.jpg',type:'image/jpeg',
+        const docId=UID();
+        S.docs.push({id:docId,cid:S.currentClient,name:'Receipt_'+TODAY()+'_'+UID().slice(0,4)+'.jpg',type:'image/jpeg',
           date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),data:dataUrl,isNew:true});
+        attachedDocId=docId;
         sv();
-        closeModal();
-        renderContent();
-        toast('✓ Receipt captured');
         window._expenseCameraInput.value='';
+
+        if(cameraMsg)cameraMsg.innerHTML='⏳ Reading receipt automatically…<br/><span style="font-size:11px">This may take a few seconds</span>';
+        try{
+          const extracted=await ocrReceiptImage(dataUrl);
+          switchMode('manual');
+          if(extracted.date)document.getElementById('ex-d').value=extracted.date;
+          if(extracted.supplier)document.getElementById('ex-s').value=extracted.supplier;
+          if(extracted.amount!=null)document.getElementById('ex-a').value=extracted.amount;
+          if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=extracted.supplier||('Receipt '+TODAY());
+          toast('🔍 Data extracted automatically — please review before saving');
+        }catch(ocrErr){
+          switchMode('manual');
+          toast('✓ Receipt captured — auto-read failed, please enter manually');
+        }
       }catch(err){
         toast('Error: '+err.message);
       }
