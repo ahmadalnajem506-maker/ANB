@@ -671,7 +671,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=2.1').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=2.2').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -2600,15 +2600,15 @@ function setTab(t){
   
   // تخزين معلومات الكرت للتبويبات المختلفة
   const tabThemes={
-    'invoices':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',text:'#0A2218',accent:'#FFD700'},
-    'expenses':{bg:'rgba(217,83,79,0.08)',border:'#d9534f',text:'#d9534f',accent:'#FFE66D'},
-    'hours':{bg:'rgba(200,144,16,0.08)',border:'#C89010',text:'#C89010',accent:'#0A2218'},
-    'messages':{bg:'rgba(77,168,118,0.08)',border:'#4da876',text:'#4da876',accent:'#FFD700'},
-    'contracts':{bg:'rgba(77,168,118,0.08)',border:'#4da876',text:'#4da876',accent:'#0A2218'},
-    'assets':{bg:'rgba(23,162,184,0.08)',border:'#17A2B8',text:'#17A2B8',accent:'#FFD700'},
-    'import':{bg:'rgba(155,89,182,0.08)',border:'#9B59B6',text:'#9B59B6',accent:'#FFD700'},
-    'bank':{bg:'rgba(52,152,219,0.08)',border:'#3498DB',text:'#3498DB',accent:'#FFD700'},
-    'reports':{bg:'rgba(155,89,182,0.08)',border:'#9B59B6',text:'#9B59B6',accent:'#FFD700'}
+    'invoices':{bg:'rgba(10,34,24,0.08)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
+    'expenses':{bg:'rgba(45,122,79,0.08)',border:'#FFD700',text:'#2d7a4f',accent:'#FFE66D'},
+    'hours':{bg:'rgba(77,168,118,0.08)',border:'#D4A520',text:'#4da876',accent:'#FFD700'},
+    'messages':{bg:'rgba(77,168,118,0.08)',border:'#C89010',text:'#4da876',accent:'#FFD700'},
+    'contracts':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFE66D'},
+    'assets':{bg:'rgba(125,191,163,0.08)',border:'#D4A520',text:'#7dbfa3',accent:'#FFD700'},
+    'import':{bg:'rgba(26,77,46,0.08)',border:'#C89010',text:'#1a4d2e',accent:'#FFD700'},
+    'bank':{bg:'rgba(125,191,163,0.08)',border:'#D4A520',text:'#7dbfa3',accent:'#FFE66D'},
+    'reports':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFD700'}
   };
   
   // تطبيق ألوان الكرت إن كانت موجودة
@@ -3462,7 +3462,7 @@ function renderClientsList(searchTerm){
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="background:${planColor};color:white;font-size:10px;padding:6px 10px;border-radius:5px;font-weight:600;white-space:nowrap;text-transform:uppercase;letter-spacing:0.5px">💳 ${planType}</div>
         <div style="display:flex;gap:6px;align-items:center">
-          ${totalAlerts>0?'<div style="background:#d9534f;color:white;font-weight:700;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 6px rgba(217,83,79,0.3)">'+totalAlerts+'</div>':''}
+          ${totalAlerts>0?'<div style="background:#1a4d2e;color:white;font-weight:700;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 6px rgba(200,144,16,0.4)">'+totalAlerts+'</div>':''}
           ${overdue>0?'<div style="background:#ffcdd2;color:#c62828;font-size:9px;padding:3px 6px;border-radius:4px;font-weight:600;white-space:nowrap">⚠️ '+overdue+'</div>':''}
           ${pending>0?'<div style="background:#ffe0b2;color:#e65100;font-size:9px;padding:3px 6px;border-radius:4px;font-weight:600;white-space:nowrap">⏳ '+pending+'</div>':''}
           ${msgs>0?'<div style="background:#c8e6c9;color:#1b5e20;font-size:9px;padding:3px 6px;border-radius:4px;font-weight:600;white-space:nowrap">💬 '+msgs+'</div>':''}
@@ -3488,14 +3488,14 @@ function rAdminDash(el){
   const pendingAgreements=S.serviceAgreements?S.serviceAgreements.filter(a=>['pending_review','client_signed'].includes(a.status)).length:0;
 
   const cards=[
-    {icon:'👥',value:totalClients,label:t('active_clients'),action:'clients',bg:'linear-gradient(135deg, #0A2218 0%, #1a4d2e 100%)',border:'#2d7a4f',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(10,34,24,0.1)'},
-    {icon:'📄',value:pendingInvoices,label:t('dashboard_pending_invoices'),action:'invoices',bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#4da876',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(77,168,118,0.1)'},
-    {icon:'⚠️',value:overdueInvoices,label:t('dashboard_overdue'),action:'overdue',bg:'linear-gradient(135deg, #d9534f 0%, #c9302c 100%)',border:'#d9534f',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(217,83,79,0.1)'},
-    {icon:'💬',value:newMessages,label:t('dashboard_new_messages'),action:'messages',bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#7dbfa3',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(77,168,118,0.1)'},
-    {icon:'📁',value:newDocuments,label:t('dashboard_new_documents'),action:'documents',bg:'linear-gradient(135deg, #FFB700 0%, #FFC700 100%)',border:'#FF9500',text:'#0A2218',accent:'#0A2218',lightBg:'rgba(255,183,0,0.1)'},
-    {icon:'⏱',value:totalHours.toFixed(0),label:t('dashboard_hours_logged'),action:'hours',bg:'linear-gradient(135deg, #FFEB99 0%, #FFE66D 100%)',border:'#FFC700',text:'#0A2218',accent:'#0A2218',lightBg:'rgba(255,235,153,0.2)'},
-    {icon:'📋',value:totalContracts,label:t('dashboard_active_contracts'),action:'contracts',bg:'linear-gradient(135deg, #B8E6D1 0%, #7dbfa3 100%)',border:'#4da876',text:'#0A2218',accent:'#C89010',lightBg:'rgba(184,230,209,0.15)'},
-    {icon:'📜',value:pendingAgreements,label:t('dashboard_pending_agreements'),action:'agreements',bg:'linear-gradient(135deg, #E8D4B0 0%, #D4A574 100%)',border:'#C89010',text:'#2d1810',accent:'#2d1810',lightBg:'rgba(232,212,176,0.15)'}
+    {icon:'👥',value:totalClients,label:t('active_clients'),action:'clients',bg:'linear-gradient(135deg, #0A2218 0%, #1a4d2e 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(10,34,24,0.1)'},
+    {icon:'📄',value:pendingInvoices,label:t('dashboard_pending_invoices'),action:'invoices',bg:'linear-gradient(135deg, #1a4d2e 0%, #2d7a4f 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700',lightBg:'rgba(26,77,46,0.1)'},
+    {icon:'⚠️',value:overdueInvoices,label:t('dashboard_overdue'),action:'overdue',bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#FFD700',text:'#ffffff',accent:'#FFE66D',lightBg:'rgba(45,122,79,0.1)'},
+    {icon:'💬',value:newMessages,label:t('dashboard_new_messages'),action:'messages',bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#D4A520',text:'#ffffff',accent:'#FFE66D',lightBg:'rgba(77,168,118,0.1)'},
+    {icon:'📁',value:newDocuments,label:t('dashboard_new_documents'),action:'documents',bg:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',border:'#C89010',text:'#0A2218',accent:'#0A2218',lightBg:'rgba(125,191,163,0.15)'},
+    {icon:'⏱',value:totalHours.toFixed(0),label:t('dashboard_hours_logged'),action:'hours',bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#D4A520',text:'#ffffff',accent:'#FFE66D',lightBg:'rgba(77,168,118,0.1)'},
+    {icon:'📋',value:totalContracts,label:t('dashboard_active_contracts'),action:'contracts',bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#C89010',text:'#ffffff',accent:'#FFE66D',lightBg:'rgba(45,122,79,0.1)'},
+    {icon:'📜',value:pendingAgreements,label:t('dashboard_pending_agreements'),action:'agreements',bg:'linear-gradient(135deg, #1a4d2e 0%, #2d7a4f 100%)',border:'#D4A520',text:'#ffffff',accent:'#FFE66D',lightBg:'rgba(26,77,46,0.1)'}
   ];
 
   let html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:0">';
@@ -3532,17 +3532,17 @@ function goToAdminStat(type){
   
   // تخزين معلومات الكرت للاستخدام في الصفحات التفصيلية
   const cardThemes={
-    'clients':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',text:'#0A2218',accent:'#FFD700'},
-    'invoices':{bg:'rgba(77,168,118,0.08)',border:'#4da876',text:'#4da876',accent:'#FFD700'},
-    'overdue':{bg:'rgba(217,83,79,0.08)',border:'#d9534f',text:'#d9534f',accent:'#FFE66D'},
-    'messages':{bg:'rgba(77,168,118,0.08)',border:'#7dbfa3',text:'#7dbfa3',accent:'#FFD700'},
-    'documents':{bg:'rgba(255,183,0,0.08)',border:'#FF9500',text:'#FF9500',accent:'#0A2218'},
-    'hours':{bg:'rgba(200,144,16,0.08)',border:'#FFC700',text:'#FFC700',accent:'#0A2218'},
-    'contracts':{bg:'rgba(77,168,118,0.08)',border:'#4da876',text:'#4da876',accent:'#C89010'},
-    'agreements':{bg:'rgba(200,144,16,0.08)',border:'#C89010',text:'#C89010',accent:'#2d1810'}
+    'clients':{bg:'rgba(10,34,24,0.08)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
+    'invoices':{bg:'rgba(26,77,46,0.08)',border:'#C89010',text:'#1a4d2e',accent:'#FFD700'},
+    'overdue':{bg:'rgba(45,122,79,0.08)',border:'#FFD700',text:'#2d7a4f',accent:'#FFE66D'},
+    'messages':{bg:'rgba(77,168,118,0.08)',border:'#D4A520',text:'#4da876',accent:'#FFE66D'},
+    'documents':{bg:'rgba(125,191,163,0.08)',border:'#C89010',text:'#7dbfa3',accent:'#FFD700'},
+    'hours':{bg:'rgba(77,168,118,0.08)',border:'#D4A520',text:'#4da876',accent:'#FFE66D'},
+    'contracts':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFD700'},
+    'agreements':{bg:'rgba(26,77,46,0.08)',border:'#D4A520',text:'#1a4d2e',accent:'#FFE66D'}
   };
   
-  S.cardTheme=cardThemes[type]||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',text:'#0A2218',accent:'#FFD700'};
+  S.cardTheme=cardThemes[type]||{bg:'rgba(10,34,24,0.08)',border:'#C89010',text:'#0A2218',accent:'#FFD700'};
   
   switch(type){
     case 'clients':
@@ -3607,12 +3607,12 @@ function rClientDash(el,cid){
       name:t('tab_invoices'),
       desc:t('card_invoices_desc'),
       bg:'linear-gradient(135deg, #0A2218 0%, #1a4d2e 100%)',
-      border:'#2d7a4f',
+      border:'#C89010',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:[
-        overdue>0?{icon:'⚠️',text:overdue+' overdue',color:'#d9534f'}:null,
-        pending>0?{icon:'⏳',text:pending+' pending',color:'#FFB700'}:null
+        overdue>0?{icon:'⚠️',text:overdue+' overdue',color:'#FFD700'}:null,
+        pending>0?{icon:'⏳',text:pending+' pending',color:'#D4A520'}:null
       ].filter(a=>a)
     },
     {
@@ -3620,8 +3620,8 @@ function rClientDash(el,cid){
       icon:'🧾',
       name:t('tab_expenses'),
       desc:t('card_expenses_desc'),
-      bg:'linear-gradient(135deg, #d9534f 0%, #e74c3c 100%)',
-      border:'#c9302c',
+      bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',
+      border:'#FFD700',
       text:'#ffffff',
       accent:'#FFE66D',
       alerts:expTotal>0?[{icon:'📊',text:expTotal+' total',color:'#FFD700'}]:[]
@@ -3631,11 +3631,11 @@ function rClientDash(el,cid){
       icon:'⏱',
       name:t('hours_time')||'Hours',
       desc:t('card_hours_desc'),
-      bg:'linear-gradient(135deg, #C89010 0%, #D4A520 100%)',
-      border:'#B8860B',
-      text:'#0A2218',
-      accent:'#0A2218',
-      alerts:billableHrs>0?[{icon:'💰',text:billableHrs+' unbilled',color:'#0A2218'}]:[]
+      bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',
+      border:'#D4A520',
+      text:'#ffffff',
+      accent:'#FFE66D',
+      alerts:billableHrs>0?[{icon:'💰',text:billableHrs+' unbilled',color:'#FFD700'}]:[]
     },
     {
       id:'messages',
@@ -3643,7 +3643,7 @@ function rClientDash(el,cid){
       name:t('messages_with_anb'),
       desc:'Communicate With ANB',
       bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',
-      border:'#2d7a4f',
+      border:'#C89010',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:unreadMsgs>0?[{icon:'🔔',text:unreadMsgs+' new',color:'#FFD700'}]:[]
@@ -3653,10 +3653,10 @@ function rClientDash(el,cid){
       icon:'📁',
       name:t('documents')||'Documents',
       desc:'View Shared Documents',
-      bg:'linear-gradient(135deg, #17A2B8 0%, #20C997 100%)',
-      border:'#138496',
+      bg:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',
+      border:'#D4A520',
       text:'#ffffff',
-      accent:'#FFD700',
+      accent:'#FFE66D',
       alerts:unreadDocs>0?[{icon:'📄',text:unreadDocs+' new',color:'#FFD700'}]:[]
     },
     {
@@ -3664,21 +3664,21 @@ function rClientDash(el,cid){
       icon:'👥',
       name:'Debtors',
       desc:'Manage Customer Accounts',
-      bg:'linear-gradient(135deg, #8B1A1A 0%, #b8322f 100%)',
-      border:'#c9302c',
+      bg:'linear-gradient(135deg, #1a4d2e 0%, #2d7a4f 100%)',
+      border:'#C89010',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:[]
     },
     {
       id:'creditors',
-      icon:'🏢',
+      icon:'🤝',
       name:'Creditors',
       desc:'Manage Supplier Accounts',
-      bg:'linear-gradient(135deg, #7A0070 0%, #a00ea0 100%)',
-      border:'#9B59B6',
+      bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',
+      border:'#D4A520',
       text:'#ffffff',
-      accent:'#FFD700',
+      accent:'#FFE66D',
       alerts:[]
     }
   ];
@@ -3733,17 +3733,17 @@ function rClientDash(el,cid){
 /* ═══════════════════════════ CLIENT ACTION CARDS ═══════════════════════════ */
 function selectCard(cardId){
   const cardThemes={
-    'edit_client':{bg:'rgba(243,156,18,0.08)',border:'#F39C12',text:'#F39C12',accent:'#ffffff'},
-    'invoices':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',text:'#0A2218',accent:'#FFD700'},
-    'expenses':{bg:'rgba(217,83,79,0.08)',border:'#d9534f',text:'#d9534f',accent:'#FFE66D'},
-    'hours':{bg:'rgba(200,144,16,0.08)',border:'#C89010',text:'#C89010',accent:'#0A2218'},
-    'messages':{bg:'rgba(77,168,118,0.08)',border:'#4da876',text:'#4da876',accent:'#FFD700'},
-    'contracts':{bg:'rgba(77,168,118,0.08)',border:'#4da876',text:'#4da876',accent:'#0A2218'},
-    'assets':{bg:'rgba(23,162,184,0.08)',border:'#17A2B8',text:'#17A2B8',accent:'#FFD700'},
-    'reports':{bg:'rgba(155,89,182,0.08)',border:'#9B59B6',text:'#9B59B6',accent:'#FFD700'},
-    'bank':{bg:'rgba(52,152,219,0.08)',border:'#3498DB',text:'#3498DB',accent:'#FFD700'},
-    'debtors':{bg:'rgba(212,99,74,0.08)',border:'#D4634A',text:'#D4634A',accent:'#FFD700'},
-    'creditors':{bg:'rgba(139,123,168,0.08)',border:'#8B7BA8',text:'#8B7BA8',accent:'#FFD700'}
+    'edit_client':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFD700'},
+    'invoices':{bg:'rgba(10,34,24,0.08)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
+    'expenses':{bg:'rgba(45,122,79,0.08)',border:'#FFD700',text:'#2d7a4f',accent:'#FFE66D'},
+    'hours':{bg:'rgba(77,168,118,0.08)',border:'#D4A520',text:'#4da876',accent:'#FFE66D'},
+    'messages':{bg:'rgba(77,168,118,0.08)',border:'#C89010',text:'#4da876',accent:'#FFD700'},
+    'contracts':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFD700'},
+    'assets':{bg:'rgba(26,77,46,0.08)',border:'#D4A520',text:'#1a4d2e',accent:'#FFE66D'},
+    'reports':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFD700'},
+    'bank':{bg:'rgba(125,191,163,0.08)',border:'#D4A520',text:'#7dbfa3',accent:'#FFE66D'},
+    'debtors':{bg:'rgba(26,77,46,0.08)',border:'#C89010',text:'#1a4d2e',accent:'#FFD700'},
+    'creditors':{bg:'rgba(45,122,79,0.08)',border:'#D4A520',text:'#2d7a4f',accent:'#FFE66D'}
   };
   
   // إذا كان edit_client، افتح النموذج مباشرة
@@ -3800,7 +3800,7 @@ function rClientActionCards(el,cid){
       text:'#ffffff',
       accent:'#FFD700',
       alerts:[
-        overdue>0?{icon:'⚠️',text:overdue+' overdue',color:'#d9534f'}:null,
+        overdue>0?{icon:'⚠️',text:overdue+' overdue',color:'#B8860B'}:null,
         pending>0?{icon:'⏳',text:pending+' pending',color:'#FFB700'}:null
       ].filter(a=>a)
     },
@@ -3809,8 +3809,8 @@ function rClientActionCards(el,cid){
       icon:'🧾',
       name:t('tab_expenses'),
       desc:t('card_expenses_desc'),
-      bg:'linear-gradient(135deg, #d9534f 0%, #e74c3c 100%)',
-      border:'#c9302c',
+      bg:'linear-gradient(135deg, #CD853F 0%, #E8A85A 100%)',
+      border:'#B8860B',
       text:'#ffffff',
       accent:'#FFE66D',
       alerts:expTotal>0?[{icon:'📊',text:expTotal+' total',color:'#FFD700'}]:[]
@@ -4080,7 +4080,7 @@ function rExpenses(el,cid){
   const bIn=exp.reduce((s,e)=>s+(e.btw||0),0);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(217,83,79,0.08)',border:'#d9534f',text:'#d9534f',accent:'#FFE66D'};
+  const theme=S.cardTheme||{bg:'rgba(205,133,63,0.08)',border:'#CD853F',text:'#CD853F',accent:'#FFE66D'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -7723,13 +7723,13 @@ function showClientAgreementPage(token){
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
         <button style="padding:12px;background:#4dA876;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600" onclick="signAgreement('${agreement.id}','${token}')">✓ ${t('sign_agreement_btn')}</button>
         <button style="padding:12px;background:#C89010;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600" onclick="showRequestChangesForm('${agreement.id}','${token}')">✎ ${t('request_changes')}</button>
-        <button style="padding:12px;background:#d9534f;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600" onclick="rejectAgreement('${agreement.id}','${token}')">✕ ${t('reject_agreement')}</button>
+        <button style="padding:12px;background:#1a4d2e;color:white;border:3px solid #C89010;border-radius:6px;cursor:pointer;font-weight:600" onclick="rejectAgreement('${agreement.id}','${token}')">✕ ${t('reject_agreement')}</button>
       </div>
     `;
   } else if(agreement.status==='client_signed'){
     actionButtons='<div style="background:rgba(77,168,118,0.1);padding:16px;border-radius:8px;text-align:center;border-left:3px solid #4dA876"><strong>✓ '+t('agreement_signed')+' '+agreement.clientSignDate+'</strong><br/><span style="font-size:11px;color:var(--t3)">'+t('signature_awaiting_admin')+'</span></div>';
   } else if(agreement.status==='client_rejected'){
-    actionButtons='<div style="background:rgba(217,83,79,0.1);padding:16px;border-radius:8px;text-align:center;border-left:3px solid #d9534f"><strong>✕ '+t('agreement_rejected')+'</strong></div>';
+    actionButtons='<div style="background:rgba(26,77,46,0.1);padding:16px;border-radius:8px;text-align:center;border-left:3px solid #1a4d2e"><strong>✕ '+t('agreement_rejected')+'</strong></div>';
   } else if(agreement.status==='changes_requested'){
     actionButtons='<div style="background:rgba(200,144,16,0.1);padding:16px;border-radius:8px;border-left:3px solid #C89010"><strong>✎ '+t('changes_requested_by_client')+'</strong><div style="font-size:10px;color:var(--t2);margin-top:8px">'+agreement.clientNotes+'</div></div>';
   }
