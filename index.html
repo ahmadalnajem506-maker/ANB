@@ -672,7 +672,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.27">
+<link rel="manifest" href="manifest.json?v=2.28">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -2679,12 +2679,8 @@ function renderTopbar(){
     const c=S.clients.find(c=>c.id===S.currentClient);
     const clientTitles={dashboard:t('dashboard'),invoices:t('my_invoices'),expenses:t('my_expenses'),hours:t('hours_time'),documents:t('documents'),messages:t('messages')};
     
-    // إذا لم يكن على dashboard، أضف زر العودة
-    if(S.tab!=='dashboard'){
-      left.innerHTML=`<button class="btn btn-xs" onclick="setTab('dashboard')" style="background:rgba(200,144,16,.15);color:#C89010;border:1px solid #C89010;margin-right:12px">← ${t('back_to_overview')}</button><span style="font-size:13px;font-weight:500;color:var(--t1)">${clientTitles[S.tab]||''}</span>`;
-    } else {
-      left.innerHTML=`<span style="font-size:13px;font-weight:500;color:var(--t1)">${clientTitles[S.tab]||''}</span>`;
-    }
+    // العنوان فقط - زر العودة موجود بالفعل داخل كل شاشة بلونها الخاص
+    left.innerHTML=`<span style="font-size:13px;font-weight:500;color:var(--t1)">${clientTitles[S.tab]||''}</span>`;
     
     tabs.innerHTML='';
     // العميل لا يرى أزرار في dashboard - فقط في التبويبات الأخرى
