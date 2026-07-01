@@ -665,7 +665,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.3">
+<link rel="manifest" href="manifest.json?v=2.4">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -2600,15 +2600,15 @@ function setTab(t){
   
   // تخزين معلومات الكرت للتبويبات المختلفة
   const tabThemes={
-    'invoices':{bg:'rgba(10,34,24,0.08)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
-    'expenses':{bg:'rgba(45,122,79,0.08)',border:'#FFD700',text:'#2d7a4f',accent:'#FFE66D'},
-    'hours':{bg:'rgba(77,168,118,0.08)',border:'#D4A520',text:'#4da876',accent:'#FFD700'},
-    'messages':{bg:'rgba(77,168,118,0.08)',border:'#C89010',text:'#4da876',accent:'#FFD700'},
-    'contracts':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFE66D'},
-    'assets':{bg:'rgba(125,191,163,0.08)',border:'#D4A520',text:'#7dbfa3',accent:'#FFD700'},
-    'import':{bg:'rgba(26,77,46,0.08)',border:'#C89010',text:'#1a4d2e',accent:'#FFD700'},
-    'bank':{bg:'rgba(125,191,163,0.08)',border:'#D4A520',text:'#7dbfa3',accent:'#FFE66D'},
-    'reports':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFD700'}
+    'invoices':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'expenses':{bg:'rgba(15,48,37,0.08)',border:'#0F3025',text:'#0A2218',accent:'#FFD700'},
+    'hours':{bg:'rgba(200,144,16,0.08)',border:'#C89010',text:'#FFD700',accent:'#0A2218'},
+    'messages':{bg:'rgba(212,165,32,0.08)',border:'#D4A520',text:'#FFD700',accent:'#0A2218'},
+    'contracts':{bg:'rgba(122,74,0,0.08)',border:'#7A4A00',text:'#FFD700',accent:'#0A2218'},
+    'assets':{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',text:'#0A2218',accent:'#FFD700'},
+    'import':{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',text:'#0A2218',accent:'#FFD700'},
+    'bank':{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',text:'#0A2218',accent:'#FFD700'},
+    'reports':{bg:'rgba(184,134,11,0.08)',border:'#B8860B',text:'#FFD700',accent:'#0A2218'}
   };
   
   // تطبيق ألوان الكرت إن كانت موجودة
@@ -3219,7 +3219,7 @@ function rContracts(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(77,168,118,0.08)',border:'#4da876',text:'#4da876',accent:'#0A2218'};
+  const theme=S.cardTheme||{bg:'rgba(122,74,0,0.08)',border:'#7A4A00',text:'#FFD700',accent:'#0A2218'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -3259,7 +3259,7 @@ function rAssets(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(23,162,184,0.08)',border:'#1a4d2e',text:'#1a4d2e',accent:'#FFD700'};
+  const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',text:'#0A2218',accent:'#FFD700'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -3286,7 +3286,7 @@ function rImport(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(155,89,182,0.08)',border:'#D4A520',text:'#D4A520',accent:'#FFD700'};
+  const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',text:'#0A2218',accent:'#FFD700'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -3532,17 +3532,17 @@ function goToAdminStat(type){
   
   // تخزين معلومات الكرت للاستخدام في الصفحات التفصيلية
   const cardThemes={
-    'clients':{bg:'rgba(10,34,24,0.08)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
-    'invoices':{bg:'rgba(26,77,46,0.08)',border:'#C89010',text:'#1a4d2e',accent:'#FFD700'},
-    'overdue':{bg:'rgba(45,122,79,0.08)',border:'#FFD700',text:'#2d7a4f',accent:'#FFE66D'},
-    'messages':{bg:'rgba(77,168,118,0.08)',border:'#D4A520',text:'#4da876',accent:'#FFE66D'},
-    'documents':{bg:'rgba(125,191,163,0.08)',border:'#C89010',text:'#7dbfa3',accent:'#FFD700'},
-    'hours':{bg:'rgba(77,168,118,0.08)',border:'#D4A520',text:'#4da876',accent:'#FFE66D'},
-    'contracts':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFD700'},
-    'agreements':{bg:'rgba(26,77,46,0.08)',border:'#D4A520',text:'#1a4d2e',accent:'#FFE66D'}
+    'clients':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'invoices':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'overdue':{bg:'rgba(212,165,32,0.08)',border:'#D4A520',text:'#FFD700',accent:'#0A2218'},
+    'messages':{bg:'rgba(212,165,32,0.08)',border:'#D4A520',text:'#FFD700',accent:'#0A2218'},
+    'documents':{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',text:'#0A2218',accent:'#FFD700'},
+    'hours':{bg:'rgba(200,144,16,0.08)',border:'#C89010',text:'#FFD700',accent:'#0A2218'},
+    'contracts':{bg:'rgba(122,74,0,0.08)',border:'#7A4A00',text:'#FFD700',accent:'#0A2218'},
+    'agreements':{bg:'rgba(122,74,0,0.08)',border:'#7A4A00',text:'#FFD700',accent:'#0A2218'}
   };
   
-  S.cardTheme=cardThemes[type]||{bg:'rgba(10,34,24,0.08)',border:'#C89010',text:'#0A2218',accent:'#FFD700'};
+  S.cardTheme=cardThemes[type]||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',text:'#0A2218',accent:'#FFD700'};
   
   switch(type){
     case 'clients':
@@ -3733,17 +3733,17 @@ function rClientDash(el,cid){
 /* ═══════════════════════════ CLIENT ACTION CARDS ═══════════════════════════ */
 function selectCard(cardId){
   const cardThemes={
-    'edit_client':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFD700'},
-    'invoices':{bg:'rgba(10,34,24,0.08)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
-    'expenses':{bg:'rgba(45,122,79,0.08)',border:'#FFD700',text:'#2d7a4f',accent:'#FFE66D'},
-    'hours':{bg:'rgba(77,168,118,0.08)',border:'#D4A520',text:'#4da876',accent:'#FFE66D'},
-    'messages':{bg:'rgba(77,168,118,0.08)',border:'#C89010',text:'#4da876',accent:'#FFD700'},
-    'contracts':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFD700'},
-    'assets':{bg:'rgba(26,77,46,0.08)',border:'#D4A520',text:'#1a4d2e',accent:'#FFE66D'},
-    'reports':{bg:'rgba(45,122,79,0.08)',border:'#C89010',text:'#2d7a4f',accent:'#FFD700'},
-    'bank':{bg:'rgba(125,191,163,0.08)',border:'#D4A520',text:'#7dbfa3',accent:'#FFE66D'},
-    'debtors':{bg:'rgba(26,77,46,0.08)',border:'#C89010',text:'#1a4d2e',accent:'#FFD700'},
-    'creditors':{bg:'rgba(45,122,79,0.08)',border:'#D4A520',text:'#2d7a4f',accent:'#FFE66D'}
+    'edit_client':{bg:'rgba(205,133,63,0.08)',border:'#CD853F',text:'#FFD700',accent:'#0A2218'},
+    'invoices':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'expenses':{bg:'rgba(15,48,37,0.08)',border:'#0F3025',text:'#0A2218',accent:'#FFD700'},
+    'hours':{bg:'rgba(200,144,16,0.08)',border:'#C89010',text:'#FFD700',accent:'#0A2218'},
+    'messages':{bg:'rgba(212,165,32,0.08)',border:'#D4A520',text:'#FFD700',accent:'#0A2218'},
+    'contracts':{bg:'rgba(122,74,0,0.08)',border:'#7A4A00',text:'#FFD700',accent:'#0A2218'},
+    'assets':{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',text:'#0A2218',accent:'#FFD700'},
+    'reports':{bg:'rgba(184,134,11,0.08)',border:'#B8860B',text:'#FFD700',accent:'#0A2218'},
+    'bank':{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',text:'#0A2218',accent:'#FFD700'},
+    'debtors':{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',text:'#0A2218',accent:'#FFD700'},
+    'creditors':{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',text:'#0A2218',accent:'#FFD700'}
   };
   
   // إذا كان edit_client، افتح النموذج مباشرة
@@ -3796,7 +3796,7 @@ function rClientActionCards(el,cid){
       name:t('tab_invoices'),
       desc:t('card_invoices_desc'),
       bg:'linear-gradient(135deg, #0A2218 0%, #1a4d2e 100%)',
-      border:'#2d7a4f',
+      border:'#0A2218',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:[
@@ -3809,10 +3809,10 @@ function rClientActionCards(el,cid){
       icon:'🧾',
       name:t('tab_expenses'),
       desc:t('card_expenses_desc'),
-      bg:'linear-gradient(135deg, #CD853F 0%, #E8A85A 100%)',
-      border:'#B8860B',
+      bg:'linear-gradient(135deg, #0F3025 0%, #1A4A2A 100%)',
+      border:'#0F3025',
       text:'#ffffff',
-      accent:'#FFE66D',
+      accent:'#FFD700',
       alerts:expTotal>0?[{icon:'📊',text:expTotal+' total',color:'#FFD700'}]:[]
     },
     {
@@ -3820,8 +3820,8 @@ function rClientActionCards(el,cid){
       icon:'🏦',
       name:t('tab_bank')||'Bank',
       desc:t('card_bank_desc'),
-      bg:'linear-gradient(135deg, #B8860B 0%, #D4A520 100%)',
-      border:'#7A4A00',
+      bg:'linear-gradient(135deg, #1A4A2A 0%, #2d7a4f 100%)',
+      border:'#1A4A2A',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:[]
@@ -3832,7 +3832,7 @@ function rClientActionCards(el,cid){
       name:t('assets')||'Assets',
       desc:t('card_assets_desc'),
       bg:'linear-gradient(135deg, #1a4d2e 0%, #4da876 100%)',
-      border:'#0F3025',
+      border:'#1a4d2e',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:assets.length>0?[{icon:'📦',text:assets.length+' registered',color:'#FFD700'}]:[]
@@ -3842,8 +3842,8 @@ function rClientActionCards(el,cid){
       icon:'👥',
       name:'Debtors',
       desc:'Manage customer accounts',
-      bg:'linear-gradient(135deg, #E6B800 0%, #FFD700 100%)',
-      border:'#C89010',
+      bg:'linear-gradient(135deg, #1B5E35 0%, #4da876 100%)',
+      border:'#1B5E35',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:[]
@@ -3853,8 +3853,8 @@ function rClientActionCards(el,cid){
       icon:'🤝',
       name:'Creditors',
       desc:'Manage supplier accounts',
-      bg:'linear-gradient(135deg, #1A4A2A 0%, #2A6040 100%)',
-      border:'#0F3025',
+      bg:'linear-gradient(135deg, #2d7a4f 0%, #7dbfa3 100%)',
+      border:'#2d7a4f',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:[]
@@ -3865,8 +3865,8 @@ function rClientActionCards(el,cid){
       name:t('tab_hours'),
       desc:t('card_hours_desc'),
       bg:'linear-gradient(135deg, #C89010 0%, #E6B800 100%)',
-      border:'#E6A800',
-      text:'#0A2218',
+      border:'#C89010',
+      text:'#ffffff',
       accent:'#0A2218',
       alerts:billableHrs>0?[{icon:'💰',text:billableHrs+' billable hours',color:'#0A2218'}]:[]
     },
@@ -3875,10 +3875,10 @@ function rClientActionCards(el,cid){
       icon:'📈',
       name:t('tab_reports'),
       desc:t('card_reports_desc'),
-      bg:'linear-gradient(135deg, #D4A520 0%, #E6B800 100%)',
+      bg:'linear-gradient(135deg, #B8860B 0%, #D4A520 100%)',
       border:'#B8860B',
       text:'#ffffff',
-      accent:'#FFD700',
+      accent:'#0A2218',
       alerts:[]
     },
     {
@@ -3886,20 +3886,20 @@ function rClientActionCards(el,cid){
       icon:'💬',
       name:t('messages'),
       desc:t('card_messages_desc'),
-      bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',
-      border:'#7dbfa3',
+      bg:'linear-gradient(135deg, #D4A520 0%, #FFD700 100%)',
+      border:'#D4A520',
       text:'#ffffff',
-      accent:'#FFD700',
-      alerts:unreadMsgs>0?[{icon:'🔔',text:unreadMsgs+' unread',color:'#FFD700'}]:[]
+      accent:'#0A2218',
+      alerts:unreadMsgs>0?[{icon:'🔔',text:unreadMsgs+' unread',color:'#0A2218'}]:[]
     },
     {
       id:'contracts',
       icon:'📋',
       name:t('contracts')||'Contracts',
       desc:t('card_contracts_desc'),
-      bg:'linear-gradient(135deg, #B8E6D1 0%, #7dbfa3 100%)',
-      border:'#4da876',
-      text:'#0A2218',
+      bg:'linear-gradient(135deg, #7A4A00 0%, #B8860B 100%)',
+      border:'#7A4A00',
+      text:'#ffffff',
       accent:'#0A2218',
       alerts:pendingContracts>0?[{icon:'⏳',text:pendingContracts+' pending approval',color:'#0A2218'}]:[]
     },
@@ -3908,10 +3908,10 @@ function rClientActionCards(el,cid){
       icon:'✏️',
       name:t('card_edit_client'),
       desc:t('card_edit_client_desc'),
-      bg:'linear-gradient(135deg, #7A4A00 0%, #B8860B 100%)',
-      border:'#C89010',
+      bg:'linear-gradient(135deg, #CD853F 0%, #E8A85A 100%)',
+      border:'#CD853F',
       text:'#ffffff',
-      accent:'#ffffff',
+      accent:'#0A2218',
       alerts:[]
     }
   ];
@@ -4080,7 +4080,7 @@ function rExpenses(el,cid){
   const bIn=exp.reduce((s,e)=>s+(e.btw||0),0);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(205,133,63,0.08)',border:'#CD853F',text:'#CD853F',accent:'#FFE66D'};
+  const theme=S.cardTheme||{bg:'rgba(15,48,37,0.08)',border:'#0F3025',text:'#0A2218',accent:'#FFD700'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -4120,7 +4120,7 @@ function rHours(el,cid){
   const tmr=S.timer;
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(200,144,16,0.08)',border:'#C89010',text:'#C89010',accent:'#0A2218'};
+  const theme=S.cardTheme||{bg:'rgba(200,144,16,0.08)',border:'#C89010',text:'#FFD700',accent:'#0A2218'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -4562,7 +4562,7 @@ function rMessages(el,cid){
   if(!S.messages)S.messages=[];
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(77,168,118,0.08)',border:'#7dbfa3',text:'#7dbfa3',accent:'#FFD700'};
+  const theme=S.cardTheme||{bg:'rgba(212,165,32,0.08)',border:'#D4A520',text:'#FFD700',accent:'#0A2218'};
   
   if(isAdmin()){
     // Admin: Simple list of clients + messages
@@ -4793,7 +4793,7 @@ function rContacts(el){
 function rDebtors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const debtors=S.contacts.filter(c=>c.cid===cid&&c.type==='debtor'&&!c.deleted);
-  const theme=S.cardTheme||{bg:'rgba(212,99,74,0.08)',border:'#E6B800',text:'#E6B800',accent:'#FFD700'};
+  const theme=S.cardTheme||{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',text:'#0A2218',accent:'#FFD700'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -4820,7 +4820,7 @@ function rDebtors(el,cid){
 function rCreditors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const creditors=S.contacts.filter(c=>c.cid===cid&&c.type==='creditor'&&!c.deleted);
-  const theme=S.cardTheme||{bg:'rgba(139,123,168,0.08)',border:'#2A6040',text:'#2A6040',accent:'#FFD700'};
+  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',text:'#0A2218',accent:'#FFD700'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -5481,7 +5481,7 @@ function rEditClient(el,cid){
   if(!c)return;
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(243,156,18,0.08)',border:'#7A4A00',text:'#7A4A00',accent:'#ffffff'};
+  const theme=S.cardTheme||{bg:'rgba(205,133,63,0.08)',border:'#CD853F',text:'#FFD700',accent:'#0A2218'};
   
   el.innerHTML=`
   <div>
@@ -6379,7 +6379,7 @@ function rBank(el,cid){
   const unmatched=txs.filter(tx=>!tx.matched).length;
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(52,152,219,0.08)',border:'#B8860B',text:'#B8860B',accent:'#FFD700'};
+  const theme=S.cardTheme||{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',text:'#0A2218',accent:'#FFD700'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
