@@ -21,9 +21,9 @@
   --cream:#F8F6F0;--white:#FFF;--gr1:#F4F2EC;--gr2:#E6E2D8;--gr3:#C4C0B0;
   --t1:#1A1810;--t2:#48443A;--t3:#888070;
   --green:#1B5E35;--green-bg:#EAF4ED;
-  --red:#8B1A1A;--red-bg:#FBE9E9;
+  --red:#B8860B;--red-bg:#FDF8EC;
   --orange:#7A4A00;--orange-bg:#FEF3E2;
-  --blue:#0C3A6E;--blue-bg:#E8F0FB;
+  --blue:#1a4d2e;--blue-bg:#EAF4ED;
   --sw:240px;
   --fd:'Cormorant Garamond',Georgia,serif;
   --fb:'DM Sans',system-ui,sans-serif;
@@ -440,8 +440,8 @@ tr:hover td{background:var(--gr1)}
 .stat-card.sc-red::before{background:var(--red)}
 .stat-card.sc-blue::before{background:var(--blue)}
 .stat-card.sc-orange::before{background:var(--orange)}
-.stat-card.sc-purple::before{background:#9C27B0}
-.stat-card.sc-pink::before{background:#E91E63}
+.stat-card.sc-purple::before{background:#B8860B}
+.stat-card.sc-pink::before{background:#7A4A00}
 .sc-icon{font-size:22px;margin-bottom:8px;display:block}
 .sc-val{font-size:24px;font-weight:600;font-family:var(--fd);color:var(--t1);margin-bottom:2px}
 .sc-lbl{font-size:11px;color:var(--t3)}
@@ -514,7 +514,7 @@ tr:hover td{background:var(--gr1)}
 .sd{width:7px;height:7px;border-radius:50%;background:var(--gr2);transition:all .2s}
 .sd.on{background:var(--g1);width:18px;border-radius:3px}
 .sbox-ok{background:var(--green-bg);border:1px solid rgba(27,94,53,.2);border-radius:var(--rs);padding:10px 14px;font-size:12px;color:var(--green);margin-bottom:12px;display:flex;gap:7px;align-items:center;line-height:1.5}
-.sbox-info{background:#E8F0FB;border:1px solid rgba(12,58,110,.15);border-radius:var(--rs);padding:10px 14px;font-size:12px;color:var(--blue);margin-bottom:12px;line-height:1.6}
+.sbox-info{background:#EAF4ED;border:1px solid rgba(12,58,110,.15);border-radius:var(--rs);padding:10px 14px;font-size:12px;color:var(--blue);margin-bottom:12px;line-height:1.6}
 .pw-strength{height:4px;border-radius:2px;margin-top:4px;transition:all .3s}
 .pw-hint{font-size:10px;color:var(--t3);margin-top:3px}
 .back-link{font-size:12px;color:var(--t3);cursor:pointer;margin-bottom:14px;display:inline-flex;align-items:center;gap:4px}
@@ -665,7 +665,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.1">
+<link rel="manifest" href="manifest.json?v=2.3">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -759,7 +759,7 @@ var S = {lang:'en', role:null, clients:[]};
         <input type="text" id="login-id" placeholder="info@company.nl" style="width:100%;padding:14px 16px;border:2px solid #C89010;border-radius:10px;font-size:14px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')goStep2()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
       </div>
 
-      <div id="login-err-1" style="background:rgba(211,47,47,0.12);color:#FF7B7B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #FF7B7B;font-weight:600;box-shadow:0 4px 12px rgba(211,47,47,0.15)"></div>
+      <div id="login-err-1" style="background:rgba(184,134,11,0.12);color:#B8860B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #B8860B;font-weight:600;box-shadow:0 4px 12px rgba(184,134,11,0.15)"></div>
 
       <!-- Continue Button -->
       <button class="login-btn" onclick="goStep2()" data-i18n="continue_btn" style="width:100%;padding:14px 24px;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);color:#0A2218;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.35s;box-shadow:0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:16px;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 36px rgba(200,144,16,0.5),0 0 30px rgba(200,144,16,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2)'">
@@ -790,7 +790,7 @@ var S = {lang:'en', role:null, clients:[]};
 
       <div style="display:inline-block;margin-bottom:20px;color:#C89010;cursor:pointer;font-weight:700;transition:all 0.3s;font-size:11px" onclick="goForgot()" onmouseover="this.style.textDecoration='underline';this.style.color='#D4A520'" onmouseout="this.style.textDecoration='none';this.style.color='#C89010'" data-i18n="forgot_pw">Forgot password?</div>
 
-      <div id="login-err-2" style="background:rgba(211,47,47,0.12);color:#FF7B7B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #FF7B7B;font-weight:600;box-shadow:0 4px 12px rgba(211,47,47,0.15)"></div>
+      <div id="login-err-2" style="background:rgba(184,134,11,0.12);color:#B8860B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #B8860B;font-weight:600;box-shadow:0 4px 12px rgba(184,134,11,0.15)"></div>
 
       <button class="login-btn" onclick="doLogin()" data-i18n="sign_in_btn" style="width:100%;padding:12px 20px;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);color:#0A2218;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.35s;box-shadow:0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2);text-transform:uppercase;letter-spacing:0.4px;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 36px rgba(200,144,16,0.5),0 0 30px rgba(200,144,16,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2)'">
         <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:translateX(-100%);animation:shine 3s infinite"></div>
@@ -812,7 +812,7 @@ var S = {lang:'en', role:null, clients:[]};
       <div style="margin-bottom:14px">
         <label style="display:block;font-size:10px;font-weight:700;color:#C89010;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">New password</label>
         <input type="password" id="new-pw1" placeholder="Min. 6 characters" style="width:100%;padding:12px 14px;border:2px solid #C89010;border-radius:10px;font-size:13px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" oninput="checkPwStrength()" onkeydown="if(event.key==='Enter')document.getElementById('new-pw2').focus()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
-        <div id="pw-bar" style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:7px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,0.3)"><div style="height:100%;width:0%;background:linear-gradient(90deg,#FF7B7B,#FFC107,#4CAF50);transition:all 0.3s;box-shadow:0 0 8px currentColor;filter:drop-shadow(0 0 4px currentColor)" id="pw-bar-inner"></div></div>
+        <div id="pw-bar" style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:7px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,0.3)"><div style="height:100%;width:0%;background:linear-gradient(90deg,#7A4A00,#D4A520,#1B5E35);transition:all 0.3s;box-shadow:0 0 8px currentColor;filter:drop-shadow(0 0 4px currentColor)" id="pw-bar-inner"></div></div>
         <div id="pw-hint" style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:5px;font-weight:600"></div>
       </div>
 
@@ -821,7 +821,7 @@ var S = {lang:'en', role:null, clients:[]};
         <input type="password" id="new-pw2" placeholder="Repeat password" style="width:100%;padding:12px 14px;border:2px solid #C89010;border-radius:10px;font-size:13px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')doSetPassword()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
       </div>
 
-      <div id="login-err-3" style="background:rgba(211,47,47,0.12);color:#FF7B7B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #FF7B7B;font-weight:600;box-shadow:0 4px 12px rgba(211,47,47,0.15)"></div>
+      <div id="login-err-3" style="background:rgba(184,134,11,0.12);color:#B8860B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #B8860B;font-weight:600;box-shadow:0 4px 12px rgba(184,134,11,0.15)"></div>
 
       <button class="login-btn" onclick="doSetPassword()" id="set-pw-btn" data-i18n="set_pw_signin" style="width:100%;padding:12px 20px;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);color:#0A2218;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.35s;box-shadow:0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2);text-transform:uppercase;letter-spacing:0.4px;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 36px rgba(200,144,16,0.5),0 0 30px rgba(200,144,16,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2)'">
         <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:translateX(-100%);animation:shine 3s infinite"></div>
@@ -1317,7 +1317,7 @@ html { scroll-behavior: smooth; }
 
 <script>
 /* ═══════════════════════════ DATA ═══════════════════════════ */
-const COLORS=['#0C447C','#1B5E35','#7A3500','#7A0070','#4A3A9A','#005A5A','#8B1A1A','#2A4A6A'];
+const COLORS=['#1B5E35','#1B5E35','#C89010','#D4A520','#4da876','#2d7a4f','#B8860B','#1B5E35'];
 const FMT=n=>'€'+(+(n||0)).toFixed(2);
 const FMTi=n=>'€'+Math.round(n||0).toLocaleString('nl-NL');
 const TODAY=()=>new Date().toISOString().slice(0,10);
@@ -1965,11 +1965,11 @@ var S={
   tab:'dashboard',
   clients:[
     {id:'c1',name:'Expat Solutions BV',type:'B2B',email:'info@expatsol.nl',
-     kvk:'12345678',btw:'NL123456789B01',iban:'NL91ABNA0417164300',color:'#0C447C',pw:'client123'},
+     kvk:'12345678',btw:'NL123456789B01',iban:'NL91ABNA0417164300',color:'#1B5E35',pw:'client123'},
     {id:'c2',name:'Maria van den Berg',type:'B2C',email:'maria@gmail.com',
      kvk:'',btw:'',iban:'',color:'#1B5E35',pw:'client123'},
     {id:'c3',name:'TechStart Amsterdam',type:'B2B',email:'cfo@techstart.nl',
-     kvk:'87654321',btw:'NL987654321B01',iban:'NL02ABNA0123456789',color:'#7A3500',pw:'client123'},
+     kvk:'87654321',btw:'NL987654321B01',iban:'NL02ABNA0123456789',color:'#C89010',pw:'client123'},
   ],
   invoices:[
     {id:'i1',cid:'c1',num:'ANB-2026-001',desc:'Power BI dashboard Q1',amount:2400,btw:504,total:2904,date:'2026-05-01',due:'2026-05-31',status:'Betaald',btwRate:21},
@@ -2141,8 +2141,8 @@ function updateSyncBadge(){
     idle:{dot:'#999',text:t('not_synced')},
     syncing:{dot:'#C89010',text:t('syncing')},
     synced:{dot:'#2E7D32',text:t('synced')},
-    error:{dot:'#C0392B',text:t('sync_error')},
-    offline:{dot:'#C0392B',text:t('offline')},
+    error:{dot:'#B8860B',text:t('sync_error')},
+    offline:{dot:'#B8860B',text:t('offline')},
   };
   const m=map[cloudSyncStatus]||map.idle;
   const html=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.dot};margin-right:5px"></span>${m.text}`;
@@ -2172,9 +2172,9 @@ function updateSyncBadge(){
   // If contacts is empty, add test data
   if(!S.contacts||S.contacts.length===0){
     S.contacts=[
-      {id:'c1',cid:'maria@gmail.com',name:'ExpatSol BV',type:'debtor',email:'contact@expatsol.com',phone:'+31612345678',address:'Amsterdam, NL',kvk:'12345678',btw:'NL123456789B01',color:'#FF6B6B'},
-      {id:'c2',cid:'maria@gmail.com',name:'TechStart Inc',type:'debtor',email:'info@techstart.nl',phone:'+31687654321',address:'Utrecht, NL',kvk:'87654321',btw:'NL987654321B01',color:'#4ECDC4'},
-      {id:'c3',cid:'jan@expatsol.nl',name:'Local Business Co',type:'debtor',email:'hello@localbiz.nl',phone:'+31612121212',address:'Rotterdam, NL',kvk:'11111111',btw:'NL111111111B01',color:'#95E1D3'}
+      {id:'c1',cid:'maria@gmail.com',name:'ExpatSol BV',type:'debtor',email:'contact@expatsol.com',phone:'+31612345678',address:'Amsterdam, NL',kvk:'12345678',btw:'NL123456789B01',color:'#7A4A00'},
+      {id:'c2',cid:'maria@gmail.com',name:'TechStart Inc',type:'debtor',email:'info@techstart.nl',phone:'+31687654321',address:'Utrecht, NL',kvk:'87654321',btw:'NL987654321B01',color:'#7dbfa3'},
+      {id:'c3',cid:'jan@expatsol.nl',name:'Local Business Co',type:'debtor',email:'hello@localbiz.nl',phone:'+31612121212',address:'Rotterdam, NL',kvk:'11111111',btw:'NL111111111B01',color:'#7dbfa3'}
     ];
   }
 })();
@@ -2372,10 +2372,10 @@ function checkPwStrength(){
   if(/[0-9]/.test(pw))score++;
   if(/[^A-Za-z0-9]/.test(pw))score++;
   const levels=[
-    {w:'20%',bg:'#f07070',t:'Too short'},
-    {w:'40%',bg:'#f0a050',t:'Weak'},
-    {w:'60%',bg:'#f0c840',t:'Fair'},
-    {w:'80%',bg:'#7ab850',t:'Good'},
+    {w:'20%',bg:'#7A4A00',t:'Too short'},
+    {w:'40%',bg:'#B8860B',t:'Weak'},
+    {w:'60%',bg:'#D4A520',t:'Fair'},
+    {w:'80%',bg:'#7dbfa3',t:'Good'},
     {w:'100%',bg:'#1B5E35',t:'Strong ✓'},
   ];
   const l=levels[Math.min(score,4)];
@@ -3259,7 +3259,7 @@ function rAssets(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(23,162,184,0.08)',border:'#17A2B8',text:'#17A2B8',accent:'#FFD700'};
+  const theme=S.cardTheme||{bg:'rgba(23,162,184,0.08)',border:'#1a4d2e',text:'#1a4d2e',accent:'#FFD700'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -3286,7 +3286,7 @@ function rImport(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(155,89,182,0.08)',border:'#9B59B6',text:'#9B59B6',accent:'#FFD700'};
+  const theme=S.cardTheme||{bg:'rgba(155,89,182,0.08)',border:'#D4A520',text:'#D4A520',accent:'#FFD700'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -3395,28 +3395,28 @@ function renderClientsList(searchTerm){
   const planColors={
     'Basic':'#0A2218',
     'Plus':'#4da876',
-    'Pro':'#9B59B6',
+    'Pro':'#D4A520',
     100:'#0A2218',
     150:'#4da876',
-    200:'#9B59B6'
+    200:'#D4A520'
   };
   
   const planBgColors={
     'Basic':'#E8F4F0',    // تفاحي أخضر فاتح
     'Plus':'#E0F5ED',    // نعناعي فاتح
-    'Pro':'#F3E8FB',     // بنفسجي فاتح
+    'Pro':'#FDF8EC',     // بنفسجي فاتح
     100:'#E8F4F0',
     150:'#E0F5ED',
-    200:'#F3E8FB'
+    200:'#FDF8EC'
   };
   
   const planBorderColors={
     'Basic':'#2d7a4f',    // أخضر متوسط
     'Plus':'#3FA384',    // أخضر ناعم متوسط
-    'Pro':'#B59CC8',     // بنفسجي متوسط
+    'Pro':'#C89010',     // بنفسجي متوسط
     100:'#2d7a4f',
     150:'#3FA384',
-    200:'#B59CC8'
+    200:'#C89010'
   };
   
   container.innerHTML=filtered.map(c=>{
@@ -3463,8 +3463,8 @@ function renderClientsList(searchTerm){
         <div style="background:${planColor};color:white;font-size:10px;padding:6px 10px;border-radius:5px;font-weight:600;white-space:nowrap;text-transform:uppercase;letter-spacing:0.5px">💳 ${planType}</div>
         <div style="display:flex;gap:6px;align-items:center">
           ${totalAlerts>0?'<div style="background:#1a4d2e;color:white;font-weight:700;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 6px rgba(200,144,16,0.4)">'+totalAlerts+'</div>':''}
-          ${overdue>0?'<div style="background:#ffcdd2;color:#c62828;font-size:9px;padding:3px 6px;border-radius:4px;font-weight:600;white-space:nowrap">⚠️ '+overdue+'</div>':''}
-          ${pending>0?'<div style="background:#ffe0b2;color:#e65100;font-size:9px;padding:3px 6px;border-radius:4px;font-weight:600;white-space:nowrap">⏳ '+pending+'</div>':''}
+          ${overdue>0?'<div style="background:#FDF8EC;color:#7A4A00;font-size:9px;padding:3px 6px;border-radius:4px;font-weight:600;white-space:nowrap">⚠️ '+overdue+'</div>':''}
+          ${pending>0?'<div style="background:#FEF3E2;color:#7A4A00;font-size:9px;padding:3px 6px;border-radius:4px;font-weight:600;white-space:nowrap">⏳ '+pending+'</div>':''}
           ${msgs>0?'<div style="background:#c8e6c9;color:#1b5e20;font-size:9px;padding:3px 6px;border-radius:4px;font-weight:600;white-space:nowrap">💬 '+msgs+'</div>':''}
         </div>
       </div>
@@ -3820,8 +3820,8 @@ function rClientActionCards(el,cid){
       icon:'🏦',
       name:t('tab_bank')||'Bank',
       desc:t('card_bank_desc'),
-      bg:'linear-gradient(135deg, #3498DB 0%, #2980B9 100%)',
-      border:'#2471A3',
+      bg:'linear-gradient(135deg, #B8860B 0%, #D4A520 100%)',
+      border:'#7A4A00',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:[]
@@ -3831,8 +3831,8 @@ function rClientActionCards(el,cid){
       icon:'🏢',
       name:t('assets')||'Assets',
       desc:t('card_assets_desc'),
-      bg:'linear-gradient(135deg, #17A2B8 0%, #20C997 100%)',
-      border:'#138496',
+      bg:'linear-gradient(135deg, #1a4d2e 0%, #4da876 100%)',
+      border:'#0F3025',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:assets.length>0?[{icon:'📦',text:assets.length+' registered',color:'#FFD700'}]:[]
@@ -3842,8 +3842,8 @@ function rClientActionCards(el,cid){
       icon:'👥',
       name:'Debtors',
       desc:'Manage customer accounts',
-      bg:'linear-gradient(135deg, #D4634A 0%, #E67E5F 100%)',
-      border:'#C95234',
+      bg:'linear-gradient(135deg, #E6B800 0%, #FFD700 100%)',
+      border:'#C89010',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:[]
@@ -3853,8 +3853,8 @@ function rClientActionCards(el,cid){
       icon:'🤝',
       name:'Creditors',
       desc:'Manage supplier accounts',
-      bg:'linear-gradient(135deg, #6B5B95 0%, #8B7BA8 100%)',
-      border:'#7B6BA0',
+      bg:'linear-gradient(135deg, #1A4A2A 0%, #2A6040 100%)',
+      border:'#0F3025',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:[]
@@ -3875,8 +3875,8 @@ function rClientActionCards(el,cid){
       icon:'📈',
       name:t('tab_reports'),
       desc:t('card_reports_desc'),
-      bg:'linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%)',
-      border:'#7D3C98',
+      bg:'linear-gradient(135deg, #D4A520 0%, #E6B800 100%)',
+      border:'#B8860B',
       text:'#ffffff',
       accent:'#FFD700',
       alerts:[]
@@ -3908,8 +3908,8 @@ function rClientActionCards(el,cid){
       icon:'✏️',
       name:t('card_edit_client'),
       desc:t('card_edit_client_desc'),
-      bg:'linear-gradient(135deg, #F39C12 0%, #E67E22 100%)',
-      border:'#D68910',
+      bg:'linear-gradient(135deg, #7A4A00 0%, #B8860B 100%)',
+      border:'#C89010',
       text:'#ffffff',
       accent:'#ffffff',
       alerts:[]
@@ -4755,7 +4755,7 @@ function rContacts(el){
   // Render debtors
   const debtorsList=document.getElementById('debtors-list');
   debtorsList.innerHTML=debtors.map(c=>`
-    <div style="background:var(--bg2);padding:12px;border-radius:6px;border-left:4px solid #4CAF50">
+    <div style="background:var(--bg2);padding:12px;border-radius:6px;border-left:4px solid #1B5E35">
       <div style="display:flex;justify-content:space-between;align-items:start">
         <div style="flex:1">
           <strong>${c.name}</strong><br/>
@@ -4764,7 +4764,7 @@ function rContacts(el){
         </div>
         <div style="display:flex;gap:4px">
           <button onclick="openContactModal('${c.id}')" class="btn btn-sm" style="padding:4px 8px">✎</button>
-          <button onclick="delContact('${c.id}')" class="btn btn-sm" style="padding:4px 8px;background:#f44336">✕</button>
+          <button onclick="delContact('${c.id}')" class="btn btn-sm" style="padding:4px 8px;background:#B8860B">✕</button>
         </div>
       </div>
     </div>
@@ -4773,7 +4773,7 @@ function rContacts(el){
   // Render creditors
   const creditorsList=document.getElementById('creditors-list');
   creditorsList.innerHTML=creditors.map(c=>`
-    <div style="background:var(--bg2);padding:12px;border-radius:6px;border-left:4px solid #2196F3">
+    <div style="background:var(--bg2);padding:12px;border-radius:6px;border-left:4px solid #C89010">
       <div style="display:flex;justify-content:space-between;align-items:start">
         <div style="flex:1">
           <strong>${c.name}</strong><br/>
@@ -4782,7 +4782,7 @@ function rContacts(el){
         </div>
         <div style="display:flex;gap:4px">
           <button onclick="openContactModal('${c.id}')" class="btn btn-sm" style="padding:4px 8px">✎</button>
-          <button onclick="delContact('${c.id}')" class="btn btn-sm" style="padding:4px 8px;background:#f44336">✕</button>
+          <button onclick="delContact('${c.id}')" class="btn btn-sm" style="padding:4px 8px;background:#B8860B">✕</button>
         </div>
       </div>
     </div>
@@ -4793,7 +4793,7 @@ function rContacts(el){
 function rDebtors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const debtors=S.contacts.filter(c=>c.cid===cid&&c.type==='debtor'&&!c.deleted);
-  const theme=S.cardTheme||{bg:'rgba(212,99,74,0.08)',border:'#D4634A',text:'#D4634A',accent:'#FFD700'};
+  const theme=S.cardTheme||{bg:'rgba(212,99,74,0.08)',border:'#E6B800',text:'#E6B800',accent:'#FFD700'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -4820,7 +4820,7 @@ function rDebtors(el,cid){
 function rCreditors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const creditors=S.contacts.filter(c=>c.cid===cid&&c.type==='creditor'&&!c.deleted);
-  const theme=S.cardTheme||{bg:'rgba(139,123,168,0.08)',border:'#8B7BA8',text:'#8B7BA8',accent:'#FFD700'};
+  const theme=S.cardTheme||{bg:'rgba(139,123,168,0.08)',border:'#2A6040',text:'#2A6040',accent:'#FFD700'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -5481,7 +5481,7 @@ function rEditClient(el,cid){
   if(!c)return;
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(243,156,18,0.08)',border:'#F39C12',text:'#F39C12',accent:'#ffffff'};
+  const theme=S.cardTheme||{bg:'rgba(243,156,18,0.08)',border:'#7A4A00',text:'#7A4A00',accent:'#ffffff'};
   
   el.innerHTML=`
   <div>
@@ -6379,7 +6379,7 @@ function rBank(el,cid){
   const unmatched=txs.filter(tx=>!tx.matched).length;
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(52,152,219,0.08)',border:'#3498DB',text:'#3498DB',accent:'#FFD700'};
+  const theme=S.cardTheme||{bg:'rgba(52,152,219,0.08)',border:'#B8860B',text:'#B8860B',accent:'#FFD700'};
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -6741,9 +6741,9 @@ function rReportCashFlow(el,cid){
   html+='</div>';
   html+='</div>';
   
-  html+='<div style="padding:12px;background:linear-gradient(135deg,'+(netCashFlow>=0?'rgba(45,122,79,0.15) 0%,rgba(77,168,118,0.15)':'rgba(255,107,107,0.15) 0%,rgba(255,152,152,0.15)')+' 100%);border-radius:var(--r);border-left:4px solid '+(netCashFlow>=0?'#2d7a4f':'#FF6B6B')+';margin-bottom:16px">';
+  html+='<div style="padding:12px;background:linear-gradient(135deg,'+(netCashFlow>=0?'rgba(45,122,79,0.15) 0%,rgba(77,168,118,0.15)':'rgba(184,134,11,0.15) 0%,rgba(212,165,32,0.15)')+' 100%);border-radius:var(--r);border-left:4px solid '+(netCashFlow>=0?'#2d7a4f':'#B8860B')+';margin-bottom:16px">';
   html+='<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600">';
-  html+='<span>Net Cash Flow</span><span style="color:'+(netCashFlow>=0?'#2d7a4f':'#FF6B6B')+'">'+(netCashFlow>=0?'+':'')+FMT(netCashFlow)+'</span>';
+  html+='<span>Net Cash Flow</span><span style="color:'+(netCashFlow>=0?'#2d7a4f':'#B8860B')+'">'+(netCashFlow>=0?'+':'')+FMT(netCashFlow)+'</span>';
   html+='</div>';
   html+='</div>';
   
@@ -8011,7 +8011,7 @@ function viewPendingAgreements(){
   
   pending.forEach(agreement=>{
     const client=agreement.clientData;
-    const statusColor=agreement.status==='pending_signature'?'#FF6B6B':agreement.status==='client_signed'?'#FFD700':'#4ECDC4';
+    const statusColor=agreement.status==='pending_signature'?'#7A4A00':agreement.status==='client_signed'?'#FFD700':'#7dbfa3';
     const statusText=agreement.status==='pending_signature'?'Awaiting Signature':'Signed by Client';
     
     html+=`
@@ -8105,7 +8105,7 @@ function approvePendingAgreement(agreementId){
     contractId:agreement.id,
     contractStatus:'active',
     activatedDate:TODAY(),
-    color:'#4ECDC4',
+    color:'#7dbfa3',
     createdDate:TODAY()
   };
   
