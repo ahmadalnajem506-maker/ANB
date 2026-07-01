@@ -672,7 +672,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.23">
+<link rel="manifest" href="manifest.json?v=2.27">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -1382,7 +1382,7 @@ var I18N={
     // Tab labels
     tab_invoices:'Invoices', tab_debtors:'Debtors',
     tab_expenses:'Expenses', tab_hours:'Hours',
-    card_invoices_title:'Invoices - Cash In', card_expenses_title:'Expenses - Cash Out',
+    card_invoices_title:'Invoices - Cash In', card_expenses_title:'Expenses - Cash Out', lbl_customer:'Customer',
     tab_journal:'Journal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Reports', tab_documents:'Documents', tab_contacts:'Contacts', tab_messages:'Messages', tab_client:'Client',
     // Card descriptions
@@ -1586,7 +1586,7 @@ var I18N={
     contracts:'Overeenkomsten', assets:'Activa',
     tab_invoices:'Facturen', tab_debtors:'Debiteuren',
     tab_expenses:'Onkosten', tab_hours:'Uren',
-    card_invoices_title:'Facturen - Geld in', card_expenses_title:'Onkosten - Geld uit',
+    card_invoices_title:'Facturen - Geld in', card_expenses_title:'Onkosten - Geld uit', lbl_customer:'Klant',
     tab_journal:'Journaal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Rapporten', tab_documents:'Documenten', tab_contacts:'Contacten', tab_messages:'Berichten', tab_client:'Klant',
     // Card descriptions
@@ -1778,7 +1778,7 @@ var I18N={
     // Tab labels with tab_ prefix (used in topbar & sidebar)
     tab_invoices:'الفواتير', tab_debtors:'الديون (Debiteuren)',
     tab_expenses:'المصاريف', tab_hours:'ساعات العمل',
-    card_invoices_title:'الفواتير - الوارد النقدي', card_expenses_title:'المصاريف - الصادر النقدي',
+    card_invoices_title:'الفواتير - الوارد النقدي', card_expenses_title:'المصاريف - الصادر النقدي', lbl_customer:'العميل',
     tab_journal:'اليومية (Journal)', tab_bank:'البنك', tab_btw:'ضريبة القيمة المضافة (BTW)',
     tab_reports:'التقارير', tab_documents:'المستندات', tab_contacts:'جهات الاتصال', tab_messages:'الرسائل', tab_client:'العميل',
     // Card descriptions
@@ -2439,6 +2439,7 @@ function launchApp(){
   document.getElementById('app').style.display='flex';
   checkOverdueInvoices();
   generateRecurringInvoices();
+  migrateOneTimeDebtors();
   renderApp();
   syncNow();
 }
@@ -3968,6 +3969,40 @@ function goBackToOverview(){
   renderApp();
 }
 
+function getOrCreateGeneralDebtor(){
+  if(!S.contacts)S.contacts=[];
+  let gd=S.contacts.find(c=>c.type==='debtor'&&c.isGeneral&&!c.deleted);
+  if(!gd){
+    gd={id:UID(),cid:'GENERAL',type:'debtor',name:'General Debtors',isGeneral:true};
+    S.contacts.push(gd);
+  }
+  return gd;
+}
+function migrateOneTimeDebtors(){
+  if(!S.invoices||!S.invoices.length)return;
+  let changed=false;
+  S.invoices.forEach(i=>{
+    if(i.billToManual&&i.billToManual.name){
+      const existing=i.billToId?(S.contacts||[]).find(c=>c.id===i.billToId):null;
+      if(!existing){
+        const gd=getOrCreateGeneralDebtor();
+        i.billToId=gd.id;
+        if(!i.billTo)i.billTo=i.billToManual.name;
+        changed=true;
+      }
+    }
+  });
+  if(changed)sv();
+}
+function getBillToName(inv){
+  if(inv.billToManual&&inv.billToManual.name)return inv.billToManual.name;
+  if(inv.billToId){
+    const contact=(S.contacts||[]).find(c=>c.id===inv.billToId);
+    if(contact)return contact.name;
+  }
+  if(inv.billTo)return inv.billTo;
+  return '—';
+}
 function rInvoices(el,cid){
   cid=cid||S.currentClient;
   const c=S.clients.find(c=>c.id===cid);
@@ -3994,9 +4029,10 @@ function rInvoices(el,cid){
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${isAdmin()?c?.name+' — ':''} ${t('tab_invoices')}</span>
     </div>
     ${inv.length===0?`<div class="empty"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📄</span>${t('empty_invoices')}</div>`:
-    `<table><thead><tr><th>${t('lbl_num')}</th><th>${t('lbl_description')}</th><th>${t('lbl_date')}</th><th>${t('lbl_due')}</th><th>${t('lbl_amount')}</th><th>${t('lbl_btw')}</th><th>${t('lbl_total')}</th><th>${t('lbl_status')}</th><th></th></tr></thead>
+    `<table><thead><tr><th>${t('lbl_num')}</th><th>${t('lbl_customer')}</th><th>${t('lbl_description')}</th><th>${t('lbl_date')}</th><th>${t('lbl_due')}</th><th>${t('lbl_amount')}</th><th>${t('lbl_btw')}</th><th>${t('lbl_total')}</th><th>${t('lbl_status')}</th><th></th></tr></thead>
     <tbody>${inv.map(i=>`<tr>
       <td style="font-family:var(--fm);font-size:11px;color:var(--g1);font-weight:600">${i.num}</td>
+      <td style="font-size:11px">${getBillToName(i)}${i.billToManual?'<span class="bdg b-draft" style="margin-left:4px;font-size:9px">one-time</span>':''}</td>
       <td>${i.desc}</td>
       <td style="color:var(--t3)">${FD(i.date)}</td>
       <td style="color:var(--t3)">${FD(i.due)}</td>
@@ -4874,7 +4910,7 @@ function rContacts(el){
 /* ═══════════════════════════ DEBTORS ═══════════════════════════ */
 function rDebtors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const debtors=S.contacts.filter(c=>c.cid===cid&&c.type==='debtor'&&!c.deleted);
+  const debtors=S.contacts.filter(c=>(c.cid===cid||c.isGeneral)&&c.type==='debtor'&&!c.deleted);
   const theme=S.cardTheme||{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   
   el.innerHTML=`
@@ -4892,7 +4928,7 @@ function rDebtors(el,cid){
     `<table style="width:100%;font-size:11px">
       <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Email</th><th style="padding:8px;text-align:left">Account #</th><th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
-      ${debtors.map(d=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:${theme.border}">'+d.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button></td></tr>').join('')}
+      ${debtors.map(d=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+(d.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:${theme.border}">'+(d.accountNumber||'—')+'</td><td style="text-align:right;padding:8px">'+(d.isGeneral?'<span style="font-size:10px;color:var(--t3)">One-time invoices ledger</span>':'<button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button>')+'</td></tr>').join('')}
       </tbody>
     </table>`}
   </div>`;
@@ -5952,17 +5988,6 @@ function nextNum(clientId){
   return `${clientName}-${String(clientInvoices.length+1).padStart(3,'0')}`;
 }
 function openNewInvoice(){
-  const cid=S.currentClient;
-  const debtors=(S.contacts||[]).filter(c=>c.cid===cid&&c.type==='debtor'&&!c.deleted);
-  
-  // Check if there are any debtors
-  if(debtors.length===0){
-    toast('❌ No debtors found. Please add a debtor first.','⚠',3000);
-    S.tab='debtors';
-    renderApp();
-    return;
-  }
-  
   openInvoiceModal(null);
 }
 function editInvoice(id){openInvoiceModal(S.invoices.find(i=>i.id===id));}
@@ -5972,18 +5997,47 @@ function openInvoiceModal(inv){
   
   // Filter contacts by current client ID
   const contacts=(S.contacts||[]).filter(c=>c.cid===cid);
-  const billToOptions=contacts.map(c=>`<option value="${c.id}" data-name="${c.name}"${inv?.billToId===c.id?'selected':''}>${c.name} (${c.type})</option>`).join('');
+  const billToOptions=contacts.filter(c=>!c.isGeneral).map(c=>`<option value="${c.id}" data-name="${c.name}"${inv?.billToId===c.id?'selected':''}>${c.name} (${c.type})</option>`).join('');
+  const initMode=inv?.billToManual?'manual':'select';
   showModal(isN?t('btn_new_invoice').replace('+ ',''):t('edit')+' '+t('tab_invoices').slice(0,-1),`
     <div class="fg"><label>Bill to (Customer) *</label>
-      <select id="if-billto-sel" onchange="upBillTo()">
-        <option value="">-- Select recipient --</option>
-        ${billToOptions}
-      </select>
-      <div id="if-billto-details" style="display:none;background:var(--bg2);padding:10px;border-radius:4px;margin-top:8px;font-size:12px;line-height:1.6">
-        <strong id="if-billto-name"></strong><br/>
-        <span id="if-billto-email"></span><br/>
-        <span id="if-billto-addr"></span><br/>
-        <span id="if-billto-phone"></span>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button type="button" class="btn btn-xs" id="bt-mode-select" style="flex:1;background:var(--g1);color:var(--gold3);border:none;cursor:pointer">📋 From list</button>
+        <button type="button" class="btn btn-xs" id="bt-mode-new" style="flex:1;background:transparent;color:var(--t3);border:none;cursor:pointer">➕ New debtor</button>
+        <button type="button" class="btn btn-xs" id="bt-mode-manual" style="flex:1;background:transparent;color:var(--t3);border:none;cursor:pointer">✍️ One-time</button>
+      </div>
+
+      <div id="bt-panel-select">
+        <select id="if-billto-sel" onchange="upBillTo()">
+          <option value="">-- Select recipient --</option>
+          ${billToOptions}
+        </select>
+        <div id="if-billto-details" style="display:none;background:var(--bg2);padding:10px;border-radius:4px;margin-top:8px;font-size:12px;line-height:1.6">
+          <strong id="if-billto-name"></strong><br/>
+          <span id="if-billto-email"></span><br/>
+          <span id="if-billto-addr"></span><br/>
+          <span id="if-billto-phone"></span>
+        </div>
+      </div>
+
+      <div id="bt-panel-new" style="display:none">
+        <div class="fg"><label>Debtor name *</label><input id="bt-new-name"/></div>
+        <div class="fr2">
+          <div class="fg"><label>Email</label><input id="bt-new-email" type="email"/></div>
+          <div class="fg"><label>Phone</label><input id="bt-new-phone"/></div>
+        </div>
+        <div class="fg"><label>Address</label><input id="bt-new-address"/></div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px">➕ Will be added to your Debtors list with its own ledger</div>
+      </div>
+
+      <div id="bt-panel-manual" style="display:none">
+        <div class="fg"><label>Customer name *</label><input id="bt-manual-name" value="${inv?.billToManual?.name||''}"/></div>
+        <div class="fr2">
+          <div class="fg"><label>Email</label><input id="bt-manual-email" type="email" value="${inv?.billToManual?.email||''}"/></div>
+          <div class="fg"><label>Phone</label><input id="bt-manual-phone" value="${inv?.billToManual?.phone||''}"/></div>
+        </div>
+        <div class="fg"><label>Address</label><input id="bt-manual-address" value="${inv?.billToManual?.address||''}"/></div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px">✍️ One-time invoice — not added to Debtors, booked to general income ledger</div>
       </div>
     </div>
     <input type="hidden" id="if-billto" value="${inv?.billTo||''}" />
@@ -6021,16 +6075,45 @@ function openInvoiceModal(inv){
     const a=parseFloat(document.getElementById('if-a').value)||0;
     const r=parseFloat(document.getElementById('if-r').value);
     const btw=a*(r/100);
+    const mode=window._btMode||'select';
+
+    let billToId='',billTo='',billToManual=null;
+    if(mode==='select'){
+      billToId=document.getElementById('if-billto-id')?.value||'';
+      billTo=document.getElementById('if-billto')?.value||'';
+    }else if(mode==='new'){
+      const name=(document.getElementById('bt-new-name')?.value||'').trim();
+      if(name){
+        const newContact={id:UID(),cid,type:'debtor',name,
+          email:document.getElementById('bt-new-email')?.value||'',
+          phone:document.getElementById('bt-new-phone')?.value||'',
+          address:document.getElementById('bt-new-address')?.value||''};
+        if(!S.contacts)S.contacts=[];
+        S.contacts.push(newContact);
+        billToId=newContact.id;billTo=name;
+      }
+    }else if(mode==='manual'){
+      const name=(document.getElementById('bt-manual-name')?.value||'').trim();
+      if(name){
+        billToManual={name,
+          email:document.getElementById('bt-manual-email')?.value||'',
+          phone:document.getElementById('bt-manual-phone')?.value||'',
+          address:document.getElementById('bt-manual-address')?.value||''};
+        const gd=getOrCreateGeneralDebtor();
+        billToId=gd.id;
+        billTo=name;
+      }
+    }
+
     const ni={id:inv?.id||UID(),cid,num:document.getElementById('if-n').value,
       desc:document.getElementById('if-desc').value,date:document.getElementById('if-d').value,
       due:document.getElementById('if-dd').value,status:document.getElementById('if-s').value,
       amount:a,btw,total:a+btw,btwRate:r,
-      billTo:document.getElementById('if-billto')?.value||inv?.billTo||'',
-      billToId:document.getElementById('if-billto-id')?.value||inv?.billToId||''};
+      billTo,billToId,billToManual};
     
     // Comprehensive validation for all required fields
     const errors=[];
-    if(!ni.billToId)errors.push('📋 Select recipient (Bill To)');
+    if(!ni.billToId&&!(ni.billToManual&&ni.billToManual.name))errors.push('📋 Select, add, or enter a recipient (Bill To)');
     if(!ni.desc)errors.push('📝 Description is required');
     if(a<=0)errors.push('💶 Amount must be greater than 0');
     
@@ -6048,6 +6131,28 @@ function openInvoiceModal(inv){
     sv();closeModal();renderContent();toast(isN?t('tab_invoices')+' ✓':t('tab_invoices')+' ✓','ti-check');
   });
   setTimeout(uIT,50);
+
+  // ── Bill-to mode switcher (list / new debtor / one-time manual) ──
+  window._btMode=initMode;
+  const btSelBtn=document.getElementById('bt-mode-select');
+  const btNewBtn=document.getElementById('bt-mode-new');
+  const btManBtn=document.getElementById('bt-mode-manual');
+  const btSelPanel=document.getElementById('bt-panel-select');
+  const btNewPanel=document.getElementById('bt-panel-new');
+  const btManPanel=document.getElementById('bt-panel-manual');
+  const setBtMode=(m)=>{
+    window._btMode=m;
+    if(btSelBtn){btSelBtn.style.background=m==='select'?'var(--g1)':'transparent';btSelBtn.style.color=m==='select'?'var(--gold3)':'var(--t3)';}
+    if(btNewBtn){btNewBtn.style.background=m==='new'?'var(--g1)':'transparent';btNewBtn.style.color=m==='new'?'var(--gold3)':'var(--t3)';}
+    if(btManBtn){btManBtn.style.background=m==='manual'?'var(--g1)':'transparent';btManBtn.style.color=m==='manual'?'var(--gold3)':'var(--t3)';}
+    if(btSelPanel)btSelPanel.style.display=m==='select'?'block':'none';
+    if(btNewPanel)btNewPanel.style.display=m==='new'?'block':'none';
+    if(btManPanel)btManPanel.style.display=m==='manual'?'block':'none';
+  };
+  if(btSelBtn)btSelBtn.addEventListener('click',e=>{e.preventDefault();setBtMode('select');});
+  if(btNewBtn)btNewBtn.addEventListener('click',e=>{e.preventDefault();setBtMode('new');});
+  if(btManBtn)btManBtn.addEventListener('click',e=>{e.preventDefault();setBtMode('manual');});
+  setBtMode(initMode);
 }
 function upBillTo(){
   const sel=document.getElementById('if-billto-sel');
@@ -6352,7 +6457,11 @@ function exportPDF(id){
   
   // Get recipient details from S.contacts (not old S.clients/S.debtors)
   let recipientData={name:'',email:'',address:'',phone:'',kvk:'',btw:''};
-  if(i.billToId){
+  if(i.billToManual&&i.billToManual.name){
+    // One-time recipient entered manually (billToId points to the shared General Debtors ledger)
+    recipientData={name:i.billToManual.name,email:i.billToManual.email||'',
+      address:i.billToManual.address||'',phone:i.billToManual.phone||'',kvk:'',btw:''};
+  }else if(i.billToId){
     // Use S.contacts for Bill To data (filtered by client)
     const cid=i.cid;
     const contacts=(S.contacts||[]).filter(con=>con.cid===cid);
@@ -7060,7 +7169,7 @@ function rReportDebtors(el,cid){
     invoices.forEach(i=>{
       html+='<div style="padding:12px;border-bottom:1px solid var(--gr2);display:flex;justify-content:space-between;align-items:center">';
       html+='<div style="flex:1">';
-      html+='<div style="font-weight:500;font-size:12px;color:var(--t1)">'+i.num+'</div>';
+      html+='<div style="font-weight:500;font-size:12px;color:var(--t1)">'+i.num+' — '+getBillToName(i)+'</div>';
       html+='<div style="font-size:10px;color:var(--t3);margin-top:2px">'+i.desc+'</div>';
       html+='<div style="font-size:10px;color:var(--t3);margin-top:2px">Due: '+FD(i.due)+'</div></div>';
       html+='<div style="text-align:right;flex-shrink:0"><div style="font-size:12px;font-weight:600;color:var(--red)">'+FMT(i.total)+'</div></div></div>';
