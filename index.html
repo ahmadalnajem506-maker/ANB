@@ -673,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.74">
+<link rel="manifest" href="manifest.json?v=2.76">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -1426,7 +1426,7 @@ var I18N={
     dashboard_new_messages:'New Messages',
     dashboard_new_documents:'New Documents',
     dashboard_hours_logged:'Hours Logged',
-    dashboard_active_contracts:'Active Contracts',
+    dashboard_active_contracts:'Active Contracts', dashboard_contracts_renewal:'Contracts Needing Renewal',
     dashboard_pending_agreements:'Pending Agreements',
     // Sidebar messages
     sidebar_use_cards:'← Use the cards to navigate',
@@ -1630,7 +1630,7 @@ var I18N={
     dashboard_new_messages:'Nieuwe Berichten',
     dashboard_new_documents:'Nieuwe Documenten',
     dashboard_hours_logged:'Gewerkte Uren',
-    dashboard_active_contracts:'Actieve Overeenkomsten',
+    dashboard_active_contracts:'Actieve Overeenkomsten', dashboard_contracts_renewal:'Contracten die Verlenging Nodig Hebben',
     dashboard_pending_agreements:'Hangende Akkoorden',
     // Sidebar messages
     sidebar_use_cards:'← Gebruik de kaarten om te navigeren',
@@ -1822,7 +1822,7 @@ var I18N={
     dashboard_new_messages:'الرسائل الجديدة',
     dashboard_new_documents:'المستندات الجديدة',
     dashboard_hours_logged:'ساعات العمل المسجلة',
-    dashboard_active_contracts:'الاتفاقيات النشطة',
+    dashboard_active_contracts:'الاتفاقيات النشطة', dashboard_contracts_renewal:'عقود بحاجة لمراجعة/تجديد',
     dashboard_pending_agreements:'الاتفاقيات المعلقة',
     // Sidebar messages
     sidebar_use_cards:'← استخدم الكروت للتنقل',
@@ -2887,6 +2887,7 @@ function launchApp(){
   document.getElementById('login-page').style.display='none';
   document.getElementById('app').style.display='flex';
   checkOverdueInvoices();
+  checkExpiredContracts();
   generateRecurringInvoices();
   migrateContactAccountNumbers();
   migrateOneTimeDebtors();
@@ -3339,6 +3340,8 @@ function rAdminDocuments(el){
 /* ── ADMIN CONTRACTS ── */
 function rAdminContracts(el){
   const theme=S.cardTheme||{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'};
+  const initialFilter=S.contractsInitialFilter||'active';
+  S.contractsInitialFilter=null; // تُستخدم مرة واحدة فقط عند الدخول من الكارت
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
@@ -3348,20 +3351,26 @@ function rAdminContracts(el){
   <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
     <select id="contracts-status-filter" onchange="renderContractsList(this.value)"
       style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1);cursor:pointer">
-      <option value="">All statuses</option>
-      <option value="active" selected>✅ Active only</option>
-      <option value="draft">📝 Draft only</option>
-      <option value="Renewed">🔁 Renewed only</option>
+      <option value="" ${initialFilter===''?'selected':''}>All statuses</option>
+      <option value="active" ${initialFilter==='active'?'selected':''}>✅ Active only</option>
+      <option value="needsRenewal" ${initialFilter==='needsRenewal'?'selected':''}>🔔 Needs review/renewal</option>
+      <option value="draft" ${initialFilter==='draft'?'selected':''}>📝 Draft only</option>
+      <option value="Renewed" ${initialFilter==='Renewed'?'selected':''}>🔁 Renewed only</option>
     </select>
   </div>
   <div id="contracts-list-container"></div>`;
-  renderContractsList('active');
+  renderContractsList(initialFilter);
 }
 
 function renderContractsList(statusFilter){
   const container=document.getElementById('contracts-list-container');
   if(!container)return;
-  const allContracts=(S.contracts||[]).filter(con=>!statusFilter||con.status===statusFilter);
+  const allContracts=(S.contracts||[]).filter(con=>{
+    if(!statusFilter)return true;
+    if(statusFilter==='needsRenewal')return con.status==='active'&&isContractExpired(con);
+    if(statusFilter==='active')return con.status==='active'&&!isContractExpired(con);
+    return con.status===statusFilter;
+  });
   const statusMeta={
     active:{label:'Active',color:'#2d7a4f',bg:'rgba(45,122,79,0.12)'},
     draft:{label:'Draft',color:'#8a6410',bg:'rgba(200,144,16,0.12)'},
@@ -3374,8 +3383,9 @@ function renderContractsList(statusFilter){
     ${allContracts.length===0?`<div class="empty">📋 ${statusFilter?(t('no_results')||'No matching contracts'):t('no_data')}</div>`:
     allContracts.map(con=>{
       const client=S.clients.find(c=>c.id===con.cid);
-      const meta=statusMeta[con.status]||{label:con.status||'Draft',color:'#8a6410',bg:'rgba(200,144,16,0.12)'};
-      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
+      const expired=con.status==='active'&&isContractExpired(con);
+      const meta=expired?{label:'⚠️ Needs Renewal',color:'#B8860B',bg:'rgba(184,134,11,0.15)'}:(statusMeta[con.status]||{label:con.status||'Draft',color:'#8a6410',bg:'rgba(200,144,16,0.12)'});
+      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)${expired?';border-left:3px solid #B8860B':''}">
         <div style="display:flex;justify-content:space-between;align-items:start">
           <div style="flex:1">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -3384,8 +3394,7 @@ function renderContractsList(statusFilter){
             </div>
             <div style="font-size:10px;color:var(--t3);margin-top:4px;font-weight:500">👤 ${client?.name||'Unknown Client'}</div>
             <div style="font-size:11px;color:var(--t3);margin-top:2px">${con.desc||''}</div>
-            <div style="font-size:10px;color:var(--t3);margin-top:4px">Type: ${con.type||'Standard'}</div>
-            <div style="font-size:10px;color:var(--t3);margin-top:2px">
+            <div style="font-size:10px;color:${expired?'#B8860B':'var(--t3)'};margin-top:2px;font-weight:${expired?600:400}">
               From: ${FD(con.startDate||'')} | To: ${FD(con.endDate||'')}
             </div>
           </div>
@@ -3478,27 +3487,14 @@ function openNewContractDialog(){
           style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;height:70px;resize:none;font-family:inherit"></textarea>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div>
-          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan</label>
-          <select id="contract-plan" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
-            <option value="">Select Plan</option>
-            <option value="100">Basic - €100/month</option>
-            <option value="150">Plus - €150/month</option>
-            <option value="200">Pro - €200/month</option>
-          </select>
-        </div>
-        
-        <div>
-          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📂 Contract Type</label>
-          <select id="contract-type" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
-            <option value="Standard">Standard Service</option>
-            <option value="Retainer">Retainer Agreement</option>
-            <option value="Project">Project Contract</option>
-            <option value="NDA">NDA</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan *</label>
+        <select id="contract-plan" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+          <option value="">Select Plan</option>
+          <option value="100">Basic - €100/month</option>
+          <option value="150">Plus - €150/month</option>
+          <option value="200">Pro - €200/month</option>
+        </select>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -3547,7 +3543,7 @@ function openNewContractDialog(){
     const title=document.getElementById('contract-title').value;
     if(!title){toast('❌ Contract title required');markFieldError('contract-title');return;}
     const desc=document.getElementById('contract-desc').value;
-    const type=document.getElementById('contract-type').value;
+    const type='Standard';
     const start=document.getElementById('contract-start').value;
     const end=document.getElementById('contract-end').value;
     const isRenewal=document.getElementById('contract-is-renewal')?.checked;
@@ -3594,27 +3590,14 @@ function openAddContract(cid){
           style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;height:70px;resize:none;font-family:inherit"></textarea>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div>
-          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan</label>
-          <select id="contract-plan" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
-            <option value="">Select Plan</option>
-            <option value="100">Basic - €100/month</option>
-            <option value="150">Plus - €150/month</option>
-            <option value="200">Pro - €200/month</option>
-          </select>
-        </div>
-        
-        <div>
-          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📂 Contract Type</label>
-          <select id="contract-type" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
-            <option value="Standard">Standard Service</option>
-            <option value="Retainer">Retainer Agreement</option>
-            <option value="Project">Project Contract</option>
-            <option value="NDA">NDA</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan *</label>
+        <select id="contract-plan" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+          <option value="">Select Plan</option>
+          <option value="100">Basic - €100/month</option>
+          <option value="150">Plus - €150/month</option>
+          <option value="200">Pro - €200/month</option>
+        </select>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -3651,7 +3634,7 @@ function openAddContract(cid){
     const desc=document.getElementById('contract-desc').value;
     const plan=parseInt(document.getElementById('contract-plan').value||'0')||0;
     if(!plan){toast('❌ Please select a subscription plan');markFieldError('contract-plan');return;}
-    const type=document.getElementById('contract-type').value;
+    const type='Standard';
     const start=document.getElementById('contract-start').value;
     const end=document.getElementById('contract-end').value;
     const status=document.getElementById('contract-status').value||'draft';
@@ -3696,27 +3679,14 @@ function openEditContract(contractId,cid){
           style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;height:70px;resize:none;font-family:inherit">${con.desc||''}</textarea>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div>
-          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan</label>
-          <select id="contract-plan" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
-            <option value="">Select Plan</option>
-            <option value="100" ${con.plan===100?'selected':''}>Basic - €100/month</option>
-            <option value="150" ${con.plan===150?'selected':''}>Plus - €150/month</option>
-            <option value="200" ${con.plan===200?'selected':''}>Pro - €200/month</option>
-          </select>
-        </div>
-        
-        <div>
-          <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📂 Contract Type</label>
-          <select id="contract-type" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
-            <option value="Standard" ${con.type==='Standard'?'selected':''}>Standard Service</option>
-            <option value="Retainer" ${con.type==='Retainer'?'selected':''}>Retainer Agreement</option>
-            <option value="Project" ${con.type==='Project'?'selected':''}>Project Contract</option>
-            <option value="NDA" ${con.type==='NDA'?'selected':''}>NDA</option>
-            <option value="Other" ${con.type==='Other'?'selected':''}>Other</option>
-          </select>
-        </div>
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan</label>
+        <select id="contract-plan" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+          <option value="">Select Plan</option>
+          <option value="100" ${con.plan===100?'selected':''}>Basic - €100/month</option>
+          <option value="150" ${con.plan===150?'selected':''}>Plus - €150/month</option>
+          <option value="200" ${con.plan===200?'selected':''}>Pro - €200/month</option>
+        </select>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -3755,7 +3725,7 @@ function saveContract(contractId,cid){
   const title=document.getElementById('contract-title')?.value||'';
   const desc=document.getElementById('contract-desc')?.value||'';
   const plan=parseInt(document.getElementById('contract-plan')?.value||'0')||0;
-  const type=document.getElementById('contract-type')?.value||'Standard';
+  const type='Standard';
   const startDate=document.getElementById('contract-start')?.value||'';
   const endDate=document.getElementById('contract-end')?.value||'';
   const status=document.getElementById('contract-status')?.value||'draft';
@@ -3827,7 +3797,7 @@ function rContracts(el,cid){
           <div style="font-weight:500;font-size:12px;color:var(--t1)">${con.title||'Contract'}</div>
           <div style="font-size:11px;color:var(--t3);margin-top:2px">${con.desc||''}</div>
           <div style="font-size:10px;color:var(--t3);margin-top:4px">
-            Type: ${con.type||'Standard'} | Status: <span style="color:${con.status==='active'?'var(--green)':'var(--orange)'}">${con.status||'Draft'}</span>
+            Status: <span style="color:${con.status==='active'?'var(--green)':'var(--orange)'}">${con.status||'Draft'}</span>
           </div>
           <div style="font-size:10px;color:var(--t3);margin-top:2px">
             From: ${FD(con.startDate||'')} | To: ${FD(con.endDate||'')}
@@ -4091,7 +4061,9 @@ function rAdminDash(el){
   const totalHours=S.hours.reduce((s,h)=>s+h.hrs,0);
   const overdueInvoices=S.invoices.filter(i=>i.status==='Verlopen').length;
   const newDocuments=S.docs.filter(d=>d.isNew).length;
-  const totalContracts=S.contracts.filter(c=>c.status==='active').length;
+  // ✅ عقد "نشط" فعليًا فقط إن كان تاريخ انتهائه لم يمضِ بعد - وإلا فهو بحاجة لمراجعة/تجديد رغم بقاء وسمه "Active"
+  const totalContracts=S.contracts.filter(c=>c.status==='active'&&!isContractExpired(c)).length;
+  const contractsNeedingRenewal=S.contracts.filter(c=>c.status==='active'&&isContractExpired(c)).length;
   const pendingAgreements=S.serviceAgreements?S.serviceAgreements.filter(a=>['pending_review','client_signed'].includes(a.status)).length:0;
 
   const cards=[
@@ -4102,7 +4074,8 @@ function rAdminDash(el){
     {icon:'🕐',value:totalHours.toFixed(0),label:t('dashboard_hours_logged'),action:'hours',bg:'linear-gradient(135deg, #2A6040 0%, #4da876 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
     {icon:'📜',value:pendingAgreements,label:t('dashboard_pending_agreements'),action:'agreements',bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
     {icon:'💬',value:newMessages,label:t('dashboard_new_messages'),action:'messages',bg:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
-    {icon:'📋',value:totalContracts,label:t('dashboard_active_contracts'),action:'contracts',bg:'linear-gradient(135deg, #9dd4bf 0%, #B8E6D1 100%)',border:'#C89010',text:'#0A2218',accent:'#FFD700'}
+    {icon:'📋',value:totalContracts,label:t('dashboard_active_contracts'),action:'contracts',bg:'linear-gradient(135deg, #9dd4bf 0%, #B8E6D1 100%)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
+    {icon:'🔔',value:contractsNeedingRenewal,label:t('dashboard_contracts_renewal')||'Contracts Needing Renewal',action:'contracts_renewal',bg:'linear-gradient(135deg, #B8E6D1 0%, #E0F5ED 100%)',border:contractsNeedingRenewal>0?'#B8860B':'#C89010',text:'#0A2218',accent:'#FFD700'}
   ];
 
   let html='<div style="display:flex;flex-direction:column;gap:10px;padding:0">';
@@ -4143,7 +4116,8 @@ function goToAdminStat(type){
     'documents':{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'hours':{bg:'rgba(42,96,64,0.08)',border:'#2A6040',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'contracts':{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
-    'agreements':{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'}
+    'agreements':{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
+    'contracts_renewal':{bg:'rgba(184,134,11,0.08)',border:'#B8860B',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'}
   };
   
   S.cardTheme=cardThemes[type]||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
@@ -4176,6 +4150,10 @@ function goToAdminStat(type){
       break;
     case 'contracts':
       S.tab='contracts_stat';
+      break;
+    case 'contracts_renewal':
+      S.tab='contracts_stat';
+      S.contractsInitialFilter='needsRenewal';
       break;
     case 'agreements':
       // اتفاقيات الخدمة المعلّقة تُعرض كنافذة منبثقة (وليست شاشة كاملة) عبر دالة جاهزة مسبقًا
@@ -4700,6 +4678,10 @@ function migrateOneTimeDebtors(){
     }
   });
   if(changed)sv();
+}
+// عقد وُسم "Active" لكن تجاوز تاريخ انتهائه الفعلي - بحاجة لمراجعة أو تجديد
+function isContractExpired(con){
+  return !!(con.endDate&&con.endDate<TODAY());
 }
 function getBillToName(inv){
   if(inv.billToManual&&inv.billToManual.name)return inv.billToManual.name;
@@ -6665,6 +6647,20 @@ function checkOverdueInvoices(){
   return changed;
 }
 
+// ينبّه الأدمن عند وجود عقود موسومة "Active" لكن تجاوزت تاريخ انتهائها الفعلي - بحاجة لمراجعة أو تجديد
+function checkExpiredContracts(){
+  if(!isAdmin())return; // العميل لا يحتاج رؤية هذا التنبيه
+  const expired=(S.contracts||[]).filter(c=>c.status==='active'&&isContractExpired(c));
+  if(!expired.length)return;
+  const names=expired.map(c=>{
+    const client=S.clients.find(x=>x.id===c.cid);
+    return client?.name||'Unknown Client';
+  });
+  const uniqueNames=[...new Set(names)];
+  const preview=uniqueNames.slice(0,2).join('، ')+(uniqueNames.length>2?` +${uniqueNames.length-2}`:'');
+  toast('⚠️ '+(expired.length>1?expired.length+' contracts need review/renewal: ':'Contract needs review/renewal: ')+preview,null,5000);
+}
+
 function generateRecurringInvoices(){
   if(!S.recurring||!S.recurring.length)return;
   const today=TODAY();
@@ -6915,7 +6911,7 @@ function rEditClient(el,cid){
             <div>
               <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Client Type</label>
               <select id="cf-t" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
-                ${['B2B','B2C','Expat','ZZP'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}
+                ${['Eenmanszaak','VOF','Maatschap','CV','BV','NV','Stichting','Vereniging','Coöperatie','Overig'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}
               </select>
             </div>
           </div>
@@ -7111,7 +7107,7 @@ function openClientModal(c){
           <div>
             <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Client Type</label>
             <select id="cf-t" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
-              ${['B2B','B2C','Expat','ZZP'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}
+              ${['Eenmanszaak','VOF','Maatschap','CV','BV','NV','Stichting','Vereniging','Coöperatie','Overig'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -7197,7 +7193,7 @@ function openClientModal(c){
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
           <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('plan')||'Plan'}</label>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('plan')||'Plan'}${isN?' *':''}</label>
             <select id="cf-fee" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
               <option value="0" ${c&&!c.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
               <option value="100" ${parseInt(c?.monthlyFee)===100?'selected':''}>Basic — €100/month</option>
