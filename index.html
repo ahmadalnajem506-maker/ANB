@@ -673,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.65">
+<link rel="manifest" href="manifest.json?v=2.66">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -9718,9 +9718,11 @@ function pushNavState(){
 }
 
 function handleBackButton(){
-  // ✅ إعادة تعبئة سجل التصفح فورًا حتى لا ينفد ويخرج من التطبيق
+  // ✅ إعادة تعبئة سجل التصفح فورًا (عدة حالات وليست واحدة) حتى لا ينفد ويخرج من التطبيق
   if(typeof history!=='undefined'&&history.pushState){
-    history.pushState({tab:S.tab},'',window.location.href);
+    for(let n=0;n<5;n++){
+      history.pushState({tab:S.tab,_c:n},'',window.location.href);
+    }
   }
 
   // ── الأولوية 1: إغلاق نافذة منبثقة مفتوحة (بدل التنقل خلفها) ──
@@ -9816,13 +9818,14 @@ if(typeof cordova!=='undefined'){
   });
 }
 
-// ✅ حجز سجل تصفح احتياطي (حالتين وليس واحدة) لضمان اعتراض زر الرجوع من أول ضغطة دائمًا
+// ✅ حجز سجل تصفح احتياطي كبير (20 حالة) لضمان اعتراض زر الرجوع من أول ضغطة دائمًا،
+// حتى لو استهلكت بعض متصفحات الموبايل عدة إدخالات بصمت دون إطلاق حدث popstate
 // نُشغّلها من عدة نقاط مبكرة: عند تحميل السكربت، عند 'load'، وعند كل بدء فعلي للتطبيق (launchApp)
-// لأن بعض متصفحات الموبايل تُنهي التطبيق مباشرة من أول ضغطة إن لم يجد سجل تصفح كافٍ بالفعل
 function ensureBackButtonCushion(){
   if(typeof history==='undefined'||!history.pushState)return;
-  history.pushState({tab:S.tab,_c:1},'',window.location.href);
-  history.pushState({tab:S.tab,_c:2},'',window.location.href);
+  for(let n=0;n<20;n++){
+    history.pushState({tab:S.tab,_c:n},'',window.location.href);
+  }
 }
 ensureBackButtonCushion();
 window.addEventListener('load',ensureBackButtonCushion);
