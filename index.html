@@ -673,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.66">
+<link rel="manifest" href="manifest.json?v=2.67">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -9739,44 +9739,39 @@ function handleBackButton(){
     return;
   }
 
-  const now=Date.now();
-  const isDoubleTap=now-lastBackPressTime<BACK_PRESS_DELAY;
-  lastBackPressTime=now;
-  
-  if(isDoubleTap){
-    // Double tap - show confirmation dialog
-    showConfirmDialog(t('exit_app'),t('exit_confirmation'),
-      ()=>{doLogout();},
-      ()=>{/* Do nothing */}
-    );
-    lastBackPressTime=0;  // Reset timer
-  } else {
-    // Single tap - go back exactly one step (نفس تسلسل التنقل الداخلي بالضبط، بلا تخطي خطوات)
-    if(isAdmin()){
-      // ADMIN MODE
-      if(S.currentClient&&S.tab!=='client_overview'){
-        // داخل شاشة فرعية لعميل محدد (فواتير/مصروفات/تقارير...) → الرجوع لكروت العميل أولاً، وليس القفز للوحة الرئيسية
-        goBackToOverview();
-      } else if(S.currentClient&&S.tab==='client_overview'){
-        // على شاشة كروت العميل نفسها → الرجوع لقائمة كل العملاء
-        gotoOverview();
-      } else if(S.tab!=='dashboard'){
-        // على شاشة عامة (Settings/Trash/Audit Log...) → الرجوع للوحة الرئيسية
-        setTab('dashboard');
-      } else {
-        // بالفعل على اللوحة الرئيسية → تجهيز للخروج بضغطة مزدوجة
-        toast(t('press_back_again'),null,2000);
-      }
-    } else {
-      // CLIENT MODE
-      if(S.tab!=='dashboard'){
-        // If on different tab, go to dashboard
-        setTab('dashboard');
-      } else {
-        // If already on dashboard, prepare for double-tap exit
-        toast(t('press_back_again'),null,2000);
-      }
+  // ── هل نحن بالفعل على "الجذر" (لا مزيد من خطوات تنقل داخلية متاحة)؟ ──
+  // نحسبها بشكل صريح ومنفصل تمامًا عن منطق التنقل، حتى لا تختلط أبدًا بأي تبويب فرعي
+  const atRoot=isAdmin()?(!S.currentClient&&S.tab==='dashboard'):(S.tab==='dashboard');
+
+  if(atRoot){
+    // على الجذر فقط: منطق الضغطة المزدوجة للخروج (بلا أي نافذة منبثقة - مجرد ضغطة ثانية مباشرة كتأكيد)
+    const now=Date.now();
+    const isDoubleTap=now-lastBackPressTime<BACK_PRESS_DELAY;
+    if(isDoubleTap){
+      lastBackPressTime=0;
+      doLogout();
+    }else{
+      lastBackPressTime=now;
+      toast(t('press_back_again'),null,2000);
     }
+    return;
+  }
+
+  // ── لسنا على الجذر: رجوع خطوة واحدة دائمًا، ونصفّر عداد الضغط المزدوج لأن هذه ليست محاولة خروج ──
+  lastBackPressTime=0;
+  if(isAdmin()){
+    if(S.currentClient&&S.tab!=='client_overview'){
+      // داخل شاشة فرعية لعميل محدد (فواتير/مصروفات/تقارير...) → الرجوع لكروت العميل أولاً
+      goBackToOverview();
+    } else if(S.currentClient&&S.tab==='client_overview'){
+      // على شاشة كروت العميل نفسها → الرجوع لقائمة كل العملاء
+      gotoOverview();
+    } else {
+      // على شاشة عامة (Settings/Trash/Audit Log...) → الرجوع للوحة الرئيسية
+      setTab('dashboard');
+    }
+  } else {
+    setTab('dashboard');
   }
 }
 
