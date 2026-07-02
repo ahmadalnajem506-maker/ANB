@@ -19,6 +19,13 @@ export default {
         return new Response('Unauthorized', { status: 401, headers: corsHeaders });
       }
 
+      // حد استخدام: 30 رفعة كحد أقصى كل 10 دقائق لكل عنوان IP - يمنع إغراق النقطة لو تسرّب المفتاح السري
+      const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+      const allowed = await checkRateLimit(env, clientIp);
+      if (!allowed) {
+        return new Response('Too many uploads - please wait a few minutes and try again', { status: 429, headers: corsHeaders });
+      }
+
       const contentLength = request.headers.get('Content-Length');
       if (contentLength && parseInt(contentLength) > 8 * 1024 * 1024) {
         return new Response('File too large (max 8MB)', { status: 413, headers: corsHeaders });
@@ -72,3 +79,22 @@ export default {
     return new Response('ANB File Worker is running', { status: 200, headers: corsHeaders });
   },
 };
+
+// حد استخدام بسيط عبر KV: يُرجع true إن كان مسموحًا بالطلب، false إن تجاوز الحد
+// نستخدم "نافذة زمنية ثابتة" (كل 10 دقائق فترة مستقلة) بدل نافذة متحركة، لضمان انتهاء الحد فعليًا كل فترة
+async function checkRateLimit(env, ip) {
+  const windowSeconds = 10 * 60; // نافذة 10 دقائق
+  const maxRequests = 30; // 30 رفعة كحد أقصى خلال كل نافذة
+  const currentWindow = Math.floor(Date.now() / (windowSeconds * 1000));
+  const key = `rl:${ip}:${currentWindow}`;
+
+  const stored = await env.RATE_LIMIT_KV.get(key);
+  const count = stored ? parseInt(stored) : 0;
+
+  if (count >= maxRequests) {
+    return false;
+  }
+
+  await env.RATE_LIMIT_KV.put(key, String(count + 1), { expirationTtl: windowSeconds + 60 });
+  return true;
+}
