@@ -673,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.56">
+<link rel="manifest" href="manifest.json?v=2.57">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -5020,6 +5020,21 @@ function dataUrlToBlob(dataUrl){
   for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
   return new Blob([arr],{type:mime});
 }
+// يحذف ملفًا فعليًا من R2 عبر الـWorker (يُستخدم فقط عند الحذف النهائي بعد 30 يومًا في سلة المحذوفات)
+// لا يرمي استثناءً عند الفشل عمدًا - فشل حذف ملف واحد من R2 لا يجب أن يوقف تنظيف بقية البيانات المحلية
+async function deleteFileFromR2(fileUrl){
+  try{
+    const key=fileUrl.split('/file/')[1];
+    if(!key)return false;
+    const res=await fetch(R2_WORKER_URL+'/file/'+key,{
+      method:'DELETE',
+      headers:{'Authorization':'Bearer '+R2_UPLOAD_SECRET},
+    });
+    return res.ok;
+  }catch(e){
+    return false; // انقطاع إنترنت مثلاً - سيُحاول مجددًا في التفريغ التالي بما أن السجل المحلي لم يُحذف بعد في حالة الفشل
+  }
+}
 
 function compressImage(file){
   return new Promise((resolve,reject)=>{
@@ -6171,10 +6186,19 @@ function daysUntilPurge(deletedAt){
   return Math.max(0,remaining);
 }
 // يُشغَّل عند كل بدء تشغيل: يحذف نهائيًا كل ما تجاوز 30 يومًا في السلة
-function purgeOldTrash(){
+async function purgeOldTrash(){
   const cutoff=Date.now()-TRASH_RETENTION_DAYS*864e5;
   const isExpired=x=>x.deleted&&x.deletedAt&&new Date(x.deletedAt).getTime()<cutoff;
   let changed=false;
+
+  // ✅ قبل الحذف المحلي: نحذف الملفات المرتبطة فعليًا من R2 لمنع تراكم ملفات يتيمة بلا أي مرجع في التطبيق
+  if(S.docs){
+    const expiredDocsWithFiles=S.docs.filter(d=>isExpired(d)&&d.url);
+    for(const d of expiredDocsWithFiles){
+      await deleteFileFromR2(d.url);
+    }
+  }
+
   ['clients','invoices','expenses','hours','docs','contacts'].forEach(key=>{
     if(!S[key])return;
     const before=S[key].length;
