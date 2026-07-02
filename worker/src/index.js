@@ -4,7 +4,7 @@ export default {
 
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Allow-Methods': 'POST, GET, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name',
     };
 
@@ -54,6 +54,19 @@ export default {
       headers.set('Content-Disposition', 'inline'); // يعرض الملف مباشرة بدل تنزيله كملف منفصل (مهم لمتصفحات الموبايل)
       headers.set('etag', object.httpEtag);
       return new Response(object.body, { headers });
+    }
+
+    // حذف ملف نهائيًا (يتطلب نفس المفتاح السري - يُستخدم عند تفريغ سلة المحذوفات بعد 30 يومًا)
+    if (request.method === 'DELETE' && url.pathname.startsWith('/file/')) {
+      const auth = request.headers.get('Authorization');
+      if (auth !== `Bearer ${env.UPLOAD_SECRET}`) {
+        return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+      }
+      const key = url.pathname.replace('/file/', '');
+      await env.ANB_FILES.delete(key);
+      return new Response(JSON.stringify({ deleted: true, key }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     return new Response('ANB File Worker is running', { status: 200, headers: corsHeaders });
