@@ -673,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.72">
+<link rel="manifest" href="manifest.json?v=2.74">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -3338,7 +3338,6 @@ function rAdminDocuments(el){
 
 /* ── ADMIN CONTRACTS ── */
 function rAdminContracts(el){
-  const allContracts=S.contracts||[];
   const theme=S.cardTheme||{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'};
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -3346,22 +3345,46 @@ function rAdminContracts(el){
       ← ${t('back_to_overview')||'Back'}
     </button>
   </div>
-  <div class="card">
-    <div class="ch"><span class="ct">📋 ${t('contracts')}</span>
+  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+    <select id="contracts-status-filter" onchange="renderContractsList(this.value)"
+      style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1);cursor:pointer">
+      <option value="">All statuses</option>
+      <option value="active" selected>✅ Active only</option>
+      <option value="draft">📝 Draft only</option>
+      <option value="Renewed">🔁 Renewed only</option>
+    </select>
+  </div>
+  <div id="contracts-list-container"></div>`;
+  renderContractsList('active');
+}
+
+function renderContractsList(statusFilter){
+  const container=document.getElementById('contracts-list-container');
+  if(!container)return;
+  const allContracts=(S.contracts||[]).filter(con=>!statusFilter||con.status===statusFilter);
+  const statusMeta={
+    active:{label:'Active',color:'#2d7a4f',bg:'rgba(45,122,79,0.12)'},
+    draft:{label:'Draft',color:'#8a6410',bg:'rgba(200,144,16,0.12)'},
+    Renewed:{label:'Renewed',color:'#1a4d2e',bg:'rgba(26,77,46,0.12)'}
+  };
+  container.innerHTML=`<div class="card">
+    <div class="ch"><span class="ct">📋 ${t('contracts')} (${allContracts.length})</span>
       <button class="btn btn-p btn-xs" onclick="openNewContractDialog()">➕ ${t('add')}</button>
     </div>
-    ${allContracts.length===0?`<div class="empty">📋 ${t('no_data')}</div>`:
+    ${allContracts.length===0?`<div class="empty">📋 ${statusFilter?(t('no_results')||'No matching contracts'):t('no_data')}</div>`:
     allContracts.map(con=>{
       const client=S.clients.find(c=>c.id===con.cid);
+      const meta=statusMeta[con.status]||{label:con.status||'Draft',color:'#8a6410',bg:'rgba(200,144,16,0.12)'};
       return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
         <div style="display:flex;justify-content:space-between;align-items:start">
           <div style="flex:1">
-            <div style="font-weight:500;font-size:12px;color:var(--t1)">${con.title||'Contract'}</div>
-            <div style="font-size:10px;color:var(--t3);margin-top:2px;font-weight:500">👤 ${client?.name||'Unknown Client'}</div>
-            <div style="font-size:11px;color:var(--t3);margin-top:2px">${con.desc||''}</div>
-            <div style="font-size:10px;color:var(--t3);margin-top:4px">
-              Type: ${con.type||'Standard'} | Status: <span style="color:${con.status==='active'?'var(--green)':'var(--orange)'}">${con.status||'Draft'}</span>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <div style="font-weight:500;font-size:12px;color:var(--t1)">${con.title||'Contract'}</div>
+              <span style="background:${meta.bg};color:${meta.color};font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px">${meta.label}</span>
             </div>
+            <div style="font-size:10px;color:var(--t3);margin-top:4px;font-weight:500">👤 ${client?.name||'Unknown Client'}</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px">${con.desc||''}</div>
+            <div style="font-size:10px;color:var(--t3);margin-top:4px">Type: ${con.type||'Standard'}</div>
             <div style="font-size:10px;color:var(--t3);margin-top:2px">
               From: ${FD(con.startDate||'')} | To: ${FD(con.endDate||'')}
             </div>
@@ -3501,6 +3524,9 @@ function openNewContractDialog(){
     let cid=document.getElementById('contract-client').value;
     if(!cid){toast('❌ Please select a client');markFieldError('contract-client');return;}
 
+    const plan=parseInt(document.getElementById('contract-plan').value||'0')||0;
+    if(!plan){toast('❌ Please select a subscription plan');markFieldError('contract-plan');return;}
+
     if(cid==='__new__'){
       const newName=(document.getElementById('contract-new-name')?.value||'').trim();
       if(!newName){toast('❌ New client name required');markFieldError('contract-new-name');return;}
@@ -3509,7 +3535,7 @@ function openNewContractDialog(){
         name:newName,
         email:(document.getElementById('contract-new-email')?.value||'').trim(),
         type:'B2B',
-        monthlyFee:parseInt(document.getElementById('contract-plan').value||'0')||0,
+        monthlyFee:plan,
         createdDate:TODAY()
       };
       S.clients.push(newClient);
@@ -3521,7 +3547,6 @@ function openNewContractDialog(){
     const title=document.getElementById('contract-title').value;
     if(!title){toast('❌ Contract title required');markFieldError('contract-title');return;}
     const desc=document.getElementById('contract-desc').value;
-    const plan=parseInt(document.getElementById('contract-plan').value||'0')||0;
     const type=document.getElementById('contract-type').value;
     const start=document.getElementById('contract-start').value;
     const end=document.getElementById('contract-end').value;
@@ -3625,6 +3650,7 @@ function openAddContract(cid){
     const title=document.getElementById('contract-title').value;
     const desc=document.getElementById('contract-desc').value;
     const plan=parseInt(document.getElementById('contract-plan').value||'0')||0;
+    if(!plan){toast('❌ Please select a subscription plan');markFieldError('contract-plan');return;}
     const type=document.getElementById('contract-type').value;
     const start=document.getElementById('contract-start').value;
     const end=document.getElementById('contract-end').value;
@@ -7212,6 +7238,8 @@ function openClientModal(c){
 
     // If adding new client, generate contract instead of directly adding
     if(isN){
+      const planVal=parseInt(document.getElementById('cf-fee')?.value)||0;
+      if(!planVal){toast('❌ Please select a subscription plan');markFieldError('cf-fee');return;}
       const clientData={
         tempId:UID(),
         name:n,
