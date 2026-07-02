@@ -1,0 +1,7 @@
+name = "anb-file-worker"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+[[r2_buckets]]
+binding = "ANB_FILES"
+bucket_name = "anb-finadmin-files"
