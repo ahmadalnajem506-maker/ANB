@@ -5,3 +5,7 @@ compatibility_date = "2026-01-01"
 [[r2_buckets]]
 binding = "ANB_FILES"
 bucket_name = "anb-finadmin-files"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "b9391dde5b494f2cbad03f23690a91be"
