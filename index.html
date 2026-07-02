@@ -673,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.57">
+<link rel="manifest" href="manifest.json?v=2.61">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -1396,7 +1396,7 @@ var I18N={
     overview:'Overview', settings_nav:'Settings', add_client:'Add client', sign_out:'Sign out',
     client_workspaces:'Client workspaces', my_account:'My account', administrator:'Administrator',
     viewing_client:'Viewing client',
-    not_synced:'Not synced yet', syncing:'Syncing…', synced:'Synced', sync_error:'Sync error', offline:'Offline', tap_to_retry:'tap to retry', sync_failed_detail:'Sync failed', retrying_sync:'Retrying sync...', two_factor_auth:'Two-Factor Authentication (2FA)', two_factor_hint:'Adds an extra security step at login using an authenticator app (Google Authenticator, Microsoft Authenticator, Authy...)', enabled:'Enabled', not_enabled:'Not enabled', enable_2fa:'Enable 2FA', disable_2fa:'Disable 2FA', confirm_disable_2fa:'Disable two-factor authentication for your account?', twofa_disabled:'Two-factor authentication disabled', twofa_enabled:'Two-factor authentication enabled', generating_qr:'Generating QR code…', scan_qr_hint:'Scan this QR code with Google Authenticator, Microsoft Authenticator, or any TOTP app', or_enter_manually:'Or enter this key manually:', enter_code_confirm:'Enter the 6-digit code from your app to confirm', invalid_code:'Incorrect code — please try again', confirm_enable:'Confirm & Enable', enter_2fa_code:'Enter the 6-digit code from your authenticator app', verify_and_login:'Verify & Sign in', loading_preview:'Loading preview…', pdf_preview_hint:'Preview of page 1', open_full_pdf:'Open full PDF', auto_logout_msg:'Signed out due to inactivity — please sign in again',
+    not_synced:'Not synced yet', syncing:'Syncing…', synced:'Synced', sync_error:'Sync error', offline:'Offline', tap_to_retry:'tap to retry', sync_failed_detail:'Sync failed', retrying_sync:'Retrying sync...', two_factor_auth:'Two-Factor Authentication (2FA)', two_factor_hint:'Adds an extra security step at login using an authenticator app (Google Authenticator, Microsoft Authenticator, Authy...)', enabled:'Enabled', not_enabled:'Not enabled', enable_2fa:'Enable 2FA', disable_2fa:'Disable 2FA', confirm_disable_2fa:'Disable two-factor authentication for your account?', twofa_disabled:'Two-factor authentication disabled', twofa_enabled:'Two-factor authentication enabled', generating_qr:'Generating QR code…', scan_qr_hint:'Scan this QR code with Google Authenticator, Microsoft Authenticator, or any TOTP app', or_enter_manually:'Or enter this key manually:', enter_code_confirm:'Enter the 6-digit code from your app to confirm', invalid_code:'Incorrect code — please try again', confirm_enable:'Confirm & Enable', enter_2fa_code:'Enter the 6-digit code from your authenticator app', verify_and_login:'Verify & Sign in', loading_preview:'Loading preview…', pdf_preview_hint:'Preview of page 1', open_full_pdf:'Open full PDF', auto_logout_msg:'Signed out due to inactivity — please sign in again', security:'Security', card_security_desc:'Password & Two-Factor Login',
     dashboard:'Dashboard', invoices:'Invoices', debtors:'Debtors', expenses:'Expenses', hours:'Hours', back_to_overview:'Back to Overview',
     journal:'Journal', bank:'Bank', reports:'Reports', documents:'Documents', messages:'Messages', client_info:'Client',
     contracts:'Contracts', assets:'Assets',
@@ -1604,7 +1604,7 @@ var I18N={
     overview:'Overzicht', settings_nav:'Instellingen', add_client:'Klant toevoegen', sign_out:'Uitloggen',
     client_workspaces:'Klantdossiers', my_account:'Mijn account', administrator:'Administrator',
     viewing_client:'Klant weergeven',
-    not_synced:'Nog niet gesynchroniseerd', syncing:'Synchroniseren…', synced:'Gesynchroniseerd', sync_error:'Synchronisatiefout', offline:'Offline', tap_to_retry:'tik om opnieuw te proberen', sync_failed_detail:'Synchronisatie mislukt', retrying_sync:'Opnieuw proberen...', two_factor_auth:'Tweefactorauthenticatie (2FA)', two_factor_hint:'Voegt een extra beveiligingsstap toe bij het inloggen via een authenticator-app (Google Authenticator, Microsoft Authenticator, Authy...)', enabled:'Ingeschakeld', not_enabled:'Niet ingeschakeld', enable_2fa:'2FA inschakelen', disable_2fa:'2FA uitschakelen', confirm_disable_2fa:'Tweefactorauthenticatie voor uw account uitschakelen?', twofa_disabled:'Tweefactorauthenticatie uitgeschakeld', twofa_enabled:'Tweefactorauthenticatie ingeschakeld', generating_qr:'QR-code genereren…', scan_qr_hint:'Scan deze QR-code met Google Authenticator, Microsoft Authenticator of een andere TOTP-app', or_enter_manually:'Of voer deze sleutel handmatig in:', enter_code_confirm:'Voer de 6-cijferige code uit uw app in ter bevestiging', invalid_code:'Onjuiste code — probeer opnieuw', confirm_enable:'Bevestigen & inschakelen', enter_2fa_code:'Voer de 6-cijferige code van uw authenticator-app in', verify_and_login:'Verifiëren & inloggen', loading_preview:'Voorbeeld laden…', pdf_preview_hint:'Voorbeeld van pagina 1', open_full_pdf:'Volledige PDF openen', auto_logout_msg:'Uitgelogd wegens inactiviteit — log opnieuw in',
+    not_synced:'Nog niet gesynchroniseerd', syncing:'Synchroniseren…', synced:'Gesynchroniseerd', sync_error:'Synchronisatiefout', offline:'Offline', tap_to_retry:'tik om opnieuw te proberen', sync_failed_detail:'Synchronisatie mislukt', retrying_sync:'Opnieuw proberen...', two_factor_auth:'Tweefactorauthenticatie (2FA)', two_factor_hint:'Voegt een extra beveiligingsstap toe bij het inloggen via een authenticator-app (Google Authenticator, Microsoft Authenticator, Authy...)', enabled:'Ingeschakeld', not_enabled:'Niet ingeschakeld', enable_2fa:'2FA inschakelen', disable_2fa:'2FA uitschakelen', confirm_disable_2fa:'Tweefactorauthenticatie voor uw account uitschakelen?', twofa_disabled:'Tweefactorauthenticatie uitgeschakeld', twofa_enabled:'Tweefactorauthenticatie ingeschakeld', generating_qr:'QR-code genereren…', scan_qr_hint:'Scan deze QR-code met Google Authenticator, Microsoft Authenticator of een andere TOTP-app', or_enter_manually:'Of voer deze sleutel handmatig in:', enter_code_confirm:'Voer de 6-cijferige code uit uw app in ter bevestiging', invalid_code:'Onjuiste code — probeer opnieuw', confirm_enable:'Bevestigen & inschakelen', enter_2fa_code:'Voer de 6-cijferige code van uw authenticator-app in', verify_and_login:'Verifiëren & inloggen', loading_preview:'Voorbeeld laden…', pdf_preview_hint:'Voorbeeld van pagina 1', open_full_pdf:'Volledige PDF openen', auto_logout_msg:'Uitgelogd wegens inactiviteit — log opnieuw in', security:'Beveiliging', card_security_desc:'Wachtwoord & Tweefactorlogin',
     dashboard:'Dashboard', invoices:'Facturen', debtors:'Debiteuren', expenses:'Onkosten', hours:'Uren', back_to_overview:'Terug naar overzicht',
     journal:'Journaal', bank:'Bank', reports:'Rapporten', documents:'Documenten', messages:'Berichten', client_info:'Klant',
     contracts:'Overeenkomsten', assets:'Activa',
@@ -1795,7 +1795,7 @@ var I18N={
     overview:'نظرة عامة', settings_nav:'الإعدادات', add_client:'إضافة عميل', sign_out:'تسجيل الخروج',
     client_workspaces:'ملفات العملاء', my_account:'حسابي', administrator:'مسؤول النظام',
     viewing_client:'عرض العميل',
-    not_synced:'لم تتم المزامنة بعد', syncing:'جارٍ المزامنة…', synced:'تمت المزامنة', sync_error:'خطأ في المزامنة', offline:'غير متصل', tap_to_retry:'اضغط لإعادة المحاولة', sync_failed_detail:'فشلت المزامنة', retrying_sync:'جارٍ إعادة المحاولة...', two_factor_auth:'التحقق بخطوتين (2FA)', two_factor_hint:'يضيف خطوة أمان إضافية عند تسجيل الدخول عبر تطبيق مصادقة (Google Authenticator أو Microsoft Authenticator أو Authy...)', enabled:'مفعّل', not_enabled:'غير مفعّل', enable_2fa:'تفعيل 2FA', disable_2fa:'تعطيل 2FA', confirm_disable_2fa:'تعطيل التحقق بخطوتين لحسابك؟', twofa_disabled:'تم تعطيل التحقق بخطوتين', twofa_enabled:'تم تفعيل التحقق بخطوتين', generating_qr:'جاري إنشاء رمز QR…', scan_qr_hint:'امسح رمز QR هذا عبر تطبيق Google Authenticator أو Microsoft Authenticator أو أي تطبيق TOTP آخر', or_enter_manually:'أو أدخل هذا المفتاح يدويًا:', enter_code_confirm:'أدخل الرمز المكوّن من 6 أرقام من تطبيقك للتأكيد', invalid_code:'رمز غير صحيح — يرجى المحاولة مجددًا', confirm_enable:'تأكيد وتفعيل', enter_2fa_code:'أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة', verify_and_login:'تحقق وتسجيل الدخول', loading_preview:'جاري تحميل المعاينة…', pdf_preview_hint:'معاينة الصفحة الأولى', open_full_pdf:'فتح ملف PDF الكامل', auto_logout_msg:'تم تسجيل الخروج تلقائيًا لعدم النشاط — يرجى تسجيل الدخول مجددًا',
+    not_synced:'لم تتم المزامنة بعد', syncing:'جارٍ المزامنة…', synced:'تمت المزامنة', sync_error:'خطأ في المزامنة', offline:'غير متصل', tap_to_retry:'اضغط لإعادة المحاولة', sync_failed_detail:'فشلت المزامنة', retrying_sync:'جارٍ إعادة المحاولة...', two_factor_auth:'التحقق بخطوتين (2FA)', two_factor_hint:'يضيف خطوة أمان إضافية عند تسجيل الدخول عبر تطبيق مصادقة (Google Authenticator أو Microsoft Authenticator أو Authy...)', enabled:'مفعّل', not_enabled:'غير مفعّل', enable_2fa:'تفعيل 2FA', disable_2fa:'تعطيل 2FA', confirm_disable_2fa:'تعطيل التحقق بخطوتين لحسابك؟', twofa_disabled:'تم تعطيل التحقق بخطوتين', twofa_enabled:'تم تفعيل التحقق بخطوتين', generating_qr:'جاري إنشاء رمز QR…', scan_qr_hint:'امسح رمز QR هذا عبر تطبيق Google Authenticator أو Microsoft Authenticator أو أي تطبيق TOTP آخر', or_enter_manually:'أو أدخل هذا المفتاح يدويًا:', enter_code_confirm:'أدخل الرمز المكوّن من 6 أرقام من تطبيقك للتأكيد', invalid_code:'رمز غير صحيح — يرجى المحاولة مجددًا', confirm_enable:'تأكيد وتفعيل', enter_2fa_code:'أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة', verify_and_login:'تحقق وتسجيل الدخول', loading_preview:'جاري تحميل المعاينة…', pdf_preview_hint:'معاينة الصفحة الأولى', open_full_pdf:'فتح ملف PDF الكامل', auto_logout_msg:'تم تسجيل الخروج تلقائيًا لعدم النشاط — يرجى تسجيل الدخول مجددًا', security:'الأمان', card_security_desc:'كلمة المرور والتحقق بخطوتين',
     dashboard:'لوحة التحكم', invoices:'الفواتير', debtors:'الديون', expenses:'المصاريف', hours:'ساعات العمل', back_to_overview:'العودة إلى القائمة',
     journal:'اليومية', bank:'البنك', reports:'التقارير', documents:'المستندات', messages:'الرسائل', client_info:'العميل',
     contracts:'العقود', assets:'الأصول',
@@ -2710,6 +2710,15 @@ async function doLogin(){
       delete c.pw;delete c.pwCustom;
     }
     clearFailedAttempts(c);
+
+    if(c.totpEnabled){
+      // كلمة المرور صحيحة، لكن الحساب مفعّل عليه 2FA — ننتقل لخطوة إدخال الرمز بدل الدخول المباشر
+      goStep('2fa');
+      showErr('login-err-2fa','');
+      setTimeout(()=>document.getElementById('login-2fa-code')?.focus(),150);
+      return;
+    }
+
     S.role='client';S.currentClient=c.id;S.tab='dashboard';
   }
   launchApp();
@@ -2718,24 +2727,31 @@ async function doLogin(){
 async function doVerify2FA(){
   const code=document.getElementById('login-2fa-code')?.value;
   showErr('login-err-2fa','');
-  const admin=S.admins.find(a=>a.id===authState.adminId);
-  if(!admin){showErr('login-err-2fa','Session expired — please sign in again');goStep(1);return;}
-  if(isLockedOut(admin)){showErr('login-err-2fa','Too many attempts. Try again in '+lockoutRemainingMinutes(admin)+' min.');return;}
+
+  const isAdminFlow=authState.role==='admin';
+  const account=isAdminFlow?S.admins.find(a=>a.id===authState.adminId):S.clients.find(c=>c.id===authState.clientId);
+  if(!account){showErr('login-err-2fa','Session expired — please sign in again');goStep(1);return;}
+  if(isLockedOut(account)){showErr('login-err-2fa','Too many attempts. Try again in '+lockoutRemainingMinutes(account)+' min.');return;}
   if(!code||!/^\d{6}$/.test(code)){showErr('login-err-2fa',t('enter_code_confirm')||'Enter the 6-digit code');return;}
 
-  const valid=await verifyTotpCode(admin.totpSecret,code);
+  const valid=await verifyTotpCode(account.totpSecret,code);
   if(!valid){
-    registerFailedAttempt(admin);
+    registerFailedAttempt(account);
     showErr('login-err-2fa',t('invalid_code')||'Incorrect code — please try again');
     return;
   }
-  clearFailedAttempts(admin);
+  clearFailedAttempts(account);
 
-  S.role='admin';
-  S.currentAdmin=admin.id;
-  S.currentClient=null;
+  if(isAdminFlow){
+    S.role='admin';
+    S.currentAdmin=account.id;
+    S.currentClient=null;
+    account.lastLogin=TODAY();
+  }else{
+    S.role='client';
+    S.currentClient=account.id;
+  }
   S.tab='dashboard';
-  admin.lastLogin=TODAY();
   sv();
   launchApp();
 }
@@ -3144,7 +3160,7 @@ function renderContent(){
     (fn[S.tab]||rClientActionCards)(el,cid);
   } else {
     // Client can see: dashboard, invoices, expenses, hours, documents, messages
-    const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,documents:rDocs,messages:rMessages,debtors:rDebtors,creditors:rCreditors};
+    const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,documents:rDocs,messages:rMessages,debtors:rDebtors,creditors:rCreditors,security:rClientSecurity};
     (fn[S.tab]||rClientDash)(el,S.currentClient);
   }
 }
@@ -3742,6 +3758,10 @@ function rImport(el,cid){
       </button>
       <input type="file" id="bank-csv-${cid}" accept=".csv,.txt,.mt940,.sta,.940" style="display:none" onchange="importBankFile(event,'${cid}')"/>
       
+      <button class="btn btn-p" onclick="exportBackup()" style="margin-top:10px;display:block;width:100%">
+        ${t('btn_download_backup')||'⬇ Download backup (JSON)'}
+      </button>
+      
       <button class="btn btn-p" onclick="document.getElementById('backup-${cid}').click()" style="margin-top:10px;display:block;width:100%">
         📂 Restore from Backup
       </button>
@@ -4124,6 +4144,17 @@ function rClientDash(el,cid){
       text:'#ffffff',
       accent:'#FFD700',
       alerts:unreadMsgs>0?[{icon:'🔔',text:unreadMsgs+' new',color:'#FFD700'}]:[]
+    },
+    {
+      id:'security',
+      icon:'🔒',
+      name:t('security')||'Security',
+      desc:t('card_security_desc')||'Password & Two-Factor Login',
+      bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',
+      border:'#C89010',
+      text:'#0A2218',
+      accent:'#FFD700',
+      alerts:c?.totpEnabled?[{icon:'✅',text:t('enabled')||'2FA on',color:'#FFD700'}]:[]
     }
   ];
   
@@ -4170,6 +4201,28 @@ function rClientDash(el,cid){
   el.innerHTML=html;
 }
 
+function rClientSecurity(el,cid){
+  const c=S.clients.find(x=>x.id===cid);
+  const theme=S.cardTheme||{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'};
+  el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+    <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
+      ← ${t('back_to_overview')||'Back'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${t('security')||'Security'}</span>
+  </div>
+  <div class="card" style="max-width:480px">
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🔒 ${t('two_factor_auth')||'Two-Factor Authentication (2FA)'}</span></div>
+    <div style="padding:16px">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">${t('two_factor_hint')||'Adds an extra security step at login using an authenticator app (Google Authenticator, Microsoft Authenticator, Authy...)'}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px;background:var(--bg2);border:2px solid ${c?.totpEnabled?'#2d7a4f':'var(--bd2)'};border-radius:8px">
+        <span style="font-size:12px;font-weight:600;color:${c?.totpEnabled?'#2d7a4f':'var(--t3)'}">${c?.totpEnabled?'✅ '+(t('enabled')||'Enabled'):'⚪ '+(t('not_enabled')||'Not enabled')}</span>
+        <button class="btn btn-xs ${c?.totpEnabled?'btn-danger':'btn-p'}" onclick="open2FASetupModal()">${c?.totpEnabled?(t('disable_2fa')||'Disable 2FA'):(t('enable_2fa')||'Enable 2FA')}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 /* ═══════════════════════════ CLIENT ACTION CARDS ═══════════════════════════ */
 function selectCard(cardId){
   const adminThemes={
@@ -4193,7 +4246,8 @@ function selectCard(cardId){
     'creditors':{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'hours':{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'documents':{bg:'rgba(42,96,64,0.08)',border:'#2A6040',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
-    'messages':{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'}
+    'messages':{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
+    'security':{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'}
   };
   const cardThemes=isAdmin()?adminThemes:clientThemes;
   
@@ -5042,7 +5096,9 @@ function compressImage(file){
     const reader=new FileReader();
     reader.onload=()=>{
       img.onload=()=>{
-        const MAX=1280;
+        // ✅ رُفعت الدقة والجودة بعد الانتقال لتخزين R2 (لم يعد هناك قيد localStorage الذي فرض ضغطًا قويًا سابقًا)
+        // يحسّن دقة القراءة الضوئية (OCR) ويضمن سجلات واضحة تتوافق مع متطلبات الاحتفاظ المحاسبي الهولندي لمدة 7 سنوات
+        const MAX=2000;
         let w=img.width,h=img.height;
         if(w>MAX||h>MAX){
           if(w>h){h=Math.round(h*(MAX/w));w=MAX;}else{w=Math.round(w*(MAX/h));h=MAX;}
@@ -5050,7 +5106,7 @@ function compressImage(file){
         const canvas=document.createElement('canvas');
         canvas.width=w;canvas.height=h;
         canvas.getContext('2d').drawImage(img,0,0,w,h);
-        const dataUrl=canvas.toDataURL('image/jpeg',0.65);
+        const dataUrl=canvas.toDataURL('image/jpeg',0.85);
         resolve(dataUrl);
       };
       img.onerror=reject;
@@ -5186,6 +5242,22 @@ function preprocessImageForOCR(dataUrl){
   });
 }
 
+// محرك Tesseract يبقى حيًا طوال الجلسة ويُعاد استخدامه لكل عمليات المسح - يوفر وقت التهيئة الكامل في كل مسح متتالٍ
+let _tesseractWorker=null;
+let _tesseractWorkerReady=null; // Promise يضمن عدم إنشاء أكثر من Worker واحد عند نداءات متزامنة
+async function getTesseractWorker(){
+  if(_tesseractWorker)return _tesseractWorker;
+  if(_tesseractWorkerReady)return _tesseractWorkerReady; // عملية تهيئة جارية بالفعل - ننتظرها بدل بدء واحدة موازية
+  _tesseractWorkerReady=(async()=>{
+    const worker=await Tesseract.createWorker('eng+nld');
+    // PSM 6 = "كتلة نص موحّدة" - الأنسب لفواتير/إيصالات ذات أسطر وأعمدة منظمة
+    await worker.setParameters({tessedit_pageseg_mode:'6'});
+    _tesseractWorker=worker;
+    return worker;
+  })();
+  return _tesseractWorkerReady;
+}
+
 async function ocrReceiptImage(dataUrl){
   await ensureTesseract();
   if(typeof Tesseract==='undefined'){
@@ -5197,16 +5269,9 @@ async function ocrReceiptImage(dataUrl){
   }catch(e){
     // فشلت المعالجة المسبقة (نادر) - نكمل بالصورة الأصلية بدل التوقف كليًا
   }
-  // نستخدم واجهة Worker الصريحة (بدل الاختصار) لضمان تطبيق PSM 6 فعليًا
-  // PSM 6 = "كتلة نص موحّدة" - الأنسب لفواتير/إيصالات ذات أسطر وأعمدة منظمة
-  const worker=await Tesseract.createWorker('eng+nld');
-  try{
-    await worker.setParameters({tessedit_pageseg_mode:'6'});
-    const {data:{text}}=await worker.recognize(processedUrl);
-    return parseReceiptText(text);
-  }finally{
-    await worker.terminate();
-  }
+  const worker=await getTesseractWorker();
+  const {data:{text}}=await worker.recognize(processedUrl);
+  return parseReceiptText(text);
 }
 
 async function pdfFirstPageToDataURL(file){
@@ -5974,14 +6039,16 @@ function delAdmin(adminId){
 
 // ══════════ نافذة إعداد/تعطيل التحقق بخطوتين (2FA) ══════════
 async function open2FASetupModal(){
-  const admin=S.admins.find(a=>a.id===S.currentAdmin);
-  if(!admin)return;
+  const isAdminRole=isAdmin();
+  const account=isAdminRole?S.admins.find(a=>a.id===S.currentAdmin):S.clients.find(c=>c.id===S.currentClient);
+  if(!account)return;
+  const accountLabel=account.name||account.email;
 
-  if(admin.totpEnabled){
+  if(account.totpEnabled){
     if(!confirm(t('confirm_disable_2fa')||'Disable two-factor authentication for your account?'))return;
-    delete admin.totpSecret;
-    admin.totpEnabled=false;
-    logAudit('security','account','Disabled 2FA for admin: '+admin.name);
+    delete account.totpSecret;
+    account.totpEnabled=false;
+    logAudit('security','account','Disabled 2FA for '+(isAdminRole?'admin':'client')+': '+accountLabel,isAdminRole?null:account.id);
     sv();renderContent();
     toast('✓ '+(t('twofa_disabled')||'Two-factor authentication disabled'));
     return;
@@ -5992,7 +6059,7 @@ async function open2FASetupModal(){
   const secret=generateTotpSecret();
   try{
     await ensureQRCode();
-    const uri=totpAuthUri(secret,admin.email||admin.name);
+    const uri=totpAuthUri(secret,account.email||accountLabel);
     const canvas=document.createElement('canvas');
     await QRCode.toCanvas(canvas,uri,{width:220,margin:1});
     qrDataUrl=canvas.toDataURL('image/png');
@@ -6026,10 +6093,10 @@ async function open2FASetupModal(){
       markFieldError('totp-confirm-code');
       return; // النافذة تبقى مفتوحة لإعادة المحاولة
     }
-    admin.totpSecret=window._pending2FASecret;
-    admin.totpEnabled=true;
+    account.totpSecret=window._pending2FASecret;
+    account.totpEnabled=true;
     delete window._pending2FASecret;
-    logAudit('security','account','Enabled 2FA for admin: '+admin.name);
+    logAudit('security','account','Enabled 2FA for '+(isAdminRole?'admin':'client')+': '+accountLabel,isAdminRole?null:account.id);
     sv();
     closeModal();
     renderContent();
