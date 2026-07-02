@@ -673,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.55">
+<link rel="manifest" href="manifest.json?v=2.56">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -5058,7 +5058,7 @@ function readAsDataURL(file){
 /* ── OCR: قراءة بيانات الفاتورة تلقائيًا من الصورة ── */
 function parseReceiptText(text){
   const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
-  const out={amount:null,date:null,supplier:null};
+  const out={amount:null,date:null,supplier:null,invoiceNumber:null,iban:null,kvk:null,btwNumber:null};
 
   // المورد: أول سطر يحتوي أحرفًا فعلية (غالبًا اسم المتجر أعلى الفاتورة)
   for(const line of lines){
@@ -5070,7 +5070,7 @@ function parseReceiptText(text){
 
   // المبلغ: نبحث عن كلمات مفتاحية (Totaal/Total/Bedrag...) وإلا نأخذ أكبر رقم مالي بالفاتورة
   const numRe=/(\d{1,4}(?:[.,]\d{2}))(?!\d)/g;
-  const kwRe=/(totaal|total|te betalen|amount due|bedrag|grand ?total|eindtotaal|som|subtotal)/i;
+  const kwRe=/(totaal|total|te betalen|amount due|bedrag|grand ?total|eindtotaal|som|subtotal|verschuldigd|totaalbedrag|te voldoen)/i;
   let best=null,bestKw=false;
   for(const line of lines){
     const isKw=kwRe.test(line);
@@ -5100,7 +5100,75 @@ function parseReceiptText(text){
       break;
     }
   }
+
+  // رقم الفاتورة: يبحث عن سطر يحتوي كلمة "Factuurnummer"/"Invoice #"/"Invoice number" ويستخرج الرمز المجاور
+  const invNumRe=/(factuurnummer|factuur\s*nr\.?|invoice\s*(?:number|no\.?|#)|invoice-?nr)[\s:.]*([A-Z0-9][A-Z0-9.\-\/]{2,20})/i;
+  for(const line of lines){
+    const m=line.match(invNumRe);
+    if(m){out.invoiceNumber=m[2].trim();break;}
+  }
+
+  // IBAN: صيغة قياسية دولية (حرفان دولة + رقمان تحقق + حتى 30 حرف/رقم)
+  const ibanRe=/\b([A-Z]{2}\d{2}[A-Z0-9]{10,30})\b/;
+  for(const line of lines){
+    const clean=line.replace(/\s+/g,'');
+    const m=clean.match(ibanRe);
+    if(m){out.iban=m[1];break;}
+  }
+
+  // رقم KvK الهولندي (8 أرقام، غالبًا مسبوق بكلمة KvK)
+  const kvkRe=/kvk[\s:.]*?(\d{8})/i;
+  for(const line of lines){
+    const m=line.match(kvkRe);
+    if(m){out.kvk=m[1];break;}
+  }
+
+  // رقم ضريبة القيمة المضافة الهولندي (صيغة NLxxxxxxxxxBxx)
+  const btwRe=/\b(NL\d{9}B\d{2})\b/i;
+  for(const line of lines){
+    const clean=line.replace(/\s+/g,'').toUpperCase();
+    const m=clean.match(btwRe);
+    if(m){out.btwNumber=m[1];break;}
+  }
+
   return out;
+}
+
+// معالجة مسبقة للصورة قبل القراءة الضوئية: تدرج رمادي + رفع تباين + تحويل ثنائي (Binarization)
+// يرفع دقة Tesseract بشكل ملحوظ على الفواتير المطبوعة، بلا أي تكلفة أو مكتبة إضافية
+function preprocessImageForOCR(dataUrl){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      canvas.width=img.width;canvas.height=img.height;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0);
+      const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+      const px=imgData.data;
+
+      // تدرج رمادي (متوسط مرجّح حسب حساسية العين البشرية)
+      const gray=new Uint8ClampedArray(px.length/4);
+      for(let i=0,j=0;i<px.length;i+=4,j++){
+        gray[j]=0.299*px[i]+0.587*px[i+1]+0.114*px[i+2];
+      }
+
+      // حساب عتبة تلقائية (متوسط بسيط - كافٍ وسريع لفواتير بخلفية بيضاء نظيفة)
+      let sum=0;
+      for(let j=0;j<gray.length;j++)sum+=gray[j];
+      const threshold=(sum/gray.length)*0.92; // ميل خفيف نحو الأسود لإبراز النص الرفيع
+
+      // تحويل ثنائي: أبيض/أسود صرف - يفصل النص عن الخلفية بوضوح للمحرك
+      for(let i=0,j=0;i<px.length;i+=4,j++){
+        const v=gray[j]>threshold?255:0;
+        px[i]=px[i+1]=px[i+2]=v;
+      }
+      ctx.putImageData(imgData,0,0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror=reject;
+    img.src=dataUrl;
+  });
 }
 
 async function ocrReceiptImage(dataUrl){
@@ -5108,8 +5176,22 @@ async function ocrReceiptImage(dataUrl){
   if(typeof Tesseract==='undefined'){
     throw new Error('OCR engine could not be loaded (check internet connection)');
   }
-  const {data:{text}}=await Tesseract.recognize(dataUrl,'eng+nld');
-  return parseReceiptText(text);
+  let processedUrl=dataUrl;
+  try{
+    processedUrl=await preprocessImageForOCR(dataUrl);
+  }catch(e){
+    // فشلت المعالجة المسبقة (نادر) - نكمل بالصورة الأصلية بدل التوقف كليًا
+  }
+  // نستخدم واجهة Worker الصريحة (بدل الاختصار) لضمان تطبيق PSM 6 فعليًا
+  // PSM 6 = "كتلة نص موحّدة" - الأنسب لفواتير/إيصالات ذات أسطر وأعمدة منظمة
+  const worker=await Tesseract.createWorker('eng+nld');
+  try{
+    await worker.setParameters({tessedit_pageseg_mode:'6'});
+    const {data:{text}}=await worker.recognize(processedUrl);
+    return parseReceiptText(text);
+  }finally{
+    await worker.terminate();
+  }
 }
 
 async function pdfFirstPageToDataURL(file){
@@ -7304,7 +7386,7 @@ function openNewExpense(){
             if(extracted.date)document.getElementById('ex-d').value=extracted.date;
             if(extracted.supplier)document.getElementById('ex-s').value=extracted.supplier;
             if(extracted.amount!=null)document.getElementById('ex-a').value=extracted.amount;
-            if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=extracted.supplier||('Receipt '+TODAY());
+            if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=(extracted.supplier||'Receipt '+TODAY())+(extracted.invoiceNumber?' — #'+extracted.invoiceNumber:'');
             toast('🔍 Data extracted automatically — please review before saving');
           }catch(ocrErr){
             switchMode('manual');
@@ -7322,7 +7404,7 @@ function openNewExpense(){
             if(extracted.date)document.getElementById('ex-d').value=extracted.date;
             if(extracted.supplier)document.getElementById('ex-s').value=extracted.supplier;
             if(extracted.amount!=null)document.getElementById('ex-a').value=extracted.amount;
-            if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=extracted.supplier||('Receipt '+TODAY());
+            if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=(extracted.supplier||'Receipt '+TODAY())+(extracted.invoiceNumber?' — #'+extracted.invoiceNumber:'');
             toast('🔍 Data extracted automatically — please review before saving');
           }catch(ocrErr){
             switchMode('manual');
@@ -7371,7 +7453,7 @@ function openNewExpense(){
           if(extracted.date)document.getElementById('ex-d').value=extracted.date;
           if(extracted.supplier)document.getElementById('ex-s').value=extracted.supplier;
           if(extracted.amount!=null)document.getElementById('ex-a').value=extracted.amount;
-          if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=extracted.supplier||('Receipt '+TODAY());
+          if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=(extracted.supplier||'Receipt '+TODAY())+(extracted.invoiceNumber?' — #'+extracted.invoiceNumber:'');
           toast('🔍 Data extracted automatically — please review before saving');
         }catch(ocrErr){
           switchMode('manual');
