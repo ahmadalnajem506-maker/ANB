@@ -673,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.64">
+<link rel="manifest" href="manifest.json?v=2.65">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -2880,6 +2880,9 @@ function launchApp(){
   // ✅ الفتح يكون دائمًا على الداشبورد - سواء تسجيل دخول جديد أو استئناف جلسة قائمة مسبقًا
   S.tab='dashboard';
   if(isAdmin())S.currentClient=null;
+
+  // ✅ تجديد حاجز سجل التصفح هنا أيضًا - أهم نقطة فعلية لضمان عمل زر الرجوع من أول لحظة استخدام حقيقي
+  if(typeof ensureBackButtonCushion==='function')ensureBackButtonCushion();
 
   document.getElementById('login-page').style.display='none';
   document.getElementById('app').style.display='flex';
@@ -9813,12 +9816,16 @@ if(typeof cordova!=='undefined'){
   });
 }
 
-// Push initial state
-window.addEventListener('load',()=>{
-  if(typeof history!=='undefined'&&history.pushState){
-    history.pushState({tab:S.tab},'',window.location.href);
-  }
-});
+// ✅ حجز سجل تصفح احتياطي (حالتين وليس واحدة) لضمان اعتراض زر الرجوع من أول ضغطة دائمًا
+// نُشغّلها من عدة نقاط مبكرة: عند تحميل السكربت، عند 'load'، وعند كل بدء فعلي للتطبيق (launchApp)
+// لأن بعض متصفحات الموبايل تُنهي التطبيق مباشرة من أول ضغطة إن لم يجد سجل تصفح كافٍ بالفعل
+function ensureBackButtonCushion(){
+  if(typeof history==='undefined'||!history.pushState)return;
+  history.pushState({tab:S.tab,_c:1},'',window.location.href);
+  history.pushState({tab:S.tab,_c:2},'',window.location.href);
+}
+ensureBackButtonCushion();
+window.addEventListener('load',ensureBackButtonCushion);
 
 </script>
 
