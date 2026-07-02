@@ -673,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.67">
+<link rel="manifest" href="manifest.json?v=2.70">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -3156,6 +3156,7 @@ function renderContent(){
       if(S.tab==='reports'){rAdminReports(el);return;}
       if(S.tab==='messages'){rAdminMessages(el);return;}
       if(S.tab==='documents'){rAdminDocuments(el);return;}
+      if(S.tab==='contracts_stat'){rAdminContracts(el);return;}
       rAdminDash(el);return;
     }
     // Admin manages client's content: dashboard (client dash), invoices, expenses, etc.
@@ -3173,10 +3174,17 @@ function rAdminReports(el){
   const reportType=S.reportType||'invoices';
   const allInvoices=S.invoices||[];
   const allHours=S.hours||[];
+  const theme=S.cardTheme||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
+  const backBtnHtml=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+      <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
+        ← ${t('back_to_overview')||'Back'}
+      </button>
+    </div>`;
   
   if(reportType==='invoices'){
     const invoices=allInvoices.filter(i=>['Openstaand','Verzonden','Verlopen'].includes(i.status));
-    el.innerHTML=`
+    el.innerHTML=backBtnHtml+`
     <div class="card">
       <div class="ch"><span class="ct">📄 ${t('tab_invoices')}</span></div>
       ${invoices.length===0?`<div class="empty">📄 ${t('no_data')}</div>`:
@@ -3202,7 +3210,7 @@ function rAdminReports(el){
     </div>`;
   } else if(reportType==='overdue'){
     const overdue=allInvoices.filter(i=>i.status==='Verlopen');
-    el.innerHTML=`
+    el.innerHTML=backBtnHtml+`
     <div class="card">
       <div class="ch"><span class="ct">⚠️ Overdue Invoices</span></div>
       ${overdue.length===0?`<div class="empty">✅ No overdue invoices</div>`:
@@ -3228,7 +3236,7 @@ function rAdminReports(el){
   } else if(reportType==='hours'){
     const hours=allHours;
     const total=hours.reduce((s,h)=>s+h.hrs,0);
-    el.innerHTML=`
+    el.innerHTML=backBtnHtml+`
     <div class="card">
       <div class="ch"><span class="ct">🕐 Hours Logged</span></div>
       <div style="padding:12px 14px;margin-bottom:12px;background:var(--bg1);border-radius:var(--r)">
@@ -3262,7 +3270,13 @@ function rAdminReports(el){
 /* ── ADMIN MESSAGES ── */
 function rAdminMessages(el){
   const allMessages=(S.messages||[]).filter(m=>!m.deleted);
+  const theme=S.cardTheme||{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'};
   el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+    <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
+      ← ${t('back_to_overview')||'Back'}
+    </button>
+  </div>
   <div class="card">
     <div class="ch"><span class="ct">💬 All Messages</span></div>
     ${allMessages.length===0?`<div class="empty">💬 ${t('no_data')}</div>`:
@@ -3290,7 +3304,13 @@ function rAdminMessages(el){
 function rAdminDocuments(el){
   const allDocs=(S.docs||[]).filter(d=>!d.deleted);
   const newDocs=allDocs.filter(d=>d.isNew);
+  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+    <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
+      ← ${t('back_to_overview')||'Back'}
+    </button>
+  </div>
   <div class="card">
     <div class="ch"><span class="ct">📁 ${t('documents')}</span>
       ${newDocs.length>0?`<span style="background:var(--orange);color:white;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:8px">${newDocs.length} New</span>`:''}
@@ -3319,7 +3339,13 @@ function rAdminDocuments(el){
 /* ── ADMIN CONTRACTS ── */
 function rAdminContracts(el){
   const allContracts=S.contracts||[];
+  const theme=S.cardTheme||{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'};
   el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+    <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
+      ← ${t('back_to_overview')||'Back'}
+    </button>
+  </div>
   <div class="card">
     <div class="ch"><span class="ct">📋 ${t('contracts')}</span>
       <button class="btn btn-p btn-xs" onclick="openNewContractDialog()">➕ ${t('add')}</button>
@@ -3814,7 +3840,13 @@ function saveAsset(cid){
 
 /* ── BACK TO CLIENTS BUTTON IN SIDEBAR ── */
 function rClientsLis(el){
+  const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+    <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
+      ← ${t('back_to_overview')||'Back'}
+    </button>
+  </div>
   <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
     <input type="text" id="client-search" placeholder="${t('search')} ${t('clients_list')}..." 
       style="flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1)"
@@ -4038,7 +4070,11 @@ function goToAdminStat(type){
       S.reportType='hours';
       break;
     case 'contracts':
-      rAdminContracts(document.getElementById('content'));
+      S.tab='contracts_stat';
+      break;
+    case 'agreements':
+      // اتفاقيات الخدمة المعلّقة تُعرض كنافذة منبثقة (وليست شاشة كاملة) عبر دالة جاهزة مسبقًا
+      viewPendingAgreements();
       return;
   }
   renderApp();
