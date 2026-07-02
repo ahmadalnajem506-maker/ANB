@@ -12,15 +12,7 @@
 <title>ANB Financial Services</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!-- Tabler icons replaced with inline symbols -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>
-  if(typeof pdfjsLib!=='undefined'){
-    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  }
-</script>
+<!-- jsPDF, XLSX, Tesseract.js, pdf.js are now lazy-loaded on demand (see loadScript/ensureXxx helpers) to speed up initial page load -->
 <style>
 :root{
   --g1:#0A2218;--g2:#0F3025;--g3:#1A4A2A;--g4:#2A6040;
@@ -499,6 +491,13 @@ tr:hover td{background:var(--gr1)}
 .notif.show{transform:translateY(0);opacity:1}
 .notif.notif-warning{background:#7A4A00;color:#FFE66D;border-left:4px solid #FFB700}
 .notif.notif-error{background:#C89010;color:#0A2218;font-weight:600;border-left:4px solid #0A2218}
+.loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,34,24,0.55);z-index:10000;
+  display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.loading-overlay.show{display:flex}
+.loading-spinner{width:44px;height:44px;border:4px solid rgba(255,215,0,0.25);border-top-color:#FFD700;
+  border-radius:50%;animation:loading-spin 0.8s linear infinite}
+@keyframes loading-spin{to{transform:rotate(360deg)}}
+.loading-msg{color:#FDF8EC;font-size:13px;font-weight:600;background:rgba(10,34,24,0.6);padding:6px 14px;border-radius:6px}
 
 /* ═══ SETTINGS ═══ */
 .settings-section{background:var(--white);border:1px solid var(--gr2);border-radius:var(--r);
@@ -674,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.33">
+<link rel="manifest" href="manifest.json?v=2.49">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -804,6 +803,28 @@ var S = {lang:'en', role:null, clients:[]};
       <button class="login-btn" onclick="doLogin()" data-i18n="sign_in_btn" style="width:100%;padding:12px 20px;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);color:#0A2218;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.35s;box-shadow:0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2);text-transform:uppercase;letter-spacing:0.4px;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 36px rgba(200,144,16,0.5),0 0 30px rgba(200,144,16,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2)'">
         <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:translateX(-100%);animation:shine 3s infinite"></div>
         <span style="position:relative;z-index:1">Sign in</span>
+      </button>
+    </div>
+
+    <!-- STEP 2FA: Two-Factor Code -->
+    <div class="auth-step" id="step-2fa" style="animation:fadeInUp 0.8s ease-out 0.15s both">
+      <button style="background:none;border:none;color:#C89010;cursor:pointer;font-weight:700;margin-bottom:24px;font-size:12px;transition:all 0.3s;padding:0" onclick="goStep(2)" onmouseover="this.style.color='#D4A520';this.style.transform='translateX(-4px)'" onmouseout="this.style.color='#C89010';this.style.transform='translateX(0)'">← Back</button>
+
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="font-size:40px;margin-bottom:8px">🔒</div>
+        <h1 style="font-size:30px;font-weight:800;color:#C89010;margin:0 0 8px 0;letter-spacing:-0.3px;line-height:1.2;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text" data-i18n="two_factor_auth">Two-Factor Authentication</h1>
+        <p style="color:rgba(255,255,255,0.6);font-size:13px;margin:0" data-i18n="enter_2fa_code">Enter the 6-digit code from your authenticator app</p>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <input type="text" id="login-2fa-code" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" style="width:100%;padding:14px;border:2px solid #C89010;border-radius:10px;font-size:26px;text-align:center;letter-spacing:10px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:700;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')doVerify2FA()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
+      </div>
+
+      <div id="login-err-2fa" style="background:rgba(184,134,11,0.12);color:#B8860B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #B8860B;font-weight:600;box-shadow:0 4px 12px rgba(184,134,11,0.15)"></div>
+
+      <button class="login-btn" onclick="doVerify2FA()" data-i18n="verify_and_login" style="width:100%;padding:12px 20px;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);color:#0A2218;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.35s;box-shadow:0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2);text-transform:uppercase;letter-spacing:0.4px;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 36px rgba(200,144,16,0.5),0 0 30px rgba(200,144,16,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(200,144,16,0.4),0 0 20px rgba(200,144,16,0.2)'">
+        <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:translateX(-100%);animation:shine 3s infinite"></div>
+        <span style="position:relative;z-index:1">Verify & Sign in</span>
       </button>
     </div>
 
@@ -1323,12 +1344,13 @@ html { scroll-behavior: smooth; }
 
 <!-- NOTIFICATION -->
 <div class="notif" id="notif"></div>
+<div class="loading-overlay" id="loading-overlay"><div class="loading-spinner"></div><div class="loading-msg" id="loading-msg"></div></div>
 
 <script>
 /* ═══════════════════════════ DATA ═══════════════════════════ */
 const COLORS=['#1B5E35','#1B5E35','#C89010','#D4A520','#4da876','#2d7a4f','#B8860B','#1B5E35'];
-const FMT=n=>'€'+(+(n||0)).toFixed(2);
-const FMTi=n=>'€'+Math.round(n||0).toLocaleString('nl-NL');
+const FMT=n=>'€'+(+(n||0)).toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});
+const FMTi=FMT; // موحّدة الآن مع FMT لتفادي ظهور نفس المبلغ بشكلين مختلفين في التطبيق
 const TODAY=()=>new Date().toISOString().slice(0,10);
 
 // getLang must be defined before S so lang:getLang() works on init
@@ -1374,7 +1396,7 @@ var I18N={
     overview:'Overview', settings_nav:'Settings', add_client:'Add client', sign_out:'Sign out',
     client_workspaces:'Client workspaces', my_account:'My account', administrator:'Administrator',
     viewing_client:'Viewing client',
-    not_synced:'Not synced yet', syncing:'Syncing…', synced:'Synced', sync_error:'Sync error', offline:'Offline',
+    not_synced:'Not synced yet', syncing:'Syncing…', synced:'Synced', sync_error:'Sync error', offline:'Offline', tap_to_retry:'tap to retry', sync_failed_detail:'Sync failed', retrying_sync:'Retrying sync...', two_factor_auth:'Two-Factor Authentication (2FA)', two_factor_hint:'Adds an extra security step at login using an authenticator app (Google Authenticator, Microsoft Authenticator, Authy...)', enabled:'Enabled', not_enabled:'Not enabled', enable_2fa:'Enable 2FA', disable_2fa:'Disable 2FA', confirm_disable_2fa:'Disable two-factor authentication for your account?', twofa_disabled:'Two-factor authentication disabled', twofa_enabled:'Two-factor authentication enabled', generating_qr:'Generating QR code…', scan_qr_hint:'Scan this QR code with Google Authenticator, Microsoft Authenticator, or any TOTP app', or_enter_manually:'Or enter this key manually:', enter_code_confirm:'Enter the 6-digit code from your app to confirm', invalid_code:'Incorrect code — please try again', confirm_enable:'Confirm & Enable', enter_2fa_code:'Enter the 6-digit code from your authenticator app', verify_and_login:'Verify & Sign in',
     dashboard:'Dashboard', invoices:'Invoices', debtors:'Debtors', expenses:'Expenses', hours:'Hours', back_to_overview:'Back to Overview',
     journal:'Journal', bank:'Bank', reports:'Reports', documents:'Documents', messages:'Messages', client_info:'Client',
     contracts:'Contracts', assets:'Assets',
@@ -1384,7 +1406,7 @@ var I18N={
     // Tab labels
     tab_invoices:'Invoices', tab_debtors:'Debtors',
     tab_expenses:'Expenses', tab_hours:'Hours',
-    card_invoices_title:'Invoices - Cash In', card_expenses_title:'Expenses - Cash Out', lbl_customer:'Customer', just_now:'just now', search:'Search', no_results:'No matching results',
+    card_invoices_title:'Invoices - Cash In', card_expenses_title:'Expenses - Cash Out', lbl_customer:'Customer', just_now:'just now', search:'Search', no_results:'No matching results', generating_pdf:'Generating PDF…', generating_excel:'Generating Excel…', reading_receipt:'Reading receipt…', deleted_to_trash:'Moved to Trash — restorable for 30 days', no_subscription:'No subscription', expired:'Expired', subscription_information:'Subscription', plan:'Plan', subscription_end:'Subscription end date', subscription_end_hint:'Leave empty for an ongoing subscription with no fixed end date', audit_log_title:'Audit Log', audit_log_hint:'Tracks who did what, and when', audit_log_empty:'No activity recorded yet', all_actions:'All actions', audit_create:'Created', audit_edit:'Edited', audit_delete:'Deleted', audit_restore:'Restored', audit_plan_change:'Plan changed', audit_password_change:'Password changed', audit_login_failed:'Failed login', audit_login_locked:'Account locked', audit_actor:'Who', audit_action:'Action', trash_title:'Trash', trash_hint:'Deleted items are kept for 30 days, then permanently removed', trash_empty:'Trash is empty', trash_days_left:'Days left', trash_days:'days', trash_restore:'Restore', trash_restored:'Restored', actions:'Actions',
     tab_journal:'Journal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Reports', tab_documents:'Documents', tab_contacts:'Contacts', tab_messages:'Messages', tab_client:'Client',
     // Card descriptions
@@ -1395,7 +1417,7 @@ var I18N={
     card_hours_desc:'Log & Track Hours Worked',
     card_reports_desc:'View Financial Reports',
     card_messages_desc:'Communicate With Client',
-    card_contracts_desc:'Manage Service Agreements',
+    card_contracts_desc:'Manage Service Agreements', card_debtors_title:'Debtors', card_debtors_desc:'Manage Customer Accounts', card_creditors_title:'Creditors', card_creditors_desc:'Manage Supplier Accounts', rep_summary_title:'Financial Summary', rep_summary_desc:'Revenue, Expenses & Profit Overview', rep_pl_title:'P&L Statement', rep_pl_desc:'Detailed Profit & Loss Report', rep_btw_title:'BTW/VAT Return', rep_btw_desc:'Tax Return Information', rep_debtors_title:'Debtors Aging', rep_debtors_desc:'Outstanding Invoices Report', rep_expenses_title:'Expenses Report', rep_expenses_desc:'Detailed Expense Breakdown', rep_cashflow_title:'Cash Flow', rep_cashflow_desc:'Cash In & Out Analysis', documents_title:'Documents',
     card_edit_client:'Edit Client',
     card_edit_client_desc:'Update Client Details & Settings',
     // Dashboard admin cards
@@ -1582,13 +1604,13 @@ var I18N={
     overview:'Overzicht', settings_nav:'Instellingen', add_client:'Klant toevoegen', sign_out:'Uitloggen',
     client_workspaces:'Klantdossiers', my_account:'Mijn account', administrator:'Administrator',
     viewing_client:'Klant weergeven',
-    not_synced:'Nog niet gesynchroniseerd', syncing:'Synchroniseren…', synced:'Gesynchroniseerd', sync_error:'Synchronisatiefout', offline:'Offline',
+    not_synced:'Nog niet gesynchroniseerd', syncing:'Synchroniseren…', synced:'Gesynchroniseerd', sync_error:'Synchronisatiefout', offline:'Offline', tap_to_retry:'tik om opnieuw te proberen', sync_failed_detail:'Synchronisatie mislukt', retrying_sync:'Opnieuw proberen...', two_factor_auth:'Tweefactorauthenticatie (2FA)', two_factor_hint:'Voegt een extra beveiligingsstap toe bij het inloggen via een authenticator-app (Google Authenticator, Microsoft Authenticator, Authy...)', enabled:'Ingeschakeld', not_enabled:'Niet ingeschakeld', enable_2fa:'2FA inschakelen', disable_2fa:'2FA uitschakelen', confirm_disable_2fa:'Tweefactorauthenticatie voor uw account uitschakelen?', twofa_disabled:'Tweefactorauthenticatie uitgeschakeld', twofa_enabled:'Tweefactorauthenticatie ingeschakeld', generating_qr:'QR-code genereren…', scan_qr_hint:'Scan deze QR-code met Google Authenticator, Microsoft Authenticator of een andere TOTP-app', or_enter_manually:'Of voer deze sleutel handmatig in:', enter_code_confirm:'Voer de 6-cijferige code uit uw app in ter bevestiging', invalid_code:'Onjuiste code — probeer opnieuw', confirm_enable:'Bevestigen & inschakelen', enter_2fa_code:'Voer de 6-cijferige code van uw authenticator-app in', verify_and_login:'Verifiëren & inloggen',
     dashboard:'Dashboard', invoices:'Facturen', debtors:'Debiteuren', expenses:'Onkosten', hours:'Uren', back_to_overview:'Terug naar overzicht',
     journal:'Journaal', bank:'Bank', reports:'Rapporten', documents:'Documenten', messages:'Berichten', client_info:'Klant',
     contracts:'Overeenkomsten', assets:'Activa',
     tab_invoices:'Facturen', tab_debtors:'Debiteuren',
     tab_expenses:'Onkosten', tab_hours:'Uren',
-    card_invoices_title:'Facturen - Geld in', card_expenses_title:'Onkosten - Geld uit', lbl_customer:'Klant', just_now:'zojuist', search:'Zoeken', no_results:'Geen resultaten gevonden',
+    card_invoices_title:'Facturen - Geld in', card_expenses_title:'Onkosten - Geld uit', lbl_customer:'Klant', just_now:'zojuist', search:'Zoeken', no_results:'Geen resultaten gevonden', generating_pdf:'PDF genereren…', generating_excel:'Excel genereren…', reading_receipt:'Bon lezen…', deleted_to_trash:'Verplaatst naar Prullenbak — 30 dagen herstelbaar', no_subscription:'Geen abonnement', expired:'Verlopen', subscription_information:'Abonnement', plan:'Pakket', subscription_end:'Einddatum abonnement', subscription_end_hint:'Laat leeg voor een doorlopend abonnement zonder vaste einddatum', audit_log_title:'Auditlogboek', audit_log_hint:'Volgt wie wat deed, en wanneer', audit_log_empty:'Nog geen activiteit geregistreerd', all_actions:'Alle acties', audit_create:'Aangemaakt', audit_edit:'Bewerkt', audit_delete:'Verwijderd', audit_restore:'Hersteld', audit_plan_change:'Pakket gewijzigd', audit_password_change:'Wachtwoord gewijzigd', audit_login_failed:'Mislukte aanmelding', audit_login_locked:'Account vergrendeld', audit_actor:'Wie', audit_action:'Actie', trash_title:'Prullenbak', trash_hint:'Verwijderde items blijven 30 dagen bewaard en worden daarna definitief verwijderd', trash_empty:'Prullenbak is leeg', trash_days_left:'Dagen resterend', trash_days:'dagen', trash_restore:'Herstellen', trash_restored:'Hersteld', actions:'Acties',
     tab_journal:'Journaal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Rapporten', tab_documents:'Documenten', tab_contacts:'Contacten', tab_messages:'Berichten', tab_client:'Klant',
     // Card descriptions
@@ -1599,7 +1621,7 @@ var I18N={
     card_hours_desc:'Gewerkte Uren Registreren',
     card_reports_desc:'Financiële Rapporten Weergeven',
     card_messages_desc:'Communiceren Met Klant',
-    card_contracts_desc:'Serviceovereenkomsten Beheren',
+    card_contracts_desc:'Serviceovereenkomsten Beheren', card_debtors_title:'Debiteuren', card_debtors_desc:'Klantaccounts Beheren', card_creditors_title:'Crediteuren', card_creditors_desc:'Leverancieraccounts Beheren', rep_summary_title:'Financieel Overzicht', rep_summary_desc:'Omzet, Kosten & Winst Overzicht', rep_pl_title:'Winst- en Verliesrekening', rep_pl_desc:'Gedetailleerd Winst- en Verliesrapport', rep_btw_title:'BTW-aangifte', rep_btw_desc:'Belastingaangifte Informatie', rep_debtors_title:'Debiteuren Ouderdom', rep_debtors_desc:'Openstaande Facturen Rapport', rep_expenses_title:'Onkostenrapport', rep_expenses_desc:'Gedetailleerd Onkostenoverzicht', rep_cashflow_title:'Kasstroom', rep_cashflow_desc:'Analyse van Inkomend & Uitgaand Geld', documents_title:'Documenten',
     card_edit_client:'Klant Bewerken',
     card_edit_client_desc:'Klantgegevens En Instellingen Bijwerken',
     // Dashboard admin cards
@@ -1773,14 +1795,14 @@ var I18N={
     overview:'نظرة عامة', settings_nav:'الإعدادات', add_client:'إضافة عميل', sign_out:'تسجيل الخروج',
     client_workspaces:'ملفات العملاء', my_account:'حسابي', administrator:'مسؤول النظام',
     viewing_client:'عرض العميل',
-    not_synced:'لم تتم المزامنة بعد', syncing:'جارٍ المزامنة…', synced:'تمت المزامنة', sync_error:'خطأ في المزامنة', offline:'غير متصل',
+    not_synced:'لم تتم المزامنة بعد', syncing:'جارٍ المزامنة…', synced:'تمت المزامنة', sync_error:'خطأ في المزامنة', offline:'غير متصل', tap_to_retry:'اضغط لإعادة المحاولة', sync_failed_detail:'فشلت المزامنة', retrying_sync:'جارٍ إعادة المحاولة...', two_factor_auth:'التحقق بخطوتين (2FA)', two_factor_hint:'يضيف خطوة أمان إضافية عند تسجيل الدخول عبر تطبيق مصادقة (Google Authenticator أو Microsoft Authenticator أو Authy...)', enabled:'مفعّل', not_enabled:'غير مفعّل', enable_2fa:'تفعيل 2FA', disable_2fa:'تعطيل 2FA', confirm_disable_2fa:'تعطيل التحقق بخطوتين لحسابك؟', twofa_disabled:'تم تعطيل التحقق بخطوتين', twofa_enabled:'تم تفعيل التحقق بخطوتين', generating_qr:'جاري إنشاء رمز QR…', scan_qr_hint:'امسح رمز QR هذا عبر تطبيق Google Authenticator أو Microsoft Authenticator أو أي تطبيق TOTP آخر', or_enter_manually:'أو أدخل هذا المفتاح يدويًا:', enter_code_confirm:'أدخل الرمز المكوّن من 6 أرقام من تطبيقك للتأكيد', invalid_code:'رمز غير صحيح — يرجى المحاولة مجددًا', confirm_enable:'تأكيد وتفعيل', enter_2fa_code:'أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة', verify_and_login:'تحقق وتسجيل الدخول',
     dashboard:'لوحة التحكم', invoices:'الفواتير', debtors:'الديون', expenses:'المصاريف', hours:'ساعات العمل', back_to_overview:'العودة إلى القائمة',
     journal:'اليومية', bank:'البنك', reports:'التقارير', documents:'المستندات', messages:'الرسائل', client_info:'العميل',
     contracts:'العقود', assets:'الأصول',
     // Tab labels with tab_ prefix (used in topbar & sidebar)
     tab_invoices:'الفواتير', tab_debtors:'الديون (Debiteuren)',
     tab_expenses:'المصاريف', tab_hours:'ساعات العمل',
-    card_invoices_title:'الفواتير - الوارد النقدي', card_expenses_title:'المصاريف - الصادر النقدي', lbl_customer:'العميل', just_now:'الآن', search:'بحث', no_results:'لا توجد نتائج مطابقة',
+    card_invoices_title:'الفواتير - الوارد النقدي', card_expenses_title:'المصاريف - الصادر النقدي', lbl_customer:'العميل', just_now:'الآن', search:'بحث', no_results:'لا توجد نتائج مطابقة', generating_pdf:'جاري إنشاء PDF…', generating_excel:'جاري إنشاء Excel…', reading_receipt:'جاري قراءة الفاتورة…', deleted_to_trash:'نُقل إلى سلة المحذوفات — قابل للاسترجاع لمدة 30 يومًا', no_subscription:'بدون اشتراك', expired:'منتهي', subscription_information:'الاشتراك', plan:'الباقة', subscription_end:'تاريخ انتهاء الاشتراك', subscription_end_hint:'اتركه فارغًا للاشتراك المستمر بلا تاريخ انتهاء محدد', audit_log_title:'سجل التدقيق', audit_log_hint:'يتتبّع من فعل ماذا، ومتى', audit_log_empty:'لا يوجد نشاط مسجَّل بعد', all_actions:'كل الإجراءات', audit_create:'إنشاء', audit_edit:'تعديل', audit_delete:'حذف', audit_restore:'استرجاع', audit_plan_change:'تغيير باقة', audit_password_change:'تغيير كلمة مرور', audit_login_failed:'محاولة دخول فاشلة', audit_login_locked:'قفل حساب', audit_actor:'المستخدم', audit_action:'الإجراء', trash_title:'سلة المحذوفات', trash_hint:'العناصر المحذوفة تُحفظ لمدة 30 يومًا ثم تُحذف نهائيًا', trash_empty:'سلة المحذوفات فارغة', trash_days_left:'الأيام المتبقية', trash_days:'يومًا', trash_restore:'استرجاع', trash_restored:'تم الاسترجاع', actions:'إجراءات',
     tab_journal:'اليومية (Journal)', tab_bank:'البنك', tab_btw:'ضريبة القيمة المضافة (BTW)',
     tab_reports:'التقارير', tab_documents:'المستندات', tab_contacts:'جهات الاتصال', tab_messages:'الرسائل', tab_client:'العميل',
     // Card descriptions
@@ -1791,7 +1813,7 @@ var I18N={
     card_hours_desc:'تسجيل وتتبع ساعات العمل',
     card_reports_desc:'عرض التقارير المالية',
     card_messages_desc:'التواصل مع العميل',
-    card_contracts_desc:'إدارة اتفاقيات الخدمة',
+    card_contracts_desc:'إدارة اتفاقيات الخدمة', card_debtors_title:'العملاء', card_debtors_desc:'إدارة حسابات العملاء', card_creditors_title:'الموردين', card_creditors_desc:'إدارة حسابات الموردين', rep_summary_title:'الملخص المالي', rep_summary_desc:'نظرة عامة على الإيرادات والمصروفات والأرباح', rep_pl_title:'بيان الأرباح والخسائر', rep_pl_desc:'تقرير مفصّل للأرباح والخسائر', rep_btw_title:'إقرار ضريبة القيمة المضافة', rep_btw_desc:'معلومات الإقرار الضريبي', rep_debtors_title:'أعمار ديون العملاء', rep_debtors_desc:'تقرير الفواتير المستحقة', rep_expenses_title:'تقرير المصروفات', rep_expenses_desc:'تفصيل شامل للمصروفات', rep_cashflow_title:'التدفق النقدي', rep_cashflow_desc:'تحليل الوارد والصادر النقدي', documents_title:'المستندات',
     card_edit_client:'تعديل العميل',
     card_edit_client_desc:'تحديث بيانات العميل والإعدادات',
     // Dashboard admin cards
@@ -2085,6 +2107,10 @@ const CLOUD_SYNC_ARRAY_KEYS=['clients','invoices','expenses','hours','docs','mes
 let cloudSyncTimer=null;
 let cloudSyncStatus='idle'; // idle | syncing | synced | error | offline
 let cloudSyncInFlight=false;
+let lastSyncError=null; // نص تفصيلي بآخر خطأ مزامنة فعلي
+let syncRetryCount=0;
+let syncRetryTimer=null;
+const SYNC_RETRY_DELAYS=[5000,15000,30000,60000]; // تأخير متصاعد بين محاولات إعادة الاتصال التلقائية
 
 function cloudHeaders(extra){
   return Object.assign({'apikey':CLOUD_SYNC_KEY,'Authorization':'Bearer '+CLOUD_SYNC_KEY,'Content-Type':'application/json'},extra||{});
@@ -2093,10 +2119,17 @@ function cloudHeaders(extra){
 async function cloudPull(){
   try{
     const res=await fetch(`${CLOUD_SYNC_URL}?id=eq.${CLOUD_ROW_ID}&select=payload,updated_at`,{headers:cloudHeaders()});
-    if(!res.ok)throw new Error('HTTP '+res.status);
+    if(!res.ok){
+      lastSyncError='HTTP '+res.status+(res.status===401||res.status===403?' (auth)':res.status>=500?' (server)':'');
+      return null;
+    }
     const rows=await res.json();
     return (rows&&rows.length)?rows[0]:null;
-  }catch(e){return null;}
+  }catch(e){
+    // تمييز انقطاع الشبكة الفعلي عن أي خطأ آخر
+    lastSyncError=(!navigator.onLine||e instanceof TypeError)?'offline':(e.message||'Unknown error');
+    return null;
+  }
 }
 
 function mergeArraysById(localArr,cloudArr){
@@ -2114,9 +2147,13 @@ async function syncNow(){
   if(cloudSyncInFlight)return; // avoid overlapping syncs
   cloudSyncInFlight=true;
   cloudSyncStatus='syncing';updateSyncBadge();
+  lastSyncError=null;
   const cloud=await cloudPull();
   if(cloud===null){
-    cloudSyncStatus='offline';updateSyncBadge();cloudSyncInFlight=false;return;
+    cloudSyncStatus=(lastSyncError==='offline')?'offline':'error';
+    updateSyncBadge();cloudSyncInFlight=false;
+    scheduleSyncRetry();
+    return;
   }
   const cloudPayload=cloud.payload||{};
   const merged={};
@@ -2130,17 +2167,38 @@ async function syncNow(){
       method:'PATCH',headers:cloudHeaders({'Prefer':'return=minimal'}),
       body:JSON.stringify({payload:{...merged,settings:S.settings},updated_at:nowIso})
     });
-    if(!res.ok)throw new Error('HTTP '+res.status);
+    if(!res.ok)throw new Error('HTTP '+res.status+(res.status===401||res.status===403?' (auth)':res.status>=500?' (server)':''));
     localStorage.setItem('anb5_synced_at',nowIso);
     try{saveLocalCache();}catch{}
     cloudSyncStatus='synced';
+    syncRetryCount=0; // نجاح — إعادة ضبط عدّاد المحاولات
+    if(syncRetryTimer){clearTimeout(syncRetryTimer);syncRetryTimer=null;}
   }catch(e){
-    cloudSyncStatus='error';
+    lastSyncError=(!navigator.onLine||e instanceof TypeError)?'offline':(e.message||'Unknown error');
+    cloudSyncStatus=(lastSyncError==='offline')?'offline':'error';
+    scheduleSyncRetry();
   }
   updateSyncBadge();
   cloudSyncInFlight=false;
   // ✅ Only re-render if there were actual changes AND not viewing messages
   if(S.role&&hadChanges&&S.tab!=='messages')renderApp();
+}
+
+// إعادة محاولة تلقائية بتأخير متصاعد عند فشل المزامنة (بدل الانتظار الصامت للمزامنة التالية فقط)
+function scheduleSyncRetry(){
+  if(syncRetryTimer)return; // محاولة مجدولة بالفعل
+  const delay=SYNC_RETRY_DELAYS[Math.min(syncRetryCount,SYNC_RETRY_DELAYS.length-1)];
+  syncRetryCount++;
+  syncRetryTimer=setTimeout(()=>{
+    syncRetryTimer=null;
+    syncNow();
+  },delay);
+}
+// إعادة محاولة فورية يدوية (تُستخدم من شارة المزامنة عند الضغط عليها)
+function retrySyncNow(){
+  if(syncRetryTimer){clearTimeout(syncRetryTimer);syncRetryTimer=null;}
+  syncRetryCount=0;
+  syncNow();
 }
 
 function scheduleSync(){
@@ -2170,10 +2228,18 @@ function updateSyncBadge(){
   const m=map[cloudSyncStatus]||map.idle;
   const lastSync=localStorage.getItem('anb5_synced_at');
   const agoText=(cloudSyncStatus==='synced'&&lastSync)?` · ${timeAgo(lastSync)}`:'';
-  const html=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.dot};margin-right:5px"></span>${m.text}${agoText}`;
+  const isFailing=cloudSyncStatus==='error'||cloudSyncStatus==='offline';
+  const retryText=isFailing?` · ${t('tap_to_retry')||'tap to retry'}`:'';
+  const errDetail=isFailing&&lastSyncError?(' — '+lastSyncError):'';
+  const html=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.dot};margin-right:5px"></span>${m.text}${agoText}${retryText}`;
+  const title=isFailing?((t('sync_failed_detail')||'Sync failed')+errDetail):'';
   ['sync-badge','sync-badge-settings'].forEach(id=>{
     const el=document.getElementById(id);
-    if(el)el.innerHTML=html;
+    if(!el)return;
+    el.innerHTML=html;
+    el.title=title;
+    el.style.cursor=isFailing?'pointer':'default';
+    el.onclick=isFailing?(()=>{retrySyncNow();toast('🔄 '+(t('retrying_sync')||'Retrying sync...'));}):null;
   });
 }
 if(!window._syncBadgeTicker){
@@ -2181,6 +2247,10 @@ if(!window._syncBadgeTicker){
     if(cloudSyncStatus==='synced')updateSyncBadge();
   },30000);
 }
+// إعادة المحاولة فورًا عند عودة الاتصال بالإنترنت (بدل انتظار الجدولة المتصاعدة)
+window.addEventListener('online',()=>{
+  if(cloudSyncStatus==='offline'||cloudSyncStatus==='error')retrySyncNow();
+});
 
 (function ld(){
   try{
@@ -2258,6 +2328,239 @@ function clearFieldErrors(fieldIds){
     if(el){el.style.border='';el.style.background='';el.style.borderRadius='';}
   });
 }
+
+// ── مؤشر تحميل عام للعمليات الثقيلة (تصدير PDF/Excel، القراءة الضوئية...) ──
+function showLoading(msg){
+  const overlay=document.getElementById('loading-overlay');
+  const msgEl=document.getElementById('loading-msg');
+  if(msgEl)msgEl.textContent=msg||'';
+  if(overlay)overlay.classList.add('show');
+}
+function hideLoading(){
+  const overlay=document.getElementById('loading-overlay');
+  if(overlay)overlay.classList.remove('show');
+}
+// ينفذ fn بعد رسم المؤشر أولاً (لأن jsPDF/XLSX متزامنة وتجمّد الواجهة أثناء التنفيذ)
+function withLoading(msg, fn){
+  showLoading(msg);
+  setTimeout(()=>{
+    try{ fn(); }
+    catch(err){ toast('❌ '+(err.message||'Something went wrong')); }
+    finally{ hideLoading(); }
+  }, 30);
+}
+async function withLoadingAsync(msg, asyncFn){
+  showLoading(msg);
+  try{
+    await asyncFn();
+  }catch(err){
+    toast('❌ '+(err.message||'Something went wrong'));
+  }finally{
+    hideLoading();
+  }
+}
+
+// ── تحميل كسول للمكتبات الثقيلة (jsPDF, XLSX, Tesseract.js, pdf.js) ──
+// تُحمَّل فقط عند الحاجة الفعلية بدل تحميلها إجباريًا لكل مستخدم من أول فتح للتطبيق
+const _scriptLoadCache={};
+function loadScript(url){
+  if(_scriptLoadCache[url])return _scriptLoadCache[url];
+  _scriptLoadCache[url]=new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src=url;
+    s.onload=()=>resolve();
+    s.onerror=()=>{delete _scriptLoadCache[url];reject(new Error('Failed to load '+url));};
+    document.head.appendChild(s);
+  });
+  return _scriptLoadCache[url];
+}
+async function ensureJsPDF(){
+  if(!(window.jsPDF?.jsPDF||window.jspdf?.jsPDF)){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  }
+  return window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
+}
+async function ensureXLSX(){
+  if(!window.XLSX){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+  }
+  return window.XLSX;
+}
+async function ensureTesseract(){
+  if(typeof Tesseract==='undefined'){
+    await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+  }
+  return window.Tesseract;
+}
+async function ensurePdfJs(){
+  if(typeof pdfjsLib==='undefined'){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  return window.pdfjsLib;
+}
+async function ensureQRCode(){
+  if(typeof QRCode==='undefined'){
+    await loadScript('https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js');
+  }
+  return window.QRCode;
+}
+
+// ══════════ تشفير كلمات المرور (Web Crypto API - أصلي بالمتصفح، بدون مكتبات خارجية) ══════════
+function _bufToHex(buf){
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function generateSalt(){
+  const arr=new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  return _bufToHex(arr);
+}
+// PBKDF2 مع 100,000 تكرار - معيار موصى به لتخزين كلمات المرور من جهة العميل
+async function hashPassword(password, salt){
+  const enc=new TextEncoder();
+  const keyMaterial=await crypto.subtle.importKey('raw',enc.encode(password),{name:'PBKDF2'},false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits(
+    {name:'PBKDF2',salt:enc.encode(salt),iterations:100000,hash:'SHA-256'},
+    keyMaterial,256
+  );
+  return _bufToHex(bits);
+}
+// يُنشئ {passwordSalt, passwordHash} جاهزة للتخزين بدل النص الصريح
+async function makePasswordRecord(plainPassword){
+  const salt=generateSalt();
+  const hash=await hashPassword(plainPassword,salt);
+  return {passwordSalt:salt,passwordHash:hash};
+}
+// يتحقق من كلمة مرور مقابل سجل مخزَّن؛ يدعم الحسابات القديمة (نص صريح) للتوافق ويُرجع needsUpgrade
+async function verifyPassword(plainPassword, record){
+  if(!record)return {ok:false,needsUpgrade:false};
+  if(record.passwordHash&&record.passwordSalt){
+    const hash=await hashPassword(plainPassword,record.passwordSalt);
+    return {ok:hash===record.passwordHash,needsUpgrade:false};
+  }
+  // حساب قديم لم يُرحَّل بعد (نص صريح) — تحقق مباشر ثم رحّله عند النجاح
+  const legacyPlain=record.password||record.pwCustom||record.pw;
+  if(legacyPlain!==undefined&&legacyPlain===plainPassword){
+    return {ok:true,needsUpgrade:true};
+  }
+  return {ok:false,needsUpgrade:false};
+}
+
+// ══════════ حد محاولات الدخول الفاشلة (يمنع التخمين المتكرر) ══════════
+const LOGIN_MAX_ATTEMPTS=5;
+const LOGIN_LOCKOUT_MS=15*60*1000; // 15 دقيقة
+function isLockedOut(account){
+  return !!(account&&account.lockedUntil&&Date.now()<account.lockedUntil);
+}
+function lockoutRemainingMinutes(account){
+  return Math.max(1,Math.ceil((account.lockedUntil-Date.now())/60000));
+}
+function registerFailedAttempt(account){
+  account.failedAttempts=(account.failedAttempts||0)+1;
+  const who=account.name||account.email||'unknown';
+  if(account.failedAttempts>=LOGIN_MAX_ATTEMPTS){
+    account.lockedUntil=Date.now()+LOGIN_LOCKOUT_MS;
+    account.failedAttempts=0;
+    if(!S.auditLog)S.auditLog=[];
+    S.auditLog.unshift({id:UID(),ts:new Date().toISOString(),actor:who,actorRole:'unauthenticated',
+      action:'login_locked',entityType:'account',summary:'Account locked after '+LOGIN_MAX_ATTEMPTS+' failed login attempts: '+who,cid:null});
+  }else{
+    if(!S.auditLog)S.auditLog=[];
+    S.auditLog.unshift({id:UID(),ts:new Date().toISOString(),actor:who,actorRole:'unauthenticated',
+      action:'login_failed',entityType:'account',summary:'Failed login attempt for '+who,cid:null});
+  }
+  if(S.auditLog.length>AUDIT_LOG_MAX_ENTRIES)S.auditLog.length=AUDIT_LOG_MAX_ENTRIES;
+  sv();
+}
+function clearFailedAttempts(account){
+  account.failedAttempts=0;
+  account.lockedUntil=null;
+  sv();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// التحقق بخطوتين (2FA) — Time-based One-Time Password (TOTP)
+// متوافق مع RFC 6238، ويعمل مباشرة مع Google Authenticator / Microsoft
+// Authenticator / Authy أو أي تطبيق TOTP قياسي — بلا أي خادم وسيط
+// ══════════════════════════════════════════════════════════════════
+const TOTP_STEP_SECONDS=30;
+const TOTP_DIGITS=6;
+const BASE32_ALPHABET='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+// توليد مفتاح سري عشوائي (160 بت) بترميز Base32 — يُخزَّن مرة واحدة لكل حساب
+function generateTotpSecret(){
+  const bytes=new Uint8Array(20);
+  crypto.getRandomValues(bytes);
+  let bits='';
+  for(const b of bytes)bits+=b.toString(2).padStart(8,'0');
+  let secret='';
+  for(let i=0;i+5<=bits.length;i+=5){
+    secret+=BASE32_ALPHABET[parseInt(bits.substr(i,5),2)];
+  }
+  return secret;
+}
+
+function base32Decode(base32){
+  const clean=(base32||'').toUpperCase().replace(/[^A-Z2-7]/g,'');
+  let bits='';
+  for(const ch of clean){
+    const val=BASE32_ALPHABET.indexOf(ch);
+    if(val===-1)continue;
+    bits+=val.toString(2).padStart(5,'0');
+  }
+  const bytes=[];
+  for(let i=0;i+8<=bits.length;i+=8){
+    bytes.push(parseInt(bits.substr(i,8),2));
+  }
+  return new Uint8Array(bytes);
+}
+
+async function hmacSha1(keyBytes,msgBytes){
+  // ملاحظة: SHA-1 هنا إلزامي لتوافق معيار TOTP القياسي مع تطبيقات المصادقة
+  // (Google/Microsoft Authenticator)، وليس اختيارًا أمنيًا عامًا - هذا هو المعيار المعتمد عالميًا لـTOTP
+  const key=await crypto.subtle.importKey('raw',keyBytes,{name:'HMAC',hash:'SHA-1'},false,['sign']);
+  const sig=await crypto.subtle.sign('HMAC',key,msgBytes);
+  return new Uint8Array(sig);
+}
+
+function _counterToBytes(num){
+  const bytes=new Uint8Array(8); // عداد 8 بايت big-endian حسب معيار RFC 6238
+  for(let i=7;i>=0;i--){
+    bytes[i]=num&0xff;
+    num=Math.floor(num/256);
+  }
+  return bytes;
+}
+
+async function generateTotpCode(secret,forTimeMs){
+  const counter=Math.floor((forTimeMs||Date.now())/1000/TOTP_STEP_SECONDS);
+  const keyBytes=base32Decode(secret);
+  const msgBytes=_counterToBytes(counter);
+  const hmac=await hmacSha1(keyBytes,msgBytes);
+  const offset=hmac[hmac.length-1]&0x0f;
+  const binCode=((hmac[offset]&0x7f)<<24)|((hmac[offset+1]&0xff)<<16)|((hmac[offset+2]&0xff)<<8)|(hmac[offset+3]&0xff);
+  return (binCode%(10**TOTP_DIGITS)).toString().padStart(TOTP_DIGITS,'0');
+}
+
+// تحقق من رمز مُدخل يدويًا، بهامش ±خطوة زمنية واحدة (30 ثانية) لتفادي فروقات الساعة البسيطة بين الجهاز وتطبيق المصادقة
+async function verifyTotpCode(secret,userCode){
+  if(!secret||!userCode)return false;
+  const clean=userCode.toString().replace(/\s/g,'');
+  if(!/^\d{6}$/.test(clean))return false;
+  const now=Date.now();
+  for(const drift of [0,-1,1]){
+    const code=await generateTotpCode(secret,now+drift*TOTP_STEP_SECONDS*1000);
+    if(code===clean)return true;
+  }
+  return false;
+}
+
+// رابط otpauth:// القياسي المستخدم لتوليد رمز QR يُمسح داخل تطبيق المصادقة
+function totpAuthUri(secret,accountLabel){
+  const issuer='ANB Financial Services';
+  return `otpauth://totp/${encodeURIComponent(issuer+':'+accountLabel)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&digits=${TOTP_DIGITS}&period=${TOTP_STEP_SECONDS}`;
+}
+
 function toggleSidebar(){
   const sb=document.querySelector('.sidebar');
   const bd=document.getElementById('sidebar-backdrop');
@@ -2309,14 +2612,14 @@ function showErr(id,msg){
 }
 
 function goStep(n){
-  [1,2,3,'ok'].forEach(s=>{
+  [1,2,3,'2fa','ok'].forEach(s=>{
     const el=document.getElementById('step-'+s);
     if(el)el.className='auth-step'+(s===n?' active':'');
   });
   // Update dots
   [1,2,3].forEach(i=>{
     const d=document.getElementById('sd'+i);
-    if(d)d.className='sd'+(i<=(n==='ok'?3:n)?' on':'');
+    if(d)d.className='sd'+(i<=(n==='ok'||n==='2fa'?3:n)?' on':'');
   });
 }
 
@@ -2361,7 +2664,7 @@ function goStep2(){
 }
 
 // STEP 2: sign in
-function doLogin(){
+async function doLogin(){
   const pw=document.getElementById('login-pw').value;
   showErr('login-err-2','');
   if(!pw){showErr('login-err-2','Please enter your password');return;}
@@ -2369,8 +2672,26 @@ function doLogin(){
   if(authState.role==='admin'){
     // تحقق من كلمة المرور من قائمة admins
     const admin=S.admins.find(a=>a.id===authState.adminId);
-    if(!admin||pw!==admin.password){showErr('login-err-2','Incorrect password');return;}
+    if(!admin){showErr('login-err-2','Incorrect password');return;}
+    if(isLockedOut(admin)){showErr('login-err-2','Too many attempts. Try again in '+lockoutRemainingMinutes(admin)+' min.');return;}
+    const result=await verifyPassword(pw,admin);
+    if(!result.ok){registerFailedAttempt(admin);showErr('login-err-2','Incorrect password');return;}
+    if(result.needsUpgrade){
+      const rec=await makePasswordRecord(pw);
+      admin.passwordSalt=rec.passwordSalt;admin.passwordHash=rec.passwordHash;
+      delete admin.password;
+    }
+    clearFailedAttempts(admin);
     if(admin.status!=='active'){showErr('login-err-2','This admin account is not active');return;}
+
+    if(admin.totpEnabled){
+      // كلمة المرور صحيحة، لكن الحساب مفعّل عليه 2FA — ننتقل لخطوة إدخال الرمز بدل الدخول المباشر
+      goStep('2fa');
+      showErr('login-err-2fa','');
+      setTimeout(()=>document.getElementById('login-2fa-code')?.focus(),150);
+      return;
+    }
+
     S.role='admin';
     S.currentAdmin=admin.id;
     S.currentClient=null;
@@ -2379,10 +2700,43 @@ function doLogin(){
     sv(); // حفظ آخر تسجيل دخول
   } else {
     const c=S.clients.find(c=>c.id===authState.clientId);
-    const stored=c.pwCustom||c.pw;
-    if(!c||pw!==stored){showErr('login-err-2','Incorrect password');return;}
+    if(!c){showErr('login-err-2','Incorrect password');return;}
+    if(isLockedOut(c)){showErr('login-err-2','Too many attempts. Try again in '+lockoutRemainingMinutes(c)+' min.');return;}
+    const result=await verifyPassword(pw,c);
+    if(!result.ok){registerFailedAttempt(c);showErr('login-err-2','Incorrect password');return;}
+    if(result.needsUpgrade){
+      const rec=await makePasswordRecord(pw);
+      c.passwordSalt=rec.passwordSalt;c.passwordHash=rec.passwordHash;
+      delete c.pw;delete c.pwCustom;
+    }
+    clearFailedAttempts(c);
     S.role='client';S.currentClient=c.id;S.tab='dashboard';
   }
+  launchApp();
+}
+
+async function doVerify2FA(){
+  const code=document.getElementById('login-2fa-code')?.value;
+  showErr('login-err-2fa','');
+  const admin=S.admins.find(a=>a.id===authState.adminId);
+  if(!admin){showErr('login-err-2fa','Session expired — please sign in again');goStep(1);return;}
+  if(isLockedOut(admin)){showErr('login-err-2fa','Too many attempts. Try again in '+lockoutRemainingMinutes(admin)+' min.');return;}
+  if(!code||!/^\d{6}$/.test(code)){showErr('login-err-2fa',t('enter_code_confirm')||'Enter the 6-digit code');return;}
+
+  const valid=await verifyTotpCode(admin.totpSecret,code);
+  if(!valid){
+    registerFailedAttempt(admin);
+    showErr('login-err-2fa',t('invalid_code')||'Incorrect code — please try again');
+    return;
+  }
+  clearFailedAttempts(admin);
+
+  S.role='admin';
+  S.currentAdmin=admin.id;
+  S.currentClient=null;
+  S.tab='dashboard';
+  admin.lastLogin=TODAY();
+  sv();
   launchApp();
 }
 
@@ -2451,21 +2805,37 @@ function checkPwStrength(){
 }
 
 // Save new password
-function doSetPassword(){
+async function doSetPassword(){
   const pw1=document.getElementById('new-pw1').value;
   const pw2=document.getElementById('new-pw2').value;
   showErr('login-err-3','');
   if(pw1.length<6){showErr('login-err-3','Password must be at least 6 characters');return;}
   if(pw1!==pw2){showErr('login-err-3','Passwords do not match');return;}
 
+  const rec=await makePasswordRecord(pw1);
+
   if(authState.role==='admin'){
-    S.settings.adminPwCustom=pw1;
-    S.settings.adminPwSet=true;
+    // ✅ إصلاح: كانت تُحفظ سابقًا في S.settings.adminPwCustom وهو حقل لا تقرأه doLogin إطلاقًا
+    const admin=S.admins.find(a=>a.id===authState.adminId);
+    if(admin){
+      admin.passwordSalt=rec.passwordSalt;admin.passwordHash=rec.passwordHash;
+      delete admin.password;
+      clearFailedAttempts(admin);
+      if(!S.auditLog)S.auditLog=[];
+      S.auditLog.unshift({id:UID(),ts:new Date().toISOString(),actor:admin.name,actorRole:'admin',
+        action:'password_change',entityType:'account',summary:'Password set for admin account: '+admin.name,cid:null});
+    }
   } else {
     const idx=S.clients.findIndex(c=>c.id===authState.clientId);
     if(idx>=0){
-      S.clients[idx].pwCustom=pw1;
+      S.clients[idx].passwordSalt=rec.passwordSalt;
+      S.clients[idx].passwordHash=rec.passwordHash;
       S.clients[idx].pwSet=true;
+      delete S.clients[idx].pw;delete S.clients[idx].pwCustom;
+      clearFailedAttempts(S.clients[idx]);
+      if(!S.auditLog)S.auditLog=[];
+      S.auditLog.unshift({id:UID(),ts:new Date().toISOString(),actor:S.clients[idx].name,actorRole:'client',
+        action:'password_change',entityType:'account',summary:'Password set for client account: '+S.clients[idx].name,cid:S.clients[idx].id});
     }
   }
   sv();
@@ -2495,7 +2865,9 @@ function launchApp(){
   document.getElementById('app').style.display='flex';
   checkOverdueInvoices();
   generateRecurringInvoices();
+  migrateContactAccountNumbers();
   migrateOneTimeDebtors();
+  purgeOldTrash();
   renderApp();
   syncNow();
 }
@@ -2752,6 +3124,8 @@ function renderContent(){
   if(isAdmin()){
     if(S.tab==='settings'){rSettings(el);return;}
     if(S.tab==='clients'){rClientsLis(el);return;}
+    if(S.tab==='trash'){rTrash(el);return;}
+    if(S.tab==='auditlog'){rAuditLog(el);return;}
     // ✅ Handle admin-level tabs (when viewing all data, not specific client)
     if(!cid){
       if(S.tab==='reports'){rAdminReports(el);return;}
@@ -3422,6 +3796,8 @@ function rClientsLis(el){
       <option value="100">Basic</option>
       <option value="150">Plus</option>
       <option value="200">Pro</option>
+      <option value="none">${t('no_subscription')||'No subscription'}</option>
+      <option value="expired">${t('expired')||'Expired'}</option>
     </select>
   </div>
   <div id="clients-list-container"></div>`;
@@ -3440,7 +3816,11 @@ function renderClientsList(searchTerm){
   const filtered=S.clients.filter(c=>{
     if(c.deleted)return false;
     const matchesSearch=term===''||c.name.toLowerCase().includes(term)||c.email.toLowerCase().includes(term)||c.phone.includes(term);
-    const matchesPlan=planFilter===''||parseInt(c.monthlyFee)===parseInt(planFilter);
+    const isExpiredClient=x=>parseInt(x.monthlyFee)>0&&x.planExpiry&&new Date(x.planExpiry)<new Date(new Date().toDateString());
+    const matchesPlan=planFilter===''||
+      (planFilter==='none'?!(parseInt(c.monthlyFee)>0):
+       planFilter==='expired'?isExpiredClient(c):
+       (parseInt(c.monthlyFee)===parseInt(planFilter)&&!isExpiredClient(c)));
     return matchesSearch&&matchesPlan;
   });
   
@@ -3492,10 +3872,13 @@ function renderClientsList(searchTerm){
     // خريطة الأسماء
     const planNames={100:'Basic',150:'Plus',200:'Pro'};
     const monthlyFeeInt=parseInt(c.monthlyFee)||0;
-    const planType=planNames[monthlyFeeInt]||'Standard';
-    const planColor=planColors[monthlyFeeInt]||'#0A2218';
-    const planBg=planBgColors[monthlyFeeInt]||'#E8F4F0';
-    const planBorder=planBorderColors[monthlyFeeInt]||'#2d7a4f';
+    const hasSubscription=monthlyFeeInt>0;
+    const isExpired=hasSubscription&&c.planExpiry&&new Date(c.planExpiry)<new Date(new Date().toDateString());
+    const planType=!hasSubscription?(t('no_subscription')||'No subscription'):
+      isExpired?(t('expired')||'Expired'):(planNames[monthlyFeeInt]||'Basic');
+    const planColor=isExpired?'#7A4A00':hasSubscription?(planColors[monthlyFeeInt]||'#0A2218'):'#888070';
+    const planBg=isExpired?'#FEF3E2':hasSubscription?(planBgColors[monthlyFeeInt]||'#E8F4F0'):'#F4F2EC';
+    const planBorder=isExpired?'#B8860B':hasSubscription?(planBorderColors[monthlyFeeInt]||'#2d7a4f'):'#C4C0B0';
     
     return `
     <div onclick="selClient('${c.id}')" style="padding:16px;background:${planBg};border:3px solid ${planBorder};border-radius:12px;margin-bottom:12px;cursor:pointer;transition:all .3s ease;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.06);gap:12px"
@@ -3684,8 +4067,8 @@ function rClientDash(el,cid){
     {
       id:'debtors',
       icon:'💵',
-      name:'Debtors',
-      desc:'Manage Customer Accounts',
+      name:t('card_debtors_title'),
+      desc:t('card_debtors_desc'),
       bg:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',
       border:'#C89010',
       text:'#ffffff',
@@ -3695,8 +4078,8 @@ function rClientDash(el,cid){
     {
       id:'creditors',
       icon:'🤝',
-      name:'Creditors',
-      desc:'Manage Supplier Accounts',
+      name:t('card_creditors_title'),
+      desc:t('card_creditors_desc'),
       bg:'linear-gradient(135deg, #1a4d2e 0%, #1B5E35 100%)',
       border:'#C89010',
       text:'#ffffff',
@@ -3901,8 +4284,8 @@ function rClientActionCards(el,cid){
     {
       id:'debtors',
       icon:'💵',
-      name:'Debtors',
-      desc:'Manage customer accounts',
+      name:t('card_debtors_title'),
+      desc:t('card_debtors_desc'),
       bg:'linear-gradient(135deg, #1B5E35 0%, #2A6040 100%)',
       border:'#C89010',
       text:'#ffffff',
@@ -3912,8 +4295,8 @@ function rClientActionCards(el,cid){
     {
       id:'creditors',
       icon:'🤝',
-      name:'Creditors',
-      desc:'Manage supplier accounts',
+      name:t('card_creditors_title'),
+      desc:t('card_creditors_desc'),
       bg:'linear-gradient(135deg, #2A6040 0%, #2d7a4f 100%)',
       border:'#C89010',
       text:'#ffffff',
@@ -4024,10 +4407,37 @@ function getOrCreateGeneralDebtor(){
   if(!S.contacts)S.contacts=[];
   let gd=S.contacts.find(c=>c.type==='debtor'&&c.isGeneral&&!c.deleted);
   if(!gd){
-    gd={id:UID(),cid:'GENERAL',type:'debtor',name:'General Debtors',isGeneral:true};
+    gd={id:UID(),cid:'GENERAL',type:'debtor',name:'General Debtors',isGeneral:true,accountNumber:'4999'};
     S.contacts.push(gd);
   }
   return gd;
+}
+function migrateContactAccountNumbers(){
+  if(!S.contacts||!S.contacts.length)return;
+  let changed=false;
+  // نجمع حسب (العميل، النوع) لضمان تسلسل صحيح متصل لكل دفتر مستقل
+  const groups={};
+  S.contacts.forEach(c=>{
+    if(c.accountNumber)return; // موجود مسبقًا — لا نلمسه
+    const key=c.cid+'|'+c.type;
+    if(!groups[key])groups[key]=[];
+    groups[key].push(c);
+  });
+  Object.keys(groups).forEach(key=>{
+    const type=key.split('|')[1];
+    const cid=key.split('|').slice(0,-1).join('|');
+    const baseNum=type==='debtor'?4100:3100;
+    // نبدأ الترقيم بعد آخر رقم مُستخدم فعليًا لنفس (العميل، النوع) لتفادي التكرار
+    const existingNums=S.contacts.filter(c=>c.cid===cid&&c.type===type&&c.accountNumber)
+      .map(c=>parseInt(c.accountNumber)||0);
+    let next=Math.max(baseNum,...(existingNums.length?existingNums:[baseNum]))+ (existingNums.length?1:0);
+    groups[key].forEach(c=>{
+      c.accountNumber=next.toString();
+      next++;
+      changed=true;
+    });
+  });
+  if(changed)sv();
 }
 function migrateOneTimeDebtors(){
   if(!S.invoices||!S.invoices.length)return;
@@ -4415,9 +4825,10 @@ function exportBTWcsv(cid,q,yr){
   toast(`✓ BTW Q${q} ${yr} CSV geëxporteerd`,'ti-check');
 }
 
-function exportBTWpdf(cid,q,yr){
+function exportBTWpdf(cid,q,yr){ withLoadingAsync(t('generating_pdf')||'Generating PDF…', async ()=>{ await ensureJsPDF(); _exportBTWpdf(cid,q,yr); }); }
+function _exportBTWpdf(cid,q,yr){
   const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
-  if(!jsPDF){toast('PDF laden...','ti-loader');return;}
+  if(!jsPDF)return;
   q=parseInt(q);yr=parseInt(yr);
   const c=S.clients.find(c=>c.id===cid);
   const co=S.settings;
@@ -4538,7 +4949,7 @@ function rDocs(el,cid){
       style="display:none" onchange="handleDocUpload(event,'${cid}')"/>
   </div>
   <div class="card">
-    <div class="ch"><span class="ct">Documents${isAdmin()?' — '+c?.name:''}</span>
+    <div class="ch"><span class="ct">${t('documents_title')}${isAdmin()?' — '+c?.name:''}</span>
       <span style="font-size:11px;color:var(--t3)">${docs.length} files</span>
     </div>
     ${docs.length===0?`<div class="empty"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📁</span>${t('empty_docs')}</div>`:
@@ -4643,16 +5054,18 @@ function parseReceiptText(text){
 }
 
 async function ocrReceiptImage(dataUrl){
+  await ensureTesseract();
   if(typeof Tesseract==='undefined'){
-    throw new Error('OCR engine not available');
+    throw new Error('OCR engine could not be loaded (check internet connection)');
   }
   const {data:{text}}=await Tesseract.recognize(dataUrl,'eng+nld');
   return parseReceiptText(text);
 }
 
 async function pdfFirstPageToDataURL(file){
+  await ensurePdfJs();
   if(typeof pdfjsLib==='undefined'){
-    throw new Error('PDF engine not available');
+    throw new Error('PDF engine could not be loaded (check internet connection)');
   }
   const arrayBuffer=await file.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
@@ -4893,14 +5306,16 @@ function rMessagesClient(el,cid){
 function rContacts(el){
   if(!S.contacts)S.contacts=[];
   const cid=S.currentClient;
-  const clientContacts=S.contacts.filter(c=>c.cid===cid); // Filter by client
-  const debtors=clientContacts.filter(c=>c.type==='debtor');
-  const creditors=clientContacts.filter(c=>c.type==='creditor');
+  const clientContacts=S.contacts.filter(c=>c.cid===cid&&!c.deleted); // Filter by client
+
   el.innerHTML=`
     <div style="display:flex;gap:12px;margin-bottom:16px">
       <button onclick="openContactModal(null,'debtor')" class="btn btn-gold" style="flex:1">+ Debtor</button>
       <button onclick="openContactModal(null,'creditor')" class="btn btn-gold" style="flex:1">+ Supplier</button>
     </div>
+    ${clientContacts.length>0?`<input type="text" id="contacts-search" placeholder="🔍 ${t('search')||'Search'} (Name, Email, Account #)..."
+      style="width:100%;padding:10px 14px;margin-bottom:14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1)"
+      oninput="renderContactsLists(this.value)">`:''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div>
         <h3 style="color:var(--t1);margin-bottom:10px">📊 Debtors (Customers)</h3>
@@ -4912,10 +5327,25 @@ function rContacts(el){
       </div>
     </div>
   `;
-  
+  renderContactsLists('');
+}
+
+function renderContactsLists(searchTerm){
+  const cid=S.currentClient;
+  const term=(searchTerm||'').toLowerCase().trim();
+  const clientContacts=(S.contacts||[]).filter(c=>{
+    if(!(c.cid===cid&&!c.deleted))return false;
+    if(!term)return true;
+    return (c.name||'').toLowerCase().includes(term)||
+      (c.email||'').toLowerCase().includes(term)||
+      (c.accountNumber||'').toLowerCase().includes(term);
+  });
+  const debtors=clientContacts.filter(c=>c.type==='debtor');
+  const creditors=clientContacts.filter(c=>c.type==='creditor');
+
   // Render debtors
   const debtorsList=document.getElementById('debtors-list');
-  debtorsList.innerHTML=debtors.map(c=>`
+  if(debtorsList)debtorsList.innerHTML=debtors.map(c=>`
     <div style="background:var(--bg2);padding:12px;border-radius:6px;border-left:4px solid #1B5E35">
       <div style="display:flex;justify-content:space-between;align-items:start">
         <div style="flex:1">
@@ -4929,11 +5359,11 @@ function rContacts(el){
         </div>
       </div>
     </div>
-  `).join('')||'<span style="color:var(--t3);font-size:12px">'+t('empty_debtors')+'</span>';
-  
+  `).join('')||'<span style="color:var(--t3);font-size:12px">'+(term?(t('no_results')||'No matching debtors'):t('empty_debtors'))+'</span>';
+
   // Render creditors
   const creditorsList=document.getElementById('creditors-list');
-  creditorsList.innerHTML=creditors.map(c=>`
+  if(creditorsList)creditorsList.innerHTML=creditors.map(c=>`
     <div style="background:var(--bg2);padding:12px;border-radius:6px;border-left:4px solid #C89010">
       <div style="display:flex;justify-content:space-between;align-items:start">
         <div style="flex:1">
@@ -4947,15 +5377,15 @@ function rContacts(el){
         </div>
       </div>
     </div>
-  `).join('')||'<span style="color:var(--t3);font-size:12px">No creditors yet</span>';
+  `).join('')||'<span style="color:var(--t3);font-size:12px">'+(term?(t('no_results')||'No matching creditors'):'No creditors yet')+'</span>';
 }
 
 /* ═══════════════════════════ DEBTORS ═══════════════════════════ */
 function rDebtors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const debtors=S.contacts.filter(c=>(c.cid===cid||c.isGeneral)&&c.type==='debtor'&&!c.deleted);
   const theme=S.cardTheme||{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  
+  const allDebtors=S.contacts.filter(c=>(c.cid===cid||c.isGeneral)&&c.type==='debtor'&&!c.deleted);
+
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:500" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}';this.style.transform='translateX(0)'">
@@ -4963,15 +5393,35 @@ function rDebtors(el,cid){
     </button>
     <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Debtors'}</span>
   </div>
-  <div class="card">
+  ${allDebtors.length>0?`<input type="text" id="deb-search" placeholder="🔍 ${t('search')||'Search'} (Name, Email, Account #)..."
+    style="width:100%;padding:10px 14px;margin-bottom:12px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1)"
+    oninput="renderDebtorsTable('${cid}',this.value)">`:''}
+  <div id="deb-table-container"></div>`;
+  renderDebtorsTable(cid,'');
+}
+
+function renderDebtorsTable(cid,searchTerm){
+  const container=document.getElementById('deb-table-container');
+  if(!container)return;
+  const theme=S.cardTheme||{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
+  const term=(searchTerm||'').toLowerCase().trim();
+  const debtors=S.contacts.filter(c=>{
+    if(!((c.cid===cid||c.isGeneral)&&c.type==='debtor'&&!c.deleted))return false;
+    if(!term)return true;
+    return (c.name||'').toLowerCase().includes(term)||
+      (c.email||'').toLowerCase().includes(term)||
+      (c.accountNumber||'').toLowerCase().includes(term);
+  });
+
+  container.innerHTML=`<div class="card">
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💵 Debtors (Customers)</span>
       <button class="btn btn-p btn-xs" onclick="openContactModal(null,'debtor')">➕ Add Debtor</button>
     </div>
-    ${debtors.length===0?`<div class="empty">💵 No debtors yet</div>`:
+    ${debtors.length===0?`<div class="empty">💵 ${term?(t('no_results')||'No matching debtors'):'No debtors yet'}</div>`:
     `<table style="width:100%;font-size:11px">
       <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Email</th><th style="padding:8px;text-align:left">Account #</th><th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
-      ${debtors.map(d=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+(d.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:${theme.border}">'+(d.accountNumber||'—')+'</td><td style="text-align:right;padding:8px">'+(d.isGeneral?'<span style="font-size:10px;color:var(--t3)">One-time invoices ledger</span>':'<button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button>')+'</td></tr>').join('')}
+      ${debtors.map(d=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+(d.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+(d.accountNumber||'—')+'</td><td style="text-align:right;padding:8px">'+(d.isGeneral?'<span style="font-size:10px;color:var(--t3)">One-time invoices ledger</span>':'<button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button>')+'</td></tr>').join('')}
       </tbody>
     </table>`}
   </div>`;
@@ -4980,9 +5430,9 @@ function rDebtors(el,cid){
 /* ═══════════════════════════ CREDITORS ═══════════════════════════ */
 function rCreditors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const creditors=S.contacts.filter(c=>c.cid===cid&&c.type==='creditor'&&!c.deleted);
   const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  
+  const allCreditors=S.contacts.filter(c=>c.cid===cid&&c.type==='creditor'&&!c.deleted);
+
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:500" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}';this.style.transform='translateX(0)'">
@@ -4990,15 +5440,35 @@ function rCreditors(el,cid){
     </button>
     <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Creditors'}</span>
   </div>
-  <div class="card">
+  ${allCreditors.length>0?`<input type="text" id="cred-search" placeholder="🔍 ${t('search')||'Search'} (Name, Email, Account #)..."
+    style="width:100%;padding:10px 14px;margin-bottom:12px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1)"
+    oninput="renderCreditorsTable('${cid}',this.value)">`:''}
+  <div id="cred-table-container"></div>`;
+  renderCreditorsTable(cid,'');
+}
+
+function renderCreditorsTable(cid,searchTerm){
+  const container=document.getElementById('cred-table-container');
+  if(!container)return;
+  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
+  const term=(searchTerm||'').toLowerCase().trim();
+  const creditors=S.contacts.filter(c=>{
+    if(!(c.cid===cid&&c.type==='creditor'&&!c.deleted))return false;
+    if(!term)return true;
+    return (c.name||'').toLowerCase().includes(term)||
+      (c.email||'').toLowerCase().includes(term)||
+      (c.accountNumber||'').toLowerCase().includes(term);
+  });
+
+  container.innerHTML=`<div class="card">
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🤝 Creditors (Suppliers)</span>
       <button class="btn btn-p btn-xs" onclick="openContactModal(null,'creditor')">➕ Add Creditor</button>
     </div>
-    ${creditors.length===0?`<div class="empty">🤝 No creditors yet</div>`:
+    ${creditors.length===0?`<div class="empty">🤝 ${term?(t('no_results')||'No matching creditors'):'No creditors yet'}</div>`:
     `<table style="width:100%;font-size:11px">
       <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Email</th><th style="padding:8px;text-align:left">Account #</th><th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
-      ${creditors.map(cr=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:${theme.border}">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button></td></tr>').join('')}
+      ${creditors.map(cr=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button></td></tr>').join('')}
       </tbody>
     </table>`}
   </div>`;
@@ -5080,8 +5550,8 @@ function updateAccNum(typeOverride){
 function delContact(id){
   if(!confirm('Delete this contact? (Ledger entries will not be deleted)'))return;
   const cid=S.currentClient;
-  S.contacts=S.contacts.filter(c=>!(c.id===id&&c.cid===cid)); // Delete only this client's contact
-  sv();renderContent();toast('Contact deleted ✓','ti-check');
+  S.contacts=S.contacts.map(c=>(c.id===id&&c.cid===cid)?{...c,deleted:true,deletedAt:new Date().toISOString()}:c);
+  sv();renderContent();toast(t('deleted_to_trash')||'Moved to Trash — restorable for 30 days');
 }
 
 function rInfo(el,cid){
@@ -5125,6 +5595,8 @@ function rSettings(el){
       <button class="tab-btn ${settingsTab==='company'?'active':''}" onclick="S.settingsTab='company';renderContent()" title="${t('set_company_info')}" style="flex:1;padding:6px 2px;border:none;background:none;cursor:pointer;font-weight:${settingsTab==='company'?'700':'500'};color:${settingsTab==='company'?'var(--t1)':'var(--t3)'};border-bottom:${settingsTab==='company'?'3px solid #C89010':'none'};text-align:center;font-size:10px;line-height:1.3">🏢<br/>Co</button>
       <button class="tab-btn ${settingsTab==='admins'?'active':''}" onclick="S.settingsTab='admins';renderContent()" title="${t('manage_admins')}" style="flex:1;padding:6px 2px;border:none;background:none;cursor:pointer;font-weight:${settingsTab==='admins'?'700':'500'};color:${settingsTab==='admins'?'var(--t1)':'var(--t3)'};border-bottom:${settingsTab==='admins'?'3px solid #C89010':'none'};text-align:center;font-size:10px;line-height:1.3">🔑<br/>Ad</button>
       <button class="tab-btn ${settingsTab==='credentials'?'active':''}" onclick="S.settingsTab='credentials';renderContent()" title="${t('set_client_pw')}" style="flex:1;padding:6px 2px;border:none;background:none;cursor:pointer;font-weight:${settingsTab==='credentials'?'700':'500'};color:${settingsTab==='credentials'?'var(--t1)':'var(--t3)'};border-bottom:${settingsTab==='credentials'?'3px solid #C89010':'none'};text-align:center;font-size:10px;line-height:1.3">🔐<br/>Pw</button>
+      <button class="tab-btn" onclick="S.tab='trash';renderApp()" title="${t('trash_title')||'Trash'}" style="flex:1;padding:6px 2px;border:none;background:none;cursor:pointer;font-weight:500;color:var(--t3);text-align:center;font-size:10px;line-height:1.3">🗑️<br/>${t('trash_title')||'Trash'}</button>
+      <button class="tab-btn" onclick="S.tab='auditlog';renderApp()" title="${t('audit_log_title')||'Audit Log'}" style="flex:1;padding:6px 2px;border:none;background:none;cursor:pointer;font-weight:500;color:var(--t3);text-align:center;font-size:10px;line-height:1.3">📜<br/>${t('audit_log_title')||'Audit Log'}</button>
     </div>
     
     <div style="max-width:100%;overflow-x:hidden;padding:0 4px">`;
@@ -5185,18 +5657,29 @@ function rSettings(el){
 
   // ═══════════════════════════ TAB 3: CREDENTIALS ═══════════════════════════
   else if(settingsTab==='credentials'){
+    const curAdmin=S.admins.find(a=>a.id===S.currentAdmin);
     html+=`<div class="settings-section">
       <h3>🔐 Access Control</h3>
       <div style="font-size:12px;color:var(--t3);margin-bottom:16px">Manage login credentials for admins and clients</div>
+      
+      <!-- Two-Factor Authentication -->
+      <div style="background:var(--bg2);border:2px solid ${curAdmin?.totpEnabled?'#2d7a4f':'var(--bd2)'};border-radius:8px;padding:12px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:#0A2218">🔒 ${t('two_factor_auth')||'Two-Factor Authentication (2FA)'}</div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:12px;line-height:1.6">${t('two_factor_hint')||'Adds an extra security step at login using an authenticator app (Google Authenticator, Microsoft Authenticator, Authy...)'}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span style="font-size:12px;font-weight:600;color:${curAdmin?.totpEnabled?'#2d7a4f':'var(--t3)'}">${curAdmin?.totpEnabled?'✅ '+(t('enabled')||'Enabled'):'⚪ '+(t('not_enabled')||'Not enabled')}</span>
+          <button class="btn btn-xs ${curAdmin?.totpEnabled?'btn-danger':'btn-p'}" onclick="open2FASetupModal()">${curAdmin?.totpEnabled?(t('disable_2fa')||'Disable 2FA'):(t('enable_2fa')||'Enable 2FA')}</button>
+        </div>
+      </div>
       
       <!-- Admin Credentials -->
       <div style="background:var(--bg2);border:2px solid var(--bd2);border-radius:8px;padding:12px;margin-bottom:16px">
         <div style="font-size:12px;font-weight:600;margin-bottom:12px;color:#C89010">👨‍💼 Admin Access Credentials</div>
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
         <table style="width:100%;font-size:10px;min-width:350px">
-          <thead><tr><th style="padding:6px 4px;font-weight:600">Name</th><th style="padding:6px 4px;font-weight:600">Email</th><th style="padding:6px 4px;font-weight:600">Reset</th></tr></thead>
+          <thead><tr><th style="padding:6px 4px;font-weight:600">Name</th><th style="padding:6px 4px;font-weight:600">Email</th><th style="padding:6px 4px;font-weight:600">2FA</th><th style="padding:6px 4px;font-weight:600">Reset</th></tr></thead>
           <tbody>
-            ${S.admins.map(admin=>'<tr style="border-top:1px solid var(--bd2)"><td style="padding:8px 4px;font-weight:500">'+admin.name+'</td><td style="padding:8px 4px;color:var(--t3);font-size:9px;max-width:140px;overflow:hidden;text-overflow:ellipsis">'+admin.email+'</td><td style="padding:8px 4px;text-align:center"><button class="btn btn-xs" onclick="resetAdminPassword(\''+admin.id+'\')">Reset</button></td></tr>').join('')}
+            ${S.admins.map(admin=>'<tr style="border-top:1px solid var(--bd2)"><td style="padding:8px 4px;font-weight:500">'+admin.name+'</td><td style="padding:8px 4px;color:var(--t3);font-size:9px;max-width:140px;overflow:hidden;text-overflow:ellipsis">'+admin.email+'</td><td style="padding:8px 4px;text-align:center">'+(admin.totpEnabled?'<span style="color:#2d7a4f;font-size:9px">✅</span>':'<span style="color:var(--t3);font-size:9px">—</span>')+'</td><td style="padding:8px 4px;text-align:center"><button class="btn btn-xs" onclick="resetAdminPassword(\''+admin.id+'\')">Reset</button></td></tr>').join('')}
           </tbody>
         </table>
         </div>
@@ -5228,7 +5711,7 @@ function rSettings(el){
 }
 
 /* ═══ ACTIONS ═══ */
-function saveAdminAuth(){
+async function saveAdminAuth(){
   const newPw1=document.getElementById('s-ap')?.value;
   const newPw2=document.getElementById('s-ap2')?.value;
   const email=document.getElementById('s-aem')?.value;
@@ -5237,19 +5720,34 @@ function saveAdminAuth(){
   if(newPw1&&newPw1!==newPw2){toast('Passwords do not match','⚠');return;}
   if(email)S.settings.email=email;
   if(phone)S.settings.phone=phone;
-  if(newPw1){S.settings.adminPwCustom=newPw1;S.settings.adminPwSet=true;}
+  // ✅ إصلاح: كانت تُحفظ سابقًا في S.settings.adminPwCustom وهو حقل لا تقرأه doLogin إطلاقًا
+  if(newPw1){
+    const admin=S.admins.find(a=>a.id===S.currentAdmin);
+    if(admin){
+      const rec=await makePasswordRecord(newPw1);
+      admin.passwordSalt=rec.passwordSalt;admin.passwordHash=rec.passwordHash;
+      delete admin.password;
+      clearFailedAttempts(admin);
+      logAudit('password_change','account','Changed own password: '+admin.name);
+    }
+  }
   sv();toast(t('btn_save_creds')+' ✓');renderContent();
 }
 
 function resetClientPw(cid){
   if(!confirm('Reset this client\'s password? They will need to set a new one on next login.'))return;
   const idx=S.clients.findIndex(c=>c.id===cid);
-  if(idx>=0){delete S.clients[idx].pwCustom;delete S.clients[idx].pwSet;}
+  if(idx>=0){
+    delete S.clients[idx].pwCustom;delete S.clients[idx].pwSet;
+    delete S.clients[idx].passwordHash;delete S.clients[idx].passwordSalt;
+    delete S.clients[idx].failedAttempts;delete S.clients[idx].lockedUntil;
+    logAudit('password_change','account','Reset password for client: '+S.clients[idx].name,cid);
+  }
   sv();toast('Password reset — client must set new password','✓');renderContent();
 }
 
 // ─────────────────── MANAGE ADMINS ───────────────────
-function addNewAdmin(){
+async function addNewAdmin(){
   const name=document.getElementById('new-admin-name')?.value?.trim();
   const email=document.getElementById('new-admin-email')?.value?.trim();
   const phone=document.getElementById('new-admin-phone')?.value?.trim();
@@ -5259,12 +5757,14 @@ function addNewAdmin(){
   if(pw.length<6){toast('⚠ Password must be at least 6 characters','⚠');return;}
   if(S.admins.find(a=>a.email===email)){toast('⚠ Email already in use','⚠');return;}
   
+  const rec=await makePasswordRecord(pw);
   const newAdmin={
     id:UID(),
     name:name,
     email:email,
     phone:phone||'',
-    password:pw,
+    passwordSalt:rec.passwordSalt,
+    passwordHash:rec.passwordHash,
     role:'admin',
     status:'active',
     createdDate:TODAY(),
@@ -5272,6 +5772,7 @@ function addNewAdmin(){
   };
   
   S.admins.push(newAdmin);
+  logAudit('create','admin','Added new admin account: '+newAdmin.name+' ('+newAdmin.email+')');
   sv();
   
   document.getElementById('new-admin-name').value='';
@@ -5302,6 +5803,71 @@ function delAdmin(adminId){
   renderContent();
 }
 
+// ══════════ نافذة إعداد/تعطيل التحقق بخطوتين (2FA) ══════════
+async function open2FASetupModal(){
+  const admin=S.admins.find(a=>a.id===S.currentAdmin);
+  if(!admin)return;
+
+  if(admin.totpEnabled){
+    if(!confirm(t('confirm_disable_2fa')||'Disable two-factor authentication for your account?'))return;
+    delete admin.totpSecret;
+    admin.totpEnabled=false;
+    logAudit('security','account','Disabled 2FA for admin: '+admin.name);
+    sv();renderContent();
+    toast('✓ '+(t('twofa_disabled')||'Two-factor authentication disabled'));
+    return;
+  }
+
+  showLoading(t('generating_qr')||'Generating QR code…');
+  let qrDataUrl='';
+  const secret=generateTotpSecret();
+  try{
+    await ensureQRCode();
+    const uri=totpAuthUri(secret,admin.email||admin.name);
+    const canvas=document.createElement('canvas');
+    await QRCode.toCanvas(canvas,uri,{width:220,margin:1});
+    qrDataUrl=canvas.toDataURL('image/png');
+  }catch(err){
+    hideLoading();
+    toast('❌ '+(err.message||'Could not generate QR code'));
+    return;
+  }
+  hideLoading();
+
+  window._pending2FASecret=secret;
+  const groupedSecret=secret.match(/.{1,4}/g).join(' ');
+
+  showModal('🔒 '+(t('enable_2fa')||'Enable Two-Factor Authentication'),`
+    <div style="text-align:center">
+      <p style="font-size:12px;color:var(--t3);margin-bottom:12px">${t('scan_qr_hint')||'Scan this QR code with Google Authenticator, Microsoft Authenticator, or any TOTP app'}</p>
+      <img src="${qrDataUrl}" style="width:220px;height:220px;border:2px solid var(--gr2);border-radius:8px;margin-bottom:12px"/>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:4px">${t('or_enter_manually')||'Or enter this key manually:'}</div>
+      <div style="font-family:var(--fm);font-size:14px;letter-spacing:1px;background:var(--bg2);padding:8px;border-radius:6px;margin-bottom:16px;word-break:break-all">${groupedSecret}</div>
+      <div class="fg" style="text-align:left">
+        <label>${t('enter_code_confirm')||'Enter the 6-digit code from your app to confirm'}</label>
+        <input id="totp-confirm-code" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;font-size:22px;text-align:center;letter-spacing:8px;font-family:var(--fm);box-sizing:border-box"/>
+      </div>
+    </div>
+  `,async()=>{
+    const codeInput=document.getElementById('totp-confirm-code');
+    const code=codeInput?.value;
+    const valid=await verifyTotpCode(window._pending2FASecret,code);
+    if(!valid){
+      toast('❌ '+(t('invalid_code')||'Incorrect code — please try again'));
+      markFieldError('totp-confirm-code');
+      return; // النافذة تبقى مفتوحة لإعادة المحاولة
+    }
+    admin.totpSecret=window._pending2FASecret;
+    admin.totpEnabled=true;
+    delete window._pending2FASecret;
+    logAudit('security','account','Enabled 2FA for admin: '+admin.name);
+    sv();
+    closeModal();
+    renderContent();
+    toast('✓ '+(t('twofa_enabled')||'Two-factor authentication enabled'));
+  },t('confirm_enable')||'Confirm & Enable');
+}
+
 function resetAdminPassword(adminId){
   const admin=S.admins.find(a=>a.id===adminId);
   if(!admin)return;
@@ -5323,9 +5889,15 @@ function resetAdminPassword(adminId){
     return;
   }
   
-  admin.password=newPw;
-  sv();
-  toast('✓ Password reset successfully','✓');
+  makePasswordRecord(newPw).then(rec=>{
+    admin.passwordSalt=rec.passwordSalt;
+    admin.passwordHash=rec.passwordHash;
+    delete admin.password;
+    clearFailedAttempts(admin);
+    logAudit('password_change','account','Reset password for admin: '+admin.name);
+    sv();
+    toast('✓ Password reset successfully','✓');
+  });
   renderContent();
 }
 
@@ -5404,49 +5976,237 @@ function markPaid(id){
 
 function delInvoice(id){
   if(confirm('Delete?')){
-    // Mark as deleted instead of removing (for cloud sync)
-    S.invoices=S.invoices.map(i=>i.id===id?{...i,deleted:true}:i);
+    const inv=S.invoices.find(i=>i.id===id);
+    // Mark as deleted instead of removing (for cloud sync + trash/restore)
+    S.invoices=S.invoices.map(i=>i.id===id?{...i,deleted:true,deletedAt:new Date().toISOString()}:i);
+    if(inv)logAudit('delete','invoice','Deleted invoice '+inv.num+' — '+FMT(inv.total),inv.cid);
     sv();renderContent();
+    toast(t('deleted_to_trash')||'Moved to Trash — restorable for 30 days');
   }
 }
 function delExpense(id){
   if(confirm('Delete?')){
-    S.expenses=S.expenses.map(e=>e.id===id?{...e,deleted:true}:e);
+    const exp=S.expenses.find(e=>e.id===id);
+    S.expenses=S.expenses.map(e=>e.id===id?{...e,deleted:true,deletedAt:new Date().toISOString()}:e);
+    if(exp)logAudit('delete','expense','Deleted expense '+(exp.desc||exp.supplier)+' — '+FMT(exp.amount),exp.cid);
     sv();renderContent();
+    toast(t('deleted_to_trash')||'Moved to Trash — restorable for 30 days');
   }
 }
 function delHours(id){
   if(confirm('Delete?')){
-    S.hours=S.hours.map(h=>h.id===id?{...h,deleted:true}:h);
+    S.hours=S.hours.map(h=>h.id===id?{...h,deleted:true,deletedAt:new Date().toISOString()}:h);
     sv();renderContent();
+    toast(t('deleted_to_trash')||'Moved to Trash — restorable for 30 days');
   }
 }
-function delDoc(id){if(confirm('Delete?')){S.docs=S.docs.filter(d=>d.id!==id);sv();renderContent();}}
+function delDoc(id){
+  if(confirm('Delete?')){
+    S.docs=S.docs.map(d=>d.id===id?{...d,deleted:true,deletedAt:new Date().toISOString()}:d);
+    sv();renderContent();
+    toast(t('deleted_to_trash')||'Moved to Trash — restorable for 30 days');
+  }
+}
+
+// ══════════ سلة المحذوفات (Trash) — استرجاع خلال 30 يومًا ══════════
+const TRASH_RETENTION_DAYS=30;
+function daysUntilPurge(deletedAt){
+  if(!deletedAt)return TRASH_RETENTION_DAYS; // عناصر قديمة بلا طابع زمني (قبل هذا التحديث) — تُمنح مهلة كاملة
+  const ageMs=Date.now()-new Date(deletedAt).getTime();
+  const remaining=TRASH_RETENTION_DAYS-Math.floor(ageMs/864e5);
+  return Math.max(0,remaining);
+}
+// يُشغَّل عند كل بدء تشغيل: يحذف نهائيًا كل ما تجاوز 30 يومًا في السلة
+function purgeOldTrash(){
+  const cutoff=Date.now()-TRASH_RETENTION_DAYS*864e5;
+  const isExpired=x=>x.deleted&&x.deletedAt&&new Date(x.deletedAt).getTime()<cutoff;
+  let changed=false;
+  ['clients','invoices','expenses','hours','docs','contacts'].forEach(key=>{
+    if(!S[key])return;
+    const before=S[key].length;
+    S[key]=S[key].filter(x=>!isExpired(x));
+    if(S[key].length!==before)changed=true;
+  });
+  if(changed)sv();
+}
+
+// ══════════ سجل التدقيق (Audit Log) — من فعل ماذا ومتى ══════════
+const AUDIT_LOG_MAX_ENTRIES=1000;
+function currentActorName(){
+  if(S.role==='admin'){
+    const admin=(S.admins||[]).find(a=>a.id===S.currentAdmin);
+    return admin?admin.name:'Admin';
+  }
+  if(S.role==='client'){
+    const c=(S.clients||[]).find(x=>x.id===S.currentClient);
+    return c?c.name+' (client)':'Client';
+  }
+  return 'System';
+}
+function logAudit(action,entityType,summary,cid){
+  if(!S.auditLog)S.auditLog=[];
+  S.auditLog.unshift({
+    id:UID(),
+    ts:new Date().toISOString(),
+    actor:currentActorName(),
+    actorRole:S.role||'system',
+    action,           // 'create' | 'edit' | 'delete' | 'restore' | 'plan_change' | 'password_change' | 'login_failed' | 'login_locked'
+    entityType,        // 'invoice' | 'expense' | 'client' | 'contact' | 'admin' | ...
+    summary,          // نص مختصر قابل للقراءة يصف ما حدث
+    cid:cid||null
+  });
+  if(S.auditLog.length>AUDIT_LOG_MAX_ENTRIES)S.auditLog.length=AUDIT_LOG_MAX_ENTRIES;
+  // لا نستدعي sv() هنا عمدًا؛ الدالة المستدعية أصلاً تستدعي sv() بعد إجراء التعديل
+}
+
+function rTrash(el){
+  const theme={bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
+  const clientName=cid=>S.clients.find(c=>c.id===cid)?.name||'—';
+
+  const items=[];
+  (S.clients||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'client',icon:'🏢',label:x.name,sub:'Client — all data',id:x.id,deletedAt:x.deletedAt}));
+  (S.invoices||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'invoice',icon:'📄',label:x.num+' — '+(x.desc||''),sub:clientName(x.cid)+' · '+FMT(x.total),id:x.id,deletedAt:x.deletedAt}));
+  (S.expenses||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'expense',icon:'🧾',label:x.desc||x.supplier||'Expense',sub:clientName(x.cid)+' · '+FMT(x.amount),id:x.id,deletedAt:x.deletedAt}));
+  (S.hours||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'hours',icon:'🕐',label:(x.hrs||0)+'h — '+(x.desc||''),sub:clientName(x.cid),id:x.id,deletedAt:x.deletedAt}));
+  (S.docs||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'doc',icon:'📁',label:x.name||'Document',sub:clientName(x.cid),id:x.id,deletedAt:x.deletedAt}));
+  (S.contacts||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'contact',icon:'👤',label:x.name,sub:clientName(x.cid)+' · '+(x.type||''),id:x.id,deletedAt:x.deletedAt}));
+
+  items.sort((a,b)=>new Date(b.deletedAt||0)-new Date(a.deletedAt||0));
+
+  el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+    <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
+      ← ${t('back_to_overview')||'Back'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${t('trash_hint')||'Deleted items are kept for 30 days, then permanently removed'}</span>
+  </div>
+  <div class="card">
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🗑️ ${t('trash_title')||'Trash'} (${items.length})</span></div>
+    ${items.length===0?`<div class="empty">🗑️ ${t('trash_empty')||'Trash is empty'}</div>`:
+    `<table style="width:100%;font-size:12px">
+      <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">${t('lbl_description')||'Item'}</th><th style="padding:8px;text-align:left">${t('lbl_customer')||'Client'}</th><th style="padding:8px;text-align:left">${t('trash_days_left')||'Days left'}</th><th style="text-align:right;padding:8px">${t('actions')||'Actions'}</th></tr></thead>
+      <tbody>
+      ${items.map(it=>{
+        const daysLeft=daysUntilPurge(it.deletedAt);
+        const urgent=daysLeft<=5;
+        return `<tr style="border-bottom:1px solid var(--gr2)">
+          <td style="padding:8px">${it.icon} ${it.label}</td>
+          <td style="padding:8px;color:var(--t3);font-size:11px">${it.sub}</td>
+          <td style="padding:8px;color:${urgent?'#B8860B':'var(--t3)'};font-weight:${urgent?600:400}">${daysLeft} ${t('trash_days')||'days'}</td>
+          <td style="text-align:right;padding:8px"><button class="btn btn-xs btn-p" onclick="restoreTrashItem('${it.type}','${it.id}')">↩ ${t('trash_restore')||'Restore'}</button></td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>`}
+  </div>`;
+}
+
+function restoreTrashItem(type,id){
+  const restoreMap={
+    client:()=>{
+      S.clients=S.clients.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);
+      // استرجاع كل بيانات العميل المحذوفة معه أيضًا
+      ['invoices','expenses','hours','docs','contacts'].forEach(key=>{
+        S[key]=S[key].map(x=>x.cid===id&&x.deleted?{...x,deleted:false,deletedAt:null}:x);
+      });
+    },
+    invoice:()=>{S.invoices=S.invoices.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);},
+    expense:()=>{S.expenses=S.expenses.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);},
+    hours:()=>{S.hours=S.hours.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);},
+    doc:()=>{S.docs=S.docs.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);},
+    contact:()=>{S.contacts=S.contacts.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);},
+  };
+  if(restoreMap[type]){
+    restoreMap[type]();
+    logAudit('restore',type,'Restored '+type+' from Trash');
+    sv();renderContent();
+    toast('✓ '+(t('trash_restored')||'Restored'));
+  }
+}
+
+// ══════════ شاشة عرض سجل التدقيق ══════════
+function rAuditLog(el){
+  const theme={bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
+  el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+    <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
+      ← ${t('back_to_overview')||'Back'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${t('audit_log_hint')||'Tracks who did what, and when'}</span>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <input type="text" id="audit-search" placeholder="🔍 ${t('search')||'Search'}..."
+      style="flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1)"
+      oninput="renderAuditLog(this.value,document.getElementById('audit-action-filter').value)">
+    <select id="audit-action-filter" style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1);cursor:pointer"
+      onchange="renderAuditLog(document.getElementById('audit-search').value,this.value)">
+      <option value="">${t('all_actions')||'All actions'}</option>
+      <option value="create">${t('audit_create')||'Created'}</option>
+      <option value="edit">${t('audit_edit')||'Edited'}</option>
+      <option value="delete">${t('audit_delete')||'Deleted'}</option>
+      <option value="restore">${t('audit_restore')||'Restored'}</option>
+      <option value="plan_change">${t('audit_plan_change')||'Plan changed'}</option>
+      <option value="password_change">${t('audit_password_change')||'Password changed'}</option>
+      <option value="login_failed">${t('audit_login_failed')||'Failed login'}</option>
+      <option value="login_locked">${t('audit_login_locked')||'Account locked'}</option>
+    </select>
+  </div>
+  <div id="audit-log-container"></div>`;
+  renderAuditLog('','');
+}
+
+function renderAuditLog(searchTerm,actionFilter){
+  const container=document.getElementById('audit-log-container');
+  if(!container)return;
+  const term=(searchTerm||'').toLowerCase().trim();
+  const log=(S.auditLog||[]).filter(e=>{
+    if(actionFilter&&e.action!==actionFilter)return false;
+    if(!term)return true;
+    return (e.summary||'').toLowerCase().includes(term)||(e.actor||'').toLowerCase().includes(term);
+  });
+
+  const actionIcons={create:'➕',edit:'✏️',delete:'🗑️',restore:'↩️',plan_change:'💳',password_change:'🔐',login_failed:'⚠️',login_locked:'🚫'};
+  const actionColors={create:'#2d7a4f',edit:'#1A4A2A',delete:'#B8860B',restore:'#4da876',plan_change:'#C89010',password_change:'#0F3025',login_failed:'#7A4A00',login_locked:'#B8860B'};
+
+  container.innerHTML=`<div class="card">
+    <div class="ch" style="border-bottom:3px solid #0A2218"><span class="ct">📜 ${t('audit_log_title')||'Audit Log'} (${log.length})</span></div>
+    ${log.length===0?`<div class="empty">📜 ${term||actionFilter?(t('no_results')||'No matching entries'):(t('audit_log_empty')||'No activity recorded yet')}</div>`:
+    `<table style="width:100%;font-size:12px">
+      <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">${t('lbl_date')||'When'}</th><th style="padding:8px;text-align:left">${t('audit_actor')||'Who'}</th><th style="padding:8px;text-align:left">${t('audit_action')||'Action'}</th><th style="padding:8px;text-align:left">${t('lbl_description')||'Details'}</th></tr></thead>
+      <tbody>
+      ${log.map(e=>{
+        const d=new Date(e.ts);
+        const when=d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        const color=actionColors[e.action]||'#0A2218';
+        return `<tr style="border-bottom:1px solid var(--gr2)">
+          <td style="padding:8px;color:var(--t3);white-space:nowrap;font-size:11px">${when}</td>
+          <td style="padding:8px;font-weight:500">${e.actor}</td>
+          <td style="padding:8px"><span style="display:inline-flex;align-items:center;gap:4px;background:${color}1A;color:${color};padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600">${actionIcons[e.action]||'•'} ${e.action.replace('_',' ')}</span></td>
+          <td style="padding:8px;color:var(--t2)">${e.summary}</td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>`}
+  </div>`;
+}
+
 function delClient(id){
   if(!confirm('Remove this client and ALL their data?'))return;
-  
-  // Mark as deleted (KEEP for sync to cloud)
-  S.clients=S.clients.map(c=>c.id===id?{...c,deleted:true}:c);
-  S.invoices=S.invoices.map(i=>i.cid===id?{...i,deleted:true}:i);
-  S.expenses=S.expenses.map(e=>e.cid===id?{...e,deleted:true}:e);
-  S.hours=S.hours.map(h=>h.cid===id?{...h,deleted:true}:h);
-  S.docs=S.docs.map(d=>d.cid===id?{...d,deleted:true}:d);
-  S.messages=S.messages.map(m=>m.cid===id?{...m,deleted:true}:m);
-  S.contacts=S.contacts.map(ct=>ct.cid===id?{...ct,deleted:true}:ct);
-  
-  // SAVE FIRST (with deleted flag for sync)
+  const ts=new Date().toISOString();
+  const clientName=S.clients.find(c=>c.id===id)?.name||id;
+
+  // Mark as deleted (soft delete — restorable from Trash, consistent with other types)
+  S.clients=S.clients.map(c=>c.id===id?{...c,deleted:true,deletedAt:ts}:c);
+  S.invoices=S.invoices.map(i=>i.cid===id?{...i,deleted:true,deletedAt:ts}:i);
+  S.expenses=S.expenses.map(e=>e.cid===id?{...e,deleted:true,deletedAt:ts}:e);
+  S.hours=S.hours.map(h=>h.cid===id?{...h,deleted:true,deletedAt:ts}:h);
+  S.docs=S.docs.map(d=>d.cid===id?{...d,deleted:true,deletedAt:ts}:d);
+  S.messages=S.messages.map(m=>m.cid===id?{...m,deleted:true,deletedAt:ts}:m);
+  S.contacts=S.contacts.map(ct=>ct.cid===id?{...ct,deleted:true,deletedAt:ts}:ct);
+  logAudit('delete','client','Deleted client '+clientName+' and all related data',id);
+
   S.currentClient=null;S.tab='dashboard';sv();
-  
-  // THEN filter for display
-  S.clients=S.clients.filter(c=>!c.deleted);
-  S.invoices=S.invoices.filter(i=>!i.deleted);
-  S.expenses=S.expenses.filter(e=>!e.deleted);
-  S.hours=S.hours.filter(h=>!h.deleted);
-  S.docs=S.docs.filter(d=>!d.deleted);
-  S.messages=S.messages.filter(m=>!m.deleted);
-  S.contacts=S.contacts.filter(c=>!c.deleted);
-  
-  renderApp();toast(t('remove')+' ✓','ti-check');
+  renderApp();toast(t('deleted_to_trash')||'Moved to Trash — restorable for 30 days');
 }
 
 function exportCSV(type){
@@ -5798,6 +6558,27 @@ function rEditClient(el,cid){
           </div>
         </div>
 
+        <!-- Subscription Section -->
+        <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px">💳 ${t('subscription_information')||'Subscription'}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('plan')||'Plan'}</label>
+              <select id="cf-fee" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+                <option value="0" ${!c?.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
+                <option value="100" ${parseInt(c?.monthlyFee)===100?'selected':''}>Basic — €100/month</option>
+                <option value="150" ${parseInt(c?.monthlyFee)===150?'selected':''}>Plus — €150/month</option>
+                <option value="200" ${parseInt(c?.monthlyFee)===200?'selected':''}>Pro — €200/month</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('subscription_end')||'Subscription end date'}</label>
+              <input type="date" id="cf-planexp" value="${c?.planExpiry||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-top:6px">${t('subscription_end_hint')||'Leave empty for an ongoing subscription with no fixed end date'}</div>
+        </div>
+
         <!-- Buttons -->
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="btn" onclick="goBackToOverview()" style="background:var(--gr2);color:var(--t1);border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s" onmouseover="this.style.background='var(--gr3)'" onmouseout="this.style.background='var(--gr2)'">Cancel</button>
@@ -5845,9 +6626,19 @@ function saveEditClientFromTab(clientId){
     zipCode:zip,
     city:city,
     country:document.getElementById('cf-country').value,
-    registrationNumber:document.getElementById('cf-regnum').value
+    registrationNumber:document.getElementById('cf-regnum').value,
+    monthlyFee:parseInt(document.getElementById('cf-fee')?.value)||0,
+    planExpiry:document.getElementById('cf-planexp')?.value||''
   };
   
+  if(updatedClient.monthlyFee!==c.monthlyFee){
+    const planNames={0:t('no_subscription')||'No subscription',100:'Basic',150:'Plus',200:'Pro'};
+    logAudit('plan_change','client',
+      'Changed plan for '+updatedClient.name+': '+(planNames[c.monthlyFee]||c.monthlyFee||'—')+' → '+(planNames[updatedClient.monthlyFee]||updatedClient.monthlyFee),
+      updatedClient.id);
+  }else{
+    logAudit('edit','client','Edited client details for '+updatedClient.name,updatedClient.id);
+  }
   S.clients=S.clients.map(x=>x.id===updatedClient.id?updatedClient:x);
   sv();
   goBackToOverview();
@@ -5961,6 +6752,21 @@ function openClientModal(c){
             <input id="cf-regnum" value="${c?.registrationNumber||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
           </div>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('plan')||'Plan'}</label>
+            <select id="cf-fee" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+              <option value="0" ${c&&!c.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
+              <option value="100" ${parseInt(c?.monthlyFee)===100?'selected':''}>Basic — €100/month</option>
+              <option value="150" ${!c||parseInt(c?.monthlyFee)===150?'selected':''}>Plus — €150/month</option>
+              <option value="200" ${parseInt(c?.monthlyFee)===200?'selected':''}>Pro — €200/month</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('subscription_end')||'Subscription end date'}</label>
+            <input type="date" id="cf-planexp" value="${c?.planExpiry||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
+          </div>
+        </div>
       </div>
 
       <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3)">
@@ -6005,7 +6811,8 @@ function openClientModal(c){
         city:city,
         country:document.getElementById('cf-country').value,
         registrationNumber:document.getElementById('cf-regnum').value,
-        monthlyFee:150,
+        monthlyFee:parseInt(document.getElementById('cf-fee')?.value)||0,
+        planExpiry:document.getElementById('cf-planexp')?.value||'',
         contractStartDate:TODAY(),
         contractDuration:12,
         paymentTerms:30,
@@ -6016,6 +6823,7 @@ function openClientModal(c){
       
       // Generate contract
       generateServiceAgreement(clientData);
+      logAudit('create','client','Generated service agreement for prospective client '+clientData.name);
       closeModal();
       toast('📄 Contract generated - awaiting signature','ti-file-pdf');
     } else {
@@ -6035,8 +6843,18 @@ function openClientModal(c){
         zipCode:zip,
         city:city,
         country:document.getElementById('cf-country').value,
-        registrationNumber:document.getElementById('cf-regnum').value
+        registrationNumber:document.getElementById('cf-regnum').value,
+        monthlyFee:parseInt(document.getElementById('cf-fee')?.value)||0,
+        planExpiry:document.getElementById('cf-planexp')?.value||''
       };
+      if(updatedClient.monthlyFee!==c.monthlyFee){
+        const planNames={0:t('no_subscription')||'No subscription',100:'Basic',150:'Plus',200:'Pro'};
+        logAudit('plan_change','client',
+          'Changed plan for '+updatedClient.name+': '+(planNames[c.monthlyFee]||c.monthlyFee||'—')+' → '+(planNames[updatedClient.monthlyFee]||updatedClient.monthlyFee),
+          updatedClient.id);
+      }else{
+        logAudit('edit','client','Edited client details for '+updatedClient.name,updatedClient.id);
+      }
       S.clients=S.clients.map(x=>x.id===updatedClient.id?updatedClient:x);
       sv();
       closeModal();
@@ -6062,7 +6880,7 @@ function openInvoiceModal(inv){
   const isClientPortal=S.role==='client';
   
   // Filter contacts by current client ID
-  const contacts=(S.contacts||[]).filter(c=>c.cid===cid);
+  const contacts=(S.contacts||[]).filter(c=>c.cid===cid&&!c.deleted);
   const billToOptions=contacts.filter(c=>!c.isGeneral).map(c=>`<option value="${c.id}" data-name="${c.name}"${inv?.billToId===c.id?'selected':''}>${c.name} (${c.type})</option>`).join('');
   const initMode=inv?.billToManual?'manual':'select';
   showModal(isN?t('btn_new_invoice').replace('+ ',''):t('edit')+' '+t('tab_invoices').slice(0,-1),`
@@ -6150,7 +6968,9 @@ function openInvoiceModal(inv){
     }else if(mode==='new'){
       const name=(document.getElementById('bt-new-name')?.value||'').trim();
       if(name){
-        const newContact={id:UID(),cid,type:'debtor',name,
+        const existingDebtors=(S.contacts||[]).filter(c=>c.type==='debtor'&&c.cid===cid);
+        const accNum=(4100+existingDebtors.length).toString();
+        const newContact={id:UID(),cid,type:'debtor',name,accountNumber:accNum,
           email:document.getElementById('bt-new-email')?.value||'',
           phone:document.getElementById('bt-new-phone')?.value||'',
           address:document.getElementById('bt-new-address')?.value||''};
@@ -6192,6 +7012,7 @@ function openInvoiceModal(inv){
       return;
     }
     if(isN)S.invoices.push(ni);else S.invoices=S.invoices.map(i=>i.id===ni.id?ni:i);
+    logAudit(isN?'create':'edit','invoice',(isN?'Created':'Edited')+' invoice '+ni.num+' — '+FMT(ni.total)+' ('+getBillToName(ni)+')',cid);
     if(isN&&document.getElementById('if-rec')?.checked){
       const freq=document.getElementById('if-rec-freq').value;
       if(!S.recurring)S.recurring=[];
@@ -6231,7 +7052,7 @@ function upBillTo(){
   if(!billtoId){if(detDiv)detDiv.style.display='none';return;}
   // Use S.contacts (filtered by current client) instead of old S.clients/S.debtors
   const cid=S.currentClient;
-  const contacts=(S.contacts||[]).filter(c=>c.cid===cid);
+  const contacts=(S.contacts||[]).filter(c=>c.cid===cid&&!c.deleted);
   const entity=contacts.find(e=>e.id===billtoId);
   if(!entity)return;
   document.getElementById('if-billto-id').value=billtoId;
@@ -6305,9 +7126,11 @@ function openNewExpense(){
       const a=parseFloat(document.getElementById('ex-a').value)||0;
       const r=parseFloat(document.getElementById('ex-r').value);
       if(!document.getElementById('ex-desc').value.trim()){toast('❌ Description required');markFieldError('ex-desc');return;}
+      const exDesc=document.getElementById('ex-desc').value;
       S.expenses.push({id:UID(),cid,date:document.getElementById('ex-d').value,
-        supplier:document.getElementById('ex-s').value,desc:document.getElementById('ex-desc').value,
+        supplier:document.getElementById('ex-s').value,desc:exDesc,
         cat:document.getElementById('ex-c').value,amount:a,btw:a*(r/100),receiptDocId:attachedDocId});
+      logAudit('create','expense','Added expense '+exDesc+' — '+FMT(a),cid);
       sv();closeModal();renderContent();toast(t('tab_expenses')+' ✓','ti-check');
     }
   },'Save Expense');
@@ -6382,6 +7205,7 @@ function openNewExpense(){
 
         if(file.type.startsWith('image/')){
           if(uploadMsg)uploadMsg.innerHTML='⏳ Reading receipt automatically…<br/><span style="font-size:11px">This may take a few seconds</span>';
+          showLoading(t('reading_receipt')||'Reading receipt…');
           try{
             const extracted=await ocrReceiptImage(dataUrl);
             switchMode('manual');
@@ -6393,9 +7217,12 @@ function openNewExpense(){
           }catch(ocrErr){
             switchMode('manual');
             toast('✓ Document added — auto-read failed, please enter manually');
+          }finally{
+            hideLoading();
           }
         }else if(file.type==='application/pdf'){
           if(uploadMsg)uploadMsg.innerHTML='⏳ Reading PDF automatically…<br/><span style="font-size:11px">This may take a few seconds</span>';
+          showLoading(t('reading_receipt')||'Reading PDF…');
           try{
             const pageImg=await pdfFirstPageToDataURL(file);
             const extracted=await ocrReceiptImage(pageImg);
@@ -6408,6 +7235,8 @@ function openNewExpense(){
           }catch(ocrErr){
             switchMode('manual');
             toast('✓ Document added — auto-read failed, please enter manually');
+          }finally{
+            hideLoading();
           }
         }else{
           closeModal();
@@ -6439,6 +7268,7 @@ function openNewExpense(){
         window._expenseCameraInput.value='';
 
         if(cameraMsg)cameraMsg.innerHTML='⏳ Reading receipt automatically…<br/><span style="font-size:11px">This may take a few seconds</span>';
+        showLoading(t('reading_receipt')||'Reading receipt…');
         try{
           const extracted=await ocrReceiptImage(dataUrl);
           switchMode('manual');
@@ -6450,6 +7280,8 @@ function openNewExpense(){
         }catch(ocrErr){
           switchMode('manual');
           toast('✓ Receipt captured — auto-read failed, please enter manually');
+        }finally{
+          hideLoading();
         }
       }catch(err){
         toast('Error: '+err.message);
@@ -6480,7 +7312,18 @@ function openLogHours(){
 }
 
 /* ═══ PDF EXPORT ═══ */
-function exportPDF(id){
+async function exportPDF(id){
+  showLoading(t('generating_pdf')||'Generating PDF…');
+  try{
+    await ensureJsPDF();
+    _exportPDF(id);
+  }catch(err){
+    toast('❌ '+(err.message||'Could not load PDF library'));
+  }finally{
+    hideLoading();
+  }
+}
+function _exportPDF(id){
   const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
   if(!jsPDF){toast(t('tab_reports')+'...','ti-loader');return;}
   const i=S.invoices.find(i=>i.id===id);
@@ -6534,7 +7377,7 @@ function exportPDF(id){
   }else if(i.billToId){
     // Use S.contacts for Bill To data (filtered by client)
     const cid=i.cid;
-    const contacts=(S.contacts||[]).filter(con=>con.cid===cid);
+    const contacts=(S.contacts||[]).filter(con=>con.cid===cid&&!con.deleted);
     const recipient=contacts.find(e=>e.id===i.billToId);
     if(recipient){
       recipientData={name:recipient.name,email:recipient.email||'',address:recipient.address||'',
@@ -6596,8 +7439,9 @@ function exportPDF(id){
   toast('PDF ✓','ti-download');
 }
 
-function exportClientPDF(cid){
-  const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;if(!jsPDF){toast('PDF loading...','ti-loader');return;}
+function exportClientPDF(cid){ withLoadingAsync(t('generating_pdf')||'Generating PDF…', async ()=>{ await ensureJsPDF(); _exportClientPDF(cid); }); }
+function _exportClientPDF(cid){
+  const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;if(!jsPDF)return;
   const c=S.clients.find(c=>c.id===cid);if(!c)return;
   const inv=S.invoices.filter(i=>i.cid===cid);
   const rev=inv.filter(i=>i.status==='Betaald').reduce((s,i)=>s+i.total,0);
@@ -6992,12 +7836,12 @@ function rReportsList(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
   const reports=[
-    {id:'summary',icon:'📊',name:'Financial Summary',desc:'Revenue, Expenses & Profit Overview',bg:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
-    {id:'pl',icon:'📈',name:'P&L Statement',desc:'Detailed Profit & Loss Report',bg:'linear-gradient(135deg, #0F3025 0%, #1A4A2A 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
-    {id:'btw',icon:'💰',name:'BTW/VAT Return',desc:'Tax Return Information',bg:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
-    {id:'debtors',icon:'💵',name:'Debtors Aging',desc:'Outstanding Invoices Report',bg:'linear-gradient(135deg, #1a4d2e 0%, #2d7a4f 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
-    {id:'expenses',icon:'🧾',name:'Expenses Report',desc:'Detailed Expense Breakdown',bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
-    {id:'cashflow',icon:'💵',name:'Cash Flow',desc:'Cash In & Out Analysis',bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
+    {id:'summary',icon:'📊',name:t('rep_summary_title'),desc:t('rep_summary_desc'),bg:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
+    {id:'pl',icon:'📈',name:t('rep_pl_title'),desc:t('rep_pl_desc'),bg:'linear-gradient(135deg, #0F3025 0%, #1A4A2A 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
+    {id:'btw',icon:'💰',name:t('rep_btw_title'),desc:t('rep_btw_desc'),bg:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
+    {id:'debtors',icon:'💵',name:t('rep_debtors_title'),desc:t('rep_debtors_desc'),bg:'linear-gradient(135deg, #1a4d2e 0%, #2d7a4f 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
+    {id:'expenses',icon:'🧾',name:t('rep_expenses_title'),desc:t('rep_expenses_desc'),bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
+    {id:'cashflow',icon:'💵',name:t('rep_cashflow_title'),desc:t('rep_cashflow_desc'),bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
   ];
   
   let html='<div style="padding:16px">';
@@ -7052,9 +7896,7 @@ function rReportCashFlow(el,cid){
   
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💵 Cash Flow Report</span>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'cashflow\',\''+cid+'\')">📥 PDF</button>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'cashflow\',\''+cid+'\')">📊 Excel</button></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💵 Cash Flow Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'cashflow\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'cashflow\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
   
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
@@ -7114,9 +7956,7 @@ function rReportSummary(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">📊 '+(t('rep_summary')||'Summary')+' — '+c?.name+'</span>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'summary\',\''+cid+'\')">📥 PDF</button>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'summary\',\''+cid+'\')">📊 Excel</button></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">📊 '+(t('rep_summary')||'Summary')+' — '+c?.name+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'summary\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'summary\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px">';
   html+='<div style="background:rgba(46,125,50,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--green)">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💰 Revenue</div>';
@@ -7156,10 +7996,8 @@ function rReportPL(el,cid){
   html+='<button onclick="goBackToReportsList()" style="padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
   html+='</div>';
   html+='<div class="card" style="border:2px solid '+theme.border+'">';
-  html+='<div class="ch" style="background:'+theme.bg+'"><span class="ct">📈 Profit & Loss Statement</span>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'pl\',\''+cid+'\')">📥 PDF</button>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'pl\',\''+cid+'\')">📊 Excel</button>';
-  html+='</div><div style="padding:16px">';
+  html+='<div class="ch" style="background:'+theme.bg+'"><span class="ct">📈 Profit & Loss Statement</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'pl\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'pl\',\''+cid+'\')">📊 Excel</button></div></div>';
+  html+='<div style="padding:16px">';
   html+='<div style="margin-bottom:20px">';
   html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gold)">REVENUE</div>';
   html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)">';
@@ -7201,9 +8039,7 @@ function rReportBTW(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💰 BTW Return (VAT)</span>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'btw\',\''+cid+'\')">📥 PDF</button>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'btw\',\''+cid+'\')">📊 Excel</button></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💰 BTW Return (VAT)</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'btw\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'btw\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
   html+='<div style="margin-bottom:16px;padding:12px;background:rgba(200,144,16,.08);border-radius:var(--r);border-left:3px solid var(--gold)">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">BTW Payable (Due)</div>';
@@ -7238,9 +8074,7 @@ function rReportDebtors(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💵 Debtors Aging Report</span>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'debtors\',\''+cid+'\')">📥 PDF</button>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'debtors\',\''+cid+'\')">📊 Excel</button></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💵 Debtors Aging Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'debtors\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'debtors\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
   html+='<div style="margin-bottom:16px;padding:12px;background:'+theme.bg+';border-radius:var(--r);border-left:3px solid '+theme.border+'">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Outstanding</div>';
@@ -7282,9 +8116,7 @@ function rReportExpenses(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">🧾 Expenses Report</span>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportPDF(\'expenses\',\''+cid+'\')">📥 PDF</button>';
-  html+='<button class="btn btn-p btn-xs" onclick="exportReportExcel(\'expenses\',\''+cid+'\')">📊 Excel</button></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">🧾 Expenses Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'expenses\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'expenses\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
   html+='<div style="margin-bottom:16px;padding:12px;background:rgba(192,57,43,.08);border-radius:var(--r);border-left:3px solid var(--red)">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Expenses</div>';
@@ -7318,7 +8150,18 @@ function rReportExpenses(el,cid){
 
 /* ══════════════════════ EXPORT FUNCTIONS ══════════════════════ */
 
-function exportReportPDF(type,cid){
+async function exportReportPDF(type,cid){
+  showLoading(t('generating_pdf')||'Generating PDF…');
+  try{
+    await ensureJsPDF();
+    _exportReportPDF(type,cid);
+  }catch(err){
+    toast('❌ '+(err.message||'Could not load PDF library'));
+  }finally{
+    hideLoading();
+  }
+}
+function _exportReportPDF(type,cid){
   const c=S.clients.find(c=>c.id===cid);
   const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
   if(!jsPDF){toast('Loading PDF library...','ti-loader');return;}
@@ -7748,7 +8591,18 @@ function exportReportPDF(type,cid){
   toast('✓ PDF exported successfully!');
 }
 
-function exportReportExcel(type,cid){
+async function exportReportExcel(type,cid){
+  showLoading(t('generating_excel')||'Generating Excel…');
+  try{
+    await ensureXLSX();
+    _exportReportExcel(type,cid);
+  }catch(err){
+    toast('❌ '+(err.message||'Could not load Excel library'));
+  }finally{
+    hideLoading();
+  }
+}
+function _exportReportExcel(type,cid){
   const c=S.clients.find(c=>c.id===cid);
   const XLSX=window.XLSX;
   if(!XLSX){toast('Loading Excel library...','ti-loader');return;}
@@ -8457,6 +9311,8 @@ function approvePendingAgreement(agreementId){
     city:agreement.clientData.city,
     country:agreement.clientData.country,
     registrationNumber:agreement.clientData.registrationNumber,
+    monthlyFee:agreement.clientData.monthlyFee||0,
+    planExpiry:agreement.clientData.planExpiry||'',
     contractId:agreement.id,
     contractStatus:'active',
     activatedDate:TODAY(),
