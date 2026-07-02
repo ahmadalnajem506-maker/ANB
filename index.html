@@ -343,7 +343,7 @@ body.rtl .nb{text-align:right;flex-direction:row-reverse}
 .logout-btn{width:100%;text-align:left;padding:7px 8px;border:none;background:transparent;
   border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;gap:7px;
   color:rgba(255,255,255,.3);font-size:12px;font-family:var(--fb);margin-top:4px}
-.logout-btn:hover{color:var(--red);background:rgba(139,26,26,.15)}
+.logout-btn:hover{color:var(--red);background:rgba(184,134,11,.15)}
 
 /* ═══ MAIN ═══ */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
@@ -522,7 +522,7 @@ tr:hover td{background:var(--gr1)}
 .sd{width:7px;height:7px;border-radius:50%;background:var(--gr2);transition:all .2s}
 .sd.on{background:var(--g1);width:18px;border-radius:3px}
 .sbox-ok{background:var(--green-bg);border:1px solid rgba(27,94,53,.2);border-radius:var(--rs);padding:10px 14px;font-size:12px;color:var(--green);margin-bottom:12px;display:flex;gap:7px;align-items:center;line-height:1.5}
-.sbox-info{background:#EAF4ED;border:1px solid rgba(12,58,110,.15);border-radius:var(--rs);padding:10px 14px;font-size:12px;color:var(--blue);margin-bottom:12px;line-height:1.6}
+.sbox-info{background:#EAF4ED;border:1px solid rgba(26,77,46,.15);border-radius:var(--rs);padding:10px 14px;font-size:12px;color:var(--blue);margin-bottom:12px;line-height:1.6}
 .pw-strength{height:4px;border-radius:2px;margin-top:4px;transition:all .3s}
 .pw-hint{font-size:10px;color:var(--t3);margin-top:3px}
 .back-link{font-size:12px;color:var(--t3);cursor:pointer;margin-bottom:14px;display:inline-flex;align-items:center;gap:4px}
@@ -673,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.70">
+<link rel="manifest" href="manifest.json?v=2.72">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -3218,7 +3218,7 @@ function rAdminReports(el){
         const c=S.clients.find(x=>x.id===i.cid);
         return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);border-left:3px solid var(--red);cursor:pointer;transition:all .2s"
           onclick="selClient('${i.cid}');S.tab='invoices';renderApp()"
-          onmouseover="this.style.background='rgba(255,0,0,.05)'"
+          onmouseover="this.style.background='rgba(184,134,11,.05)'"
           onmouseout="this.style.background='transparent'">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div style="flex:1">
@@ -3376,18 +3376,71 @@ function rAdminContracts(el){
   </div>`;
 }
 
+// إظهار حقول "عميل جديد" عند اختيار هذا الخيار، وإظهار خيار "تجديد" فقط عند اختيار عميل حقيقي
+function toggleContractClientMode(){
+  const sel=document.getElementById('contract-client');
+  const newFields=document.getElementById('contract-new-client-fields');
+  const renewalWrap=document.getElementById('contract-renewal-wrap');
+  if(!sel)return;
+  const isNew=sel.value==='__new__';
+  if(newFields)newFields.style.display=isNew?'block':'none';
+  if(renewalWrap)renewalWrap.style.display=(sel.value&&!isNew)?'block':'none';
+
+  if(sel.value&&!isNew){
+    const picker=document.getElementById('contract-renew-from');
+    if(picker){
+      const clientContracts=(S.contracts||[]).filter(c=>c.cid===sel.value&&c.status!=='Renewed');
+      picker.innerHTML='<option value="">-- Select contract being renewed --</option>'+
+        clientContracts.map(c=>`<option value="${c.id}">${c.title}</option>`).join('');
+    }
+  }
+}
+function toggleRenewalPicker(){
+  const checked=document.getElementById('contract-is-renewal')?.checked;
+  const picker=document.getElementById('contract-renewal-picker');
+  if(picker)picker.style.display=checked?'block':'none';
+}
+
 function openNewContractDialog(){
-  const clients=S.clients||[];
+  const clients=(S.clients||[]).filter(c=>!c.deleted);
   const opts=clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   showModal('Add Contract',`
     <div style="display:flex;flex-direction:column;gap:12px">
       
       <div>
         <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">👤 Select Client *</label>
-        <select id="contract-client" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+        <select id="contract-client" onchange="toggleContractClientMode()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
           <option value="">-- Choose a Client --</option>
+          <option value="__new__">➕ New client (not added yet)</option>
           ${opts}
         </select>
+      </div>
+
+      <div id="contract-new-client-fields" style="display:none;padding:12px;background:var(--bg2);border-radius:6px;border:1px dashed var(--gr2)">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:8px">➕ A lightweight client record will be created automatically when you save this contract.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Company Name *</label>
+            <input type="text" id="contract-new-name" placeholder="New client name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Email</label>
+            <input type="email" id="contract-new-email" placeholder="client@email.com" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
+          </div>
+        </div>
+      </div>
+
+      <div id="contract-renewal-wrap" style="display:none">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--t1);margin-bottom:8px">
+          <input type="checkbox" id="contract-is-renewal" onchange="toggleRenewalPicker()" style="width:auto"/>
+          🔁 This is a renewal of an existing contract
+        </label>
+        <div id="contract-renewal-picker" style="display:none;margin-bottom:8px">
+          <select id="contract-renew-from" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+            <option value="">-- Select contract being renewed --</option>
+          </select>
+          <div style="font-size:10px;color:var(--t3);margin-top:4px">The old contract will be marked as "Renewed" once this new one is saved.</div>
+        </div>
       </div>
 
       <div>
@@ -3445,8 +3498,26 @@ function openNewContractDialog(){
 
     </div>
   `, function(){
-    const cid=document.getElementById('contract-client').value;
+    let cid=document.getElementById('contract-client').value;
     if(!cid){toast('❌ Please select a client');markFieldError('contract-client');return;}
+
+    if(cid==='__new__'){
+      const newName=(document.getElementById('contract-new-name')?.value||'').trim();
+      if(!newName){toast('❌ New client name required');markFieldError('contract-new-name');return;}
+      const newClient={
+        id:UID(),
+        name:newName,
+        email:(document.getElementById('contract-new-email')?.value||'').trim(),
+        type:'B2B',
+        monthlyFee:parseInt(document.getElementById('contract-plan').value||'0')||0,
+        createdDate:TODAY()
+      };
+      S.clients.push(newClient);
+      logAudit('create','client','Added client "'+newName+'" via new contract creation',newClient.id);
+      cid=newClient.id;
+      toast('✓ New client "'+newName+'" added');
+    }
+
     const title=document.getElementById('contract-title').value;
     if(!title){toast('❌ Contract title required');markFieldError('contract-title');return;}
     const desc=document.getElementById('contract-desc').value;
@@ -3454,6 +3525,13 @@ function openNewContractDialog(){
     const type=document.getElementById('contract-type').value;
     const start=document.getElementById('contract-start').value;
     const end=document.getElementById('contract-end').value;
+    const isRenewal=document.getElementById('contract-is-renewal')?.checked;
+    const renewFromId=isRenewal?document.getElementById('contract-renew-from')?.value:'';
+
+    if(isRenewal&&renewFromId){
+      const oldContract=S.contracts.find(x=>x.id===renewFromId);
+      if(oldContract)oldContract.status='Renewed';
+    }
     
     if(!S.contracts)S.contracts=[];
     S.contracts.push({
@@ -3463,6 +3541,7 @@ function openNewContractDialog(){
       desc,
       plan,
       type,
+      renewedFrom:renewFromId||null,
       startDate:start,
       endDate:end,
       status:'draft',
@@ -3955,7 +4034,7 @@ function renderClientsList(searchTerm){
           <div style="font-size:11px;color:var(--t3);margin-bottom:6px">${c.email}${c.phone?' • '+c.phone:''}</div>
           <div style="font-size:11px;color:var(--t3);display:flex;gap:10px;flex-wrap:wrap">
             ${inv.length>0?'<span style="background:rgba(77,168,118,0.15);padding:2px 6px;border-radius:3px">📄 '+inv.length+'</span>':''}
-            ${exp>0?'<span style="background:rgba(217,83,79,0.15);padding:2px 6px;border-radius:3px">🧾 '+exp+'</span>':''}
+            ${exp>0?'<span style="background:rgba(184,134,11,0.15);padding:2px 6px;border-radius:3px">🧾 '+exp+'</span>':''}
             ${c.contractStartDate?'<span style="background:rgba(200,144,16,0.15);padding:2px 6px;border-radius:3px">📋 Active</span>':''}
           </div>
         </div>
@@ -4907,7 +4986,7 @@ function rBTW(el,cid){
     </div>
   </div>
 
-  <div style="padding:10px 14px;background:${due>0?'rgba(192,57,43,.08)':'rgba(46,125,50,.08)'};border-radius:var(--rs);font-size:12px;color:${due>0?'var(--red)':'var(--green)'};display:flex;gap:8px;align-items:center;margin-bottom:12px">
+  <div style="padding:10px 14px;background:${due>0?'rgba(184,134,11,.08)':'rgba(46,125,50,.08)'};border-radius:var(--rs);font-size:12px;color:${due>0?'var(--red)':'var(--green)'};display:flex;gap:8px;align-items:center;margin-bottom:12px">
     <span style="font-size:18px">${due>0?'⚠️':'✅'}</span>
     <div>
       <strong>${due>0?'Te betalen aan Belastingdienst:'+FMT(due):'Te vorderen van Belastingdienst: '+FMT(Math.abs(due))}</strong>
@@ -8325,16 +8404,16 @@ function rReportSummary(el,cid){
   html+='<div style="background:rgba(46,125,50,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--green)">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💰 Revenue</div>';
   html+='<div style="font-size:20px;font-weight:600;color:var(--green)">'+FMT(revenue)+'</div></div>';
-  html+='<div style="background:rgba(192,57,43,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--red)">';
+  html+='<div style="background:rgba(184,134,11,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--red)">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💸 Expenses</div>';
   html+='<div style="font-size:20px;font-weight:600;color:var(--red)">'+FMT(expenses)+'</div></div>';
-  html+='<div style="background:'+(profit>=0?'rgba(46,125,50,.08)':'rgba(192,57,43,.08)')+';border-radius:var(--r);padding:12px;border-left:3px solid '+(profit>=0?'var(--green)':'var(--red)')+'">';
+  html+='<div style="background:'+(profit>=0?'rgba(46,125,50,.08)':'rgba(184,134,11,.08)')+';border-radius:var(--r);padding:12px;border-left:3px solid '+(profit>=0?'var(--green)':'var(--red)')+'">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">📈 Net Profit</div>';
   html+='<div style="font-size:20px;font-weight:600;color:'+(profit>=0?'var(--green)':'var(--red)')+'">' + FMT(profit) + '</div></div>';
   html+='<div style="background:rgba(200,144,16,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--gold)">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💳 BTW Payable</div>';
   html+='<div style="font-size:20px;font-weight:600;color:var(--gold)">'+FMT(btwPayable)+'</div></div>';
-  html+='<div style="background:rgba(63,81,181,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--blue)">';
+  html+='<div style="background:rgba(26,77,46,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--blue)">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💵 Debtors</div>';
   html+='<div style="font-size:20px;font-weight:600;color:var(--blue)">'+FMT(debtors)+'</div></div>';
   html+='</div></div></div>';
@@ -8381,7 +8460,7 @@ function rReportPL(el,cid){
   html+='<span>Total Expenses</span><span style="color:var(--red)">-'+FMT(expenses)+'</span>';
   html+='</div></div>';
   
-  html+='<div style="padding:12px;background:'+(profit>=0?'rgba(46,125,50,.1)':'rgba(192,57,43,.1)')+';border-radius:var(--r);border-left:4px solid '+(profit>=0?'var(--green)':'var(--red)')+'">';
+  html+='<div style="padding:12px;background:'+(profit>=0?'rgba(46,125,50,.1)':'rgba(184,134,11,.1)')+';border-radius:var(--r);border-left:4px solid '+(profit>=0?'var(--green)':'var(--red)')+'">';
   html+='<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600">';
   html+='<span>NET PROFIT/LOSS</span><span style="color:'+(profit>=0?'var(--green)':'var(--red)')+'">' + FMT(profit) + '</span>';
   html+='</div></div>';
@@ -8482,7 +8561,7 @@ function rReportExpenses(el,cid){
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
   html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">🧾 Expenses Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'expenses\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'expenses\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
-  html+='<div style="margin-bottom:16px;padding:12px;background:rgba(192,57,43,.08);border-radius:var(--r);border-left:3px solid var(--red)">';
+  html+='<div style="margin-bottom:16px;padding:12px;background:rgba(184,134,11,.08);border-radius:var(--r);border-left:3px solid var(--red)">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Expenses</div>';
   html+='<div style="font-size:24px;font-weight:600;color:var(--red)">'+FMT(total)+'</div></div>';
   
@@ -8614,7 +8693,7 @@ function _exportReportPDF(type,cid){
     doc.text(`€${revenue.toFixed(2)}`,M+3,y+14);
     
     // Expenses box
-    doc.setFillColor(217,83,79);
+    doc.setFillColor(184,134,11);
     doc.rect(M+boxW+M,y,boxW,boxH,'F');
     doc.setTextColor(255,255,255);
     doc.setFont('helvetica','normal');
@@ -8677,7 +8756,7 @@ function _exportReportPDF(type,cid){
     // Expenses section
     doc.setFont('helvetica','bold');
     doc.setFontSize(11);
-    doc.setFillColor(217,83,79);
+    doc.setFillColor(184,134,11);
     doc.setTextColor(255,255,255);
     doc.rect(M,y,W-2*M,6,'F');
     doc.text('EXPENSES',M+3,y+5);
@@ -8747,7 +8826,7 @@ function _exportReportPDF(type,cid){
     doc.text(`€${btwIn.toFixed(2)}`,M+boxW+M+3,y+12);
     
     // VAT Payable
-    const btwColor=btwPayable>0?[217,83,79]:[77,168,118];
+    const btwColor=btwPayable>0?[184,134,11]:[77,168,118];
     doc.setFillColor(...btwColor);
     doc.rect(M+2*boxW+2*M,y,boxW,boxH,'F');
     doc.setTextColor(255,255,255);
@@ -8815,7 +8894,7 @@ function _exportReportPDF(type,cid){
         doc.text(inv.date,M+colW[0]+2,y+5);
         doc.text(`€${inv.amount.toFixed(2)}`,M+colW[0]+colW[1]+2,y+5);
         
-        const statusColor=inv.status==='Verlopen'?[217,83,79]:[255,167,38];
+        const statusColor=inv.status==='Verlopen'?[184,134,11]:[255,167,38];
         doc.setTextColor(...statusColor);
         doc.text(inv.status,M+colW[0]+colW[1]+colW[2]+2,y+5);
         doc.setTextColor(0,0,0);
@@ -8833,7 +8912,7 @@ function _exportReportPDF(type,cid){
       const total=invoices.reduce((s,i)=>s+(i.amount||0),0);
       doc.setFont('helvetica','bold');
       doc.setFontSize(11);
-      doc.setTextColor(217,83,79);
+      doc.setTextColor(184,134,11);
       doc.text(`TOTAL OUTSTANDING: €${total.toFixed(2)}`,M,y);
     }
   }
@@ -8846,7 +8925,7 @@ function _exportReportPDF(type,cid){
       doc.text('No expenses recorded',M,y);
     }else{
       // Table header
-      doc.setFillColor(217,83,79);
+      doc.setFillColor(184,134,11);
       doc.setTextColor(255,255,255);
       doc.setFont('helvetica','bold');
       doc.setFontSize(9);
@@ -8884,7 +8963,7 @@ function _exportReportPDF(type,cid){
       });
       
       y+=5;
-      doc.setDrawColor(217,83,79);
+      doc.setDrawColor(184,134,11);
       doc.setLineWidth(1);
       doc.line(M,y,W-M,y);
       y+=8;
@@ -8892,7 +8971,7 @@ function _exportReportPDF(type,cid){
       const total=expenses.reduce((s,e)=>s+(e.amount||0),0);
       doc.setFont('helvetica','bold');
       doc.setFontSize(11);
-      doc.setTextColor(217,83,79);
+      doc.setTextColor(184,134,11);
       doc.text(`TOTAL EXPENSES: €${total.toFixed(2)}`,M,y);
     }
   }
@@ -8917,7 +8996,7 @@ function _exportReportPDF(type,cid){
     doc.text(`€${inflow.toFixed(2)}`,M+3,y+15);
     
     // Outflow
-    doc.setFillColor(217,83,79);
+    doc.setFillColor(184,134,11);
     doc.rect(M+boxW+M,y,boxW,boxH,'F');
     doc.setTextColor(255,255,255);
     doc.setFont('helvetica','normal');
