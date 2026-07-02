@@ -51,6 +51,7 @@ export default {
       }
       const headers = new Headers(corsHeaders);
       object.writeHttpMetadata(headers);
+      headers.set('Content-Disposition', 'inline'); // يعرض الملف مباشرة بدل تنزيله كملف منفصل (مهم لمتصفحات الموبايل)
       headers.set('etag', object.httpEtag);
       return new Response(object.body, { headers });
     }
