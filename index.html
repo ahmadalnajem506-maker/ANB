@@ -382,6 +382,7 @@ tr:hover td{background:var(--gr1)}
 .b-draft{background:var(--gr1);color:var(--t3);border:1px solid var(--gr2)}
 .b-sent{background:var(--blue-bg);color:var(--blue)}
 .b-over{background:var(--red-bg);color:var(--red)}
+.b-partial{background:var(--orange-bg);color:var(--orange);border:1px dashed var(--orange)}
 .btn{padding:6px 12px;border-radius:var(--rs);font-size:12px;cursor:pointer;
   display:inline-flex;align-items:center;gap:4px;border:1px solid var(--gr2);
   background:var(--white);color:var(--t2);font-family:var(--fb);white-space:nowrap}
@@ -673,7 +674,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.81">
+<link rel="manifest" href="manifest.json?v=2.89">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -1377,7 +1378,7 @@ const INI=n=>(n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 // active language is English or Arabic (never in Dutch mode itself).
 var DUTCH_OFFICIAL={
   st_concept:'Concept', st_verzonden:'Verzonden', st_openstaand:'Openstaand',
-  st_betaald:'Betaald', st_verlopen:'Verlopen',
+  st_betaald:'Betaald', st_verlopen:'Verlopen', st_partial:'Partially Paid',
   btw:'BTW', winst_verlies:'Winst & Verlies', balans:'Balans',
   activa:'Activa', passiva:'Passiva', nettowinst:'Nettowinst',
   eigen_vermogen:'Eigen vermogen', omzet:'Omzet', boekingen:'Boekingen',
@@ -1426,7 +1427,7 @@ var I18N={
     dashboard_new_messages:'New Messages',
     dashboard_new_documents:'New Documents',
     dashboard_hours_logged:'Hours Logged',
-    dashboard_active_contracts:'Active Contracts', dashboard_contracts_renewal:'Contracts Needing Renewal', employees:'Employees', card_employees_desc:'Payroll & Employment Contracts', add_employee:'Add Employee', edit_employee:'Edit Employee', no_employees_yet:'No employees added yet', generate_payslip:'Generate Payslip', net_pay:'Net Pay', payslip_history:'Payslip History', no_payslips_yet:'No payslips generated yet', download:'Download', close:'Close', back_to_employees:'Back to Employees', benefits:'Benefits', end_employment:'End Employment', export_contract:'Export Contract PDF', export_payslip:'Export Payslip PDF', status_concept:'CONCEPT — month not yet ended', status_confirmed:'CONFIRMED', vacation_money_payout:'Vacation Allowance Payout', accrued_paid_may:'Accrued monthly, paid out once in May', paid_monthly:'Paid monthly with salary', vacation_payout:'Vacation allowance payout (accrued)', vacation_accruing:'Vacation allowance accruing (reserved for May)',
+    dashboard_active_contracts:'Active Contracts', dashboard_contracts_renewal:'Contracts Needing Renewal', employees:'Employees', card_employees_desc:'Payroll & Employment Contracts', add_employee:'Add Employee', edit_employee:'Edit Employee', no_employees_yet:'No employees added yet', generate_payslip:'Generate Payslip', net_pay:'Net Pay', payslip_history:'Payslip History', no_payslips_yet:'No payslips generated yet', download:'Download', close:'Close', matched_to:'Matched', remaining_to_allocate:'Remaining to allocate', fully_matched:'Fully matched', no_match_needed:'No match needed (internal transfer / bank fee)', suggested_matches:'Suggested Matches', remaining:'Remaining', match:'Match', search_manually:'Search Manually', contact_direct:'Contact (direct, no invoice)', match_transaction:'Match Transaction', done:'Done', enter_amount_to_match:'Amount to match', invalid_amount:'Invalid amount', marked_no_match:'Marked as no match needed', matched:'Matched', partial:'Partial', left:'left', no_match_needed_short:'N/A', sort_by:'Sort by', sort_name_az:'Name (A-Z)', sort_name_za:'Name (Z-A)', sort_newest:'Newest first', sort_oldest:'Oldest first', sort_plan_high:'Plan (high-low)', sort_salary_high:'Salary (high-low)', sort_title_az:'Title (A-Z)', sort_end_soon:'End date (soonest)', sort_amount_high:'Amount (high-low)', sort_amount_low:'Amount (low-high)', sort_desc_az:'Description (A-Z)', back_to_employees:'Back to Employees', benefits:'Benefits', end_employment:'End Employment', export_contract:'Export Contract PDF', export_payslip:'Export Payslip PDF', status_concept:'CONCEPT — month not yet ended', status_confirmed:'CONFIRMED', rep_payroll_title:'Payroll Report', rep_payroll_desc:'Employees & Salary Overview', active_employees:'Active Employees', ended_employees:'Ended Employees', monthly_fixed_payroll:'Monthly Fixed Payroll', hourly_employees_note:'employee(s) on variable hourly pay — not included in fixed monthly total above (depends on hours worked each month)', ytd_summary:'Year Summary', ytd_net_paid:'Net paid this year', accrued_vacation_total:'Accrued vacation allowance (unpaid)', accrued_13th_total:'Accrued 13th month (unpaid)', vacation_money_payout:'Vacation Allowance Payout', accrued_paid_may:'Accrued monthly, paid out once in May', paid_monthly:'Paid monthly with salary', vacation_payout:'Vacation allowance payout (accrued)', vacation_accruing:'Vacation allowance accruing (reserved for May)', rep_emp_financial_title:'Employee Financial Report', rep_emp_financial_desc:'Payroll Costs & Payments', rep_emp_stats_title:'Employee Statistics Report', rep_emp_stats_desc:'Workforce Overview & Trends', avg_cost_per_employee:'Avg. Cost / Fixed Employee', ytd_gross_paid:'Gross paid this year (taxable)', ytd_loonheffing:'Loonheffing withheld this year', ytd_pension:'Pension deducted this year', outstanding_liabilities:'Outstanding Liabilities (Accrued, Unpaid)', total_liability:'Total accrued liability', per_employee_breakdown:'Per-Employee Financial Breakdown', ytd_gross:'YTD Gross', total_ever_hired:'Total Ever Hired', avg_tenure:'Avg. Tenure', months:'mo', contract_type_breakdown:'Contract Type', permanent:'Permanent (Onbepaalde tijd)', fixed_term:'Fixed-term (Bepaalde tijd)', salary_type_breakdown:'Salary Type', avg_hours_week:'Avg. hours/week', job_title_breakdown:'Job Titles', nationality_breakdown:'Nationality', contracts_expiring_soon:'Fixed-Term Contracts Ending Within 90 Days', none_expiring:'None — all fixed-term contracts have more than 90 days remaining.', ocr_high_conf:'Confident match', ocr_low_conf:'Please verify — uncertain reading', ocr_low_quality:'Reading quality was low — please double-check every field carefully', ocr_extracted:'Data extracted automatically — colored fields show confidence, please review',
     dashboard_pending_agreements:'Pending Agreements',
     // Sidebar messages
     sidebar_use_cards:'← Use the cards to navigate',
@@ -1460,7 +1461,7 @@ var I18N={
     total_paid:'Total paid', messages_from_anb:'Messages from ANB', recent_invoices:'Recent invoices',
     // Invoice statuses
     st_concept:'Concept', st_verzonden:'Sent', st_openstaand:'Open',
-    st_betaald:'Paid', st_verlopen:'Overdue',
+    st_betaald:'Paid', st_verlopen:'Overdue', st_partial:'Partially Paid',
     // Table column labels
     lbl_status:'Status', lbl_date:'Date', lbl_due:'Due date', lbl_amount:'Amount excl.',
     lbl_btw:'Tax', lbl_total:'Total', lbl_description:'Description', lbl_num:'#',
@@ -1630,7 +1631,7 @@ var I18N={
     dashboard_new_messages:'Nieuwe Berichten',
     dashboard_new_documents:'Nieuwe Documenten',
     dashboard_hours_logged:'Gewerkte Uren',
-    dashboard_active_contracts:'Actieve Overeenkomsten', dashboard_contracts_renewal:'Contracten die Verlenging Nodig Hebben', employees:'Werknemers', card_employees_desc:'Loonadministratie & Arbeidscontracten', add_employee:'Werknemer Toevoegen', edit_employee:'Werknemer Bewerken', no_employees_yet:'Nog geen werknemers toegevoegd', generate_payslip:'Loonstrook Genereren', net_pay:'Netto Loon', payslip_history:'Loonstrookgeschiedenis', no_payslips_yet:'Nog geen loonstroken gegenereerd', download:'Downloaden', close:'Sluiten', back_to_employees:'Terug naar Werknemers', benefits:'Secundaire Arbeidsvoorwaarden', end_employment:'Dienstverband Beëindigen', export_contract:'Contract PDF Exporteren', export_payslip:'Loonstrook PDF Exporteren', status_concept:'CONCEPT — maand nog niet afgelopen', status_confirmed:'BEVESTIGD', vacation_money_payout:'Uitbetaling Vakantiegeld', accrued_paid_may:'Maandelijks opgebouwd, uitbetaald in mei', paid_monthly:'Maandelijks uitbetaald met salaris', vacation_payout:'Uitbetaling vakantiegeld (opgebouwd)', vacation_accruing:'Vakantiegeld wordt opgebouwd (gereserveerd voor mei)',
+    dashboard_active_contracts:'Actieve Overeenkomsten', dashboard_contracts_renewal:'Contracten die Verlenging Nodig Hebben', employees:'Werknemers', card_employees_desc:'Loonadministratie & Arbeidscontracten', add_employee:'Werknemer Toevoegen', edit_employee:'Werknemer Bewerken', no_employees_yet:'Nog geen werknemers toegevoegd', generate_payslip:'Loonstrook Genereren', net_pay:'Netto Loon', payslip_history:'Loonstrookgeschiedenis', no_payslips_yet:'Nog geen loonstroken gegenereerd', download:'Downloaden', close:'Sluiten', matched_to:'Gematcht', remaining_to_allocate:'Nog te matchen', fully_matched:'Volledig gematcht', no_match_needed:'Geen match nodig (interne overboeking / bankkosten)', suggested_matches:'Voorgestelde Matches', remaining:'Resterend', match:'Matchen', search_manually:'Handmatig Zoeken', contact_direct:'Contact (direct, geen factuur)', match_transaction:'Transactie Matchen', done:'Klaar', enter_amount_to_match:'Te matchen bedrag', invalid_amount:'Ongeldig bedrag', marked_no_match:'Gemarkeerd als geen match nodig', matched:'Gematcht', partial:'Gedeeltelijk', left:'resterend', no_match_needed_short:'N.v.t.', sort_by:'Sorteer op', sort_name_az:'Naam (A-Z)', sort_name_za:'Naam (Z-A)', sort_newest:'Nieuwste eerst', sort_oldest:'Oudste eerst', sort_plan_high:'Abonnement (hoog-laag)', sort_salary_high:'Salaris (hoog-laag)', sort_title_az:'Titel (A-Z)', sort_end_soon:'Einddatum (eerst)', sort_amount_high:'Bedrag (hoog-laag)', sort_amount_low:'Bedrag (laag-hoog)', sort_desc_az:'Omschrijving (A-Z)', back_to_employees:'Terug naar Werknemers', benefits:'Secundaire Arbeidsvoorwaarden', end_employment:'Dienstverband Beëindigen', export_contract:'Contract PDF Exporteren', export_payslip:'Loonstrook PDF Exporteren', status_concept:'CONCEPT — maand nog niet afgelopen', status_confirmed:'BEVESTIGD', rep_payroll_title:'Loonrapport', rep_payroll_desc:'Overzicht Werknemers & Salarissen', active_employees:'Actieve Werknemers', ended_employees:'Beëindigde Dienstverbanden', monthly_fixed_payroll:'Maandelijkse Vaste Loonkosten', hourly_employees_note:'werknemer(s) met variabel uurloon — niet inbegrepen in het vaste maandtotaal hierboven (afhankelijk van gewerkte uren per maand)', ytd_summary:'Jaaroverzicht', ytd_net_paid:'Netto uitbetaald dit jaar', accrued_vacation_total:'Opgebouwd vakantiegeld (onbetaald)', accrued_13th_total:'Opgebouwde 13e maand (onbetaald)', vacation_money_payout:'Uitbetaling Vakantiegeld', accrued_paid_may:'Maandelijks opgebouwd, uitbetaald in mei', paid_monthly:'Maandelijks uitbetaald met salaris', vacation_payout:'Uitbetaling vakantiegeld (opgebouwd)', vacation_accruing:'Vakantiegeld wordt opgebouwd (gereserveerd voor mei)', rep_emp_financial_title:'Financieel Rapport Werknemers', rep_emp_financial_desc:'Loonkosten & Uitbetalingen', rep_emp_stats_title:'Statistisch Rapport Werknemers', rep_emp_stats_desc:'Personeelsoverzicht & Trends', avg_cost_per_employee:'Gem. Kosten / Vaste Werknemer', ytd_gross_paid:'Bruto uitbetaald dit jaar (belastbaar)', ytd_loonheffing:'Loonheffing ingehouden dit jaar', ytd_pension:'Pensioen ingehouden dit jaar', outstanding_liabilities:'Openstaande Verplichtingen (Opgebouwd, Onbetaald)', total_liability:'Totale opgebouwde verplichting', per_employee_breakdown:'Financieel Overzicht per Werknemer', ytd_gross:'YTD Bruto', total_ever_hired:'Totaal Ooit Aangenomen', avg_tenure:'Gem. Dienstverband', months:'mnd', contract_type_breakdown:'Contracttype', permanent:'Vast (Onbepaalde tijd)', fixed_term:'Tijdelijk (Bepaalde tijd)', salary_type_breakdown:'Salaristype', avg_hours_week:'Gem. uren/week', job_title_breakdown:'Functietitels', nationality_breakdown:'Nationaliteit', contracts_expiring_soon:'Tijdelijke Contracten die Binnen 90 Dagen Aflopen', none_expiring:'Geen — alle tijdelijke contracten hebben meer dan 90 dagen resterend.', ocr_high_conf:'Betrouwbare match', ocr_low_conf:'Controleer — onzekere lezing', ocr_low_quality:'Leeskwaliteit was laag — controleer elk veld zorgvuldig', ocr_extracted:'Gegevens automatisch gehaald — gekleurde velden tonen betrouwbaarheid, controleer a.u.b.',
     dashboard_pending_agreements:'Hangende Akkoorden',
     // Sidebar messages
     sidebar_use_cards:'← Gebruik de kaarten om te navigeren',
@@ -1663,7 +1664,7 @@ var I18N={
     welcome_back_name:'Welkom terug, {name}!', client_tagline:'ANB Financial Services — uw financiële partner in Nederland',
     total_paid:'Totaal betaald', messages_from_anb:'Berichten van ANB', recent_invoices:'Recente facturen',
     st_concept:'Concept', st_verzonden:'Verzonden', st_openstaand:'Openstaand',
-    st_betaald:'Betaald', st_verlopen:'Verlopen',
+    st_betaald:'Betaald', st_verlopen:'Verlopen', st_partial:'Deels betaald',
     lbl_status:'Status', lbl_date:'Datum', lbl_due:'Vervaldatum', lbl_amount:'Bedrag excl.',
     lbl_btw:'BTW', lbl_total:'Totaal', lbl_description:'Omschrijving', lbl_num:'#',
     lbl_from:'Van', lbl_category:'Categorie', lbl_hours:'Uren', lbl_rate:'Tarief/u',
@@ -1822,7 +1823,7 @@ var I18N={
     dashboard_new_messages:'الرسائل الجديدة',
     dashboard_new_documents:'المستندات الجديدة',
     dashboard_hours_logged:'ساعات العمل المسجلة',
-    dashboard_active_contracts:'الاتفاقيات النشطة', dashboard_contracts_renewal:'عقود بحاجة لمراجعة/تجديد', employees:'الموظفون', card_employees_desc:'الرواتب وعقود العمل', add_employee:'إضافة موظف', edit_employee:'تعديل موظف', no_employees_yet:'لا يوجد موظفون بعد', generate_payslip:'إصدار بيان راتب', net_pay:'صافي الراتب', payslip_history:'سجل بيانات الرواتب', no_payslips_yet:'لا توجد بيانات رواتب صادرة بعد', download:'تحميل', close:'إغلاق', back_to_employees:'العودة للموظفين', benefits:'المزايا', end_employment:'إنهاء التعاقد', export_contract:'تصدير العقد PDF', export_payslip:'تصدير بيان الراتب PDF', status_concept:'مسودة — الشهر لم ينتهِ بعد', status_confirmed:'مؤكد', vacation_money_payout:'طريقة دفع بدل الإجازة', accrued_paid_may:'يُجمَّع شهريًا، ويُدفع دفعة واحدة في مايو', paid_monthly:'يُدفع شهريًا مع الراتب', vacation_payout:'دفعة بدل الإجازة المتراكمة', vacation_accruing:'بدل الإجازة يتراكم (محجوز لدفعة مايو)',
+    dashboard_active_contracts:'الاتفاقيات النشطة', dashboard_contracts_renewal:'عقود بحاجة لمراجعة/تجديد', employees:'الموظفون', card_employees_desc:'الرواتب وعقود العمل', add_employee:'إضافة موظف', edit_employee:'تعديل موظف', no_employees_yet:'لا يوجد موظفون بعد', generate_payslip:'إصدار بيان راتب', net_pay:'صافي الراتب', payslip_history:'سجل بيانات الرواتب', no_payslips_yet:'لا توجد بيانات رواتب صادرة بعد', download:'تحميل', close:'إغلاق', matched_to:'مطابَق', remaining_to_allocate:'المتبقي للمطابقة', fully_matched:'مطابقة كاملة', no_match_needed:'لا تحتاج مطابقة (تحويل داخلي / رسوم بنكية)', suggested_matches:'مطابقات مقترحة', remaining:'المتبقي', match:'مطابقة', search_manually:'بحث يدوي', contact_direct:'جهة اتصال (مباشرة، بلا فاتورة)', match_transaction:'مطابقة الحركة', done:'تم', enter_amount_to_match:'المبلغ المراد مطابقته', invalid_amount:'مبلغ غير صالح', marked_no_match:'تم الوسم كـ«لا يحتاج مطابقة»', matched:'مطابَقة', partial:'جزئية', left:'متبقٍ', no_match_needed_short:'غير منطبق', sort_by:'ترتيب حسب', sort_name_az:'الاسم (أ-ي)', sort_name_za:'الاسم (ي-أ)', sort_newest:'الأحدث أولاً', sort_oldest:'الأقدم أولاً', sort_plan_high:'الباقة (الأعلى-الأقل)', sort_salary_high:'الراتب (الأعلى-الأقل)', sort_title_az:'العنوان (أ-ي)', sort_end_soon:'تاريخ الانتهاء (الأقرب)', sort_amount_high:'المبلغ (الأعلى-الأقل)', sort_amount_low:'المبلغ (الأقل-الأعلى)', sort_desc_az:'الوصف (أ-ي)', back_to_employees:'العودة للموظفين', benefits:'المزايا', end_employment:'إنهاء التعاقد', export_contract:'تصدير العقد PDF', export_payslip:'تصدير بيان الراتب PDF', status_concept:'مسودة — الشهر لم ينتهِ بعد', status_confirmed:'مؤكد', rep_payroll_title:'تقرير الرواتب', rep_payroll_desc:'نظرة عامة على الموظفين والرواتب', active_employees:'الموظفون النشطون', ended_employees:'تعاقدات منتهية', monthly_fixed_payroll:'إجمالي الرواتب الثابتة الشهرية', hourly_employees_note:'موظف(ين) براتب متغيّر بالساعة — غير مشمولين في الإجمالي الثابت أعلاه (يعتمد على الساعات الفعلية كل شهر)', ytd_summary:'ملخص السنة', ytd_net_paid:'صافي المدفوع هذا العام', accrued_vacation_total:'بدل الإجازة المتراكم (غير مدفوع)', accrued_13th_total:'راتب ١٣ المتراكم (غير مدفوع)', vacation_money_payout:'طريقة دفع بدل الإجازة', accrued_paid_may:'يُجمَّع شهريًا، ويُدفع دفعة واحدة في مايو', paid_monthly:'يُدفع شهريًا مع الراتب', vacation_payout:'دفعة بدل الإجازة المتراكمة', vacation_accruing:'بدل الإجازة يتراكم (محجوز لدفعة مايو)', rep_emp_financial_title:'التقرير المالي للموظفين', rep_emp_financial_desc:'تكاليف الرواتب والمدفوعات', rep_emp_stats_title:'التقرير الإحصائي للموظفين', rep_emp_stats_desc:'نظرة عامة على القوى العاملة والاتجاهات', avg_cost_per_employee:'متوسط التكلفة / موظف براتب ثابت', ytd_gross_paid:'الإجمالي المدفوع هذا العام (خاضع للضريبة)', ytd_loonheffing:'الضريبة المحجوزة هذا العام', ytd_pension:'التقاعد المخصوم هذا العام', outstanding_liabilities:'التزامات مستحقة (متراكمة غير مدفوعة)', total_liability:'إجمالي الالتزامات المتراكمة', per_employee_breakdown:'التفصيل المالي لكل موظف', ytd_gross:'الإجمالي هذا العام', total_ever_hired:'إجمالي من تم توظيفهم', avg_tenure:'متوسط مدة الخدمة', months:'شهر', contract_type_breakdown:'نوع العقد', permanent:'دائم (Onbepaalde tijd)', fixed_term:'محدد المدة (Bepaalde tijd)', salary_type_breakdown:'نوع الراتب', avg_hours_week:'متوسط الساعات/الأسبوع', job_title_breakdown:'المسميات الوظيفية', nationality_breakdown:'الجنسية', contracts_expiring_soon:'عقود محدودة المدة تنتهي خلال 90 يومًا', none_expiring:'لا يوجد — كل العقود محدودة المدة متبقٍ لها أكثر من 90 يومًا.', ocr_high_conf:'قراءة موثوقة', ocr_low_conf:'يُرجى التحقق — قراءة غير مؤكدة', ocr_low_quality:'جودة القراءة كانت منخفضة — تحقق من كل حقل بعناية', ocr_extracted:'استُخرجت البيانات تلقائيًا — ألوان الحقول تعكس درجة الثقة، يُرجى المراجعة',
     dashboard_pending_agreements:'الاتفاقيات المعلقة',
     // Sidebar messages
     sidebar_use_cards:'← استخدم الكروت للتنقل',
@@ -1855,7 +1856,7 @@ var I18N={
     welcome_back_name:'مرحباً بعودتك، {name}!', client_tagline:'ANB Financial Services — شريكك المالي في هولندا',
     total_paid:'إجمالي المدفوع', messages_from_anb:'رسائل من ANB', recent_invoices:'أحدث الفواتير',
     st_concept:'مسودة (Concept)', st_verzonden:'مُرسَلة (Verzonden)', st_openstaand:'مفتوحة (Openstaand)',
-    st_betaald:'مدفوعة (Betaald)', st_verlopen:'متأخرة (Verlopen)',
+    st_betaald:'مدفوعة (Betaald)', st_verlopen:'متأخرة (Verlopen)', st_partial:'مدفوعة جزئيًا',
     lbl_status:'الحالة', lbl_date:'التاريخ', lbl_due:'الاستحقاق', lbl_amount:'المبلغ (بدون ضريبة)',
     lbl_btw:'الضريبة', lbl_total:'الإجمالي', lbl_description:'الوصف', lbl_num:'#',
     lbl_from:'من', lbl_category:'الفئة', lbl_hours:'الساعات', lbl_rate:'السعر/ساعة',
@@ -2280,9 +2281,52 @@ window.addEventListener('online',()=>{
 })();
 
 /* ═══════════════════════════ HELPERS ═══════════════════════════ */
+// ══════════════════════════════════════════════════════════════════
+// نظام ترتيب عام قابل لإعادة الاستخدام لكل الجداول - تصاعدي/تنازلي لأي عمود
+// ══════════════════════════════════════════════════════════════════
+if(!S.tableSort)S.tableSort={}; // { tableKey: {field, dir} } - يُحفظ ضمن حالة التطبيق
+
+// يُرجع حالة الترتيب الحالية لجدول معيّن (أو الافتراضي إن لم يُختر شيء بعد)
+function getSortState(tableKey,defaultField,defaultDir){
+  if(!S.tableSort[tableKey])S.tableSort[tableKey]={field:defaultField||null,dir:defaultDir||'asc'};
+  return S.tableSort[tableKey];
+}
+// يُبدّل اتجاه الترتيب عند النقر على نفس العمود، أو يبدأ تصاعديًا عند اختيار عمود جديد
+function toggleSort(tableKey,field,renderFn){
+  const s=getSortState(tableKey);
+  if(s.field===field)s.dir=s.dir==='asc'?'desc':'asc';
+  else{s.field=field;s.dir='asc';}
+  if(typeof renderFn==='function')renderFn();
+}
+// ترتيب ذكي عام لأي مصفوفة بيانات حسب أي حقل - يتعامل تلقائيًا مع الأرقام والنصوص والتواريخ (yyyy-mm-dd قابلة للمقارنة كنص مباشرة)
+function sortRows(rows,field,dir){
+  if(!field)return rows;
+  const sorted=[...rows].sort((a,b)=>{
+    let va=a[field],vb=b[field];
+    if(va==null)va='';
+    if(vb==null)vb='';
+    if(typeof va==='number'&&typeof vb==='number'){
+      return dir==='asc'?va-vb:vb-va;
+    }
+    va=String(va).toLowerCase();vb=String(vb).toLowerCase();
+    if(va<vb)return dir==='asc'?-1:1;
+    if(va>vb)return dir==='asc'?1:-1;
+    return 0;
+  });
+  return sorted;
+}
+// يبني وسم <th> قابلًا للنقر للترتيب، مع سهم ▲/▼ يوضح الاتجاه الحالي إن كان هذا العمود هو المُرتَّب عليه
+// onclickCall: نص الاستدعاء الفعلي لإعادة رسم نفس الجدول بعد الترتيب (يقرأ حقول البحث/الفلتر الحالية من الصفحة)
+function sortTh(label,field,tableKey,onclickCall){
+  const s=getSortState(tableKey);
+  const isActive=s.field===field;
+  const arrow=isActive?(s.dir==='asc'?' ▲':' ▼'):' <span style="opacity:.25">⇅</span>';
+  return `<th onclick="toggleSort('${tableKey}','${field}',()=>{${onclickCall}})" style="cursor:pointer;user-select:none;white-space:nowrap" title="${t('sort_by')||'Sort by'} ${label}">${label}${arrow}</th>`;
+}
+
 function bdg(s){
-  const cls={Betaald:'paid',Openstaand:'open',Verlopen:'over',Concept:'draft',Verzonden:'sent'};
-  const keyMap={Betaald:'st_betaald',Openstaand:'st_openstaand',Verlopen:'st_verlopen',Concept:'st_concept',Verzonden:'st_verzonden'};
+  const cls={Betaald:'paid',Openstaand:'open',Verlopen:'over',Concept:'draft',Verzonden:'sent','Deels betaald':'partial'};
+  const keyMap={Betaald:'st_betaald',Openstaand:'st_openstaand',Verlopen:'st_verlopen',Concept:'st_concept',Verzonden:'st_verzonden','Deels betaald':'st_partial'};
   const label = keyMap[s] ? t(keyMap[s]) : s;
   return `<span class="bdg b-${cls[s]||'draft'}">${label}</span>`;
 }
@@ -2962,7 +3006,7 @@ function renderSidebar(){
       {id:'contracts',icon:'📋',key:'contracts'},
       {id:'assets',icon:'🏢',key:'assets'},
     ];
-    const unreadMsgs=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='anb'&&!m.isRead&&!m.deleted).length;
+    const unreadMsgs=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='client'&&!m.isRead&&!m.deleted).length;
     
     // ✅ إذا كان في صفحة البطاقات، لا نعرض الخيارات في الـ Sidebar
     if(S.tab==='client_overview'){
@@ -2989,7 +3033,7 @@ function renderSidebar(){
     const c=S.clients.find(c=>c.id===S.currentClient);
     badge.innerHTML=`<span class="sb-role-badge badge-client">👤 ${c?.name||'Client'}</span>`;
     lbl.textContent=t('my_account');
-    clients.innerHTML=`<div style="padding:8px 4px"><div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(200,144,16,.12);border-radius:var(--rs)"><div class="cb-av" style="width:28px;height:28px;font-size:11px;background:${c?.color||'#888'}22;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div><div><div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.9)">${c?.name}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${c?.type||'Client'}</div></div></div></div>`;
+    clients.innerHTML=`<div style="padding:8px 4px"><div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(200,144,16,.12);border-radius:var(--rs)"><div class="cb-av" style="width:28px;height:28px;font-size:11px;background:${c?.color||'#888'}22;color:${c?.color||'#888'}">${INI(c?.name||'?')}</div><div><div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.9)">${c?.name||'Client'}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${c?.type||'Client'}</div></div></div></div>`;
     
     // القائمة الجانبية للعميل: دائمًا رسالة "استخدم الكروت" - التنقل عبر الكروت وزر العودة الملوّن داخل كل شاشة
     clients.innerHTML+=`<div style="padding:12px 8px;font-size:11px;color:rgba(255,255,255,.4);text-align:center;margin-top:12px;font-style:italic">${t('sidebar_use_cards')||'Use the cards to navigate'}</div>`;
@@ -3006,8 +3050,6 @@ function selClient(id){
   // Mark all documents as viewed
   S.docs.filter(d=>d.cid===id).forEach(d=>d.isNew=false);
   S.expenses.filter(e=>e.cid===id).forEach(e=>e.isReviewed=true);
-  // ✅ Mark all messages from ANB for this client as read
-  S.messages.filter(m=>m.cid===id&&m.from==='anb'&&!m.isRead).forEach(m=>m.isRead=true);
   sv();
   
   // ✅ Close sidebar on mobile
@@ -3047,13 +3089,15 @@ function gotoSettings(){
   renderApp();
 }
 function setTab(t){
-  // ✅ If switching to 'clients' tab and currently viewing a client, go back to overview
-  if(t==='clients'&&S.currentClient){
+  // ✅ إذا كان أدمن يعرض عميلاً معينًا وانتقل لتبويب 'clients'، يعود لقائمة العملاء الكاملة
+  if(t==='clients'&&S.currentClient&&isAdmin()){
     gotoOverview();
     return;
   }
-  // ✅ If switching to admin 'dashboard' and currently viewing a client, go back to overview
-  if(t==='dashboard'&&S.currentClient){
+  // ✅ إذا كان أدمن يعرض عميلاً معينًا وانتقل لـ'dashboard'، يعود للوحة الأدمن الرئيسية
+  // ⚠️ يجب التحقق من isAdmin() هنا - العميل نفسه S.currentClient تكون دائمًا موجودة (هويته الدائمة)
+  // وبدون هذا الشرط، كانت هذه الجملة تُفرّغ هوية العميل بالخطأ من جلسته هو نفسه
+  if(t==='dashboard'&&S.currentClient&&isAdmin()){
     gotoOverview();
     return;
   }
@@ -3062,13 +3106,13 @@ function setTab(t){
   const tabThemes={
     'invoices':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'expenses':{bg:'rgba(15,48,37,0.08)',border:'#0F3025',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
-    'hours':{bg:'rgba(42,96,64,0.08)',border:'#2A6040',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
-    'messages':{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
-    'contracts':{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'hours':{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'messages':{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'contracts':{bg:'rgba(184,230,209,0.08)',border:'#B8E6D1',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
     'assets':{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'import':{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'bank':{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
-    'reports':{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'}
+    'reports':{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'}
   };
   
   // تطبيق ألوان الكرت إن كانت موجودة
@@ -3283,14 +3327,15 @@ function rAdminMessages(el){
     ${allMessages.length===0?`<div class="empty">💬 ${t('no_data')}</div>`:
     allMessages.map(m=>{
       const c=S.clients.find(x=>x.id===m.cid);
-      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);background:${!m.isRead?'rgba(200,144,16,.08)':'transparent'};cursor:pointer;transition:all .2s"
+      const isNewToAdmin=!m.isRead&&m.from==='client'; // "جديد" هنا تعني: لم يقرأها الأدمن بعد (رسالة واردة من عميل)
+      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);background:${isNewToAdmin?'rgba(200,144,16,.08)':'transparent'};cursor:pointer;transition:all .2s"
         onclick="selClient('${m.cid}');S.tab='messages';renderApp()"
         onmouseover="this.style.background='rgba(200,144,16,.12)'"
-        onmouseout="this.style.background='${!m.isRead?'rgba(200,144,16,.08)':'transparent'}'">
+        onmouseout="this.style.background='${isNewToAdmin?'rgba(200,144,16,.08)':'transparent'}'">
         <div style="display:flex;justify-content:space-between;align-items:start">
           <div style="flex:1;min-width:0">
             <div style="font-weight:500;font-size:12px;color:var(--t1);margin-bottom:2px">
-              ${m.from==='anb'?'👨‍💼':'👤'} ${c?.name||'Unknown'} ${!m.isRead?'<span style="background:var(--red);color:white;font-size:8px;padding:1px 4px;border-radius:2px;margin-left:4px">NEW</span>':''}
+              ${m.from==='anb'?'👨‍💼':'👤'} ${c?.name||'Unknown'} ${isNewToAdmin?'<span style="background:var(--red);color:white;font-size:8px;padding:1px 4px;border-radius:2px;margin-left:4px">NEW</span>':''}
             </div>
             <div style="font-size:11px;color:var(--t3);margin-bottom:2px;white-space:normal;word-break:break-word">${m.text||''}</div>
             <div style="font-size:9px;color:var(--t3)">${FD(m.date)} ${m.time||''}</div>
@@ -3357,6 +3402,14 @@ function rAdminContracts(el){
       <option value="draft" ${initialFilter==='draft'?'selected':''}>📝 Draft only</option>
       <option value="Renewed" ${initialFilter==='Renewed'?'selected':''}>🔁 Renewed only</option>
     </select>
+    <select id="contracts-sort" onchange="S.tableSort.contracts={field:this.value.split('|')[0],dir:this.value.split('|')[1]};renderContractsList(document.getElementById('contracts-status-filter').value)"
+      style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1);cursor:pointer">
+      <option value="title|asc">${t('sort_title_az')||'Title (A-Z)'}</option>
+      <option value="startDate|desc">${t('sort_newest')||'Newest first'}</option>
+      <option value="startDate|asc">${t('sort_oldest')||'Oldest first'}</option>
+      <option value="endDate|asc">${t('sort_end_soon')||'End date (soonest)'}</option>
+      <option value="plan|desc">${t('sort_plan_high')||'Plan (high-low)'}</option>
+    </select>
   </div>
   <div id="contracts-list-container"></div>`;
   renderContractsList(initialFilter);
@@ -3365,12 +3418,14 @@ function rAdminContracts(el){
 function renderContractsList(statusFilter){
   const container=document.getElementById('contracts-list-container');
   if(!container)return;
-  const allContracts=(S.contracts||[]).filter(con=>{
+  let allContracts=(S.contracts||[]).filter(con=>{
     if(!statusFilter)return true;
     if(statusFilter==='needsRenewal')return con.status==='active'&&isContractExpired(con);
     if(statusFilter==='active')return con.status==='active'&&!isContractExpired(con);
     return con.status===statusFilter;
   });
+  const sortState=getSortState('contracts','title','asc');
+  allContracts=sortRows(allContracts,sortState.field,sortState.dir);
   const statusMeta={
     active:{label:'Active',color:'#2d7a4f',bg:'rgba(45,122,79,0.12)'},
     draft:{label:'Draft',color:'#8a6410',bg:'rgba(200,144,16,0.12)'},
@@ -3935,6 +3990,14 @@ function rClientsLis(el){
       <option value="none">${t('no_subscription')||'No subscription'}</option>
       <option value="expired">${t('expired')||'Expired'}</option>
     </select>
+    <select id="client-sort" style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1);cursor:pointer"
+      onchange="S.tableSort.clients={field:this.value.split('|')[0],dir:this.value.split('|')[1]};filterClients(document.getElementById('client-search').value)">
+      <option value="name|asc">${t('sort_name_az')||'Name (A-Z)'}</option>
+      <option value="name|desc">${t('sort_name_za')||'Name (Z-A)'}</option>
+      <option value="createdDate|desc">${t('sort_newest')||'Newest first'}</option>
+      <option value="createdDate|asc">${t('sort_oldest')||'Oldest first'}</option>
+      <option value="monthlyFee|desc">${t('sort_plan_high')||'Plan (high-low)'}</option>
+    </select>
   </div>
   <div id="clients-list-container"></div>`;
   
@@ -3960,7 +4023,10 @@ function renderClientsList(searchTerm){
     return matchesSearch&&matchesPlan;
   });
   
-  if(filtered.length===0){
+  const sortState=getSortState('clients','name','asc');
+  const sorted=sortRows(filtered,sortState.field,sortState.dir);
+  
+  if(sorted.length===0){
     container.innerHTML=`<div style="text-align:center;padding:32px;color:var(--t3)">${t('no_data')}</div>`;
     return;
   }
@@ -3993,13 +4059,13 @@ function renderClientsList(searchTerm){
     200:'#C89010'
   };
   
-  container.innerHTML=filtered.map(c=>{
+  container.innerHTML=sorted.map(c=>{
     // حساب التنبيهات
     const inv=S.invoices.filter(i=>i.cid===c.id&&!i.deleted);
     const overdue=inv.filter(i=>i.status==='Verlopen').length;
     const pending=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).length;
     const exp=S.expenses.filter(e=>e.cid===c.id&&!e.deleted).length;
-    const msgs=S.messages.filter(m=>m.cid===c.id&&m.from==='anb'&&!m.isRead&&!m.deleted).length;
+    const msgs=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead&&!m.deleted).length;
     
     // حساب إجمالي التنبيهات
     const totalAlerts=overdue+pending+(exp>0?1:0)+(msgs>0?1:0);
@@ -4057,7 +4123,7 @@ function filterClients(term){
 function rAdminDash(el){
   const totalClients=S.clients.filter(c=>!c.deleted).length;
   const pendingInvoices=S.invoices.filter(i=>['Openstaand','Verzonden','Verlopen'].includes(i.status)).length;
-  const newMessages=S.messages.filter(m=>m.from==='anb'&&!m.isRead&&!m.deleted).length;
+  const newMessages=S.messages.filter(m=>m.from==='client'&&!m.isRead&&!m.deleted).length;
   const totalHours=S.hours.reduce((s,h)=>s+h.hrs,0);
   const overdueInvoices=S.invoices.filter(i=>i.status==='Verlopen').length;
   const newDocuments=S.docs.filter(d=>d.isNew).length;
@@ -4377,20 +4443,20 @@ async function saveClientOwnPassword(){
 /* ═══════════════════════════ CLIENT ACTION CARDS ═══════════════════════════ */
 function selectCard(cardId){
   const adminThemes={
-    'edit_client':{bg:'rgba(184,230,209,0.08)',border:'#B8E6D1',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'edit_client':{bg:'rgba(224,245,237,0.08)',border:'#E0F5ED',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
     'client_activity':{bg:'rgba(224,184,48,0.08)',border:'#E0B830',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
-    'employees':{bg:'rgba(245,220,112,0.15)',border:'#F5DC70',textDefault:'#0A2218',text:'#0A2218',accent:'#C89010'},
+    'employees':{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'invoices':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'expenses':{bg:'rgba(15,48,37,0.08)',border:'#0F3025',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'bank':{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'assets':{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'debtors':{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
-    'creditors':{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
-    'hours':{bg:'rgba(42,96,64,0.08)',border:'#2A6040',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
+    'creditors':{bg:'rgba(42,96,64,0.08)',border:'#2A6040',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
+    'hours':{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
     'documents':{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
-    'reports':{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
-    'messages':{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
-    'contracts':{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'}
+    'reports':{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'messages':{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'contracts':{bg:'rgba(184,230,209,0.08)',border:'#B8E6D1',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'}
   };
   const clientThemes={
     'invoices':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
@@ -4438,7 +4504,7 @@ function rClientActionCards(el,cid){
   const hrs=S.hours.filter(h=>h.cid===cid&&!h.deleted);
   const billableHrs=hrs.filter(h=>!h.invoiced).length;
   
-  const msgs=S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.isRead&&!m.deleted);
+  const msgs=S.messages.filter(m=>m.cid===cid&&m.from==='client'&&!m.isRead&&!m.deleted);
   const unreadMsgs=msgs.length;
   
   const contracts=S.contracts?.filter(c=>c.cid===cid&&c.status==='pending_review')||[];
@@ -4518,22 +4584,33 @@ function rClientActionCards(el,cid){
       alerts:[]
     },
     {
-      id:'hours',
-      icon:'🕐',
-      name:t('tab_hours'),
-      desc:t('card_hours_desc'),
+      id:'employees',
+      icon:'👥',
+      name:t('employees')||'Employees',
+      desc:t('card_employees_desc')||'Payroll & Employment Contracts',
       bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',
       border:'#C89010',
       text:'#ffffff',
       accent:'#FFD700',
-      alerts:billableHrs>0?[{icon:'💰',text:billableHrs+' billable hours',color:'#FFD700'}]:[]
+      alerts:(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length>0?[{icon:'👥',text:(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length+' active',color:'#FFD700'}]:[]
+    },
+    {
+      id:'hours',
+      icon:'🕐',
+      name:t('tab_hours'),
+      desc:t('card_hours_desc'),
+      bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',
+      border:'#C89010',
+      text:'#0A2218',
+      accent:'#FFD700',
+      alerts:billableHrs>0?[{icon:'💰',text:billableHrs+' billable hours',color:'#0A2218'}]:[]
     },
     {
       id:'reports',
       icon:'📈',
       name:t('tab_reports'),
       desc:t('card_reports_desc'),
-      bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',
+      bg:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',
       border:'#C89010',
       text:'#0A2218',
       accent:'#FFD700',
@@ -4544,18 +4621,18 @@ function rClientActionCards(el,cid){
       icon:'💬',
       name:t('messages'),
       desc:t('card_messages_desc'),
-      bg:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',
+      bg:'linear-gradient(135deg, #9dd4bf 0%, #B8E6D1 100%)',
       border:'#C89010',
       text:'#0A2218',
       accent:'#FFD700',
-      alerts:unreadMsgs>0?[{icon:'🔔',text:unreadMsgs+' unread',color:'#FFD700'}]:[]
+      alerts:unreadMsgs>0?[{icon:'🔔',text:unreadMsgs+' unread',color:'#0A2218'}]:[]
     },
     {
       id:'contracts',
       icon:'📋',
       name:t('contracts')||'Contracts',
       desc:t('card_contracts_desc'),
-      bg:'linear-gradient(135deg, #9dd4bf 0%, #B8E6D1 100%)',
+      bg:'linear-gradient(135deg, #B8E6D1 0%, #E0F5ED 100%)',
       border:'#C89010',
       text:'#0A2218',
       accent:'#FFD700',
@@ -4566,7 +4643,7 @@ function rClientActionCards(el,cid){
       icon:'✏️',
       name:t('card_edit_client'),
       desc:t('card_edit_client_desc'),
-      bg:'linear-gradient(135deg, #B8E6D1 0%, #E0F5ED 100%)',
+      bg:'linear-gradient(135deg, #E0F5ED 0%, #F5FBF9 100%)',
       border:'#C89010',
       text:'#0A2218',
       accent:'#FFD700',
@@ -4582,17 +4659,6 @@ function rClientActionCards(el,cid){
       text:'#0A2218',
       accent:'#FFD700',
       alerts:[]
-    },
-    {
-      id:'employees',
-      icon:'👥',
-      name:t('employees')||'Employees',
-      desc:t('card_employees_desc')||'Payroll & Employment Contracts',
-      bg:'linear-gradient(135deg, #F5DC70 0%, #FDF8EC 100%)',
-      border:'#C89010',
-      text:'#0A2218',
-      accent:'#FFD700',
-      alerts:(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length>0?[{icon:'👥',text:(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length+' active',color:'#0A2218'}]:[]
     }
   ].filter(card=>card.id!=='employees'||isAdmin()); // ✅ كارت الموظفين للأدمن فقط - بنفس منطق حماية التقارير
   
@@ -4879,20 +4945,34 @@ function renderInvoicesTable(cid,searchTerm){
   if(!container)return;
   const theme=S.cardTheme||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   const term=(searchTerm||'').toLowerCase().trim();
-  const inv=S.invoices.filter(i=>{
+  let inv=S.invoices.filter(i=>{
     if(i.cid!==cid||i.deleted)return false;
     if(!term)return true;
     return (i.num||'').toLowerCase().includes(term)||
       (i.desc||'').toLowerCase().includes(term)||
       getBillToName(i).toLowerCase().includes(term);
   });
+  const sortState=getSortState('invoices','date','desc');
+  if(sortState.field==='billTo')inv=sortRows(inv.map(i=>({...i,billTo:getBillToName(i)})),'billTo',sortState.dir);
+  else inv=sortRows(inv,sortState.field,sortState.dir);
   const c=S.clients.find(c=>c.id===cid);
+  const reArgs=`'${cid}',document.getElementById('inv-search')?.value||''`;
 
   container.innerHTML=`<div class="card">
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${isAdmin()?c?.name+' — ':''} ${t('tab_invoices')}</span>
     </div>
     ${inv.length===0?`<div class="empty"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📄</span>${term?(t('no_results')||'No matching invoices'):t('empty_invoices')}</div>`:
-    `<table><thead><tr><th>${t('lbl_num')}</th><th>${t('lbl_customer')}</th><th>${t('lbl_description')}</th><th>${t('lbl_date')}</th><th>${t('lbl_due')}</th><th>${t('lbl_amount')}</th><th>${t('lbl_btw')}</th><th>${t('lbl_total')}</th><th>${t('lbl_status')}</th><th></th></tr></thead>
+    `<table><thead><tr>
+      ${sortTh(t('lbl_num'),'num','invoices',`renderInvoicesTable(${reArgs})`)}
+      ${sortTh(t('lbl_customer'),'billTo','invoices',`renderInvoicesTable(${reArgs})`)}
+      ${sortTh(t('lbl_description'),'desc','invoices',`renderInvoicesTable(${reArgs})`)}
+      ${sortTh(t('lbl_date'),'date','invoices',`renderInvoicesTable(${reArgs})`)}
+      ${sortTh(t('lbl_due'),'due','invoices',`renderInvoicesTable(${reArgs})`)}
+      ${sortTh(t('lbl_amount'),'amount','invoices',`renderInvoicesTable(${reArgs})`)}
+      ${sortTh(t('lbl_btw'),'btw','invoices',`renderInvoicesTable(${reArgs})`)}
+      ${sortTh(t('lbl_total'),'total','invoices',`renderInvoicesTable(${reArgs})`)}
+      ${sortTh(t('lbl_status'),'status','invoices',`renderInvoicesTable(${reArgs})`)}
+      <th></th></tr></thead>
     <tbody>${inv.map(i=>`<tr>
       <td style="font-family:var(--fm);font-size:11px;color:var(--g1);font-weight:600">${i.num}</td>
       <td style="font-size:11px">${getBillToName(i)}${i.billToManual?'<span class="bdg b-draft" style="margin-left:4px;font-size:9px">one-time</span>':''}</td>
@@ -4948,20 +5028,30 @@ function renderExpensesTable(cid,searchTerm){
   if(!container)return;
   const theme=S.cardTheme||{bg:'rgba(15,48,37,0.08)',border:'#0F3025',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   const term=(searchTerm||'').toLowerCase().trim();
-  const exp=S.expenses.filter(e=>{
+  let exp=S.expenses.filter(e=>{
     if(e.cid!==cid||e.deleted)return false;
     if(!term)return true;
     return (e.supplier||'').toLowerCase().includes(term)||
       (e.desc||'').toLowerCase().includes(term)||
       (e.cat||'').toLowerCase().includes(term);
   });
+  const sortState=getSortState('expenses','date','desc');
+  exp=sortRows(exp,sortState.field,sortState.dir);
   const c=S.clients.find(c=>c.id===cid);
+  const reArgs=`'${cid}',document.getElementById('exp-search')?.value||''`;
 
   container.innerHTML=`<div class="card">
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${isAdmin()?c?.name+' — ':''} ${t('tab_expenses')}</span>
     </div>
     ${exp.length===0?`<div class="empty"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🧾</span>${term?(t('no_results')||'No matching expenses'):t('empty_expenses')}</div>`:
-    `<table><thead><tr><th>${t('lbl_date')}</th><th>${t('lbl_from')}</th><th>${t('lbl_description')}</th><th>${t('lbl_category')}</th><th>${t('lbl_amount')}</th><th>${t('lbl_btw')}</th><th></th>${isAdmin()?'<th></th>':''}</tr></thead>
+    `<table><thead><tr>
+      ${sortTh(t('lbl_date'),'date','expenses',`renderExpensesTable(${reArgs})`)}
+      ${sortTh(t('lbl_from'),'supplier','expenses',`renderExpensesTable(${reArgs})`)}
+      ${sortTh(t('lbl_description'),'desc','expenses',`renderExpensesTable(${reArgs})`)}
+      ${sortTh(t('lbl_category'),'cat','expenses',`renderExpensesTable(${reArgs})`)}
+      ${sortTh(t('lbl_amount'),'amount','expenses',`renderExpensesTable(${reArgs})`)}
+      ${sortTh(t('lbl_btw'),'btw','expenses',`renderExpensesTable(${reArgs})`)}
+      <th></th>${isAdmin()?'<th></th>':''}</tr></thead>
     <tbody>${exp.map(e=>`<tr>
       <td style="color:var(--t3)">${FD(e.date)}</td>
       <td style="font-weight:500">${e.supplier}</td>
@@ -5427,14 +5517,18 @@ function readAsDataURL(file){
 }
 
 /* ── OCR: قراءة بيانات الفاتورة تلقائيًا من الصورة ── */
-function parseReceiptText(text){
+function parseReceiptText(text,ocrConfidence){
   const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
-  const out={amount:null,date:null,supplier:null,invoiceNumber:null,iban:null,kvk:null,btwNumber:null};
+  const out={amount:null,date:null,supplier:null,invoiceNumber:null,iban:null,kvk:null,btwNumber:null,vatRate:null,
+    confidence:{amount:'low',date:'low',supplier:'low',vatRate:'low'},
+    overallConfidence:typeof ocrConfidence==='number'?Math.round(ocrConfidence):null};
 
-  // المورد: أول سطر يحتوي أحرفًا فعلية (غالبًا اسم المتجر أعلى الفاتورة)
+  // المورد: أول سطر يحتوي أحرفًا فعلية (غالبًا اسم المتجر أعلى الفاتورة)، نتجاهل أسطرًا أقرب لعنوان/هاتف
+  const addressLikeRe=/^\d|straat|street|weg|laan|plein|tel[:.]|phone|www\.|@/i;
   for(const line of lines){
-    if(/[A-Za-z\u0600-\u06FF]{3,}/.test(line)){
+    if(/[A-Za-z\u0600-\u06FF]{3,}/.test(line)&&!addressLikeRe.test(line)){
       out.supplier=line.slice(0,60);
+      out.confidence.supplier='medium'; // موقعه بأعلى الفاتورة مؤشر جيد لكن غير مؤكد 100%
       break;
     }
   }
@@ -5456,19 +5550,50 @@ function parseReceiptText(text){
     }
   }
   out.amount=best;
+  // ثقة عالية فقط إن وُجد المبلغ فعليًا بجانب كلمة مفتاحية واضحة (وليس مجرد تخمين "أكبر رقم بالصفحة")
+  out.confidence.amount=bestKw?'high':(best!==null?'low':'low');
 
-  // التاريخ: yyyy-mm-dd أو dd-mm-yyyy أو dd/mm/yyyy
+  // نسبة الضريبة الهولندية الشائعة (21%/9%/0%) - غالبًا مكتوبة صراحة كـ"BTW 21%" أو "21% BTW"
+  const vatRe=/\b(21|9|0)\s?%/;
+  for(const line of lines){
+    if(/btw|vat/i.test(line)){
+      const m=line.match(vatRe);
+      if(m){out.vatRate=parseInt(m[1]);out.confidence.vatRate='high';break;}
+    }
+  }
+  if(out.vatRate===null){
+    // محاولة ثانية بلا اشتراط وجود كلمة BTW بنفس السطر (أحيانًا تُطبع بسطر منفصل)
+    for(const line of lines){
+      const m=line.match(vatRe);
+      if(m&&[0,9,21].includes(parseInt(m[1]))){out.vatRate=parseInt(m[1]);out.confidence.vatRate='medium';break;}
+    }
+  }
+
+  // التاريخ: yyyy-mm-dd أو dd-mm-yyyy أو dd/mm/yyyy - مع رفض أي تاريخ غير معقول (قبل 2000 أو بعد سنة من اليوم)
   const dateRe2=/(\d{4})-(\d{1,2})-(\d{1,2})/;
   const dateRe1=/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/;
+  const isPlausibleDate=(y,mo,d)=>{
+    const yy=parseInt(y),mm=parseInt(mo),dd=parseInt(d);
+    if(mm<1||mm>12||dd<1||dd>31)return false;
+    if(yy<2000||yy>new Date().getFullYear()+1)return false;
+    return true;
+  };
   for(const line of lines){
     let m=line.match(dateRe2);
-    if(m){out.date=`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;break;}
+    if(m&&isPlausibleDate(m[1],m[2],m[3])){
+      out.date=`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+      out.confidence.date=/datum|date/i.test(line)?'high':'medium';
+      break;
+    }
     m=line.match(dateRe1);
     if(m){
       let d=m[1],mo=m[2],y=m[3];
       if(y.length===2)y=(parseInt(y)>50?'19':'20')+y;
-      out.date=`${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
-      break;
+      if(isPlausibleDate(y,mo,d)){
+        out.date=`${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+        out.confidence.date=/datum|date/i.test(line)?'high':'medium';
+        break;
+      }
     }
   }
 
@@ -5507,29 +5632,114 @@ function parseReceiptText(text){
 
 // معالجة مسبقة للصورة قبل القراءة الضوئية: تدرج رمادي + رفع تباين + تحويل ثنائي (Binarization)
 // يرفع دقة Tesseract بشكل ملحوظ على الفواتير المطبوعة، بلا أي تكلفة أو مكتبة إضافية
+// معالجة مسبقة متقدمة للصورة قبل القراءة الضوئية:
+// 1) تصحيح دوران EXIF (مشكلة شائعة جدًا بصور الموبايل تُربك محرك OCR تمامًا لو أُهملت)
+// 2) تكبير الصور الصغيرة (Tesseract يحتاج دقة كافية لقراءة نص صغير بوضوح)
+// 3) تمديد التباين (Contrast Stretching) لاستغلال المدى الكامل بين الأبيض والأسود
+// 4) عتبة Otsu التكيفية (تحسب أفضل نقطة فصل فعليًا من توزيع الصورة، بدل نسبة ثابتة تقريبية) - أكثر متانة مع إضاءة متفاوتة أو ظلال
+async function getExifOrientation(dataUrl){
+  try{
+    const res=await fetch(dataUrl);
+    const buf=await res.arrayBuffer();
+    const view=new DataView(buf);
+    if(view.getUint16(0,false)!==0xFFD8)return 1; // ليس JPEG صالحًا
+    let offset=2;
+    while(offset<view.byteLength){
+      const marker=view.getUint16(offset,false);
+      offset+=2;
+      if(marker===0xFFE1){
+        if(view.getUint32(offset+2,false)!==0x45786966)return 1; // ليس "Exif"
+        const little=view.getUint16(offset+8,false)===0x4949;
+        const tags=view.getUint16(offset+8+(little?8:8),little);
+        let dirOffset=offset+8+8;
+        const numEntries=view.getUint16(dirOffset,little);
+        for(let i=0;i<numEntries;i++){
+          const entryOffset=dirOffset+2+i*12;
+          if(view.getUint16(entryOffset,little)===0x0112){
+            return view.getUint16(entryOffset+8,little);
+          }
+        }
+        return 1;
+      }else if((marker&0xFF00)!==0xFF00){
+        break;
+      }else{
+        offset+=view.getUint16(offset,false);
+      }
+    }
+  }catch(e){/* لا يوجد EXIF أو تعذّرت القراءة - نفترض الاتجاه الطبيعي */}
+  return 1;
+}
+
 function preprocessImageForOCR(dataUrl){
-  return new Promise((resolve,reject)=>{
+  return new Promise(async(resolve,reject)=>{
+    let orientation=1;
+    try{orientation=await getExifOrientation(dataUrl);}catch(e){}
     const img=new Image();
     img.onload=()=>{
+      // تصحيح اتجاه الصورة حسب بيانات EXIF قبل أي معالجة أخرى
+      const swapDims=orientation>=5&&orientation<=8;
+      let srcW=img.width,srcH=img.height;
+
+      // تكبير الصور الصغيرة (الحد الأدنى المستهدف ~1800px بالعرض الأطول) لتحسين وضوح النص الصغير
+      const longSide=Math.max(srcW,srcH);
+      const scale=longSide<1800?1800/longSide:1;
+
       const canvas=document.createElement('canvas');
-      canvas.width=img.width;canvas.height=img.height;
+      canvas.width=swapDims?Math.round(srcH*scale):Math.round(srcW*scale);
+      canvas.height=swapDims?Math.round(srcW*scale):Math.round(srcH*scale);
       const ctx=canvas.getContext('2d');
-      ctx.drawImage(img,0,0);
+
+      ctx.save();
+      switch(orientation){
+        case 2: ctx.transform(-1,0,0,1,canvas.width,0); break;
+        case 3: ctx.transform(-1,0,0,-1,canvas.width,canvas.height); break;
+        case 4: ctx.transform(1,0,0,-1,0,canvas.height); break;
+        case 5: ctx.transform(0,1,1,0,0,0); break;
+        case 6: ctx.transform(0,1,-1,0,canvas.width,0); break;
+        case 7: ctx.transform(0,-1,-1,0,canvas.width,canvas.height); break;
+        case 8: ctx.transform(0,-1,1,0,0,canvas.height); break;
+      }
+      const dw=swapDims?canvas.height:canvas.width, dh=swapDims?canvas.width:canvas.height;
+      ctx.drawImage(img,0,0,dw,dh);
+      ctx.restore();
+
       const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
       const px=imgData.data;
 
       // تدرج رمادي (متوسط مرجّح حسب حساسية العين البشرية)
       const gray=new Uint8ClampedArray(px.length/4);
+      let minV=255,maxV=0;
       for(let i=0,j=0;i<px.length;i+=4,j++){
-        gray[j]=0.299*px[i]+0.587*px[i+1]+0.114*px[i+2];
+        const v=0.299*px[i]+0.587*px[i+1]+0.114*px[i+2];
+        gray[j]=v;
+        if(v<minV)minV=v;
+        if(v>maxV)maxV=v;
       }
 
-      // حساب عتبة تلقائية (متوسط بسيط - كافٍ وسريع لفواتير بخلفية بيضاء نظيفة)
-      let sum=0;
-      for(let j=0;j<gray.length;j++)sum+=gray[j];
-      const threshold=(sum/gray.length)*0.92; // ميل خفيف نحو الأسود لإبراز النص الرفيع
+      // تمديد التباين: نستغل المدى الكامل 0-255 بدل النطاق الضيق الفعلي بالصورة الأصلية
+      const range=Math.max(1,maxV-minV);
+      for(let j=0;j<gray.length;j++){
+        gray[j]=((gray[j]-minV)/range)*255;
+      }
 
-      // تحويل ثنائي: أبيض/أسود صرف - يفصل النص عن الخلفية بوضوح للمحرك
+      // عتبة Otsu: تحسب أفضل نقطة فصل إحصائيًا بين النص والخلفية من مدرج الصورة نفسه
+      const hist=new Array(256).fill(0);
+      for(let j=0;j<gray.length;j++)hist[Math.round(gray[j])]++;
+      const total=gray.length;
+      let sumAll=0;for(let i=0;i<256;i++)sumAll+=i*hist[i];
+      let sumB=0,wB=0,maxVar=0,threshold=127;
+      for(let i=0;i<256;i++){
+        wB+=hist[i];
+        if(wB===0)continue;
+        const wF=total-wB;
+        if(wF===0)break;
+        sumB+=i*hist[i];
+        const mB=sumB/wB, mF=(sumAll-sumB)/wF;
+        const varBetween=wB*wF*(mB-mF)*(mB-mF);
+        if(varBetween>maxVar){maxVar=varBetween;threshold=i;}
+      }
+
+      // تحويل ثنائي: أبيض/أسود صرف عند عتبة Otsu المحسوبة
       for(let i=0,j=0;i<px.length;i+=4,j++){
         const v=gray[j]>threshold?255:0;
         px[i]=px[i+1]=px[i+2]=v;
@@ -5570,8 +5780,38 @@ async function ocrReceiptImage(dataUrl){
     // فشلت المعالجة المسبقة (نادر) - نكمل بالصورة الأصلية بدل التوقف كليًا
   }
   const worker=await getTesseractWorker();
-  const {data:{text}}=await worker.recognize(processedUrl);
-  return parseReceiptText(text);
+  const {data}=await worker.recognize(processedUrl);
+  return parseReceiptText(data.text,data.confidence);
+}
+
+// يملأ نموذج المصروف بنتائج القراءة الآلية، مع مؤشر ثقة بصري لكل حقل (حدّ جانبي ملوّن)
+// أخضر = ثقة عالية (وُجدت الكلمة المفتاحية المصاحبة فعليًا) · ذهبي = ثقة متوسطة/منخفضة، يُنصَح بالمراجعة يدويًا
+function applyOcrFieldsToExpenseForm(extracted){
+  const confColor={high:'#2d7a4f',medium:'#C89010',low:'#B8860B'};
+  const markField=(id,conf)=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    const c=confColor[conf]||confColor.low;
+    el.style.borderLeft='4px solid '+c;
+    el.title=(conf==='high'?'✓ '+(t('ocr_high_conf')||'Confident match'):'⚠ '+(t('ocr_low_conf')||'Please verify — uncertain reading'));
+  };
+  if(extracted.date){document.getElementById('ex-d').value=extracted.date;markField('ex-d',extracted.confidence?.date);}
+  if(extracted.supplier){document.getElementById('ex-s').value=extracted.supplier;markField('ex-s',extracted.confidence?.supplier);}
+  if(extracted.amount!=null){document.getElementById('ex-a').value=extracted.amount;markField('ex-a',extracted.confidence?.amount);}
+  if(extracted.vatRate!=null){
+    const rateEl=document.getElementById('ex-r');
+    if(rateEl){rateEl.value=String(extracted.vatRate);markField('ex-r',extracted.confidence?.vatRate);}
+  }
+  if(!document.getElementById('ex-desc').value.trim()){
+    document.getElementById('ex-desc').value=(extracted.supplier||'Receipt '+TODAY())+(extracted.invoiceNumber?' — #'+extracted.invoiceNumber:'');
+  }
+  // رسالة تعكس جودة القراءة الفعلية بدل رسالة عامة ثابتة دائمًا
+  const oc=extracted.overallConfidence;
+  if(oc!==null&&oc<60){
+    toast('⚠️ '+(t('ocr_low_quality')||'Reading quality was low — please double-check every field carefully'));
+  }else{
+    toast('🔍 '+(t('ocr_extracted')||'Data extracted automatically — colored fields show confidence, please review'));
+  }
 }
 
 async function pdfFirstPageToDataURL(file){
@@ -5654,10 +5894,8 @@ function viewDoc(id){
 
 function selectMsgClient(clientId){
   S.selectedMsgClient=clientId;
-  // ✅ Mark all messages FROM CLIENT as read (these show the badges)
+  // ✅ الأدمن يفتح محادثة العميل → رسائل العميل (الواردة للأدمن) تُعلَّم كمقروءة من طرف الأدمن
   S.messages.filter(m=>m.cid===clientId&&m.from==='client'&&!m.isRead).forEach(m=>m.isRead=true);
-  // ✅ Also mark messages FROM ANB as read
-  S.messages.filter(m=>m.cid===clientId&&m.from==='anb'&&!m.isRead).forEach(m=>m.isRead=true);
   sv();
   rMessages(document.getElementById('content'));
 }
@@ -5761,6 +5999,12 @@ function rMessages(el,cid){
       document.getElementById('msg-end')?.scrollIntoView();
     },50);
   } else {
+    // ✅ العميل فتح شاشة رسائله فعليًا الآن → رسائل الأدمن الموجَّهة له تُعلَّم كمقروءة من طرفه هو (وليس من طرف الأدمن)
+    const hadUnread=S.messages.some(m=>m.cid===cid&&m.from==='anb'&&!m.isRead);
+    if(hadUnread){
+      S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.isRead).forEach(m=>m.isRead=true);
+      sv();
+    }
     // Client: Simple message view
     el.innerHTML=`
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:rgba(77,168,118,0.08);border-left:4px solid #4da876;border-radius:6px">
@@ -5925,7 +6169,7 @@ function openEmployeeDetail(employeeId){
 
 function rEmployeeDetail(el){
   const emp=(S.employees||[]).find(e=>e.id===S.currentEmployeeId);
-  const theme=S.cardTheme||{bg:'rgba(245,220,112,0.15)',border:'#F5DC70',textDefault:'#0A2218',text:'#0A2218',accent:'#C89010'};
+  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   if(!emp){el.innerHTML='<div class="empty">Employee not found</div>';return;}
   const isActive=emp.employmentStatus==='active';
 
@@ -5977,7 +6221,7 @@ function rEmployeeDetail(el){
 
 function rEmployees(el,cid){
   const c=S.clients.find(x=>x.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(245,220,112,0.15)',border:'#F5DC70',textDefault:'#0A2218',text:'#0A2218',accent:'#C89010'};
+  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
 
   el.innerHTML=`
@@ -5996,6 +6240,14 @@ function rEmployees(el,cid){
       <option value="active">✅ Active only</option>
       <option value="">All</option>
       <option value="ended">⏹ Ended only</option>
+    </select>
+    <select id="employees-sort" onchange="S.tableSort.employees={field:this.value.split('|')[0],dir:this.value.split('|')[1]};renderEmployeesList(document.getElementById('employees-search').value,document.getElementById('employees-status-filter').value)"
+      style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1);cursor:pointer">
+      <option value="name|asc">${t('sort_name_az')||'Name (A-Z)'}</option>
+      <option value="name|desc">${t('sort_name_za')||'Name (Z-A)'}</option>
+      <option value="startDate|desc">${t('sort_newest')||'Newest first'}</option>
+      <option value="startDate|asc">${t('sort_oldest')||'Oldest first'}</option>
+      <option value="grossMonthlySalary|desc">${t('sort_salary_high')||'Salary (high-low)'}</option>
     </select>`:''}
     <button class="btn btn-p btn-xs" onclick="openEmployeeModal(null,'${cid}')" style="margin-left:auto">➕ ${t('add_employee')||'Add Employee'}</button>
   </div>
@@ -6009,12 +6261,14 @@ function renderEmployeesList(searchTerm,statusFilter){
   const cid=S.currentClient;
   const theme=S.cardTheme||{border:'#0A2218'};
   const term=(searchTerm||'').toLowerCase().trim();
-  const employees=(S.employees||[]).filter(e=>{
+  let employees=(S.employees||[]).filter(e=>{
     if(e.cid!==cid)return false;
     if(statusFilter&&e.employmentStatus!==statusFilter)return false;
     if(!term)return true;
     return (e.name||'').toLowerCase().includes(term)||(e.jobTitle||'').toLowerCase().includes(term);
   });
+  const sortState=getSortState('employees','name','asc');
+  employees=sortRows(employees,sortState.field,sortState.dir);
 
   container.innerHTML=`<div class="card">
     <div class="ch"><span class="ct">👥 ${t('employees')||'Employees'} (${employees.length})</span></div>
@@ -6697,13 +6951,16 @@ function renderDebtorsTable(cid,searchTerm){
   if(!container)return;
   const theme=S.cardTheme||{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   const term=(searchTerm||'').toLowerCase().trim();
-  const debtors=S.contacts.filter(c=>{
+  let debtors=S.contacts.filter(c=>{
     if(!((c.cid===cid||c.isGeneral)&&c.type==='debtor'&&!c.deleted))return false;
     if(!term)return true;
     return (c.name||'').toLowerCase().includes(term)||
       (c.email||'').toLowerCase().includes(term)||
       (c.accountNumber||'').toLowerCase().includes(term);
   });
+  const sortState=getSortState('debtors','name','asc');
+  debtors=sortRows(debtors,sortState.field,sortState.dir);
+  const reArgs=`'${cid}',document.getElementById('deb-search')?.value||''`;
 
   container.innerHTML=`<div class="card">
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💵 Debtors (Customers)</span>
@@ -6711,7 +6968,11 @@ function renderDebtorsTable(cid,searchTerm){
     </div>
     ${debtors.length===0?`<div class="empty">💵 ${term?(t('no_results')||'No matching debtors'):'No debtors yet'}</div>`:
     `<table style="width:100%;font-size:11px">
-      <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Email</th><th style="padding:8px;text-align:left">Account #</th><th style="text-align:right;padding:8px">Actions</th></tr></thead>
+      <thead><tr style="border-bottom:2px solid var(--bd2)">
+        ${sortTh('Name','name','debtors',`renderDebtorsTable(${reArgs})`)}
+        ${sortTh('Email','email','debtors',`renderDebtorsTable(${reArgs})`)}
+        ${sortTh('Account #','accountNumber','debtors',`renderDebtorsTable(${reArgs})`)}
+        <th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
       ${debtors.map(d=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+(d.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+(d.accountNumber||'—')+'</td><td style="text-align:right;padding:8px">'+(d.isGeneral?'<span style="font-size:10px;color:var(--t3)">One-time invoices ledger</span>':'<button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button>')+'</td></tr>').join('')}
       </tbody>
@@ -6744,13 +7005,16 @@ function renderCreditorsTable(cid,searchTerm){
   if(!container)return;
   const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   const term=(searchTerm||'').toLowerCase().trim();
-  const creditors=S.contacts.filter(c=>{
+  let creditors=S.contacts.filter(c=>{
     if(!(c.cid===cid&&c.type==='creditor'&&!c.deleted))return false;
     if(!term)return true;
     return (c.name||'').toLowerCase().includes(term)||
       (c.email||'').toLowerCase().includes(term)||
       (c.accountNumber||'').toLowerCase().includes(term);
   });
+  const sortState=getSortState('creditors','name','asc');
+  creditors=sortRows(creditors,sortState.field,sortState.dir);
+  const reArgs=`'${cid}',document.getElementById('cred-search')?.value||''`;
 
   container.innerHTML=`<div class="card">
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🤝 Creditors (Suppliers)</span>
@@ -6758,7 +7022,11 @@ function renderCreditorsTable(cid,searchTerm){
     </div>
     ${creditors.length===0?`<div class="empty">🤝 ${term?(t('no_results')||'No matching creditors'):'No creditors yet'}</div>`:
     `<table style="width:100%;font-size:11px">
-      <thead><tr style="border-bottom:2px solid var(--bd2)"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Email</th><th style="padding:8px;text-align:left">Account #</th><th style="text-align:right;padding:8px">Actions</th></tr></thead>
+      <thead><tr style="border-bottom:2px solid var(--bd2)">
+        ${sortTh('Name','name','creditors',`renderCreditorsTable(${reArgs})`)}
+        ${sortTh('Email','email','creditors',`renderCreditorsTable(${reArgs})`)}
+        ${sortTh('Account #','accountNumber','creditors',`renderCreditorsTable(${reArgs})`)}
+        <th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
       ${creditors.map(cr=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button></td></tr>').join('')}
       </tbody>
@@ -8330,6 +8598,7 @@ function openInvoiceModal(inv){
       desc:document.getElementById('if-desc').value,date:document.getElementById('if-d').value,
       due:document.getElementById('if-dd').value,status:document.getElementById('if-s').value,
       amount:a,btw,total:a+btw,btwRate:r,
+      amountPaid:inv?.amountPaid||0,
       billTo,billToId,billToManual};
     
     // Comprehensive validation for all required fields
@@ -8464,7 +8733,8 @@ function openNewExpense(){
       const exDesc=document.getElementById('ex-desc').value;
       S.expenses.push({id:UID(),cid,date:document.getElementById('ex-d').value,
         supplier:document.getElementById('ex-s').value,desc:exDesc,
-        cat:document.getElementById('ex-c').value,amount:a,btw:a*(r/100),receiptDocId:attachedDocId});
+        cat:document.getElementById('ex-c').value,amount:a,btw:a*(r/100),receiptDocId:attachedDocId,
+        amountPaid:0,paymentStatus:'Onbetaald'});
       logAudit('create','expense','Added expense '+exDesc+' — '+FMT(a),cid);
       sv();closeModal();renderContent();toast(t('tab_expenses')+' ✓','ti-check');
     }
@@ -8547,11 +8817,7 @@ function openNewExpense(){
           try{
             const extracted=await ocrReceiptImage(dataUrl);
             switchMode('manual');
-            if(extracted.date)document.getElementById('ex-d').value=extracted.date;
-            if(extracted.supplier)document.getElementById('ex-s').value=extracted.supplier;
-            if(extracted.amount!=null)document.getElementById('ex-a').value=extracted.amount;
-            if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=(extracted.supplier||'Receipt '+TODAY())+(extracted.invoiceNumber?' — #'+extracted.invoiceNumber:'');
-            toast('🔍 Data extracted automatically — please review before saving');
+            applyOcrFieldsToExpenseForm(extracted);
           }catch(ocrErr){
             switchMode('manual');
             toast('✓ Document added — auto-read failed, please enter manually');
@@ -8565,11 +8831,7 @@ function openNewExpense(){
             const pageImg=await pdfFirstPageToDataURL(file);
             const extracted=await ocrReceiptImage(pageImg);
             switchMode('manual');
-            if(extracted.date)document.getElementById('ex-d').value=extracted.date;
-            if(extracted.supplier)document.getElementById('ex-s').value=extracted.supplier;
-            if(extracted.amount!=null)document.getElementById('ex-a').value=extracted.amount;
-            if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=(extracted.supplier||'Receipt '+TODAY())+(extracted.invoiceNumber?' — #'+extracted.invoiceNumber:'');
-            toast('🔍 Data extracted automatically — please review before saving');
+            applyOcrFieldsToExpenseForm(extracted);
           }catch(ocrErr){
             switchMode('manual');
             toast('✓ Document added — auto-read failed, please enter manually');
@@ -8614,11 +8876,7 @@ function openNewExpense(){
         try{
           const extracted=await ocrReceiptImage(dataUrl);
           switchMode('manual');
-          if(extracted.date)document.getElementById('ex-d').value=extracted.date;
-          if(extracted.supplier)document.getElementById('ex-s').value=extracted.supplier;
-          if(extracted.amount!=null)document.getElementById('ex-a').value=extracted.amount;
-          if(!document.getElementById('ex-desc').value.trim())document.getElementById('ex-desc').value=(extracted.supplier||'Receipt '+TODAY())+(extracted.invoiceNumber?' — #'+extracted.invoiceNumber:'');
-          toast('🔍 Data extracted automatically — please review before saving');
+          applyOcrFieldsToExpenseForm(extracted);
         }catch(ocrErr){
           switchMode('manual');
           toast('✓ Receipt captured — auto-read failed, please enter manually');
@@ -8908,7 +9166,7 @@ function rBank(el,cid){
   const txs=S.bankTx.filter(tx=>tx.cid===cid);
   const c=S.clients.find(c=>c.id===cid);
   const bal=txs.reduce((s,tx)=>s+(tx.amount||0),0);
-  const unmatched=txs.filter(tx=>!tx.matched).length;
+  const unmatched=txs.filter(tx=>getTxMatchStatus(tx)==='none').length;
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
   const theme=S.cardTheme||{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
@@ -8936,20 +9194,55 @@ function rBank(el,cid){
     <div style="font-size:11px;color:var(--t3);padding:6px 14px 8px">
       Supported: ING, ABN AMRO, Rabobank, Bunq (CSV) · MT940 (all banks)
     </div>
-    ${txs.length===0?`<div class="empty">🏦 ${t('empty_bank')}</div>`:
-    txs.map(tx=>`<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;border-bottom:1px solid var(--gr2);font-size:11px">
+    ${txs.length>0?`<div style="display:flex;gap:8px;padding:0 14px 10px;flex-wrap:wrap">
+      <input type="text" id="bank-search" placeholder="🔍 ${t('search')||'Search'}..." oninput="renderBankTable('${cid}',this.value)"
+        style="flex:1;min-width:160px;padding:8px 12px;border:1px solid var(--gr2);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--t1)">
+      <select id="bank-sort" onchange="S.tableSort.bank={field:this.value.split('|')[0],dir:this.value.split('|')[1]};renderBankTable('${cid}',document.getElementById('bank-search')?.value||'')"
+        style="padding:8px 12px;border:1px solid var(--gr2);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--t1);cursor:pointer">
+        <option value="date|desc">${t('sort_newest')||'Newest first'}</option>
+        <option value="date|asc">${t('sort_oldest')||'Oldest first'}</option>
+        <option value="amount|desc">${t('sort_amount_high')||'Amount (high-low)'}</option>
+        <option value="amount|asc">${t('sort_amount_low')||'Amount (low-high)'}</option>
+        <option value="desc|asc">${t('sort_desc_az')||'Description (A-Z)'}</option>
+      </select>
+    </div>`:''}
+    <div id="bank-table-container"></div>
+  </div>`;
+  renderBankTable(cid,'');
+}
+
+function renderBankTable(cid,searchTerm){
+  const container=document.getElementById('bank-table-container');
+  if(!container)return;
+  const term=(searchTerm||'').toLowerCase().trim();
+  let txs=S.bankTx.filter(tx=>{
+    if(tx.cid!==cid)return false;
+    if(!term)return true;
+    return (tx.desc||'').toLowerCase().includes(term);
+  });
+  const sortState=getSortState('bank','date','desc');
+  txs=sortRows(txs,sortState.field,sortState.dir);
+
+  container.innerHTML=txs.length===0?`<div class="empty">🏦 ${term?(t('no_results')||'No matching transactions'):t('empty_bank')}</div>`:
+    txs.map(tx=>{
+      const matchStatus=getTxMatchStatus(tx);
+      const allocatedCount=(tx.allocations||[]).length;
+      let statusBadge;
+      if(matchStatus==='full')statusBadge=`<span class="bdg b-paid">✓ ${allocatedCount>1?allocatedCount+'× ':''}${t('matched')||'Matched'}</span>`;
+      else if(matchStatus==='partial')statusBadge=`<span class="bdg" style="background:rgba(184,134,11,0.15);color:#B8860B">◐ ${t('partial')||'Partial'} (${FMT(getTxRemaining(tx))} ${t('left')||'left'})</span>`;
+      else if(matchStatus==='no_match_needed')statusBadge=`<span class="bdg" style="background:var(--gr2);color:var(--t3)">— ${t('no_match_needed_short')||'N/A'}</span>`;
+      else statusBadge=`<button class="btn btn-xs" onclick="matchTx('${tx.id}')">${t('match')||'Match'} →</button>`;
+      return `<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;border-bottom:1px solid var(--gr2);font-size:11px;cursor:pointer" onclick="matchTx('${tx.id}')">
       <span style="color:var(--t3);width:70px;flex-shrink:0;font-size:10px">${FD(tx.date)}</span>
-      <span style="flex:1">${tx.desc}</span>
+      <span style="flex:1">${tx.desc}${allocatedCount>0?`<div style="font-size:9px;color:var(--t3);margin-top:2px">${(tx.allocations||[]).map(a=>a.targetLabel).join(' + ')}</div>`:''}</span>
       <span style="font-weight:600;color:${tx.amount>=0?'var(--green)':'var(--red)'}">
         ${tx.amount>=0?'+':''}${FMT(tx.amount)}
       </span>
-      <div style="width:90px;flex-shrink:0">
-        ${tx.matched
-          ?`<span class="bdg b-paid">✓ ${t('synced')}</span>`
-          :`<button class="btn btn-xs" onclick="matchTx('${tx.id}')">Match →</button>`}
+      <div style="width:130px;flex-shrink:0;text-align:right" onclick="event.stopPropagation()">
+        ${statusBadge}
       </div>
-    </div>`).join('')}
-  </div>`;
+    </div>`;
+    }).join('');
 }
 
 // ═══ BANK IMPORT: CSV / MT940 ═══════════════════════════════
@@ -9187,6 +9480,12 @@ function rReports(el,cid){
     case 'cashflow':
       rReportCashFlow(contentEl,cid);
       break;
+    case 'emp_financial':
+      rReportEmployeeFinancial(contentEl,cid);
+      break;
+    case 'emp_stats':
+      rReportEmployeeStats(contentEl,cid);
+      break;
     default:
       rReportSummary(contentEl,cid);
   }
@@ -9203,6 +9502,8 @@ function rReportsList(el,cid){
     {id:'debtors',icon:'💵',name:t('rep_debtors_title'),desc:t('rep_debtors_desc'),bg:'linear-gradient(135deg, #1a4d2e 0%, #2d7a4f 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
     {id:'expenses',icon:'🧾',name:t('rep_expenses_title'),desc:t('rep_expenses_desc'),bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
     {id:'cashflow',icon:'💵',name:t('rep_cashflow_title'),desc:t('rep_cashflow_desc'),bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
+    {id:'emp_financial',icon:'💰',name:t('rep_emp_financial_title')||'Employee Financial Report',desc:t('rep_emp_financial_desc')||'Payroll Costs & Payments',bg:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
+    {id:'emp_stats',icon:'📊',name:t('rep_emp_stats_title')||'Employee Statistics Report',desc:t('rep_emp_stats_desc')||'Workforce Overview & Trends',bg:'linear-gradient(135deg, #9dd4bf 0%, #B8E6D1 100%)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
   ];
   
   let html='<div style="padding:16px">';
@@ -9245,6 +9546,199 @@ function goBackToReportsList(){
 }
 
 /* ── REPORT: Cash Flow ── */
+// ══════════════ تقرير الموظفين المالي ══════════════
+function rReportEmployeeFinancial(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  const theme=S.cardTheme||{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'};
+  const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
+  const active=allEmployees.filter(e=>e.employmentStatus==='active');
+  const ended=allEmployees.filter(e=>e.employmentStatus==='ended');
+  const curYear=new Date().getFullYear();
+
+  const fixedMonthlyTotal=active.filter(e=>e.salaryType==='fixed').reduce((s,e)=>s+(e.grossMonthlySalary||0),0);
+  const hourlyCount=active.filter(e=>e.salaryType==='hourly').length;
+
+  const ytdSlips=(S.payslips||[]).filter(p=>p.cid===cid&&p.year===curYear);
+  const ytdGrossPaid=ytdSlips.reduce((s,p)=>s+(p.taxableGross||0),0);
+  const ytdLoonheffing=ytdSlips.reduce((s,p)=>s+(p.loonheffing||0),0);
+  const ytdPension=ytdSlips.reduce((s,p)=>s+(p.pensionDeduction||0),0);
+  const ytdNetPaid=ytdSlips.reduce((s,p)=>s+(p.netPay||0),0);
+  const accruedVacationTotal=active.reduce((s,e)=>s+getAccruedVacationMoney(e.id),0);
+  const accrued13thTotal=active.reduce((s,e)=>s+getAccrued13thMonth(e.id),0);
+  const avgCostPerEmployee=active.length>0?(fixedMonthlyTotal/active.filter(e=>e.salaryType==='fixed').length||0):0;
+
+  let html='<div style="padding:16px">';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💰 '+(t('rep_emp_financial_title')||'Employee Financial Report')+' — '+(c?.name||'')+'</span></div>';
+  html+='<div style="padding:16px">';
+
+  html+='<div class="kgrid">';
+  html+='<div class="kcard"><div class="kl">'+(t('active_employees')||'Active Employees')+'</div><div class="kv">'+active.length+'</div></div>';
+  html+='<div class="kcard"><div class="kl">'+(t('monthly_fixed_payroll')||'Monthly Fixed Payroll')+'</div><div class="kv" style="color:'+theme.border+'">'+FMT(fixedMonthlyTotal)+'</div></div>';
+  html+='<div class="kcard"><div class="kl">'+(t('avg_cost_per_employee')||'Avg. Cost / Fixed Employee')+'</div><div class="kv">'+FMT(avgCostPerEmployee)+'</div></div>';
+  html+='</div>';
+
+  if(hourlyCount>0){
+    html+='<div style="margin-bottom:16px;padding:10px 14px;background:rgba(184,134,11,0.08);border-left:3px solid #B8860B;border-radius:4px;font-size:11px;color:#8a6410">';
+    html+='ℹ️ '+hourlyCount+' '+(t('hourly_employees_note')||'employee(s) on variable hourly pay — not included in fixed monthly total above (depends on hours worked each month)');
+    html+='</div>';
+  }
+
+  html+='<div style="margin-bottom:16px">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+theme.border+'">'+curYear+' '+(t('ytd_summary')||'Summary')+'</div>';
+  html+='<table><thead><tr><th></th><th style="text-align:right">'+(t('lbl_amount')||'Amount')+'</th></tr></thead><tbody>';
+  html+='<tr><td>'+(t('ytd_gross_paid')||'Gross paid this year (taxable)')+'</td><td style="text-align:right;font-weight:600">'+FMT(ytdGrossPaid)+'</td></tr>';
+  html+='<tr><td>'+(t('ytd_loonheffing')||'Loonheffing withheld this year')+'</td><td style="text-align:right;font-weight:600;color:#B8860B">−'+FMT(ytdLoonheffing)+'</td></tr>';
+  html+='<tr><td>'+(t('ytd_pension')||'Pension deducted this year')+'</td><td style="text-align:right;font-weight:600;color:#B8860B">−'+FMT(ytdPension)+'</td></tr>';
+  html+='<tr style="border-top:2px solid '+theme.border+'"><td style="font-weight:700">'+(t('ytd_net_paid')||'Net paid this year')+'</td><td style="text-align:right;font-weight:700;color:'+theme.border+'">'+FMT(ytdNetPaid)+'</td></tr>';
+  html+='</tbody></table></div>';
+
+  html+='<div style="margin-bottom:16px">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+theme.border+'">'+(t('outstanding_liabilities')||'Outstanding Liabilities (Accrued, Unpaid)')+'</div>';
+  html+='<table><thead><tr><th></th><th style="text-align:right">'+(t('lbl_amount')||'Amount')+'</th></tr></thead><tbody>';
+  html+='<tr><td>'+(t('accrued_vacation_total')||'Accrued vacation allowance (unpaid)')+'</td><td style="text-align:right;font-weight:600;color:#B8860B">'+FMT(accruedVacationTotal)+'</td></tr>';
+  html+='<tr><td>'+(t('accrued_13th_total')||'Accrued 13th month (unpaid)')+'</td><td style="text-align:right;font-weight:600;color:#B8860B">'+FMT(accrued13thTotal)+'</td></tr>';
+  html+='<tr style="border-top:2px solid '+theme.border+'"><td style="font-weight:700">'+(t('total_liability')||'Total accrued liability')+'</td><td style="text-align:right;font-weight:700;color:#B8860B">'+FMT(accruedVacationTotal+accrued13thTotal)+'</td></tr>';
+  html+='</tbody></table></div>';
+
+  html+='<div>';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+theme.border+'">'+(t('per_employee_breakdown')||'Per-Employee Financial Breakdown')+' ('+curYear+')</div>';
+  if(allEmployees.length===0){
+    html+='<div style="text-align:center;padding:24px;color:var(--t3)">👥 '+(t('no_employees_yet')||'No employees added yet')+'</div>';
+  }else{
+    html+='<table><thead><tr><th>'+(t('lbl_name')||'Name')+'</th><th>'+(t('salary')||'Salary')+'</th><th style="text-align:right">'+(t('ytd_gross')||'YTD Gross')+'</th><th style="text-align:right">'+(t('ytd_loonheffing')||'YTD Tax')+'</th><th style="text-align:right">'+(t('ytd_net_paid')||'YTD Net')+'</th></tr></thead><tbody>';
+    allEmployees.forEach(e=>{
+      const empSlips=(S.payslips||[]).filter(p=>p.employeeId===e.id&&p.year===curYear);
+      const empGross=empSlips.reduce((s,p)=>s+(p.taxableGross||0),0);
+      const empTax=empSlips.reduce((s,p)=>s+(p.loonheffing||0),0);
+      const empNet=empSlips.reduce((s,p)=>s+(p.netPay||0),0);
+      const salaryLabel=e.salaryType==='hourly'?FMT(e.hourlyRate)+'/hr':FMT(e.grossMonthlySalary)+'/mo';
+      html+='<tr><td style="font-weight:500">'+e.name+(e.employmentStatus==='ended'?' <span class="bdg b-draft" style="font-size:9px">Ended</span>':'')+'</td><td>'+salaryLabel+'</td><td style="text-align:right">'+FMT(empGross)+'</td><td style="text-align:right;color:#B8860B">'+FMT(empTax)+'</td><td style="text-align:right;font-weight:600">'+FMT(empNet)+'</td></tr>';
+    });
+    html+='</tbody></table>';
+  }
+  html+='</div>';
+
+  html+='</div></div></div>';
+  el.innerHTML=html;
+}
+
+// ══════════════ تقرير الموظفين الإحصائي ══════════════
+function rReportEmployeeStats(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  const theme=S.cardTheme||{bg:'rgba(184,230,209,0.08)',border:'#B8E6D1',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'};
+  const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
+  const active=allEmployees.filter(e=>e.employmentStatus==='active');
+  const ended=allEmployees.filter(e=>e.employmentStatus==='ended');
+
+  // متوسط مدة الخدمة للموظفين النشطين (بالأشهر)
+  const today=new Date();
+  const tenures=active.filter(e=>e.startDate).map(e=>{
+    const start=new Date(e.startDate);
+    return (today-start)/(1000*60*60*24*30.44);
+  });
+  const avgTenureMonths=tenures.length>0?tenures.reduce((s,x)=>s+x,0)/tenures.length:0;
+
+  // توزيع نوع العقد
+  const fixedTerm=active.filter(e=>e.contractType==='bepaalde_tijd').length;
+  const permanent=active.filter(e=>e.contractType==='onbepaalde_tijd').length;
+
+  // توزيع نوع الراتب
+  const salaryFixed=active.filter(e=>e.salaryType==='fixed').length;
+  const salaryHourly=active.filter(e=>e.salaryType==='hourly').length;
+
+  // متوسط ساعات العمل الأسبوعية
+  const avgHours=active.length>0?active.reduce((s,e)=>s+(e.hoursPerWeek||0),0)/active.length:0;
+
+  // توزيع المسميات الوظيفية (الأكثر شيوعًا)
+  const titleCounts={};
+  active.forEach(e=>{const title=e.jobTitle||'—';titleCounts[title]=(titleCounts[title]||0)+1;});
+  const topTitles=Object.entries(titleCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  // عقود محدودة المدة تنتهي خلال 90 يومًا القادمة
+  const in90Days=new Date();in90Days.setDate(in90Days.getDate()+90);
+  const expiringSoon=active.filter(e=>e.contractType==='bepaalde_tijd'&&e.contractEndDate&&new Date(e.contractEndDate)<=in90Days&&new Date(e.contractEndDate)>=today);
+
+  // توزيع الجنسيات (إن وُجدت بيانات)
+  const nationalityCounts={};
+  active.forEach(e=>{if(e.nationality){nationalityCounts[e.nationality]=(nationalityCounts[e.nationality]||0)+1;}});
+  const topNationalities=Object.entries(nationalityCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  let html='<div style="padding:16px">';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">📊 '+(t('rep_emp_stats_title')||'Employee Statistics Report')+' — '+(c?.name||'')+'</span></div>';
+  html+='<div style="padding:16px">';
+
+  html+='<div class="kgrid">';
+  html+='<div class="kcard"><div class="kl">'+(t('total_ever_hired')||'Total Ever Hired')+'</div><div class="kv">'+allEmployees.length+'</div></div>';
+  html+='<div class="kcard"><div class="kl">'+(t('active_employees')||'Active')+'</div><div class="kv" style="color:'+theme.border+'">'+active.length+'</div></div>';
+  html+='<div class="kcard"><div class="kl">'+(t('avg_tenure')||'Avg. Tenure')+'</div><div class="kv">'+avgTenureMonths.toFixed(1)+' '+(t('months')||'mo')+'</div></div>';
+  html+='</div>';
+
+  if(allEmployees.length===0){
+    html+='<div style="text-align:center;padding:24px;color:var(--t3)">📊 '+(t('no_employees_yet')||'No employees added yet')+'</div>';
+    html+='</div></div></div>';
+    el.innerHTML=html;
+    return;
+  }
+
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
+
+  html+='<div>';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+theme.border+'">'+(t('contract_type_breakdown')||'Contract Type')+'</div>';
+  html+='<table><tbody>';
+  html+='<tr><td>'+(t('permanent')||'Permanent (Onbepaalde tijd)')+'</td><td style="text-align:right;font-weight:600">'+permanent+' ('+(active.length?Math.round(permanent/active.length*100):0)+'%)</td></tr>';
+  html+='<tr><td>'+(t('fixed_term')||'Fixed-term (Bepaalde tijd)')+'</td><td style="text-align:right;font-weight:600">'+fixedTerm+' ('+(active.length?Math.round(fixedTerm/active.length*100):0)+'%)</td></tr>';
+  html+='</tbody></table></div>';
+
+  html+='<div>';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+theme.border+'">'+(t('salary_type_breakdown')||'Salary Type')+'</div>';
+  html+='<table><tbody>';
+  html+='<tr><td>'+(t('fixed_monthly')||'Fixed monthly')+'</td><td style="text-align:right;font-weight:600">'+salaryFixed+' ('+(active.length?Math.round(salaryFixed/active.length*100):0)+'%)</td></tr>';
+  html+='<tr><td>'+(t('variable_hourly')||'Variable hourly')+'</td><td style="text-align:right;font-weight:600">'+salaryHourly+' ('+(active.length?Math.round(salaryHourly/active.length*100):0)+'%)</td></tr>';
+  html+='<tr style="border-top:1px solid var(--gr2)"><td>'+(t('avg_hours_week')||'Avg. hours/week')+'</td><td style="text-align:right;font-weight:600">'+avgHours.toFixed(1)+'</td></tr>';
+  html+='</tbody></table></div>';
+
+  html+='</div>';
+
+  if(topTitles.length>0){
+    html+='<div style="margin-bottom:16px">';
+    html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+theme.border+'">'+(t('job_title_breakdown')||'Job Titles')+'</div>';
+    html+='<table><tbody>';
+    topTitles.forEach(([title,count])=>{
+      html+='<tr><td>'+title+'</td><td style="text-align:right;font-weight:600">'+count+'</td></tr>';
+    });
+    html+='</tbody></table></div>';
+  }
+
+  if(topNationalities.length>0){
+    html+='<div style="margin-bottom:16px">';
+    html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+theme.border+'">'+(t('nationality_breakdown')||'Nationality')+'</div>';
+    html+='<table><tbody>';
+    topNationalities.forEach(([nat,count])=>{
+      html+='<tr><td>'+nat+'</td><td style="text-align:right;font-weight:600">'+count+'</td></tr>';
+    });
+    html+='</tbody></table></div>';
+  }
+
+  html+='<div>';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+(expiringSoon.length>0?'#B8860B':theme.border)+'">'+(expiringSoon.length>0?'🔔 ':'')+(t('contracts_expiring_soon')||'Fixed-Term Contracts Ending Within 90 Days')+'</div>';
+  if(expiringSoon.length===0){
+    html+='<div style="padding:12px;color:var(--t3);font-size:11px">'+(t('none_expiring')||'None — all fixed-term contracts have more than 90 days remaining.')+'</div>';
+  }else{
+    html+='<table><thead><tr><th>'+(t('lbl_name')||'Name')+'</th><th>'+(t('job_title')||'Job Title')+'</th><th style="text-align:right">'+(t('contract_end_date')||'Contract End')+'</th></tr></thead><tbody>';
+    expiringSoon.forEach(e=>{
+      html+='<tr><td style="font-weight:500">'+e.name+'</td><td style="color:var(--t3)">'+(e.jobTitle||'—')+'</td><td style="text-align:right;font-weight:600;color:#B8860B">'+FD(e.contractEndDate)+'</td></tr>';
+    });
+    html+='</tbody></table>';
+  }
+  html+='</div>';
+
+  html+='</div></div></div>';
+  el.innerHTML=html;
+}
+
+
 function rReportCashFlow(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
@@ -10198,11 +10692,258 @@ function openAddBankTx(){
   });
 }
 
+// ══════════════════════════════════════════════════════════════════
+// مطابقة الحركات البنكية محاسبيًا - يدعم الدفعات الجزئية وتخصيص حركة واحدة لعدة فواتير/مصروفات
+// ══════════════════════════════════════════════════════════════════
+
+function getInvoiceRemaining(inv){
+  return Math.max(0,(inv.total||0)-(inv.amountPaid||0));
+}
+function getExpenseRemaining(exp){
+  return Math.max(0,(exp.amount||0)+(exp.btw||0)-(exp.amountPaid||0));
+}
+// إجمالي ما خُصِّص فعليًا من حركة بنكية معينة حتى الآن
+function getTxAllocatedAmount(tx){
+  return (tx.allocations||[]).reduce((s,a)=>s+(a.amount||0),0);
+}
+function getTxRemaining(tx){
+  return Math.max(0,Math.abs(tx.amount||0)-getTxAllocatedAmount(tx));
+}
+// حالة المطابقة الحالية للحركة: full (مكتملة) / partial (جزئية) / none (بلا أي تخصيص) / no_match_needed
+function getTxMatchStatus(tx){
+  if(tx.noMatchNeeded)return 'no_match_needed';
+  const allocated=getTxAllocatedAmount(tx);
+  if(allocated<=0)return 'none';
+  if(allocated>=Math.abs(tx.amount||0)-0.005)return 'full';
+  return 'partial';
+}
+
+// يُطبّق تخصيصًا جديدًا على فاتورة/مصروف: يزيد المبلغ المدفوع ويُحدّث الحالة تلقائيًا
+function applyAllocationToTarget(type,targetId,amount){
+  if(type==='invoice'){
+    const inv=S.invoices.find(i=>i.id===targetId);
+    if(!inv)return;
+    if(!(inv.amountPaid>0)&&!inv._statusBeforePayment)inv._statusBeforePayment=inv.status; // نحفظ الحالة الأصلية قبل أول دفعة فقط
+    inv.amountPaid=(inv.amountPaid||0)+amount;
+    if(inv.amountPaid>=inv.total-0.005)inv.status='Betaald';
+    else if(inv.amountPaid>0)inv.status='Deels betaald';
+  }else if(type==='expense'){
+    const exp=S.expenses.find(e=>e.id===targetId);
+    if(!exp)return;
+    exp.amountPaid=(exp.amountPaid||0)+amount;
+    const expTotal=(exp.amount||0)+(exp.btw||0);
+    if(exp.amountPaid>=expTotal-0.005)exp.paymentStatus='Betaald';
+    else if(exp.amountPaid>0)exp.paymentStatus='Deels betaald';
+  }
+  // type==='contact': لا يوجد رصيد فاتورة محدد لتحديثه - تخصيص عام لسجل جهة الاتصال فقط (يظهر في المطابقة نفسها)
+}
+// يعكس تخصيصًا موجودًا (عند حذفه أو تعديل المطابقة): يُنقص المبلغ المدفوع ويُعيد الحالة السابقة
+function reverseAllocationFromTarget(type,targetId,amount){
+  if(type==='invoice'){
+    const inv=S.invoices.find(i=>i.id===targetId);
+    if(!inv)return;
+    inv.amountPaid=Math.max(0,(inv.amountPaid||0)-amount);
+    if(inv.amountPaid<=0){inv.status=inv._statusBeforePayment||'Openstaand';}
+    else if(inv.amountPaid<inv.total-0.005)inv.status='Deels betaald';
+  }else if(type==='expense'){
+    const exp=S.expenses.find(e=>e.id===targetId);
+    if(!exp)return;
+    exp.amountPaid=Math.max(0,(exp.amountPaid||0)-amount);
+    const expTotal=(exp.amount||0)+(exp.btw||0);
+    if(exp.amountPaid<=0)exp.paymentStatus='Onbetaald';
+    else if(exp.amountPaid<expTotal-0.005)exp.paymentStatus='Deels betaald';
+  }
+}
+
 function matchTx(id){
-  if(!S.bankTx)return;
-  const idx=S.bankTx.findIndex(t=>t.id===id);
-  if(idx>=0){S.bankTx[idx].matched=true;}
-  sv();renderContent();toast('✓ '+t('synced'));
+  openMatchModal(id);
+}
+
+function openMatchModal(txId){
+  renderMatchModalContent(txId);
+}
+
+function renderMatchModalContent(txId){
+  const tx=(S.bankTx||[]).find(t=>t.id===txId);
+  if(!tx)return;
+  const cid=tx.cid;
+  const isIncoming=tx.amount>=0;
+  const remaining=getTxRemaining(tx);
+  const allocations=tx.allocations||[];
+
+  let suggestions=[];
+  if(remaining>0.01){
+    if(isIncoming){
+      suggestions=S.invoices.filter(i=>i.cid===cid&&!i.deleted&&getInvoiceRemaining(i)>0.01)
+        .map(i=>({type:'invoice',id:i.id,label:(i.num||'')+' — '+(i.desc||''),remaining:getInvoiceRemaining(i),diff:Math.abs(getInvoiceRemaining(i)-remaining)}))
+        .sort((a,b)=>a.diff-b.diff).slice(0,5);
+    }else{
+      suggestions=S.expenses.filter(e=>e.cid===cid&&!e.deleted&&getExpenseRemaining(e)>0.01)
+        .map(e=>({type:'expense',id:e.id,label:(e.desc||e.supplier||'Expense'),remaining:getExpenseRemaining(e),diff:Math.abs(getExpenseRemaining(e)-remaining)}))
+        .sort((a,b)=>a.diff-b.diff).slice(0,5);
+    }
+  }
+
+  const body=`
+    <div style="background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--t3)">${FD(tx.date)}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--t1);margin:4px 0">${tx.desc}</div>
+      <div style="font-size:18px;font-weight:700;color:${isIncoming?'var(--green)':'var(--red)'}">${isIncoming?'+':''}${FMT(tx.amount)}</div>
+    </div>
+
+    ${allocations.length>0?`
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:8px">${t('matched_to')||'Matched'}</div>
+      ${allocations.map(a=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:rgba(45,122,79,0.08);border-radius:6px;margin-bottom:6px">
+          <span style="font-size:12px">${a.targetLabel}</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <b style="font-size:12px">${FMT(a.amount)}</b>
+            <button onclick="removeAllocation('${tx.id}','${a.id}')" style="background:none;border:none;cursor:pointer;color:#B8860B;font-size:14px" title="${t('remove')||'Remove'}">✕</button>
+          </span>
+        </div>
+      `).join('')}
+    </div>`:''}
+
+    <div style="text-align:center;padding:10px;background:${remaining>0.01?'rgba(184,134,11,0.1)':'rgba(45,122,79,0.1)'};border-radius:6px;margin-bottom:14px;font-weight:700;color:${remaining>0.01?'#B8860B':'#2d7a4f'}">
+      ${remaining>0.01?(t('remaining_to_allocate')||'Remaining to allocate')+': '+FMT(remaining):'✓ '+(t('fully_matched')||'Fully matched')}
+    </div>
+
+    ${remaining>0.01?`
+    ${!tx.noMatchNeeded?`<button class="btn btn-xs" onclick="markNoMatchNeeded('${tx.id}')" style="width:100%;margin-bottom:14px">🚫 ${t('no_match_needed')||'No match needed (internal transfer / bank fee)'}</button>`:''}
+    ${suggestions.length>0?`
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:8px">${t('suggested_matches')||'Suggested Matches'}</div>
+      ${suggestions.map(s=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid var(--gr2);border-radius:6px;margin-bottom:6px">
+          <div><div style="font-size:12px;font-weight:500">${s.label}</div><div style="font-size:10px;color:var(--t3)">${t('remaining')||'Remaining'}: ${FMT(s.remaining)}</div></div>
+          <button class="btn btn-xs btn-p" onclick="quickMatchAllocation('${tx.id}','${s.type}','${s.id}')">+ ${t('match')||'Match'}</button>
+        </div>
+      `).join('')}
+    </div>`:''}
+
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:8px">${t('search_manually')||'Search Manually'}</div>
+      <select id="match-search-type" onchange="renderMatchSearchResults('${tx.id}')" style="width:100%;padding:8px;border:2px solid var(--gr2);border-radius:6px;margin-bottom:8px;background:var(--bg1);color:var(--t1)">
+        <option value="invoice" ${isIncoming?'selected':''}>📄 ${t('tab_invoices')||'Invoices'}</option>
+        <option value="expense" ${!isIncoming?'selected':''}>🧾 ${t('tab_expenses')||'Expenses'}</option>
+        <option value="contact">👤 ${t('contact_direct')||'Contact (direct, no invoice)'}</option>
+      </select>
+      <input type="text" id="match-search-input" placeholder="🔍 ${t('search')||'Search'}..." oninput="renderMatchSearchResults('${tx.id}')" style="width:100%;padding:8px;border:2px solid var(--gr2);border-radius:6px;margin-bottom:8px;background:var(--bg1);color:var(--t1);box-sizing:border-box"/>
+      <div id="match-search-results" style="max-height:180px;overflow-y:auto"></div>
+    </div>
+    `:''}
+  `;
+
+  showModal('🔗 '+(t('match_transaction')||'Match Transaction'),body,()=>{closeModal();renderContent();},t('done')||'Done');
+  setTimeout(()=>renderMatchSearchResults(txId),50);
+}
+
+function renderMatchSearchResults(txId){
+  const tx=(S.bankTx||[]).find(t=>t.id===txId);
+  if(!tx)return;
+  const type=document.getElementById('match-search-type')?.value||'invoice';
+  const term=(document.getElementById('match-search-input')?.value||'').toLowerCase().trim();
+  const container=document.getElementById('match-search-results');
+  if(!container)return;
+  const cid=tx.cid;
+  let results=[];
+
+  if(type==='invoice'){
+    results=S.invoices.filter(i=>i.cid===cid&&!i.deleted&&getInvoiceRemaining(i)>0.01)
+      .filter(i=>!term||(i.num||'').toLowerCase().includes(term)||(i.desc||'').toLowerCase().includes(term))
+      .map(i=>({type:'invoice',id:i.id,label:(i.num||'')+' — '+(i.desc||''),remaining:getInvoiceRemaining(i)}));
+  }else if(type==='expense'){
+    results=S.expenses.filter(e=>e.cid===cid&&!e.deleted&&getExpenseRemaining(e)>0.01)
+      .filter(e=>!term||(e.desc||'').toLowerCase().includes(term)||(e.supplier||'').toLowerCase().includes(term))
+      .map(e=>({type:'expense',id:e.id,label:(e.desc||e.supplier||'Expense'),remaining:getExpenseRemaining(e)}));
+  }else{
+    results=(S.contacts||[]).filter(c=>c.cid===cid&&!c.deleted)
+      .filter(c=>!term||(c.name||'').toLowerCase().includes(term))
+      .map(c=>({type:'contact',id:c.id,label:c.name+' ('+(c.type||'')+')',remaining:null}));
+  }
+
+  container.innerHTML=results.length===0?`<div style="text-align:center;padding:12px;color:var(--t3);font-size:11px">${t('no_results')||'No matching results'}</div>`:
+    results.slice(0,15).map(r=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid var(--gr2)">
+        <div><div style="font-size:12px">${r.label}</div>${r.remaining!==null?`<div style="font-size:10px;color:var(--t3)">${t('remaining')||'Remaining'}: ${FMT(r.remaining)}</div>`:''}</div>
+        <button class="btn btn-xs" onclick="addManualAllocation('${txId}','${r.type}','${r.id}')">+ ${t('add')||'Add'}</button>
+      </div>
+    `).join('');
+}
+
+// إضافة تخصيص من الاقتراح السريع (يستخدم أقل قيمة بين المتبقي بالحركة والمتبقي بالهدف تلقائيًا)
+function quickMatchAllocation(txId,type,targetId){
+  const tx=(S.bankTx||[]).find(t=>t.id===txId);
+  if(!tx)return;
+  let targetRemaining=0,targetLabel='';
+  if(type==='invoice'){
+    const inv=S.invoices.find(i=>i.id===targetId);
+    if(!inv)return;
+    targetRemaining=getInvoiceRemaining(inv);targetLabel=(inv.num||'')+' — '+(inv.desc||'');
+  }else{
+    const exp=S.expenses.find(e=>e.id===targetId);
+    if(!exp)return;
+    targetRemaining=getExpenseRemaining(exp);targetLabel=(exp.desc||exp.supplier||'Expense');
+  }
+  const amount=Math.min(targetRemaining,getTxRemaining(tx));
+  createAllocation(tx,type,targetId,targetLabel,amount);
+}
+
+// إضافة تخصيص يدوي (من نتائج البحث) - يطلب المبلغ من المستخدم لأنه قد يريد دفعة جزئية مقصودة
+function addManualAllocation(txId,type,targetId,promptForAmount){
+  const tx=(S.bankTx||[]).find(t=>t.id===txId);
+  if(!tx)return;
+  let targetRemaining=null,targetLabel='';
+  if(type==='invoice'){
+    const inv=S.invoices.find(i=>i.id===targetId);
+    if(!inv)return;
+    targetRemaining=getInvoiceRemaining(inv);targetLabel=(inv.num||'')+' — '+(inv.desc||'');
+  }else if(type==='expense'){
+    const exp=S.expenses.find(e=>e.id===targetId);
+    if(!exp)return;
+    targetRemaining=getExpenseRemaining(exp);targetLabel=(exp.desc||exp.supplier||'Expense');
+  }else{
+    const con=(S.contacts||[]).find(c=>c.id===targetId);
+    if(!con)return;
+    targetLabel=con.name+' ('+(con.type||'')+')';
+  }
+  const suggested=targetRemaining!==null?Math.min(targetRemaining,getTxRemaining(tx)):getTxRemaining(tx);
+  const input=prompt((t('enter_amount_to_match')||'Amount to match')+' (€):',suggested.toFixed(2));
+  if(input===null)return;
+  const amount=parseFloat(input);
+  if(!amount||amount<=0){toast('❌ '+(t('invalid_amount')||'Invalid amount'));return;}
+  createAllocation(tx,type,targetId,targetLabel,amount);
+}
+
+function createAllocation(tx,type,targetId,targetLabel,amount){
+  if(!tx.allocations)tx.allocations=[];
+  tx.allocations.push({id:UID(),type,targetId,targetLabel,amount});
+  applyAllocationToTarget(type,targetId,amount);
+  logAudit('edit','bank_tx','Matched transaction "'+tx.desc+'" ('+FMT(amount)+') to '+targetLabel,tx.cid);
+  sv();
+  renderMatchModalContent(tx.id); // إعادة رسم النافذة نفسها لتحديث المتبقي والاقتراحات فورًا
+}
+
+function removeAllocation(txId,allocationId){
+  const tx=(S.bankTx||[]).find(t=>t.id===txId);
+  if(!tx||!tx.allocations)return;
+  const alloc=tx.allocations.find(a=>a.id===allocationId);
+  if(!alloc)return;
+  reverseAllocationFromTarget(alloc.type,alloc.targetId,alloc.amount);
+  tx.allocations=tx.allocations.filter(a=>a.id!==allocationId);
+  logAudit('edit','bank_tx','Removed match ('+FMT(alloc.amount)+') from "'+tx.desc+'"',tx.cid);
+  sv();
+  renderMatchModalContent(txId);
+}
+
+function markNoMatchNeeded(txId){
+  const tx=(S.bankTx||[]).find(t=>t.id===txId);
+  if(!tx)return;
+  tx.noMatchNeeded=true;
+  logAudit('edit','bank_tx','Marked "'+tx.desc+'" as no match needed',tx.cid);
+  sv();closeModal();renderContent();
+  toast('✓ '+(t('marked_no_match')||'Marked as no match needed'));
 }
 
 function exportReportCSV(cid){
