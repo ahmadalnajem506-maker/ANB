@@ -673,7 +673,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.76">
+<link rel="manifest" href="manifest.json?v=2.81">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -1426,7 +1426,7 @@ var I18N={
     dashboard_new_messages:'New Messages',
     dashboard_new_documents:'New Documents',
     dashboard_hours_logged:'Hours Logged',
-    dashboard_active_contracts:'Active Contracts', dashboard_contracts_renewal:'Contracts Needing Renewal',
+    dashboard_active_contracts:'Active Contracts', dashboard_contracts_renewal:'Contracts Needing Renewal', employees:'Employees', card_employees_desc:'Payroll & Employment Contracts', add_employee:'Add Employee', edit_employee:'Edit Employee', no_employees_yet:'No employees added yet', generate_payslip:'Generate Payslip', net_pay:'Net Pay', payslip_history:'Payslip History', no_payslips_yet:'No payslips generated yet', download:'Download', close:'Close', back_to_employees:'Back to Employees', benefits:'Benefits', end_employment:'End Employment', export_contract:'Export Contract PDF', export_payslip:'Export Payslip PDF', status_concept:'CONCEPT — month not yet ended', status_confirmed:'CONFIRMED', vacation_money_payout:'Vacation Allowance Payout', accrued_paid_may:'Accrued monthly, paid out once in May', paid_monthly:'Paid monthly with salary', vacation_payout:'Vacation allowance payout (accrued)', vacation_accruing:'Vacation allowance accruing (reserved for May)',
     dashboard_pending_agreements:'Pending Agreements',
     // Sidebar messages
     sidebar_use_cards:'← Use the cards to navigate',
@@ -1630,7 +1630,7 @@ var I18N={
     dashboard_new_messages:'Nieuwe Berichten',
     dashboard_new_documents:'Nieuwe Documenten',
     dashboard_hours_logged:'Gewerkte Uren',
-    dashboard_active_contracts:'Actieve Overeenkomsten', dashboard_contracts_renewal:'Contracten die Verlenging Nodig Hebben',
+    dashboard_active_contracts:'Actieve Overeenkomsten', dashboard_contracts_renewal:'Contracten die Verlenging Nodig Hebben', employees:'Werknemers', card_employees_desc:'Loonadministratie & Arbeidscontracten', add_employee:'Werknemer Toevoegen', edit_employee:'Werknemer Bewerken', no_employees_yet:'Nog geen werknemers toegevoegd', generate_payslip:'Loonstrook Genereren', net_pay:'Netto Loon', payslip_history:'Loonstrookgeschiedenis', no_payslips_yet:'Nog geen loonstroken gegenereerd', download:'Downloaden', close:'Sluiten', back_to_employees:'Terug naar Werknemers', benefits:'Secundaire Arbeidsvoorwaarden', end_employment:'Dienstverband Beëindigen', export_contract:'Contract PDF Exporteren', export_payslip:'Loonstrook PDF Exporteren', status_concept:'CONCEPT — maand nog niet afgelopen', status_confirmed:'BEVESTIGD', vacation_money_payout:'Uitbetaling Vakantiegeld', accrued_paid_may:'Maandelijks opgebouwd, uitbetaald in mei', paid_monthly:'Maandelijks uitbetaald met salaris', vacation_payout:'Uitbetaling vakantiegeld (opgebouwd)', vacation_accruing:'Vakantiegeld wordt opgebouwd (gereserveerd voor mei)',
     dashboard_pending_agreements:'Hangende Akkoorden',
     // Sidebar messages
     sidebar_use_cards:'← Gebruik de kaarten om te navigeren',
@@ -1822,7 +1822,7 @@ var I18N={
     dashboard_new_messages:'الرسائل الجديدة',
     dashboard_new_documents:'المستندات الجديدة',
     dashboard_hours_logged:'ساعات العمل المسجلة',
-    dashboard_active_contracts:'الاتفاقيات النشطة', dashboard_contracts_renewal:'عقود بحاجة لمراجعة/تجديد',
+    dashboard_active_contracts:'الاتفاقيات النشطة', dashboard_contracts_renewal:'عقود بحاجة لمراجعة/تجديد', employees:'الموظفون', card_employees_desc:'الرواتب وعقود العمل', add_employee:'إضافة موظف', edit_employee:'تعديل موظف', no_employees_yet:'لا يوجد موظفون بعد', generate_payslip:'إصدار بيان راتب', net_pay:'صافي الراتب', payslip_history:'سجل بيانات الرواتب', no_payslips_yet:'لا توجد بيانات رواتب صادرة بعد', download:'تحميل', close:'إغلاق', back_to_employees:'العودة للموظفين', benefits:'المزايا', end_employment:'إنهاء التعاقد', export_contract:'تصدير العقد PDF', export_payslip:'تصدير بيان الراتب PDF', status_concept:'مسودة — الشهر لم ينتهِ بعد', status_confirmed:'مؤكد', vacation_money_payout:'طريقة دفع بدل الإجازة', accrued_paid_may:'يُجمَّع شهريًا، ويُدفع دفعة واحدة في مايو', paid_monthly:'يُدفع شهريًا مع الراتب', vacation_payout:'دفعة بدل الإجازة المتراكمة', vacation_accruing:'بدل الإجازة يتراكم (محجوز لدفعة مايو)',
     dashboard_pending_agreements:'الاتفاقيات المعلقة',
     // Sidebar messages
     sidebar_use_cards:'← استخدم الكروت للتنقل',
@@ -3161,7 +3161,7 @@ function renderContent(){
       rAdminDash(el);return;
     }
     // Admin manages client's content: dashboard (client dash), invoices, expenses, etc.
-    const fn={action_cards:rClientActionCards,client_overview:rClientActionCards,dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets,edit_client:rEditClient,debtors:rDebtors,creditors:rCreditors,client_activity:(el,cid)=>rAuditLog(el,cid)};
+    const fn={action_cards:rClientActionCards,client_overview:rClientActionCards,dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,reports:rReports,bank:rBank,import:rImport,documents:rDocs,contacts:rContacts,messages:rMessages,info:rInfo,contracts:rContracts,assets:rAssets,edit_client:rEditClient,debtors:rDebtors,creditors:rCreditors,client_activity:(el,cid)=>rAuditLog(el,cid),employees:rEmployees,employee_detail:(el,cid)=>rEmployeeDetail(el)};
     (fn[S.tab]||rClientActionCards)(el,cid);
   } else {
     // Client can see: dashboard, invoices, expenses, hours, documents, messages
@@ -4379,6 +4379,7 @@ function selectCard(cardId){
   const adminThemes={
     'edit_client':{bg:'rgba(184,230,209,0.08)',border:'#B8E6D1',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
     'client_activity':{bg:'rgba(224,184,48,0.08)',border:'#E0B830',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'employees':{bg:'rgba(245,220,112,0.15)',border:'#F5DC70',textDefault:'#0A2218',text:'#0A2218',accent:'#C89010'},
     'invoices':{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'expenses':{bg:'rgba(15,48,37,0.08)',border:'#0F3025',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'bank':{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
@@ -4581,8 +4582,19 @@ function rClientActionCards(el,cid){
       text:'#0A2218',
       accent:'#FFD700',
       alerts:[]
+    },
+    {
+      id:'employees',
+      icon:'👥',
+      name:t('employees')||'Employees',
+      desc:t('card_employees_desc')||'Payroll & Employment Contracts',
+      bg:'linear-gradient(135deg, #F5DC70 0%, #FDF8EC 100%)',
+      border:'#C89010',
+      text:'#0A2218',
+      accent:'#FFD700',
+      alerts:(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length>0?[{icon:'👥',text:(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length+' active',color:'#0A2218'}]:[]
     }
-  ];
+  ].filter(card=>card.id!=='employees'||isAdmin()); // ✅ كارت الموظفين للأدمن فقط - بنفس منطق حماية التقارير
   
   let html='<div style="padding:16px">';
   
@@ -4679,6 +4691,131 @@ function migrateOneTimeDebtors(){
   });
   if(changed)sv();
 }
+// عقد وُسم "Active" لكن تجاوز تاريخ انتهائه الفعلي - بحاجة لمراجعة أو تجديد
+// ══════════════════════════════════════════════════════════════════
+// حاسبة ضريبة الرواتب الهولندية (Loonheffing) — سنة الضريبة 2026
+// ⚠️ يجب تحديث هذه الأرقام كل يناير عند صدور جدول الضرائب الجديد من Belastingdienst
+// المصادر المعتمدة (تحقّقنا منها في 2026-07): Deloitte NL Tax Alert، business.gov.nl (الموقع الحكومي الرسمي)، PwC Tax Summaries
+// ملاحظة: حساب تقديري لموظف عادي دون سن التقاعد (AOW) وبدون قاعدة الـ30% - لا يشمل حالات خاصة أخرى
+// ══════════════════════════════════════════════════════════════════
+const LOONHEFFING_TAX_YEAR=2026;
+const LOONHEFFING_2026={
+  // شرائح الضريبة (Box 1) - المبلغ العلوي لكل شريحة والمعدل المطبَّق عليها
+  brackets:[
+    {upTo:38883,rate:0.3575},
+    {upTo:78426,rate:0.3756},
+    {upTo:Infinity,rate:0.4950}
+  ],
+  // الخصم الضريبي العام (Algemene heffingskorting)
+  algemeneHK:{max:3115,phaseOutFrom:29736,phaseOutRate:0.06398},
+  // خصم العمل (Arbeidskorting) - نموذج مبسّط (بلا مرحلة البناء التصاعدي للدخل المنخفض جدًا، مناسب لأغلب الرواتب الفعلية)
+  arbeidsKorting:{max:5685,phaseOutFrom:45592,phaseOutRate:0.0651}
+};
+
+function calculateLoonheffing2026(monthlyTaxableGross,applyKorting){
+  if(!monthlyTaxableGross||monthlyTaxableGross<=0)return 0;
+  const annualGross=monthlyTaxableGross*12; // تقدير تبسيطي بالتحويل السنوي (وليس الطريقة التراكمية الفعلية المستخدمة في أنظمة الرواتب الاحترافية)
+
+  // حساب الضريبة التصاعدية عبر الشرائح
+  let tax=0,lower=0;
+  for(const b of LOONHEFFING_2026.brackets){
+    if(annualGross>lower){
+      const taxableInBracket=Math.min(annualGross,b.upTo)-lower;
+      tax+=taxableInBracket*b.rate;
+      lower=b.upTo;
+    }
+  }
+
+  let credits=0;
+  if(applyKorting){
+    const {algemeneHK,arbeidsKorting}=LOONHEFFING_2026;
+    let a=algemeneHK.max;
+    if(annualGross>algemeneHK.phaseOutFrom)a=Math.max(0,algemeneHK.max-(annualGross-algemeneHK.phaseOutFrom)*algemeneHK.phaseOutRate);
+    let b=arbeidsKorting.max;
+    if(annualGross>arbeidsKorting.phaseOutFrom)b=Math.max(0,arbeidsKorting.max-(annualGross-arbeidsKorting.phaseOutFrom)*arbeidsKorting.phaseOutRate);
+    credits=a+b;
+  }
+
+  const annualTax=Math.max(0,tax-credits);
+  return annualTax/12; // القيمة الشهرية المطلوب حجبها من الراتب
+}
+
+// يحسب كل مكوّنات الراتب لموظف معيّن لشهر محدد (بلا Loonheffing - يُحسب لاحقًا ويمكن تعديله يدويًا)
+// يجمع كل Vakantiegeld المتراكم غير المدفوع بعد لموظف معيّن (لوضع "دفع سنوي في مايو") - يُصفَّر تلقائيًا بعد كل دفعة سابقة
+function getAccruedVacationMoney(employeeId){
+  const slips=(S.payslips||[]).filter(p=>p.employeeId===employeeId)
+    .sort((a,b)=>(a.year*12+a.month)-(b.year*12+b.month));
+  let accrued=0;
+  for(const p of slips){
+    if(p.vacationMoneyPaidOut)accrued=0; // أُعيد التصفير بعد كل دفعة فعلية سابقة
+    else accrued+=p.vacationMoney||0;
+  }
+  return accrued;
+}
+// يجمع كل تراكم راتب ١٣ غير المدفوع بعد (بنفس منطق بدل الإجازة، لكن يُدفع في ديسمبر)
+function getAccrued13thMonth(employeeId){
+  const slips=(S.payslips||[]).filter(p=>p.employeeId===employeeId)
+    .sort((a,b)=>(a.year*12+a.month)-(b.year*12+b.month));
+  let accrued=0;
+  for(const p of slips){
+    if(p.thirteenthMonthPaidOut)accrued=0;
+    else accrued+=p.thirteenthMonthAccrual||0;
+  }
+  return accrued;
+}
+
+// حالة بيان الراتب: "مسودة" للشهر الجاري (لم ينتهِ بعد)، "مؤكد" لأي شهر سابق منتهٍ فعليًا - تُحسب ديناميكيًا دائمًا وليست ثابتة عند الإصدار
+function getPayslipStatus(month,year){
+  const now=new Date();
+  return (year===now.getFullYear()&&month===now.getMonth()+1)?'concept':'confirmed';
+}
+function computePayslipBreakdown(emp,hoursWorked,month,extras){
+  extras=extras||{};
+  const grossBase=emp.salaryType==='hourly'?(emp.hourlyRate||0)*(hoursWorked||0):(emp.grossMonthlySalary||0);
+
+  // ── بدل الإجازة (Vakantiegeld) 8% - شهري أو تراكمي يُدفع في مايو ──
+  const vacationMoney=grossBase*((emp.vacationMoneyPercent||8)/100);
+  const vacationPayoutMode=emp.vacationMoneyPayout||'annual_may';
+  const isMayPayout=vacationPayoutMode==='annual_may'&&month===5;
+  const vacationMoneyPaidOut=vacationPayoutMode==='monthly'||isMayPayout;
+  let vacationMoneyPaidNow=0,vacationMoneyAccruedTotal=0;
+  if(vacationPayoutMode==='monthly'){
+    vacationMoneyPaidNow=vacationMoney;
+  }else if(isMayPayout){
+    vacationMoneyAccruedTotal=getAccruedVacationMoney(emp.id)+vacationMoney;
+    vacationMoneyPaidNow=vacationMoneyAccruedTotal;
+  }
+
+  // ── راتب ١٣ (Dertiende maand) - يتراكم تلقائيًا (1/12 شهريًا) ويُدفع دفعة واحدة في ديسمبر ──
+  const thirteenthMonthAccrual=emp.has13thMonth?grossBase/12:0;
+  const isDecemberPayout=emp.has13thMonth&&month===12;
+  const thirteenthMonthPaidOut=!!isDecemberPayout;
+  let thirteenthMonth=0,thirteenthMonthAccruedTotal=0;
+  if(isDecemberPayout){
+    thirteenthMonthAccruedTotal=getAccrued13thMonth(emp.id)+thirteenthMonthAccrual;
+    thirteenthMonth=thirteenthMonthAccruedTotal;
+  }
+
+  const customTotal=(emp.customAdditions||[]).reduce((sum,a)=>sum+(a.type==='percent'?grossBase*(a.value/100):a.value),0);
+
+  // ── بدل المواصلات: ثابت شهريًا أو حسب الكيلومترات الفعلية ──
+  const travelAllowance=emp.travelAllowanceType==='per_km'
+    ?(extras.km||0)*(emp.travelAllowanceKmRate||0.20)
+    :(emp.travelAllowance||0);
+
+  // ── بدل العمل من المنزل: حسب عدد أيام العمل من المنزل الفعلية هذا الشهر ──
+  const homeWorkAllowance=emp.hasHomeWorkAllowance?(extras.homeWorkDays||0)*(emp.homeWorkRate||2.35):0;
+
+  const pensionDeduction=grossBase*((emp.pensionPercent||0)/100);
+
+  // الإجمالي الخاضع للضريبة (الراتب الأساسي + الإضافات المرتبطة بالإجمالي - اشتراك التقاعد الذي يُخصم قبل الضريبة عادة)
+  const taxableGross=grossBase+vacationMoneyPaidNow+thirteenthMonth+customTotal-pensionDeduction;
+
+  return {grossBase,vacationMoney,vacationMoneyPaidNow,vacationMoneyAccruedTotal,vacationMoneyPaidOut,vacationPayoutMode,
+    thirteenthMonthAccrual,thirteenthMonth,thirteenthMonthAccruedTotal,thirteenthMonthPaidOut,
+    customTotal,travelAllowance,homeWorkAllowance,pensionDeduction,taxableGross};
+}
+
 // عقد وُسم "Active" لكن تجاوز تاريخ انتهائه الفعلي - بحاجة لمراجعة أو تجديد
 function isContractExpired(con){
   return !!(con.endDate&&con.endDate<TODAY());
@@ -5779,6 +5916,763 @@ function renderContactsLists(searchTerm){
 }
 
 /* ═══════════════════════════ DEBTORS ═══════════════════════════ */
+// ══════════════════════════════ الموظفون والرواتب ══════════════════════════════
+function openEmployeeDetail(employeeId){
+  S.currentEmployeeId=employeeId;
+  S.tab='employee_detail';
+  renderApp();
+}
+
+function rEmployeeDetail(el){
+  const emp=(S.employees||[]).find(e=>e.id===S.currentEmployeeId);
+  const theme=S.cardTheme||{bg:'rgba(245,220,112,0.15)',border:'#F5DC70',textDefault:'#0A2218',text:'#0A2218',accent:'#C89010'};
+  if(!emp){el.innerHTML='<div class="empty">Employee not found</div>';return;}
+  const isActive=emp.employmentStatus==='active';
+
+  el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+    <button class="btn" onclick="S.tab='employees';renderApp()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='#ffffff'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
+      ← ${t('back_to_employees')||'Back to Employees'}
+    </button>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch"><span class="ct">👤 ${emp.name}</span>${isActive?'<span class="bdg b-paid">Active</span>':'<span class="bdg b-draft">Ended '+FD(emp.endDate||'')+'</span>'}</div>
+    <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+      <div><span style="color:var(--t3)">${t('job_title')||'Job Title'}:</span> <b>${emp.jobTitle||'—'}</b></div>
+      <div><span style="color:var(--t3)">BSN:</span> <b>${emp.bsn||'—'}</b></div>
+      <div><span style="color:var(--t3)">${t('start_date')||'Start Date'}:</span> <b>${FD(emp.startDate||'')}</b></div>
+      <div><span style="color:var(--t3)">${t('contract_type')||'Contract Type'}:</span> <b>${emp.contractType==='onbepaalde_tijd'?'Onbepaalde tijd':'Bepaalde tijd'}</b></div>
+      <div><span style="color:var(--t3)">${t('hours_per_week')||'Hours/Week'}:</span> <b>${emp.hoursPerWeek||'—'}</b></div>
+      <div><span style="color:var(--t3)">${t('salary')||'Salary'}:</span> <b>${emp.salaryType==='hourly'?FMT(emp.hourlyRate)+'/hr':FMT(emp.grossMonthlySalary)+'/mo'}</b></div>
+      <div><span style="color:var(--t3)">${t('nationality')||'Nationality'}:</span> <b>${emp.nationality||'—'}</b></div>
+      <div><span style="color:var(--t3)">${t('date_of_birth')||'Date of Birth'}:</span> <b>${emp.dob?FD(emp.dob):'—'}</b></div>
+      <div style="grid-column:1/-1"><span style="color:var(--t3)">${t('address')||'Address'}:</span> <b>${emp.address||'—'}</b></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch"><span class="ct">💰 ${t('salary')||'Salary'} & ${t('benefits')||'Benefits'}</span></div>
+    <div style="padding:16px;font-size:11px;color:var(--t2);line-height:2">
+      <div>✅ ${t('vacation_money')||'Vacation allowance'}: 8% (${emp.vacationMoneyPayout==='monthly'?(t('paid_monthly')||'paid monthly'):(t('accrued_paid_may')||'accrued, paid in May')})</div>
+      ${emp.has13thMonth?`<div>✅ ${t('has_13th_month')||'13th month salary'} (${t('13th_month_hint')?(t('accrued_paid_may')||'accrued, paid in December'):'accrued, paid in December'})</div>`:''}
+      <div>🚗 ${t('travel_allowance')||'Travel allowance'}: ${emp.travelAllowanceType==='per_km'?'€'+(emp.travelAllowanceKmRate||0.20).toFixed(2)+'/km':FMT(emp.travelAllowance||0)+'/mo'}</div>
+      ${emp.hasHomeWorkAllowance?`<div>🏠 ${t('has_homework_allowance')||'Work-from-home allowance'}: €${(emp.homeWorkRate||2.35).toFixed(2)}/day</div>`:''}
+      ${emp.pensionPercent>0?`<div>🏦 ${t('pension_percent')||'Pension'}: ${emp.pensionPercent}%</div>`:''}
+      ${(emp.customAdditions||[]).map(a=>`<div>➕ ${a.label}: ${a.type==='percent'?a.value+'%':FMT(a.value)}</div>`).join('')}
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <button class="btn" onclick="openEmployeeModal('${emp.id}','${emp.cid}')" style="padding:12px;background:var(--bg2);border:2px solid var(--gr2);border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">✏ ${t('edit')||'Edit'}</button>
+    ${isActive?`<button class="btn btn-danger" onclick="endEmployment('${emp.id}')" style="padding:12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">⏹ ${t('end_employment')||'End Employment'}</button>`:'<div></div>'}
+    <button class="btn" onclick="exportEmployeeContractPDF('${emp.id}')" style="padding:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">📄 ${t('export_contract')||'Export Contract PDF'}</button>
+    <button class="btn btn-p" onclick="openPayslipModal('${emp.id}')" style="padding:12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">🧾 ${t('export_payslip')||'Export Payslip PDF'}</button>
+  </div>
+
+  <div style="margin-top:14px">
+    <button class="btn btn-xs" onclick="openPayslipHistoryModal('${emp.id}')" style="width:100%;padding:10px;text-align:center">📋 ${t('payslip_history')||'Payslip History'}</button>
+  </div>`;
+}
+
+function rEmployees(el,cid){
+  const c=S.clients.find(x=>x.id===cid);
+  const theme=S.cardTheme||{bg:'rgba(245,220,112,0.15)',border:'#F5DC70',textDefault:'#0A2218',text:'#0A2218',accent:'#C89010'};
+  const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
+
+  el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+    <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='#ffffff'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
+      ← ${t('back_to_overview')||'Back'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||''}</span>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+    ${allEmployees.length>0?`<input type="text" id="employees-search" placeholder="🔍 ${t('search')||'Search'}..."
+      style="flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1)"
+      oninput="renderEmployeesList(this.value,document.getElementById('employees-status-filter').value)">
+    <select id="employees-status-filter" onchange="renderEmployeesList(document.getElementById('employees-search').value,this.value)"
+      style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1);cursor:pointer">
+      <option value="active">✅ Active only</option>
+      <option value="">All</option>
+      <option value="ended">⏹ Ended only</option>
+    </select>`:''}
+    <button class="btn btn-p btn-xs" onclick="openEmployeeModal(null,'${cid}')" style="margin-left:auto">➕ ${t('add_employee')||'Add Employee'}</button>
+  </div>
+  <div id="employees-list-container"></div>`;
+  renderEmployeesList('','active');
+}
+
+function renderEmployeesList(searchTerm,statusFilter){
+  const container=document.getElementById('employees-list-container');
+  if(!container)return;
+  const cid=S.currentClient;
+  const theme=S.cardTheme||{border:'#0A2218'};
+  const term=(searchTerm||'').toLowerCase().trim();
+  const employees=(S.employees||[]).filter(e=>{
+    if(e.cid!==cid)return false;
+    if(statusFilter&&e.employmentStatus!==statusFilter)return false;
+    if(!term)return true;
+    return (e.name||'').toLowerCase().includes(term)||(e.jobTitle||'').toLowerCase().includes(term);
+  });
+
+  container.innerHTML=`<div class="card">
+    <div class="ch"><span class="ct">👥 ${t('employees')||'Employees'} (${employees.length})</span></div>
+    ${employees.length===0?`<div class="empty">👥 ${term||statusFilter?(t('no_results')||'No matching employees'):(t('no_employees_yet')||'No employees added yet')}</div>`:
+    employees.map(e=>{
+      const salaryLabel=e.salaryType==='hourly'?FMT(e.hourlyRate)+'/hr':FMT(e.grossMonthlySalary)+'/mo';
+      const isActive=e.employmentStatus==='active';
+      return `<div onclick="openEmployeeDetail('${e.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--gr2);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='transparent'">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--t1)">${e.name}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">${e.jobTitle||'—'} · <span style="color:${theme.border};font-weight:600">${salaryLabel}</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${isActive?'<span class="bdg b-paid">Active</span>':'<span class="bdg b-draft">Ended '+FD(e.endDate||'')+'</span>'}
+          <span style="color:var(--t3);font-size:14px">→</span>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function openEmployeeModal(employeeId,cid){
+  const emp=employeeId?(S.employees||[]).find(e=>e.id===employeeId):null;
+  const isNew=!emp;
+
+  showModal(isNew?(t('add_employee')||'Add Employee'):(t('edit_employee')||'Edit Employee'),`
+    <div style="display:flex;flex-direction:column;gap:14px;max-height:65vh;overflow-y:auto;padding-right:4px">
+
+      <div style="font-size:11px;font-weight:700;color:#0A2218;letter-spacing:.5px;border-bottom:2px solid #F5DC70;padding-bottom:4px">👤 PERSONAL DETAILS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="fg"><label>${t('full_name')||'Full Name'} *</label><input type="text" id="emp-name" value="${emp?.name||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+        <div class="fg"><label>BSN</label><input type="text" id="emp-bsn" value="${emp?.bsn||''}" maxlength="9" placeholder="123456789" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+        <div class="fg"><label>${t('date_of_birth')||'Date of Birth'}</label><input type="date" id="emp-dob" value="${emp?.dob||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+        <div class="fg"><label>${t('nationality')||'Nationality'}</label><input type="text" id="emp-nationality" value="${emp?.nationality||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+      </div>
+      <div class="fg"><label>${t('address')||'Address'}</label><input type="text" id="emp-address" value="${emp?.address||''}" placeholder="Street, ZIP, City" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+
+      <div style="font-size:11px;font-weight:700;color:#0A2218;letter-spacing:.5px;border-bottom:2px solid #F5DC70;padding-bottom:4px;margin-top:6px">📋 EMPLOYMENT CONTRACT</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="fg"><label>${t('job_title')||'Job Title'} *</label><input type="text" id="emp-jobtitle" value="${emp?.jobTitle||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+        <div class="fg"><label>${t('start_date')||'Start Date'} *</label><input type="date" id="emp-startdate" value="${emp?.startDate||TODAY()}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+        <div class="fg">
+          <label>${t('contract_type')||'Contract Type'} *</label>
+          <select id="emp-contracttype" onchange="toggleContractEndDate()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);cursor:pointer">
+            <option value="bepaalde_tijd" ${emp?.contractType==='bepaalde_tijd'||!emp?'selected':''}>Bepaalde tijd (Fixed-term)</option>
+            <option value="onbepaalde_tijd" ${emp?.contractType==='onbepaalde_tijd'?'selected':''}>Onbepaalde tijd (Permanent)</option>
+          </select>
+        </div>
+        <div class="fg" id="emp-contractend-wrap" style="${emp&&emp.contractType==='onbepaalde_tijd'?'display:none':''}">
+          <label>${t('contract_end_date')||'Contract End Date'}</label>
+          <input type="date" id="emp-contractend" value="${emp?.contractEndDate||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/>
+        </div>
+        <div class="fg"><label>${t('hours_per_week')||'Hours per Week'} *</label><input type="number" id="emp-hoursweek" value="${emp?.hoursPerWeek||40}" min="1" max="40" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+        <div class="fg">
+          <label>${t('probation_period')||'Probation Period'}</label>
+          <select id="emp-probation" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);cursor:pointer">
+            <option value="none" ${emp?.probationPeriod==='none'?'selected':''}>${t('none')||'None'}</option>
+            <option value="1_month" ${emp?.probationPeriod==='1_month'||!emp?'selected':''}>1 month</option>
+            <option value="2_months" ${emp?.probationPeriod==='2_months'?'selected':''}>2 months</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>${t('notice_period')||'Notice Period'}</label>
+          <select id="emp-notice" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);cursor:pointer">
+            <option value="1_month" ${emp?.noticePeriod==='1_month'||!emp?'selected':''}>1 month</option>
+            <option value="2_months" ${emp?.noticePeriod==='2_months'?'selected':''}>2 months</option>
+            <option value="3_months" ${emp?.noticePeriod==='3_months'?'selected':''}>3 months</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:#0A2218;letter-spacing:.5px;border-bottom:2px solid #F5DC70;padding-bottom:4px;margin-top:6px">💰 SALARY</div>
+      <div class="fg">
+        <label>${t('salary_type')||'Salary Type'} *</label>
+        <select id="emp-salarytype" onchange="toggleSalaryTypeFields()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);cursor:pointer">
+          <option value="fixed" ${emp?.salaryType==='fixed'||!emp?'selected':''}>${t('fixed_monthly')||'Fixed monthly salary'}</option>
+          <option value="hourly" ${emp?.salaryType==='hourly'?'selected':''}>${t('variable_hourly')||'Variable — based on hours worked (entered monthly)'}</option>
+        </select>
+      </div>
+      <div id="emp-fixed-wrap" style="${emp&&emp.salaryType==='hourly'?'display:none':''}">
+        <div class="fg"><label>${t('gross_monthly_salary')||'Gross Monthly Salary'} (€)</label><input type="number" id="emp-grosssalary" value="${emp?.grossMonthlySalary||''}" step="0.01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+      </div>
+      <div id="emp-hourly-wrap" style="${!(emp&&emp.salaryType==='hourly')?'display:none':''}">
+        <div class="fg"><label>${t('gross_hourly_rate')||'Gross Hourly Rate'} (€)</label><input type="number" id="emp-hourlyrate" value="${emp?.hourlyRate||''}" step="0.01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+        <div style="font-size:10px;color:var(--t3)">${t('hourly_hint')||'Actual hours worked will be entered manually each month when generating the payslip.'}</div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:#0A2218;letter-spacing:.5px;border-bottom:2px solid #F5DC70;padding-bottom:4px;margin-top:6px">🎁 BENEFITS & ADDITIONS</div>
+      <div style="background:#EAF4ED;border-left:3px solid #2d7a4f;border-radius:4px;padding:10px 12px;font-size:11px;color:#1a4d2e">
+        ✅ ${t('vacation_money_note')||'Vacation allowance (Vakantiegeld) 8% is legally mandatory in the Netherlands and is always included automatically.'}
+      </div>
+      <div class="fg">
+        <label>${t('vacation_money_payout')||'Vacation Allowance Payout'}</label>
+        <select id="emp-vacation-payout" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);cursor:pointer">
+          <option value="annual_may" ${emp?.vacationMoneyPayout==='annual_may'||!emp?'selected':''}>${t('accrued_paid_may')||'Accrued monthly, paid out once in May'}</option>
+          <option value="monthly" ${emp?.vacationMoneyPayout==='monthly'?'selected':''}>${t('paid_monthly')||'Paid monthly with salary'}</option>
+        </select>
+      </div>
+
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--t1)">
+        <input type="checkbox" id="emp-13th" ${emp?.has13thMonth?'checked':''} style="width:auto"/> ${t('has_13th_month')||'13th month salary (Dertiende maand)'}
+      </label>
+      <div style="font-size:9px;color:var(--t3);margin-top:-8px;margin-left:24px">${t('13th_month_hint')||'Accrues automatically each month (1/12 of gross), paid out as a lump sum in December — same principle as vacation allowance.'}</div>
+
+      <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-top:6px">${t('travel_allowance')||'Travel Allowance'}</div>
+      <div class="fg">
+        <select id="emp-travel-type" onchange="toggleTravelAllowanceFields()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);cursor:pointer">
+          <option value="fixed" ${emp?.travelAllowanceType==='fixed'||!emp?'selected':''}>${t('fixed_amount')||'Fixed amount per month'}</option>
+          <option value="per_km" ${emp?.travelAllowanceType==='per_km'?'selected':''}>${t('per_km')||'Variable — per kilometre (entered monthly)'}</option>
+        </select>
+      </div>
+      <div id="emp-travel-fixed-wrap" style="${emp&&emp.travelAllowanceType==='per_km'?'display:none':''}">
+        <div class="fg"><label>${t('travel_fixed_amount')||'Fixed Travel Allowance'} (€/month)</label><input type="number" id="emp-travel" value="${emp?.travelAllowance||0}" step="0.01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+      </div>
+      <div id="emp-travel-km-wrap" style="${!(emp&&emp.travelAllowanceType==='per_km')?'display:none':''}">
+        <div class="fg"><label>${t('rate_per_km')||'Rate per Kilometre'} (€)</label><input type="number" id="emp-travel-kmrate" value="${emp?.travelAllowanceKmRate||0.20}" step="0.01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+        <div style="font-size:10px;color:var(--t3)">${t('km_hint')||'Actual kilometres will be entered manually each month when generating the payslip.'}</div>
+      </div>
+
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--t1);margin-top:6px">
+        <input type="checkbox" id="emp-homework" ${emp?.hasHomeWorkAllowance?'checked':''} style="width:auto"/> ${t('has_homework_allowance')||'Work-from-home allowance'}
+      </label>
+      <div class="fg"><label>${t('homework_rate')||'Rate per Work-from-Home Day'} (€)</label><input type="number" id="emp-homework-rate" value="${emp?.homeWorkRate||2.35}" step="0.01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+      <div style="font-size:10px;color:var(--t3);margin-top:-8px">${t('homework_hint')||'Number of work-from-home days will be entered manually each month when generating the payslip.'}</div>
+
+      <div class="fg"><label>${t('pension_percent')||'Pension Contribution'} (% of gross)</label><input type="number" id="emp-pension" value="${emp?.pensionPercent||0}" step="0.1" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+      <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-top:4px">${t('custom_additions')||'Custom Additions (optional)'}</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px">
+        <input type="text" id="emp-custom1-label" value="${emp?.customAdditions?.[0]?.label||''}" placeholder="Label" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px"/>
+        <select id="emp-custom1-type" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px">
+          <option value="fixed" ${emp?.customAdditions?.[0]?.type==='fixed'||!emp?'selected':''}>€ fixed</option>
+          <option value="percent" ${emp?.customAdditions?.[0]?.type==='percent'?'selected':''}>% of gross</option>
+        </select>
+        <input type="number" id="emp-custom1-value" value="${emp?.customAdditions?.[0]?.value||''}" step="0.01" placeholder="0" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px"/>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px">
+        <input type="text" id="emp-custom2-label" value="${emp?.customAdditions?.[1]?.label||''}" placeholder="Label" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px"/>
+        <select id="emp-custom2-type" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px">
+          <option value="fixed" ${emp?.customAdditions?.[1]?.type==='fixed'||!emp?'selected':''}>€ fixed</option>
+          <option value="percent" ${emp?.customAdditions?.[1]?.type==='percent'?'selected':''}>% of gross</option>
+        </select>
+        <input type="number" id="emp-custom2-value" value="${emp?.customAdditions?.[1]?.value||''}" step="0.01" placeholder="0" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px"/>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:#0A2218;letter-spacing:.5px;border-bottom:2px solid #F5DC70;padding-bottom:4px;margin-top:6px">🧾 TAX SETTINGS</div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--t1)">
+        <input type="checkbox" id="emp-korting" ${!emp||emp.applyLoonheffingskorting?'checked':''} style="width:auto"/> ${t('apply_korting')||'Apply loonheffingskorting (this is their main/only employer)'}
+      </label>
+
+    </div>
+  `,function(){
+    const name=document.getElementById('emp-name').value.trim();
+    if(!name){toast('❌ Full name required');markFieldError('emp-name');return;}
+    const jobTitle=document.getElementById('emp-jobtitle').value.trim();
+    if(!jobTitle){toast('❌ Job title required');markFieldError('emp-jobtitle');return;}
+    const salaryType=document.getElementById('emp-salarytype').value;
+    const grossMonthlySalary=parseFloat(document.getElementById('emp-grosssalary').value)||0;
+    const hourlyRate=parseFloat(document.getElementById('emp-hourlyrate').value)||0;
+    if(salaryType==='fixed'&&!grossMonthlySalary){toast('❌ Gross monthly salary required');markFieldError('emp-grosssalary');return;}
+    if(salaryType==='hourly'&&!hourlyRate){toast('❌ Gross hourly rate required');markFieldError('emp-hourlyrate');return;}
+
+    const customAdditions=[];
+    const l1=document.getElementById('emp-custom1-label').value.trim();
+    if(l1)customAdditions.push({label:l1,type:document.getElementById('emp-custom1-type').value,value:parseFloat(document.getElementById('emp-custom1-value').value)||0});
+    const l2=document.getElementById('emp-custom2-label').value.trim();
+    if(l2)customAdditions.push({label:l2,type:document.getElementById('emp-custom2-type').value,value:parseFloat(document.getElementById('emp-custom2-value').value)||0});
+
+    const record={
+      id:emp?.id||UID(),
+      cid,
+      name,
+      bsn:document.getElementById('emp-bsn').value.trim(),
+      dob:document.getElementById('emp-dob').value,
+      nationality:document.getElementById('emp-nationality').value.trim(),
+      address:document.getElementById('emp-address').value.trim(),
+      jobTitle,
+      startDate:document.getElementById('emp-startdate').value,
+      contractType:document.getElementById('emp-contracttype').value,
+      contractEndDate:document.getElementById('emp-contractend').value,
+      hoursPerWeek:parseFloat(document.getElementById('emp-hoursweek').value)||40,
+      probationPeriod:document.getElementById('emp-probation').value,
+      noticePeriod:document.getElementById('emp-notice').value,
+      salaryType,
+      grossMonthlySalary,
+      hourlyRate,
+      has13thMonth:document.getElementById('emp-13th').checked,
+      travelAllowanceType:document.getElementById('emp-travel-type').value,
+      travelAllowance:parseFloat(document.getElementById('emp-travel').value)||0,
+      travelAllowanceKmRate:parseFloat(document.getElementById('emp-travel-kmrate').value)||0.20,
+      hasHomeWorkAllowance:document.getElementById('emp-homework').checked,
+      homeWorkRate:parseFloat(document.getElementById('emp-homework-rate').value)||2.35,
+      vacationMoneyPercent:8, // إلزامي قانونًا في هولندا - غير قابل للتعطيل
+      vacationMoneyPayout:document.getElementById('emp-vacation-payout').value,
+      pensionPercent:parseFloat(document.getElementById('emp-pension').value)||0,
+      customAdditions,
+      applyLoonheffingskorting:document.getElementById('emp-korting').checked,
+      employmentStatus:emp?.employmentStatus||'active',
+      endDate:emp?.endDate||null,
+      createdDate:emp?.createdDate||TODAY()
+    };
+
+    if(!S.employees)S.employees=[];
+    if(isNew){
+      S.employees.push(record);
+      logAudit('create','employee','Added employee: '+name+' ('+jobTitle+')',cid);
+    }else{
+      S.employees=S.employees.map(e=>e.id===record.id?record:e);
+      logAudit('edit','employee','Edited employee: '+name,cid);
+    }
+    sv();
+    closeModal();
+    renderContent();
+    toast('✓ '+(isNew?'Employee added':'Employee updated'));
+  },isNew?(t('add')||'Add Employee'):(t('save')||'Save Changes'));
+}
+
+function toggleContractEndDate(){
+  const type=document.getElementById('emp-contracttype')?.value;
+  const wrap=document.getElementById('emp-contractend-wrap');
+  if(wrap)wrap.style.display=type==='onbepaalde_tijd'?'none':'block';
+}
+function toggleTravelAllowanceFields(){
+  const type=document.getElementById('emp-travel-type')?.value;
+  const fixedWrap=document.getElementById('emp-travel-fixed-wrap');
+  const kmWrap=document.getElementById('emp-travel-km-wrap');
+  if(fixedWrap)fixedWrap.style.display=type==='per_km'?'none':'block';
+  if(kmWrap)kmWrap.style.display=type==='per_km'?'block':'none';
+}
+function toggleSalaryTypeFields(){
+  const type=document.getElementById('emp-salarytype')?.value;
+  const fixedWrap=document.getElementById('emp-fixed-wrap');
+  const hourlyWrap=document.getElementById('emp-hourly-wrap');
+  if(fixedWrap)fixedWrap.style.display=type==='hourly'?'none':'block';
+  if(hourlyWrap)hourlyWrap.style.display=type==='hourly'?'block':'none';
+}
+
+function openPayslipModal(employeeId){
+  const emp=(S.employees||[]).find(e=>e.id===employeeId);
+  if(!emp)return;
+  const now=new Date();
+  const curYear=now.getFullYear(),curMonth=now.getMonth()+1;
+  const startYear=emp.startDate?new Date(emp.startDate).getFullYear():curYear;
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const years=[];
+  for(let y=curYear;y>=startYear;y--)years.push(y);
+
+  showModal('🧾 '+(t('generate_payslip')||'Generate Payslip')+' — '+emp.name,`
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="fg"><label>${t('year')||'Year'}</label>
+          <select id="payslip-year" onchange="updatePayslipMonthOptions('${employeeId}')" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);cursor:pointer">
+            ${years.map(y=>`<option value="${y}" ${y===curYear?'selected':''}>${y}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg"><label>${t('month')||'Month'}</label>
+          <select id="payslip-month" onchange="updatePayslipPreview('${employeeId}')" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);cursor:pointer"></select>
+        </div>
+      </div>
+
+      ${emp.salaryType==='hourly'?`
+      <div class="fg"><label>${t('hours_worked')||'Hours Worked This Month'} *</label>
+        <input type="number" id="payslip-hours" value="" step="0.25" oninput="updatePayslipPreview('${employeeId}')" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/>
+      </div>`:''}
+
+      ${emp.travelAllowanceType==='per_km'?`
+      <div class="fg"><label>${t('km_this_month')||'Kilometres Travelled This Month'}</label>
+        <input type="number" id="payslip-km" value="0" step="1" oninput="updatePayslipPreview('${employeeId}')" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/>
+      </div>`:''}
+
+      ${emp.hasHomeWorkAllowance?`
+      <div class="fg"><label>${t('homework_days_this_month')||'Work-from-Home Days This Month'}</label>
+        <input type="number" id="payslip-homework-days" value="0" step="1" oninput="updatePayslipPreview('${employeeId}')" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/>
+      </div>`:''}
+
+      <div id="payslip-breakdown" style="background:var(--bg2);border-radius:8px;padding:14px;font-size:12px"></div>
+
+      <div class="fg">
+        <label>${t('loonheffing')||'Loonheffing (Wage Tax)'} — €<span style="font-size:10px;color:var(--t3);font-weight:400">(${t('auto_calculated_editable')||'auto-calculated, editable'})</span></label>
+        <input type="number" id="payslip-loonheffing" step="0.01" oninput="updatePayslipNet()" style="width:100%;padding:10px;border:2px solid #B8860B;border-radius:6px;box-sizing:border-box;font-weight:600"/>
+        <div style="font-size:9px;color:#B8860B;margin-top:4px">⚠️ ${t('loonheffing_disclaimer')||'Estimated using 2026 official brackets — verify before issuing officially.'}</div>
+      </div>
+
+      <div id="payslip-net-display" style="background:#0A2218;color:#F5DC70;border-radius:8px;padding:14px;text-align:center;font-size:18px;font-weight:700"></div>
+
+    </div>
+  `,function(){
+    const month=parseInt(document.getElementById('payslip-month').value);
+    const year=parseInt(document.getElementById('payslip-year').value);
+    const hoursWorked=emp.salaryType==='hourly'?parseFloat(document.getElementById('payslip-hours')?.value)||0:null;
+    if(emp.salaryType==='hourly'&&!hoursWorked){toast('❌ Hours worked required');markFieldError('payslip-hours');return;}
+    const km=emp.travelAllowanceType==='per_km'?parseFloat(document.getElementById('payslip-km')?.value)||0:null;
+    const homeWorkDays=emp.hasHomeWorkAllowance?parseFloat(document.getElementById('payslip-homework-days')?.value)||0:null;
+    const loonheffing=parseFloat(document.getElementById('payslip-loonheffing').value)||0;
+    const b=computePayslipBreakdown(emp,hoursWorked,month,{km,homeWorkDays});
+    const netPay=b.taxableGross-loonheffing+b.travelAllowance+b.homeWorkAllowance;
+
+    if(!S.payslips)S.payslips=[];
+    const payslip={
+      id:UID(),employeeId:emp.id,cid:emp.cid,month,year,hoursWorked,km,homeWorkDays,
+      ...b,loonheffing,netPay,generatedAt:new Date().toISOString(),taxYear:LOONHEFFING_TAX_YEAR
+    };
+    S.payslips.push(payslip);
+    logAudit('create','payslip','Generated payslip for '+emp.name+' — '+monthNames[month-1]+' '+year,emp.cid);
+    sv();
+    closeModal();
+    exportPayslipPDF(payslip,emp);
+  },t('generate_pdf')||'Generate PDF');
+
+  setTimeout(()=>updatePayslipMonthOptions(employeeId),30);
+}
+
+// يعبّئ قائمة الأشهر المتاحة حسب السنة المختارة - يمنع أي شهر قادم من الظهور كخيار إطلاقًا
+function updatePayslipMonthOptions(employeeId){
+  const yearSelect=document.getElementById('payslip-year');
+  const monthSelect=document.getElementById('payslip-month');
+  if(!yearSelect||!monthSelect)return;
+  const now=new Date();
+  const curYear=now.getFullYear(),curMonth=now.getMonth()+1;
+  const selectedYear=parseInt(yearSelect.value);
+  const maxMonth=selectedYear===curYear?curMonth:12;
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const prevSelected=parseInt(monthSelect.value)||maxMonth;
+  monthSelect.innerHTML=monthNames.slice(0,maxMonth).map((m,i)=>`<option value="${i+1}" ${i+1===Math.min(prevSelected,maxMonth)?'selected':''}>${m}</option>`).join('');
+
+  updatePayslipPreview(employeeId);
+}
+
+function updatePayslipPreview(employeeId){
+  window._currentPayslipEmployeeId=employeeId; // نحتفظ بالمعرّف لاستخدامه لاحقًا عند تعديل حقل الضريبة يدويًا
+  const emp=(S.employees||[]).find(e=>e.id===employeeId);
+  if(!emp)return;
+  const month=parseInt(document.getElementById('payslip-month')?.value)||new Date().getMonth()+1;
+  const hoursWorked=emp.salaryType==='hourly'?parseFloat(document.getElementById('payslip-hours')?.value)||0:null;
+  const km=emp.travelAllowanceType==='per_km'?parseFloat(document.getElementById('payslip-km')?.value)||0:null;
+  const homeWorkDays=emp.hasHomeWorkAllowance?parseFloat(document.getElementById('payslip-homework-days')?.value)||0:null;
+  const b=computePayslipBreakdown(emp,hoursWorked,month,{km,homeWorkDays});
+
+  let vacationLine;
+  if(b.vacationPayoutMode==='monthly'){
+    vacationLine=`<div style="display:flex;justify-content:space-between;padding:3px 0;color:#2d7a4f"><span>+ ${t('vacation_money')||'Vacation money'} (8%)</span><b>${FMT(b.vacationMoneyPaidNow)}</b></div>`;
+  }else if(b.vacationMoneyPaidOut){
+    vacationLine=`<div style="display:flex;justify-content:space-between;padding:3px 0;color:#2d7a4f"><span>+ ${t('vacation_payout')||'Vacation allowance payout (accrued)'}</span><b>${FMT(b.vacationMoneyAccruedTotal)}</b></div>`;
+  }else{
+    vacationLine=`<div style="display:flex;justify-content:space-between;padding:3px 0;color:var(--t3);font-style:italic"><span>${t('vacation_accruing')||'Vacation allowance accruing (reserved for May)'}</span><b>+${FMT(b.vacationMoney)}</b></div>`;
+  }
+
+  let thirteenthLine='';
+  if(emp.has13thMonth){
+    thirteenthLine=b.thirteenthMonthPaidOut
+      ?`<div style="display:flex;justify-content:space-between;padding:3px 0;color:#2d7a4f"><span>+ ${t('13th_month_payout')||'13th month payout (accrued)'}</span><b>${FMT(b.thirteenthMonthAccruedTotal)}</b></div>`
+      :`<div style="display:flex;justify-content:space-between;padding:3px 0;color:var(--t3);font-style:italic"><span>${t('13th_month_accruing')||'13th month accruing (reserved for December)'}</span><b>+${FMT(b.thirteenthMonthAccrual)}</b></div>`;
+  }
+
+  const breakdownEl=document.getElementById('payslip-breakdown');
+  if(breakdownEl){
+    const year=parseInt(document.getElementById('payslip-year')?.value)||new Date().getFullYear();
+    const status=getPayslipStatus(month,year);
+    const statusBadge=status==='concept'
+      ?`<div style="text-align:center;margin-bottom:8px;font-size:10px;font-weight:700;color:#B8860B;background:rgba(184,134,11,0.12);border-radius:4px;padding:5px">📝 ${t('status_concept')||'CONCEPT — month not yet ended'}</div>`
+      :`<div style="text-align:center;margin-bottom:8px;font-size:10px;font-weight:700;color:#2d7a4f;background:rgba(45,122,79,0.12);border-radius:4px;padding:5px">✅ ${t('status_confirmed')||'CONFIRMED'}</div>`;
+    breakdownEl.innerHTML=statusBadge+`
+      <div style="display:flex;justify-content:space-between;padding:3px 0"><span>${t('gross_base')||'Gross base'}</span><b>${FMT(b.grossBase)}</b></div>
+      ${vacationLine}
+      ${thirteenthLine}
+      ${b.customTotal>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;color:#2d7a4f"><span>+ Custom additions</span><b>${FMT(b.customTotal)}</b></div>`:''}
+      ${b.pensionDeduction>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;color:#B8860B"><span>− ${t('pension')||'Pension'}</span><b>−${FMT(b.pensionDeduction)}</b></div>`:''}
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:2px solid var(--gr2);margin-top:4px;font-weight:700"><span>${t('taxable_gross')||'Taxable gross'}</span><b>${FMT(b.taxableGross)}</b></div>
+      ${b.travelAllowance>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;color:#2d7a4f"><span>+ ${t('travel_allowance')||'Travel allowance'} (${t('tax_free')||'tax-free'})</span><b>${FMT(b.travelAllowance)}</b></div>`:''}
+      ${b.homeWorkAllowance>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;color:#2d7a4f"><span>+ ${t('homework_allowance')||'Work-from-home allowance'} (${t('tax_free')||'tax-free'})</span><b>${FMT(b.homeWorkAllowance)}</b></div>`:''}
+    `;
+  }
+
+  const estimatedLoonheffing=calculateLoonheffing2026(b.taxableGross,emp.applyLoonheffingskorting!==false);
+  const loonheffingInput=document.getElementById('payslip-loonheffing');
+  if(loonheffingInput)loonheffingInput.value=estimatedLoonheffing.toFixed(2);
+
+  updatePayslipNet();
+}
+
+function updatePayslipNet(){
+  const employeeId=window._currentPayslipEmployeeId;
+  const emp=(S.employees||[]).find(e=>e.id===employeeId);
+  const netEl=document.getElementById('payslip-net-display');
+  const loonheffingInput=document.getElementById('payslip-loonheffing');
+  if(!emp||!netEl||!loonheffingInput)return;
+
+  const month=parseInt(document.getElementById('payslip-month')?.value)||new Date().getMonth()+1;
+  const hoursWorked=emp.salaryType==='hourly'?parseFloat(document.getElementById('payslip-hours')?.value)||0:null;
+  const km=emp.travelAllowanceType==='per_km'?parseFloat(document.getElementById('payslip-km')?.value)||0:null;
+  const homeWorkDays=emp.hasHomeWorkAllowance?parseFloat(document.getElementById('payslip-homework-days')?.value)||0:null;
+  const b=computePayslipBreakdown(emp,hoursWorked,month,{km,homeWorkDays});
+  const loonheffing=parseFloat(loonheffingInput.value)||0;
+  const netPay=b.taxableGross-loonheffing+b.travelAllowance+b.homeWorkAllowance;
+
+  netEl.innerHTML=(t('net_pay')||'Net Pay')+': '+FMT(netPay);
+}
+
+async function exportPayslipPDF(payslip,emp){
+  await ensureJsPDF();
+  const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
+  if(!jsPDF){toast('❌ Could not load PDF library');return;}
+  const c=S.clients.find(x=>x.id===payslip.cid);
+  const co=S.settings;
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=16;
+
+  doc.setFillColor(200,144,16);doc.rect(0,0,W,2,'F');
+
+  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(10,34,24);
+  doc.text(c?.name||'',M,16);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100,100,100);
+  if(c?.address)doc.text(c.address,M,22);
+
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(10,34,24);
+  doc.text('PAYSLIP',W-M,16,{align:'right'});
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
+  doc.text(monthNames[payslip.month-1]+' '+payslip.year,W-M,23,{align:'right'});
+
+  const payslipStatus=getPayslipStatus(payslip.month,payslip.year);
+  if(payslipStatus==='concept'){
+    doc.setFillColor(184,134,11);doc.roundedRect(W-M-32,27,32,6,1,1,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(255,255,255);
+    doc.text('CONCEPT',W-M-16,31,{align:'center'});
+  }else{
+    doc.setFillColor(45,122,79);doc.roundedRect(W-M-34,27,34,6,1,1,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(255,255,255);
+    doc.text('CONFIRMED',W-M-17,31,{align:'center'});
+  }
+
+  doc.setDrawColor(231,229,221);doc.line(M,36,W-M,36);
+
+  // بطاقة بيانات الموظف
+  let y=42;
+  doc.setFillColor(234,244,237);doc.roundedRect(M,y,W-M*2,26,1.5,1.5,'F');
+  doc.setFillColor(45,122,79);doc.rect(M,y,1.2,26,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(45,122,79);
+  doc.text('EMPLOYEE',M+5,y+6);
+  doc.setFontSize(11);doc.setTextColor(10,34,24);
+  doc.text(emp.name,M+5,y+12);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100,100,100);
+  doc.text((emp.jobTitle||'')+(emp.bsn?'  ·  BSN: '+emp.bsn:''),M+5,y+17);
+  doc.text('Start date: '+FD(emp.startDate||''),M+5,y+22);
+  y+=36;
+
+  // جدول الإيرادات
+  doc.setFillColor(10,34,24);doc.rect(M,y,W-M*2,8,'F');
+  doc.setTextColor(245,220,112);doc.setFontSize(8);doc.setFont('helvetica','bold');
+  doc.text('EARNINGS',M+3,y+5.3);doc.text('AMOUNT',W-M-3,y+5.3,{align:'right'});
+  y+=8;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(20,20,20);
+
+  const vacationRow=payslip.vacationPayoutMode==='monthly'
+    ?['Vacation allowance (8%)',payslip.vacationMoneyPaidNow]
+    :payslip.vacationMoneyPaidOut
+      ?['Vacation allowance payout (accrued)',payslip.vacationMoneyAccruedTotal]
+      :['Vacation allowance (accruing — reserved for May)',0];
+  const earningsRows=[
+    [emp.salaryType==='hourly'?'Gross base ('+payslip.hoursWorked+' hrs × '+FMT(emp.hourlyRate)+')':'Gross monthly salary',payslip.grossBase],
+    vacationRow
+  ];
+  if(emp.has13thMonth){
+    if(payslip.thirteenthMonthPaidOut)earningsRows.push(['13th month payout (accrued)',payslip.thirteenthMonthAccruedTotal]);
+    else earningsRows.push(['13th month (accruing — reserved for December)',0]);
+  }
+  (emp.customAdditions||[]).forEach(a=>{
+    const val=a.type==='percent'?payslip.grossBase*(a.value/100):a.value;
+    if(val>0)earningsRows.push([a.label,val]);
+  });
+  if(payslip.travelAllowance>0)earningsRows.push(['Travel allowance (tax-free)'+(emp.travelAllowanceType==='per_km'?' — '+payslip.km+' km':''),payslip.travelAllowance]);
+  if(payslip.homeWorkAllowance>0)earningsRows.push(['Work-from-home allowance ('+payslip.homeWorkDays+' days, tax-free)',payslip.homeWorkAllowance]);
+
+  earningsRows.forEach(([label,val])=>{
+    doc.text(label,M+3,y+5.5);
+    doc.text(FMT(val),W-M-3,y+5.5,{align:'right'});
+    doc.setDrawColor(240,238,232);doc.line(M,y+8,W-M,y+8);
+    y+=8;
+  });
+  y+=4;
+
+  // جدول الخصومات
+  doc.setFillColor(184,134,11);doc.rect(M,y,W-M*2,8,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');
+  doc.text('DEDUCTIONS',M+3,y+5.3);doc.text('AMOUNT',W-M-3,y+5.3,{align:'right'});
+  y+=8;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(20,20,20);
+  const deductionRows=[];
+  if(payslip.pensionDeduction>0)deductionRows.push(['Pension contribution',payslip.pensionDeduction]);
+  deductionRows.push(['Loonheffing (wage tax)',payslip.loonheffing]);
+  deductionRows.forEach(([label,val])=>{
+    doc.text(label,M+3,y+5.5);
+    doc.text('−'+FMT(val),W-M-3,y+5.5,{align:'right'});
+    doc.setDrawColor(240,238,232);doc.line(M,y+8,W-M,y+8);
+    y+=8;
+  });
+  y+=6;
+
+  // صافي الراتب
+  doc.setFillColor(10,34,24);doc.roundedRect(M,y,W-M*2,14,1.5,1.5,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);
+  doc.text('NET PAY',M+6,y+9);
+  doc.setFontSize(15);doc.setTextColor(245,220,112);
+  doc.text(FMT(payslip.netPay),W-M-6,y+9,{align:'right'});
+  y+=24;
+
+  // تنويه Loonheffing (+ تنويه إضافي إن كان البيان مسودة لشهر لم ينتهِ بعد)
+  const boxH=payslipStatus==='concept'?19:14;
+  doc.setFillColor(253,248,236);doc.roundedRect(M,y,W-M*2,boxH,1.5,1.5,'F');
+  doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(138,100,16);
+  if(payslipStatus==='concept'){
+    doc.text('⚠ CONCEPT: this month has not ended yet — figures may still change before final confirmation.',M+4,y+6);
+    doc.text('⚠ Loonheffing estimated using official '+payslip.taxYear+' Box 1 tax brackets — verify before official use.',M+4,y+11);
+    doc.text('Generated via ANB Financial Services on '+new Date(payslip.generatedAt).toLocaleDateString(),M+4,y+16);
+  }else{
+    doc.text('⚠ Loonheffing estimated using official '+payslip.taxYear+' Box 1 tax brackets — verify before official use.',M+4,y+6);
+    doc.text('Generated via ANB Financial Services on '+new Date(payslip.generatedAt).toLocaleDateString(),M+4,y+11);
+  }
+
+  doc.setFillColor(10,34,24);doc.rect(0,283,W,14,'F');
+  doc.setFillColor(200,144,16);doc.rect(0,283,W,1,'F');
+  doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(180,178,168);
+  doc.text('Issued via ANB Financial Services',W/2,290.5,{align:'center'});
+
+  doc.save(`Payslip_${emp.name.replace(/\s+/g,'_')}_${payslip.month}_${payslip.year}.pdf`);
+  toast('✓ Payslip PDF generated');
+}
+
+// ── توليد عقد عمل احترافي كـPDF من بيانات الموظف المحفوظة - يمكن إعادة تحميله في أي وقت لاحقًا ──
+async function exportEmployeeContractPDF(employeeId){
+  const emp=(S.employees||[]).find(e=>e.id===employeeId);
+  if(!emp)return;
+  await ensureJsPDF();
+  const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
+  if(!jsPDF){toast('❌ Could not load PDF library');return;}
+  const c=S.clients.find(x=>x.id===emp.cid);
+  const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=16;
+
+  doc.setFillColor(200,144,16);doc.rect(0,0,W,2,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(10,34,24);
+  doc.text('EMPLOYMENT AGREEMENT',W/2,18,{align:'center'});
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
+  doc.text('Arbeidsovereenkomst',W/2,24,{align:'center'});
+  doc.setDrawColor(231,229,221);doc.line(M,29,W-M,29);
+
+  let y=36;
+  const section=(title)=>{
+    doc.setFillColor(10,34,24);doc.rect(M,y,W-M*2,7,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(245,220,112);
+    doc.text(title,M+3,y+5);
+    y+=11;
+  };
+  const row=(label,value)=>{
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
+    doc.text(label,M+3,y);
+    doc.setFont('helvetica','bold');doc.setTextColor(10,34,24);
+    doc.text(String(value||'—'),M+65,y);
+    y+=6;
+  };
+
+  section('PARTIES');
+  row('Employer',c?.name||'');
+  row('Employer Address',c?.address||'');
+  row('Employee',emp.name);
+  row('BSN',emp.bsn||'—');
+  row('Date of Birth',emp.dob?FD(emp.dob):'—');
+  row('Nationality',emp.nationality||'—');
+  row('Employee Address',emp.address||'—');
+  y+=3;
+
+  section('POSITION & DURATION');
+  row('Job Title',emp.jobTitle);
+  row('Start Date',FD(emp.startDate));
+  row('Contract Type',emp.contractType==='onbepaalde_tijd'?'Onbepaalde tijd (Permanent)':'Bepaalde tijd (Fixed-term)');
+  if(emp.contractType!=='onbepaalde_tijd')row('Contract End Date',emp.contractEndDate?FD(emp.contractEndDate):'—');
+  row('Hours per Week',emp.hoursPerWeek);
+  row('Probation Period',(emp.probationPeriod||'none').replace('_',' '));
+  row('Notice Period',(emp.noticePeriod||'1_month').replace('_',' '));
+  y+=3;
+
+  section('SALARY & BENEFITS');
+  if(emp.salaryType==='hourly')row('Gross Hourly Rate',FMT(emp.hourlyRate));
+  else row('Gross Monthly Salary',FMT(emp.grossMonthlySalary));
+  row('Vacation Allowance',emp.vacationMoneyPercent+'% ('+(emp.vacationMoneyPayout==='monthly'?'paid monthly':'accrued, paid in May')+')');
+  row('13th Month Salary',emp.has13thMonth?'Yes (accrued monthly, paid in December)':'No');
+  row('Travel Allowance',emp.travelAllowanceType==='per_km'?'€'+(emp.travelAllowanceKmRate||0.20).toFixed(2)+' per km':FMT(emp.travelAllowance||0)+'/month');
+  row('Work-from-Home Allowance',emp.hasHomeWorkAllowance?'€'+(emp.homeWorkRate||2.35).toFixed(2)+' per day':'No');
+  row('Pension Contribution',(emp.pensionPercent||0)+'% of gross');
+  (emp.customAdditions||[]).forEach(a=>{
+    row(a.label,a.type==='percent'?a.value+'% of gross':FMT(a.value));
+  });
+
+  y+=14;
+  doc.setDrawColor(200,200,200);
+  doc.line(M,y,M+70,y);doc.line(W-M-70,y,W-M,y);
+  y+=5;
+  doc.setFontSize(8);doc.setTextColor(100,100,100);
+  doc.text('Employer signature',M,y);
+  doc.text('Employee signature',W-M-70,y);
+  y+=10;
+  doc.setFontSize(7);doc.setTextColor(150,150,150);
+  doc.text('Generated via ANB Financial Services · '+new Date().toLocaleDateString(),M,y);
+
+  doc.setFillColor(10,34,24);doc.rect(0,283,W,14,'F');
+  doc.setFillColor(200,144,16);doc.rect(0,283,W,1,'F');
+  doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(180,178,168);
+  doc.text('Issued via ANB Financial Services',W/2,290.5,{align:'center'});
+
+  doc.save(`Contract_${emp.name.replace(/\s+/g,'_')}.pdf`);
+  toast('✓ Contract PDF generated');
+}
+
+// ── سجل بيانات الرواتب الكامل لموظف - يسمح بإعادة تحميل بيان أي شهر سابق في أي وقت ──
+function openPayslipHistoryModal(employeeId){
+  const emp=(S.employees||[]).find(e=>e.id===employeeId);
+  if(!emp)return;
+  const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const slips=(S.payslips||[]).filter(p=>p.employeeId===employeeId)
+    .sort((a,b)=>(b.year*12+b.month)-(a.year*12+a.month));
+
+  showModal('📋 '+(t('payslip_history')||'Payslip History')+' — '+emp.name,`
+    <div style="max-height:60vh;overflow-y:auto">
+      ${slips.length===0?`<div class="empty">📋 ${t('no_payslips_yet')||'No payslips generated yet'}</div>`:
+      slips.map(p=>{
+        const status=getPayslipStatus(p.month,p.year);
+        const badge=status==='concept'
+          ?`<span style="font-size:8px;font-weight:700;color:#B8860B;background:rgba(184,134,11,0.12);padding:1px 6px;border-radius:3px;margin-left:6px">CONCEPT</span>`
+          :`<span style="font-size:8px;font-weight:700;color:#2d7a4f;background:rgba(45,122,79,0.12);padding:1px 6px;border-radius:3px;margin-left:6px">CONFIRMED</span>`;
+        return `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid var(--gr2)">
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--t1)">${monthNames[p.month-1]} ${p.year}${badge}</div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">${t('net_pay')||'Net Pay'}: ${FMT(p.netPay)}</div>
+          </div>
+          <button class="btn btn-xs btn-p" onclick="redownloadPayslip('${p.id}')">⬇ ${t('download')||'Download'}</button>
+        </div>`;
+      }).join('')}
+    </div>
+  `,()=>closeModal(),t('close')||'Close');
+}
+function redownloadPayslip(payslipId){
+  const p=(S.payslips||[]).find(x=>x.id===payslipId);
+  const emp=p?(S.employees||[]).find(e=>e.id===p.employeeId):null;
+  if(!p||!emp){toast('❌ Payslip not found');return;}
+  exportPayslipPDF(p,emp);
+}
+
+function endEmployment(employeeId){
+  const emp=(S.employees||[]).find(e=>e.id===employeeId);
+  if(!emp)return;
+  const endDate=prompt('End date for '+emp.name+"'s employment (YYYY-MM-DD):",TODAY());
+  if(!endDate)return;
+  emp.employmentStatus='ended';
+  emp.endDate=endDate;
+  logAudit('edit','employee','Ended employment: '+emp.name+' (effective '+endDate+')',emp.cid);
+  sv();renderContent();
+  toast('✓ Employment ended for '+emp.name);
+}
+
 function rDebtors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
