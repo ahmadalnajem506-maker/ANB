@@ -674,7 +674,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.90">
+<link rel="manifest" href="manifest.json?v=2.91">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
@@ -9579,7 +9579,7 @@ function rReportEmployeeFinancial(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💰 '+(t('rep_emp_financial_title')||'Employee Financial Report')+' — '+(c?.name||'')+'</span></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💰 '+(t('rep_emp_financial_title')||'Employee Financial Report')+' — '+(c?.name||'')+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'emp_financial\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'emp_financial\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
 
   html+='<div class="kgrid">';
@@ -9676,7 +9676,7 @@ function rReportEmployeeStats(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">📊 '+(t('rep_emp_stats_title')||'Employee Statistics Report')+' — '+(c?.name||'')+'</span></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">📊 '+(t('rep_emp_stats_title')||'Employee Statistics Report')+' — '+(c?.name||'')+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'emp_stats\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'emp_stats\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
 
   html+='<div class="kgrid">';
@@ -10064,7 +10064,9 @@ function _exportReportPDF(type,cid){
     'btw':'VAT/BTW Tax Return',
     'debtors':'Debtors Aging Report',
     'expenses':'Expenses Report',
-    'cashflow':'Cash Flow Analysis'
+    'cashflow':'Cash Flow Analysis',
+    'emp_financial':'Employee Financial Report',
+    'emp_stats':'Employee Statistics Report'
   };
   
   doc.setFont('helvetica','bold');
@@ -10438,6 +10440,125 @@ function _exportReportPDF(type,cid){
     doc.setFontSize(12);
     doc.text(`NET CASH FLOW: €${netflow.toFixed(2)}`,M+3,y+8);
   }
+  else if(type==='emp_financial'){
+    const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
+    const active=allEmployees.filter(e=>e.employmentStatus==='active');
+    const curYear=new Date().getFullYear();
+    const fixedMonthlyTotal=active.filter(e=>e.salaryType==='fixed').reduce((s,e)=>s+(e.grossMonthlySalary||0),0);
+    const ytdSlips=(S.payslips||[]).filter(p=>p.cid===cid&&p.year===curYear);
+    const ytdGrossPaid=ytdSlips.reduce((s,p)=>s+(p.taxableGross||0),0);
+    const ytdLoonheffing=ytdSlips.reduce((s,p)=>s+(p.loonheffing||0),0);
+    const ytdNetPaid=ytdSlips.reduce((s,p)=>s+(p.netPay||0),0);
+    const accruedVacationTotal=active.reduce((s,e)=>s+getAccruedVacationMoney(e.id),0);
+    const accrued13thTotal=active.reduce((s,e)=>s+getAccrued13thMonth(e.id),0);
+
+    const boxH=20, boxW=(W-3*M)/3;
+    doc.setFillColor(10,34,24);doc.rect(M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text('Active Employees',M+3,y+6);
+    doc.setFont('helvetica','bold');doc.setFontSize(13);
+    doc.text(String(active.length),M+3,y+15);
+
+    doc.setFillColor(184,134,11);doc.rect(M+boxW+M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text('Monthly Fixed Payroll',M+boxW+M+3,y+6);
+    doc.setFont('helvetica','bold');doc.setFontSize(12);
+    doc.text(`€${fixedMonthlyTotal.toFixed(2)}`,M+boxW+M+3,y+15);
+
+    doc.setFillColor(77,168,118);doc.rect(M+2*boxW+2*M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text('Net Paid YTD',M+2*boxW+2*M+3,y+6);
+    doc.setFont('helvetica','bold');doc.setFontSize(12);
+    doc.text(`€${ytdNetPaid.toFixed(2)}`,M+2*boxW+2*M+3,y+15);
+    y+=30;
+
+    doc.setFont('helvetica','bold');doc.setFontSize(11);
+    doc.setFillColor(10,34,24);doc.setTextColor(255,255,255);
+    doc.rect(M,y,W-2*M,6,'F');doc.text(curYear+' SUMMARY',M+3,y+5);y+=10;
+    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+    doc.text('Gross paid this year (taxable)',M,y);doc.text(`€${ytdGrossPaid.toFixed(2)}`,W-M-35,y);y+=7;
+    doc.text('Loonheffing withheld',M,y);doc.text(`-€${ytdLoonheffing.toFixed(2)}`,W-M-35,y);y+=7;
+    doc.setFont('helvetica','bold');
+    doc.text('Net paid this year',M,y);doc.text(`€${ytdNetPaid.toFixed(2)}`,W-M-35,y);y+=12;
+
+    doc.setFont('helvetica','bold');doc.setFontSize(11);
+    doc.setFillColor(184,134,11);doc.setTextColor(255,255,255);
+    doc.rect(M,y,W-2*M,6,'F');doc.text('OUTSTANDING LIABILITIES (ACCRUED, UNPAID)',M+3,y+5);y+=10;
+    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+    doc.text('Accrued vacation allowance',M,y);doc.text(`€${accruedVacationTotal.toFixed(2)}`,W-M-35,y);y+=7;
+    doc.text('Accrued 13th month',M,y);doc.text(`€${accrued13thTotal.toFixed(2)}`,W-M-35,y);y+=12;
+
+    doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(10,34,24);
+    doc.text('PER-EMPLOYEE BREAKDOWN ('+curYear+')',M,y);y+=8;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
+    allEmployees.forEach(e=>{
+      if(y>270){doc.addPage();y=M;}
+      const empSlips=(S.payslips||[]).filter(p=>p.employeeId===e.id&&p.year===curYear);
+      const empNet=empSlips.reduce((s,p)=>s+(p.netPay||0),0);
+      const salaryLabel=e.salaryType==='hourly'?FMT(e.hourlyRate)+'/hr':FMT(e.grossMonthlySalary)+'/mo';
+      doc.text(`${e.name} (${e.jobTitle||'—'}) — ${salaryLabel}`,M,y);
+      doc.text(`€${empNet.toFixed(2)}`,W-M-35,y);
+      y+=6;
+    });
+  }
+  else if(type==='emp_stats'){
+    const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
+    const active=allEmployees.filter(e=>e.employmentStatus==='active');
+    const today=new Date();
+    const tenures=active.filter(e=>e.startDate).map(e=>(today-new Date(e.startDate))/(1000*60*60*24*30.44));
+    const avgTenureMonths=tenures.length>0?tenures.reduce((s,x)=>s+x,0)/tenures.length:0;
+    const fixedTerm=active.filter(e=>e.contractType==='bepaalde_tijd').length;
+    const permanent=active.filter(e=>e.contractType==='onbepaalde_tijd').length;
+    const salaryFixed=active.filter(e=>e.salaryType==='fixed').length;
+    const salaryHourly=active.filter(e=>e.salaryType==='hourly').length;
+
+    const boxH=20, boxW=(W-3*M)/3;
+    doc.setFillColor(10,34,24);doc.rect(M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text('Total Ever Hired',M+3,y+6);
+    doc.setFont('helvetica','bold');doc.setFontSize(13);
+    doc.text(String(allEmployees.length),M+3,y+15);
+
+    doc.setFillColor(184,134,11);doc.rect(M+boxW+M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text('Active',M+boxW+M+3,y+6);
+    doc.setFont('helvetica','bold');doc.setFontSize(13);
+    doc.text(String(active.length),M+boxW+M+3,y+15);
+
+    doc.setFillColor(77,168,118);doc.rect(M+2*boxW+2*M,y,boxW,boxH,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text('Avg. Tenure',M+2*boxW+2*M+3,y+6);
+    doc.setFont('helvetica','bold');doc.setFontSize(13);
+    doc.text(avgTenureMonths.toFixed(1)+' mo',M+2*boxW+2*M+3,y+15);
+    y+=30;
+
+    doc.setFont('helvetica','bold');doc.setFontSize(11);
+    doc.setFillColor(10,34,24);doc.setTextColor(255,255,255);
+    doc.rect(M,y,W-2*M,6,'F');doc.text('CONTRACT TYPE',M+3,y+5);y+=10;
+    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+    doc.text('Permanent (Onbepaalde tijd)',M,y);doc.text(String(permanent),W-M-15,y);y+=7;
+    doc.text('Fixed-term (Bepaalde tijd)',M,y);doc.text(String(fixedTerm),W-M-15,y);y+=12;
+
+    doc.setFont('helvetica','bold');doc.setFontSize(11);
+    doc.setFillColor(184,134,11);doc.setTextColor(255,255,255);
+    doc.rect(M,y,W-2*M,6,'F');doc.text('SALARY TYPE',M+3,y+5);y+=10;
+    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+    doc.text('Fixed monthly',M,y);doc.text(String(salaryFixed),W-M-15,y);y+=7;
+    doc.text('Variable hourly',M,y);doc.text(String(salaryHourly),W-M-15,y);y+=12;
+
+    const titleCounts={};
+    active.forEach(e=>{const title=e.jobTitle||'—';titleCounts[title]=(titleCounts[title]||0)+1;});
+    const topTitles=Object.entries(titleCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    if(topTitles.length>0){
+      doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(10,34,24);
+      doc.text('JOB TITLES',M,y);y+=8;
+      doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
+      topTitles.forEach(([title,count])=>{
+        if(y>270){doc.addPage();y=M;}
+        doc.text(title,M,y);doc.text(String(count),W-M-15,y);y+=6;
+      });
+    }
+  }
   
   // Footer
   y=270;
@@ -10637,6 +10758,89 @@ function _exportReportExcel(type,cid){
     ];
     
     sheets['Cash Flow']=XLSX.utils.aoa_to_sheet(data);
+  }
+  else if(type==='emp_financial'){
+    const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
+    const active=allEmployees.filter(e=>e.employmentStatus==='active');
+    const curYear=new Date().getFullYear();
+    const fixedMonthlyTotal=active.filter(e=>e.salaryType==='fixed').reduce((s,e)=>s+(e.grossMonthlySalary||0),0);
+    const ytdSlips=(S.payslips||[]).filter(p=>p.cid===cid&&p.year===curYear);
+    const ytdGrossPaid=ytdSlips.reduce((s,p)=>s+(p.taxableGross||0),0);
+    const ytdLoonheffing=ytdSlips.reduce((s,p)=>s+(p.loonheffing||0),0);
+    const ytdNetPaid=ytdSlips.reduce((s,p)=>s+(p.netPay||0),0);
+    const accruedVacationTotal=active.reduce((s,e)=>s+getAccruedVacationMoney(e.id),0);
+    const accrued13thTotal=active.reduce((s,e)=>s+getAccrued13thMonth(e.id),0);
+
+    data=[
+      ['💰 EMPLOYEE FINANCIAL REPORT'],
+      ['Client',c?.name],
+      ['Report Date',FD(new Date())],
+      ['Fiscal Year',curYear],
+      [],
+      ['Key Metrics','Value'],
+      ['Active Employees',active.length],
+      ['Monthly Fixed Payroll',fixedMonthlyTotal],
+      [],
+      [curYear+' Summary','Amount'],
+      ['Gross paid this year (taxable)',ytdGrossPaid],
+      ['Loonheffing withheld',-ytdLoonheffing],
+      ['Net paid this year',ytdNetPaid],
+      [],
+      ['Outstanding Liabilities (Accrued, Unpaid)','Amount'],
+      ['Accrued vacation allowance',accruedVacationTotal],
+      ['Accrued 13th month',accrued13thTotal],
+      ['Total accrued liability',accruedVacationTotal+accrued13thTotal],
+      [],
+      ['Employee','Job Title','Salary Type','Salary','Status','YTD Gross','YTD Tax','YTD Net']
+    ];
+    allEmployees.forEach(e=>{
+      const empSlips=(S.payslips||[]).filter(p=>p.employeeId===e.id&&p.year===curYear);
+      const empGross=empSlips.reduce((s,p)=>s+(p.taxableGross||0),0);
+      const empTax=empSlips.reduce((s,p)=>s+(p.loonheffing||0),0);
+      const empNet=empSlips.reduce((s,p)=>s+(p.netPay||0),0);
+      data.push([e.name,e.jobTitle||'—',e.salaryType,e.salaryType==='hourly'?e.hourlyRate:e.grossMonthlySalary,e.employmentStatus,empGross,empTax,empNet]);
+    });
+    sheets['Employee Financial']=XLSX.utils.aoa_to_sheet(data);
+  }
+  else if(type==='emp_stats'){
+    const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
+    const active=allEmployees.filter(e=>e.employmentStatus==='active');
+    const today=new Date();
+    const tenures=active.filter(e=>e.startDate).map(e=>(today-new Date(e.startDate))/(1000*60*60*24*30.44));
+    const avgTenureMonths=tenures.length>0?tenures.reduce((s,x)=>s+x,0)/tenures.length:0;
+    const fixedTerm=active.filter(e=>e.contractType==='bepaalde_tijd').length;
+    const permanent=active.filter(e=>e.contractType==='onbepaalde_tijd').length;
+    const salaryFixed=active.filter(e=>e.salaryType==='fixed').length;
+    const salaryHourly=active.filter(e=>e.salaryType==='hourly').length;
+    const avgHours=active.length>0?active.reduce((s,e)=>s+(e.hoursPerWeek||0),0)/active.length:0;
+    const in90Days=new Date();in90Days.setDate(in90Days.getDate()+90);
+    const expiringSoon=active.filter(e=>e.contractType==='bepaalde_tijd'&&e.contractEndDate&&new Date(e.contractEndDate)<=in90Days&&new Date(e.contractEndDate)>=today);
+
+    data=[
+      ['📊 EMPLOYEE STATISTICS REPORT'],
+      ['Client',c?.name],
+      ['Report Date',FD(new Date())],
+      [],
+      ['Key Metrics','Value'],
+      ['Total Ever Hired',allEmployees.length],
+      ['Active',active.length],
+      ['Avg. Tenure (months)',avgTenureMonths.toFixed(1)],
+      ['Avg. Hours/Week',avgHours.toFixed(1)],
+      [],
+      ['Contract Type','Count'],
+      ['Permanent (Onbepaalde tijd)',permanent],
+      ['Fixed-term (Bepaalde tijd)',fixedTerm],
+      [],
+      ['Salary Type','Count'],
+      ['Fixed monthly',salaryFixed],
+      ['Variable hourly',salaryHourly],
+      [],
+      ['Fixed-Term Contracts Ending Within 90 Days','Job Title','End Date']
+    ];
+    expiringSoon.forEach(e=>{
+      data.push([e.name,e.jobTitle||'—',FD(e.contractEndDate)]);
+    });
+    sheets['Employee Statistics']=XLSX.utils.aoa_to_sheet(data);
   }
   
   const workbook=XLSX.utils.book_new();
