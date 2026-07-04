@@ -9,3 +9,7 @@ bucket_name = "anb-finadmin-files"
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
 id = "b9391dde5b494f2cbad03f23690a91be"
+[[d1_databases]]
+binding = "DB"
+database_name = "anb-db"
+database_id = "2e7f1481-efe1-41e5-af58-d7333f352322"
