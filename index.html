@@ -674,13 +674,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.93">
+<link rel="manifest" href="manifest.json?v=2.94">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=2.93').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=2.94').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -2014,11 +2014,11 @@ var S={
   tab:'dashboard',
   clients:[
     {id:'c1',name:'Expat Solutions BV',type:'B2B',email:'info@expatsol.nl',
-     kvk:'12345678',btw:'NL123456789B01',iban:'NL91ABNA0417164300',color:'#1B5E35',pw:'client123'},
+     kvk:'12345678',btw:'NL123456789B01',iban:'NL91ABNA0417164300',color:'#1B5E35'},
     {id:'c2',name:'Maria van den Berg',type:'B2C',email:'maria@gmail.com',
-     kvk:'',btw:'',iban:'',color:'#1B5E35',pw:'client123'},
+     kvk:'',btw:'',iban:'',color:'#1B5E35'},
     {id:'c3',name:'TechStart Amsterdam',type:'B2B',email:'cfo@techstart.nl',
-     kvk:'87654321',btw:'NL987654321B01',iban:'NL02ABNA0123456789',color:'#C89010',pw:'client123'},
+     kvk:'87654321',btw:'NL987654321B01',iban:'NL02ABNA0123456789',color:'#C89010'},
   ],
   invoices:[
     {id:'i1',cid:'c1',num:'ANB-2026-001',desc:'Power BI dashboard Q1',amount:2400,btw:504,total:2904,date:'2026-05-01',due:'2026-05-31',status:'Betaald',btwRate:21},
@@ -2055,11 +2055,8 @@ var S={
     kvk:'',btw:'',iban:'NL91ABNA0417164300',
     email:'info@anbfinancial.nl',phone:'+31 35 123 4567',
     tagline:'Nauwkeurigheid · Inzicht · Groei',
-    adminPw:'admin123', // للتوافقية فقط
   },
-  admins:[
-    {id:'adm1',name:'Ahmad',email:'admin@anbfinancial.nl',phone:'+31 6 12345678',password:'admin123',role:'super_admin',createdDate:'2026-01-01',status:'active',lastLogin:'2026-06-30'}
-  ],
+  admins:[],
   timer:{running:false,seconds:0,task:'',cat:'',_iv:null},
   journal:[
     {id:'j1',cid:'c1',date:'2026-05-01',desc:'Verkoopfactuur ANB-2026-001',db:'0200',cr:'1000',amount:2400,btw:504,type:'invoice'},
@@ -2133,7 +2130,9 @@ const SYNC_RETRY_DELAYS=[5000,15000,30000,60000]; // تأخير متصاعد ب�
 
 async function cloudPull(){
   try{
-    const res=await fetch(CLOUD_SYNC_URL,{method:'GET'});
+    const token=getValidR2Token();
+    if(!token){lastSyncError='offline';return null;} // لا توكن سارٍ - غالبًا قبل الدخول، أو انتهت الجلسة
+    const res=await fetch(CLOUD_SYNC_URL,{method:'GET',headers:{'Authorization':'Bearer '+token}});
     if(!res.ok){
       lastSyncError='HTTP '+res.status+(res.status===401||res.status===403?' (auth)':res.status>=500?' (server)':'');
       return null;
@@ -2691,67 +2690,72 @@ function goStep(n){
 
 function goBack(n){goStep(n);}
 
-// STEP 1 → 2: verify identity
-function goStep2(){
+// STEP 1 → 2: verify identity (عبر الخادم الآن - لا مزيد من الاعتماد على S.admins/S.clients المحلية قبل الدخول)
+async function goStep2(){
   const id=document.getElementById('login-id').value.trim();
   showErr('login-err-1','');
   if(!id){showErr('login-err-1','Please enter your email or phone number');return;}
 
-  if(selRoleVal==='admin'){
-    // تحقق من قائمة admins المتعددين
-    const admin=S.admins.find(a=>
-      (a.email&&a.email.toLowerCase()===id.toLowerCase())||
-      (a.phone===id)||
-      (a.status==='active')
-    );
-    if(!admin){showErr('login-err-1','Email or phone not found for admin account');return;}
-    authState={role:'admin',adminId:admin.id,identifier:id,clientId:null};
-    const name=document.getElementById('step2-name');
-    const sub=document.getElementById('step2-sub');
-    if(name)name.textContent=admin.name+' · ANB Administrator';
-    if(sub)sub.textContent='Enter your password to continue';
-  } else {
-    // Find client by email or phone
-    const c=S.clients.find(c=>
-      c.email&&c.email.toLowerCase()===id.toLowerCase()||
-      c.phone&&c.phone===id||
-      c.phone&&c.phone.replace(/\s/g,'')===id.replace(/\s/g,'')
-    );
-    if(!c){showErr('login-err-1','No account found with this email or phone number');return;}
-    authState={role:'client',identifier:id,clientId:c.id,isFirstTime:!c.pwSet};
-    const name=document.getElementById('step2-name');
-    const sub=document.getElementById('step2-sub');
-    if(name)name.textContent='Welcome, '+c.name.split(' ')[0]+'!';
-    if(sub)sub.textContent=c.type+' · '+c.email;
+  const btn=document.getElementById('login-step1-btn');
+  if(btn)btn.disabled=true;
+  try{
+    const res=await fetch(R2_WORKER_URL+'/resolve-account',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({role:selRoleVal,identifier:id}),
+    });
+    if(res.status===423){
+      const data=await res.json();
+      showErr('login-err-1','Too many attempts. Try again in '+(data.minutesRemaining||15)+' min.');
+      return;
+    }
+    if(!res.ok){
+      showErr('login-err-1',selRoleVal==='admin'?'Email or phone not found for admin account':'No account found with this email or phone number');
+      return;
+    }
+    const acc=await res.json(); // {accountId, name, email, type, totpEnabled, isFirstTime}
+
+    if(selRoleVal==='admin'){
+      authState={role:'admin',adminId:acc.accountId,identifier:id,clientId:null};
+      const name=document.getElementById('step2-name');
+      const sub=document.getElementById('step2-sub');
+      if(name)name.textContent=acc.name+' · ANB Administrator';
+      if(sub)sub.textContent='Enter your password to continue';
+    } else {
+      authState={role:'client',identifier:id,clientId:acc.accountId,isFirstTime:!!acc.isFirstTime};
+      const name=document.getElementById('step2-name');
+      const sub=document.getElementById('step2-sub');
+      if(name)name.textContent='Welcome, '+(acc.name||'').split(' ')[0]+'!';
+      if(sub)sub.textContent=acc.type+' · '+acc.email;
+    }
+    showErr('login-err-2','');
+    goStep(2);
+    setTimeout(()=>document.getElementById('login-pw')?.focus(),100);
+  }catch(e){
+    showErr('login-err-1','Network error - please check your connection and try again');
+  }finally{
+    if(btn)btn.disabled=false;
   }
-  showErr('login-err-2','');
-  goStep(2);
-  setTimeout(()=>document.getElementById('login-pw')?.focus(),100);
 }
 
-// STEP 2: sign in
+// STEP 2: sign in (كلمة المرور تُتحقق منها في الخادم الآن فقط - لا تصل أي كلمة مرور مشفّرة أو سرّ TOTP للمتصفح إطلاقًا)
 async function doLogin(){
   const pw=document.getElementById('login-pw').value;
   showErr('login-err-2','');
   if(!pw){showErr('login-err-2','Please enter your password');return;}
 
-  if(authState.role==='admin'){
-    // تحقق من كلمة المرور من قائمة admins
-    const admin=S.admins.find(a=>a.id===authState.adminId);
-    if(!admin){showErr('login-err-2','Incorrect password');return;}
-    if(isLockedOut(admin)){showErr('login-err-2','Too many attempts. Try again in '+lockoutRemainingMinutes(admin)+' min.');return;}
-    const result=await verifyPassword(pw,admin);
-    if(!result.ok){registerFailedAttempt(admin);showErr('login-err-2','Incorrect password');return;}
-    if(result.needsUpgrade){
-      const rec=await makePasswordRecord(pw);
-      admin.passwordSalt=rec.passwordSalt;admin.passwordHash=rec.passwordHash;
-      delete admin.password;
-    }
-    clearFailedAttempts(admin);
-    if(admin.status!=='active'){showErr('login-err-2','This admin account is not active');return;}
-    mintR2Token('admin',admin.id,pw); // fire-and-forget: يمنح توكن R2 قصير الصلاحية دون تأخير الدخول
+  const accountId=authState.role==='admin'?authState.adminId:authState.clientId;
+  try{
+    const res=await fetch(R2_WORKER_URL+'/login',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({role:authState.role,accountId,password:pw}),
+    });
+    const data=await res.json();
 
-    if(admin.totpEnabled){
+    if(res.status===423){showErr('login-err-2','Too many attempts. Try again in '+(data.minutesRemaining||15)+' min.');return;}
+    if(res.status===403){showErr('login-err-2','This admin account is not active');return;}
+    if(!res.ok){showErr('login-err-2','Incorrect password');return;}
+
+    if(data.step==='2fa'){
       // كلمة المرور صحيحة، لكن الحساب مفعّل عليه 2FA — ننتقل لخطوة إدخال الرمز بدل الدخول المباشر
       goStep('2fa');
       showErr('login-err-2fa','');
@@ -2759,35 +2763,34 @@ async function doLogin(){
       return;
     }
 
-    S.role='admin';
-    S.currentAdmin=admin.id;
-    S.currentClient=null;
-    S.tab='dashboard';
-    admin.lastLogin=TODAY();
-    sv(); // حفظ آخر تسجيل دخول
-  } else {
-    const c=S.clients.find(c=>c.id===authState.clientId);
-    if(!c){showErr('login-err-2','Incorrect password');return;}
-    if(isLockedOut(c)){showErr('login-err-2','Too many attempts. Try again in '+lockoutRemainingMinutes(c)+' min.');return;}
-    const result=await verifyPassword(pw,c);
-    if(!result.ok){registerFailedAttempt(c);showErr('login-err-2','Incorrect password');return;}
-    if(result.needsUpgrade){
-      const rec=await makePasswordRecord(pw);
-      c.passwordSalt=rec.passwordSalt;c.passwordHash=rec.passwordHash;
-      delete c.pw;delete c.pwCustom;
+    // نجاح كامل: عندنا توكن جاهز
+    r2Token={token:data.token,exp:data.exp};
+    scheduleTokenRefresh();
+    if(authState.role==='admin'){
+      S.role='admin';S.currentAdmin=accountId;S.currentClient=null;S.tab='dashboard';
+    }else{
+      S.role='client';S.currentClient=accountId;S.tab='dashboard';
     }
-    clearFailedAttempts(c);
-    mintR2Token('client',c.id,pw); // fire-and-forget: يمنح توكن R2 قصير الصلاحية دون تأخير الدخول
+    await pullFullDataThenLaunch();
+  }catch(e){
+    showErr('login-err-2','Network error - please check your connection and try again');
+  }
+}
 
-    if(c.totpEnabled){
-      // كلمة المرور صحيحة، لكن الحساب مفعّل عليه 2FA — ننتقل لخطوة إدخال الرمز بدل الدخول المباشر
-      goStep('2fa');
-      showErr('login-err-2fa','');
-      setTimeout(()=>document.getElementById('login-2fa-code')?.focus(),150);
-      return;
+// بعد نجاح تسجيل الدخول (بتوكن جاهز): يجلب كامل بيانات التطبيق من D1 ثم يبدأ التطبيق
+async function pullFullDataThenLaunch(){
+  try{
+    const token=getValidR2Token();
+    const res=await fetch(CLOUD_SYNC_URL,{headers:token?{'Authorization':'Bearer '+token}:{}});
+    if(res.ok){
+      const cloud=await res.json();
+      const cloudPayload=cloud.payload||{};
+      CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{S[k]=cloudPayload[k]||S[k]||[];});
+      if(cloudPayload.settings)S.settings=cloudPayload.settings;
+      cloudSyncStatus='synced';
     }
-
-    S.role='client';S.currentClient=c.id;S.tab='dashboard';
+  }catch(e){
+    // فشل الجلب هنا لا يجب أن يمنع الدخول - التطبيق سيعمل بالبيانات المحلية المخزَّنة مؤقتًا ويعيد المحاولة تلقائيًا
   }
   launchApp();
 }
@@ -2795,72 +2798,75 @@ async function doLogin(){
 async function doVerify2FA(){
   const code=document.getElementById('login-2fa-code')?.value;
   showErr('login-err-2fa','');
-
-  const isAdminFlow=authState.role==='admin';
-  const account=isAdminFlow?S.admins.find(a=>a.id===authState.adminId):S.clients.find(c=>c.id===authState.clientId);
-  if(!account){showErr('login-err-2fa','Session expired — please sign in again');goStep(1);return;}
-  if(isLockedOut(account)){showErr('login-err-2fa','Too many attempts. Try again in '+lockoutRemainingMinutes(account)+' min.');return;}
   if(!code||!/^\d{6}$/.test(code)){showErr('login-err-2fa',t('enter_code_confirm')||'Enter the 6-digit code');return;}
 
-  const valid=await verifyTotpCode(account.totpSecret,code);
-  if(!valid){
-    registerFailedAttempt(account);
-    showErr('login-err-2fa',t('invalid_code')||'Incorrect code — please try again');
-    return;
-  }
-  clearFailedAttempts(account);
+  const isAdminFlow=authState.role==='admin';
+  const accountId=isAdminFlow?authState.adminId:authState.clientId;
+  try{
+    const res=await fetch(R2_WORKER_URL+'/verify-2fa',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({role:authState.role,accountId,code}),
+    });
+    const data=await res.json();
 
-  if(isAdminFlow){
-    S.role='admin';
-    S.currentAdmin=account.id;
-    S.currentClient=null;
-    account.lastLogin=TODAY();
-  }else{
-    S.role='client';
-    S.currentClient=account.id;
+    if(res.status===423){showErr('login-err-2fa','Too many attempts. Try again in '+(data.minutesRemaining||15)+' min.');return;}
+    if(!res.ok){showErr('login-err-2fa',t('invalid_code')||'Incorrect code — please try again');return;}
+
+    r2Token={token:data.token,exp:data.exp};
+    scheduleTokenRefresh();
+    if(isAdminFlow){
+      S.role='admin';S.currentAdmin=accountId;S.currentClient=null;
+    }else{
+      S.role='client';S.currentClient=accountId;
+    }
+    S.tab='dashboard';
+    await pullFullDataThenLaunch();
+  }catch(e){
+    showErr('login-err-2fa','Network error - please check your connection and try again');
   }
-  S.tab='dashboard';
-  sv();
-  launchApp();
 }
 
 // Forgot / First time → STEP 3
-function goForgot(){
+async function goForgot(){
   showErr('login-err-3','');
   const id=document.getElementById('login-id')?.value?.trim()||authState.identifier;
   if(!id){goStep(1);showErr('login-err-1','Please enter your email or phone first');return;}
 
-  // Re-validate identity
-  if(selRoleVal==='admin'||authState.role==='admin'){
-    const co=S.settings;
-    const match=(id===co.email||id===co.phone||id===co.adminIdentifier||
-                 id.toLowerCase()===co.email?.toLowerCase());
-    if(!match){goStep(1);showErr('login-err-1','Email or phone not found');return;}
-    authState={role:'admin',identifier:id,clientId:null};
-    const t=document.getElementById('step3-title');
-    const s=document.getElementById('step3-sub');
-    const b=document.getElementById('step3-identity-box');
-    if(t)t.textContent='Set admin password';
-    if(s)s.textContent='You are setting the password for ANB Administrator';
-    if(b)b.innerHTML='🛡 <strong>ANB Administrator</strong><br>'+id;
-  } else {
-    const c=S.clients.find(c=>c.id===authState.clientId)||
-             S.clients.find(c=>c.email?.toLowerCase()===id.toLowerCase()||c.phone===id);
-    if(!c){goStep(1);showErr('login-err-1','No account found');return;}
-    authState={role:'client',identifier:id,clientId:c.id};
-    const t=document.getElementById('step3-title');
-    const s=document.getElementById('step3-sub');
-    const b=document.getElementById('step3-identity-box');
-    if(t)t.textContent='Set your password';
-    if(s)s.textContent='Choose a new password for your account';
-    if(b)b.innerHTML='👤 <strong>'+c.name+'</strong><br>'+id;
+  const role=selRoleVal||authState.role;
+  try{
+    const res=await fetch(R2_WORKER_URL+'/resolve-account',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({role,identifier:id}),
+    });
+    if(!res.ok){goStep(1);showErr('login-err-1',role==='admin'?'Email or phone not found':'No account found');return;}
+    const acc=await res.json();
+
+    if(role==='admin'){
+      authState={role:'admin',adminId:acc.accountId,identifier:id,clientId:null};
+      const t=document.getElementById('step3-title');
+      const s=document.getElementById('step3-sub');
+      const b=document.getElementById('step3-identity-box');
+      if(t)t.textContent='Set admin password';
+      if(s)s.textContent='You are setting the password for ANB Administrator';
+      if(b)b.innerHTML='🛡 <strong>ANB Administrator</strong><br>'+escapeHtml(id);
+    } else {
+      authState={role:'client',identifier:id,clientId:acc.accountId};
+      const t=document.getElementById('step3-title');
+      const s=document.getElementById('step3-sub');
+      const b=document.getElementById('step3-identity-box');
+      if(t)t.textContent='Set your password';
+      if(s)s.textContent='Choose a new password for your account';
+      if(b)b.innerHTML='👤 <strong>'+escapeHtml(acc.name||'')+'</strong><br>'+escapeHtml(id);
+    }
+    document.getElementById('new-pw1').value='';
+    document.getElementById('new-pw2').value='';
+    document.getElementById('pw-bar').style.cssText='';
+    document.getElementById('pw-hint').textContent='';
+    goStep(3);
+    setTimeout(()=>document.getElementById('new-pw1')?.focus(),100);
+  }catch(e){
+    showErr('login-err-1','Network error - please check your connection and try again');
   }
-  document.getElementById('new-pw1').value='';
-  document.getElementById('new-pw2').value='';
-  document.getElementById('pw-bar').style.cssText='';
-  document.getElementById('pw-hint').textContent='';
-  goStep(3);
-  setTimeout(()=>document.getElementById('new-pw1')?.focus(),100);
 }
 
 // Password strength checker
@@ -2896,40 +2902,27 @@ async function doSetPassword(){
   if(pw1.length<6){showErr('login-err-3','Password must be at least 6 characters');return;}
   if(pw1!==pw2){showErr('login-err-3','Passwords do not match');return;}
 
-  const rec=await makePasswordRecord(pw1);
+  const accountId=authState.role==='admin'?authState.adminId:authState.clientId;
+  try{
+    const res=await fetch(R2_WORKER_URL+'/set-password',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({role:authState.role,accountId,newPassword:pw1}),
+    });
+    if(!res.ok){showErr('login-err-3','Something went wrong - please try again');return;}
+    const data=await res.json();
+    r2Token={token:data.token,exp:data.exp};
+    scheduleTokenRefresh();
 
-  if(authState.role==='admin'){
-    // ✅ إصلاح: كانت تُحفظ سابقًا في S.settings.adminPwCustom وهو حقل لا تقرأه doLogin إطلاقًا
-    const admin=S.admins.find(a=>a.id===authState.adminId);
-    if(admin){
-      admin.passwordSalt=rec.passwordSalt;admin.passwordHash=rec.passwordHash;
-      delete admin.password;
-      clearFailedAttempts(admin);
-      if(!S.auditLog)S.auditLog=[];
-      S.auditLog.unshift({id:UID(),ts:new Date().toISOString(),actor:admin.name,actorRole:'admin',
-        action:'password_change',entityType:'account',summary:'Password set for admin account: '+admin.name,cid:null});
-    }
-  } else {
-    const idx=S.clients.findIndex(c=>c.id===authState.clientId);
-    if(idx>=0){
-      S.clients[idx].passwordSalt=rec.passwordSalt;
-      S.clients[idx].passwordHash=rec.passwordHash;
-      S.clients[idx].pwSet=true;
-      delete S.clients[idx].pw;delete S.clients[idx].pwCustom;
-      clearFailedAttempts(S.clients[idx]);
-      if(!S.auditLog)S.auditLog=[];
-      S.auditLog.unshift({id:UID(),ts:new Date().toISOString(),actor:S.clients[idx].name,actorRole:'client',
-        action:'password_change',entityType:'account',summary:'Password set for client account: '+S.clients[idx].name,cid:S.clients[idx].id});
-    }
+    // Show success then launch
+    goStep('ok');
+    S.role=authState.role;
+    S.currentAdmin=authState.role==='admin'?accountId:null;
+    S.currentClient=authState.role==='client'?accountId:null;
+    S.tab='dashboard';
+    setTimeout(()=>pullFullDataThenLaunch(),1500);
+  }catch(e){
+    showErr('login-err-3','Network error - please check your connection and try again');
   }
-  sv();
-
-  // Show success then launch
-  goStep('ok');
-  S.role=authState.role;
-  S.currentClient=authState.role==='client'?authState.clientId:null;
-  S.tab='dashboard';
-  setTimeout(()=>launchApp(),1500);
 }
 
 function launchApp(){
@@ -5458,31 +5451,14 @@ function humanSize(bytes){
   return (bytes/1024/1024).toFixed(1)+' MB';
 }
 
-// ══════════ توكن الدخول الموحّد (يُستخدم لرفع/حذف ملفات R2 ولحفظ بيانات D1) ══════════
-// ⚠️ لا سرّ ثابت هنا. الـWorker يتحقق من كلمة المرور مقابل D1 بنفسه (وصول
-// مباشر بربط الـWorker، بلا أي مفتاح خارجي) ثم يمنح توكن HMAC صالح لـ٨ ساعات.
-// من يفتح "View Source" لن يجد شيئًا يمكّنه من الرفع أو الحذف أو الكتابة.
+// ══════════ توكن الدخول الموحّد (يُستخدم لرفع/حذف ملفات R2 ولحفظ/جلب بيانات D1) ══════════
+// ⚠️ لا سرّ ثابت هنا، ولا كلمة مرور، ولا سرّ TOTP يصل للمتصفح إطلاقًا الآن.
+// يُمنح التوكن من نقاط /login أو /verify-2fa أو /set-password بعد أن يتحقق
+// الـWorker من كل شيء بنفسه مقابل D1 مباشرة (انظر doLogin/doVerify2FA/doSetPassword).
 const R2_WORKER_URL='https://anb.ahmad-alnajem506.workers.dev';
 let r2Token=null; // {token, exp} - في الذاكرة فقط، لا يُحفظ في localStorage
 let r2RefreshTimer=null;
 
-// يُستدعى فور التحقق من كلمة المرور بنجاح أثناء تسجيل الدخول (انظر doLogin)
-async function mintR2Token(accountType,accountId,password){
-  try{
-    const res=await fetch(R2_WORKER_URL+'/mint-token',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({accountType,accountId,password}),
-    });
-    if(!res.ok){r2Token=null;return null;}
-    r2Token=await res.json(); // {token, exp}
-    scheduleTokenRefresh();
-    return r2Token;
-  }catch(e){
-    r2Token=null;
-    return null;
-  }
-}
 function getValidR2Token(){
   if(r2Token&&r2Token.token&&r2Token.exp&&Date.now()<r2Token.exp-10000)return r2Token.token;
   return null;
