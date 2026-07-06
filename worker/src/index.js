@@ -122,6 +122,15 @@ async function handleResolveAccount(request, env, cors) {
 
   if (!account) return json({ error: 'Account not found' }, 404, cors);
   if (role === 'admin' && account.status !== 'active') return json({ error: 'Account not found' }, 404, cors);
+  // ⚠️ عقد العميل المعلَّق أو الملغى: يُمنع من تسجيل الدخول تمامًا حتى لو كانت
+  // كلمة مروره القديمة لا تزال صحيحة (الإيقاف لا يمسح كلمة المرور، فقط يقفل
+  // الدخول مؤقتًا؛ الإلغاء يمسح كلمة المرور فعليًا من جهة العميل أيضًا كطبقة ثانية)
+  if (role === 'client' && account.accountStatus === 'suspended') {
+    return json({ error: 'account_suspended' }, 403, cors);
+  }
+  if (role === 'client' && account.accountStatus === 'cancelled') {
+    return json({ error: 'account_cancelled' }, 403, cors);
+  }
   if (isLockedOut(account)) {
     return json({ error: 'locked', minutesRemaining: lockoutRemainingMinutes(account) }, 423, cors);
   }
@@ -158,6 +167,8 @@ async function handleLogin(request, env, cors) {
 
   if (isLockedOut(account)) return json({ error: 'locked', minutesRemaining: lockoutRemainingMinutes(account) }, 423, cors);
   if (role === 'admin' && account.status !== 'active') return json({ error: 'Account not active' }, 403, cors);
+  if (role === 'client' && account.accountStatus === 'suspended') return json({ error: 'account_suspended' }, 403, cors);
+  if (role === 'client' && account.accountStatus === 'cancelled') return json({ error: 'account_cancelled' }, 403, cors);
 
   const verdict = await verifyPasswordServerSide(password, account);
   if (!verdict.ok) {
@@ -210,6 +221,8 @@ async function handleVerify2FA(request, env, cors) {
   const account = list[idx];
 
   if (isLockedOut(account)) return json({ error: 'locked', minutesRemaining: lockoutRemainingMinutes(account) }, 423, cors);
+  if (role === 'client' && account.accountStatus === 'suspended') return json({ error: 'account_suspended' }, 403, cors);
+  if (role === 'client' && account.accountStatus === 'cancelled') return json({ error: 'account_cancelled' }, 403, cors);
 
   const valid = await verifyTotpCode(account.totpSecret, code);
   if (!valid) {
