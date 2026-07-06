@@ -674,13 +674,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.96">
+<link rel="manifest" href="manifest.json?v=2.98">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=2.96').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=2.98').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -3482,6 +3482,7 @@ function renderContractsList(statusFilter){
             </div>
           </div>
           <div style="display:flex;gap:4px;flex-shrink:0">
+            <button class="btn btn-xs" onclick="exportContractPDF('${con.id}')" title="Export as PDF">📄</button>
             <button class="btn btn-xs" onclick="openEditContract('${con.id}','${con.cid}')" title="Edit">✏</button>
             <button class="btn btn-danger btn-xs" onclick="deleteContract('${con.id}')" title="Delete">🗑</button>
           </div>
@@ -3532,15 +3533,59 @@ function openNewContractDialog(){
       </div>
 
       <div id="contract-new-client-fields" style="display:none;padding:12px;background:var(--bg2);border-radius:6px;border:1px dashed var(--gr2)">
-        <div style="font-size:11px;color:var(--t3);margin-bottom:8px">➕ A lightweight client record will be created automatically when you save this contract.</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:8px">➕ A full client record will be created automatically when you save this contract — same details as the regular "Add Client" form.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
           <div>
             <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Company Name *</label>
             <input type="text" id="contract-new-name" placeholder="New client name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
           </div>
           <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Client Type</label>
+            <select id="contract-new-type" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer;box-sizing:border-box">
+              ${['Eenmanszaak','VOF','Maatschap','CV','BV','NV','Stichting','Vereniging','Coöperatie','Overig'].map(tp=>`<option>${tp}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+          <div>
             <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Email</label>
             <input type="email" id="contract-new-email" placeholder="client@email.com" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Phone</label>
+            <input type="text" id="contract-new-phone" placeholder="+31 6 12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Contact Person</label>
+          <input type="text" id="contract-new-contact" placeholder="Full name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">KVK Number</label>
+            <input type="text" id="contract-new-kvk" placeholder="12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">BTW/VAT Number</label>
+            <input type="text" id="contract-new-btw" placeholder="NL123456789B01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">IBAN</label>
+          <input type="text" id="contract-new-iban" placeholder="NL91ABNA0417164300" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Street Address</label>
+          <input type="text" id="contract-new-addr" placeholder="Straatnaam 123" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Postal Code</label>
+            <input type="text" id="contract-new-zip" placeholder="1234 AB" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">City</label>
+            <input type="text" id="contract-new-city" placeholder="Amsterdam" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;box-sizing:border-box">
           </div>
         </div>
       </div>
@@ -3612,8 +3657,17 @@ function openNewContractDialog(){
       const newClient={
         id:UID(),
         name:newName,
+        type:document.getElementById('contract-new-type')?.value||'Eenmanszaak',
         email:(document.getElementById('contract-new-email')?.value||'').trim(),
-        type:'B2B',
+        phone:(document.getElementById('contract-new-phone')?.value||'').trim(),
+        contactPerson:(document.getElementById('contract-new-contact')?.value||'').trim(),
+        kvk:(document.getElementById('contract-new-kvk')?.value||'').trim(),
+        btw:(document.getElementById('contract-new-btw')?.value||'').trim(),
+        iban:(document.getElementById('contract-new-iban')?.value||'').trim(),
+        address:(document.getElementById('contract-new-addr')?.value||'').trim(),
+        zipCode:(document.getElementById('contract-new-zip')?.value||'').trim(),
+        city:(document.getElementById('contract-new-city')?.value||'').trim(),
+        country:'NL',
         monthlyFee:plan,
         createdDate:TODAY()
       };
@@ -3638,7 +3692,7 @@ function openNewContractDialog(){
     }
     
     if(!S.contracts)S.contracts=[];
-    S.contracts.push({
+    const newContract={
       id:UID(),
       cid,
       title,
@@ -3650,10 +3704,16 @@ function openNewContractDialog(){
       endDate:end,
       status:'draft',
       createdDate:TODAY()
-    });
+    };
+    S.contracts.push(newContract);
+
+    const contractClient=S.clients.find(c=>c.id===cid);
+    if(contractClient)createContractAgreement(contractClient,newContract);
+
     sv();
     renderApp();
     closeModal();
+    toast('✓ Contract created — service agreement sent for signature');
   }, 'Create Contract');
 }
 
@@ -3852,6 +3912,84 @@ function deleteContract(contractId){
       setTab('contracts');
     }
   });
+}
+
+// يُصدّر عقد عميل (من نظام Contracts) كملف PDF فعلي - بنفس أسلوب عقود الموظفين
+async function exportContractPDF(contractId){
+  const con=(S.contracts||[]).find(c=>c.id===contractId);
+  if(!con){toast('❌ Contract not found');return;}
+  const client=(S.clients||[]).find(c=>c.id===con.cid);
+  await ensureJsPDF();
+  const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
+  if(!jsPDF){toast('❌ Could not load PDF library');return;}
+  const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=16;
+
+  doc.setFillColor(200,144,16);doc.rect(0,0,W,2,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(10,34,24);
+  doc.text('SERVICE AGREEMENT',W/2,18,{align:'center'});
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
+  doc.text('Serviceovereenkomst',W/2,24,{align:'center'});
+  doc.setDrawColor(231,229,221);doc.line(M,29,W-M,29);
+
+  let y=36;
+  const section=(title)=>{
+    doc.setFillColor(10,34,24);doc.rect(M,y,W-M*2,7,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(245,220,112);
+    doc.text(title,M+3,y+5);
+    y+=11;
+  };
+  const row=(label,value)=>{
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
+    doc.text(label,M+3,y);
+    doc.setFont('helvetica','bold');doc.setTextColor(10,34,24);
+    doc.text(String(value||'—'),M+65,y);
+    y+=6;
+  };
+
+  section('PARTIES');
+  row('Service Provider',S.settings?.companyName||'ANB Financial Services');
+  row('Provider Address',S.settings?.address||'Bussum, Netherlands');
+  row('Client',client?.name||'—');
+  row('KVK',client?.kvk||'—');
+  row('BTW/VAT',client?.btw||'—');
+  row('Address',client?.address?`${client.address}, ${client.zipCode||''} ${client.city||''}`.trim():'—');
+  row('Contact Person',client?.contactPerson||'—');
+  row('Email',client?.email||'—');
+  row('Phone',client?.phone||'—');
+  y+=3;
+
+  section('CONTRACT DETAILS');
+  row('Contract Title',con.title||'—');
+  row('Status',con.status==='Renewed'?'Renewed':(isContractExpired(con)?'Needs Renewal':(con.status||'Draft')));
+  row('Start Date',con.startDate?FD(con.startDate):'—');
+  row('End Date',con.endDate?FD(con.endDate):'—');
+  row('Subscription Plan',con.plan?'€'+con.plan+'/month':'—');
+  if(con.renewedFrom)row('Renewed From','Previous contract on file');
+  y+=3;
+
+  if(con.desc){
+    section('DESCRIPTION');
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(60,60,60);
+    const lines=doc.splitTextToSize(con.desc,W-M*2-6);
+    lines.forEach(line=>{doc.text(line,M+3,y);y+=5;});
+    y+=3;
+  }
+
+  y+=14;
+  doc.setDrawColor(200,200,200);
+  doc.line(M,y,M+70,y);doc.line(W-M-70,y,W-M,y);
+  y+=5;
+  doc.setFontSize(8);doc.setTextColor(100,100,100);
+  doc.text('Service Provider signature',M,y);
+  doc.text('Client signature',W-M-70,y);
+
+  doc.setFillColor(10,34,24);doc.rect(0,283,W,14,'F');
+  doc.setFillColor(200,144,16);doc.rect(0,283,W,1,'F');
+  doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(180,178,168);
+  doc.text('Issued via ANB Financial Services',W/2,290.5,{align:'center'});
+
+  doc.save((con.title||'Contract').replace(/[^a-zA-Z0-9]/g,'_')+'_'+(client?.name||'Client').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
+  toast('✓ Contract PDF exported');
 }
 
 /* ── ASSETS ── */
@@ -5423,8 +5561,18 @@ function _exportBTWpdf(cid,q,yr){
 function rDocs(el,cid){
   cid=cid||S.currentClient;
   const c=S.clients.find(c=>c.id===cid);
-  const docs=S.docs.filter(d=>d.cid===cid&&!d.deleted);
+  // ⚠️ يستثني إيصالات المصاريف (category:'receipt') - هذه تُرفع من داخل نموذج المصاريف
+  // نفسه وتبقى مرتبطة به فقط، وليست جزءًا من مستندات العميل العامة
+  const docs=S.docs.filter(d=>d.cid===cid&&!d.deleted&&d.category!=='receipt');
   const theme=S.cardTheme||{bg:'rgba(42,96,64,0.08)',border:'#2A6040',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
+  const agreementStatusMeta={
+    pending_review:{label:'Pending Signature',color:'#8a6410',bg:'rgba(200,144,16,0.15)'},
+    client_signed:{label:'Signed — Awaiting Approval',color:'#1a4d2e',bg:'rgba(77,168,118,0.15)'},
+    changes_requested:{label:'Changes Requested',color:'#B8860B',bg:'rgba(184,134,11,0.15)'},
+    active:{label:'✓ Signed & Active',color:'#2d7a4f',bg:'rgba(45,122,79,0.15)'},
+    client_rejected:{label:'Rejected',color:'#a83232',bg:'rgba(168,50,50,0.15)'},
+    rejected:{label:'Rejected',color:'#a83232',bg:'rgba(168,50,50,0.15)'}
+  };
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}';this.style.transform='translateX(0)'">
@@ -5444,7 +5592,21 @@ function rDocs(el,cid){
       <span style="font-size:11px;color:var(--t3)">${docs.length} files</span>
     </div>
     ${docs.length===0?`<div class="empty"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📁</span>${t('empty_docs')}</div>`:
-    docs.map(d=>`<div class="doc-item">
+    docs.map(d=>{
+      if(d.category==='agreement'){
+        const agreement=(S.serviceAgreements||[]).find(a=>a.id===d.agreementId);
+        const status=agreement?.status||d.status||'pending_review';
+        const meta=agreementStatusMeta[status]||agreementStatusMeta.pending_review;
+        return `<div class="doc-item">
+          <div class="doc-icon"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📝</span></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.name)}</div>
+            <div style="font-size:11px;margin-top:2px"><span style="background:${meta.bg};color:${meta.color};font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px">${meta.label}</span></div>
+          </div>
+          <button class="btn btn-xs" onclick="reviewAgreementDoc('${d.id}')">👁 Review</button>
+        </div>`;
+      }
+      return `<div class="doc-item">
       <div class="doc-icon">${d.type&&d.type.startsWith('image')?`<img src="${d.url||d.data}" style="width:32px;height:32px;object-fit:cover;border-radius:6px"/>`:'<span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📄</span>'}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.name)}</div>
@@ -5452,7 +5614,8 @@ function rDocs(el,cid){
       </div>
       <button class="btn btn-xs" onclick="viewDoc('${d.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬇</span>${d.type&&d.type.startsWith('image')?'View':'Download'}</button>
       ${isAdmin()?`<button class="btn btn-xs btn-danger" onclick="delDoc('${d.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🗑</span></button>`:''}
-    </div>`).join('')}
+    </div>`;
+    }).join('')}
   </div>`;
 }
 
@@ -5954,7 +6117,7 @@ async function handleDocUpload(ev,cid){
       // نرفع الملف لـ R2 بدل تضمينه كنص Base64 كامل في بيانات التطبيق
       const uploaded=await uploadFileToR2(dataUrlToBlob(dataUrl),file.name,file.type||'application/octet-stream');
       const docRecord={id:UID(),cid,name:file.name,type:file.type||'application/octet-stream',
-        date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes)};
+        date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),category:'general'};
       if(uploaded&&uploaded.url){
         docRecord.url=uploaded.url; // مُخزَّن في R2 - خفيف جدًا على بيانات التطبيق
       }else{
@@ -8496,12 +8659,12 @@ function openClientModal(c){
     if(!i){toast('❌ IBAN required');return;}
     if(!addr||!zip||!city){toast('❌ Complete address required');return;}
 
-    // If adding new client, generate contract instead of directly adding
+    // إضافة عميل جديد: يُنشأ فورًا (متطابق مع سلوك إضافة عقد)، مع توليد اتفاقية قابلة للتوقيع تلقائيًا تظهر في Documents
     if(isN){
       const planVal=parseInt(document.getElementById('cf-fee')?.value)||0;
       if(!planVal){toast('❌ Please select a subscription plan');markFieldError('cf-fee');return;}
-      const clientData={
-        tempId:UID(),
+      const newClient={
+        id:UID(),
         name:n,
         type:document.getElementById('cf-t').value,
         email:e,
@@ -8516,21 +8679,19 @@ function openClientModal(c){
         city:city,
         country:document.getElementById('cf-country').value,
         registrationNumber:document.getElementById('cf-regnum').value,
-        monthlyFee:parseInt(document.getElementById('cf-fee')?.value)||0,
+        monthlyFee:planVal,
         planExpiry:document.getElementById('cf-planexp')?.value||'',
-        contractStartDate:TODAY(),
-        contractDuration:12,
-        paymentTerms:30,
-        terminationNotice:1,
-        createdDate:TODAY(),
-        status:'pending'  // Pending signature
+        color:'#7dbfa3',
+        createdDate:TODAY()
       };
-      
-      // Generate contract
-      generateServiceAgreement(clientData);
-      logAudit('create','client','Generated service agreement for prospective client '+clientData.name);
+
+      S.clients.push(newClient);
+      logAudit('create','client','Added client "'+newClient.name+'"',newClient.id);
+      createContractAgreement(newClient,null);
+      sv();
       closeModal();
-      toast('📄 Contract generated - awaiting signature','ti-file-pdf');
+      renderApp();
+      toast('✓ Client added — service agreement sent for signature','ti-file-pdf');
     } else {
       // For editing existing clients
       const updatedClient={
@@ -8906,7 +9067,7 @@ function openNewExpense(){
         const docId=UID();
         const uploaded1=await uploadFileToR2(dataUrlToBlob(dataUrl),file.name,file.type||'application/octet-stream');
         const docRecord1={id:docId,cid:S.currentClient,name:file.name,type:file.type||'application/octet-stream',
-          date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),isNew:true};
+          date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),isNew:true,category:'receipt'};
         if(uploaded1&&uploaded1.url)docRecord1.url=uploaded1.url;else docRecord1.data=dataUrl;
         S.docs.push(docRecord1);
         attachedDocId=docId;
@@ -8966,7 +9127,7 @@ function openNewExpense(){
         const fileName2='Receipt_'+TODAY()+'_'+UID().slice(0,4)+'.jpg';
         const uploaded2=await uploadFileToR2(dataUrlToBlob(dataUrl),fileName2,'image/jpeg');
         const docRecord2={id:docId,cid:S.currentClient,name:fileName2,type:'image/jpeg',
-          date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),isNew:true};
+          date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),isNew:true,category:'receipt'};
         if(uploaded2&&uploaded2.url)docRecord2.url=uploaded2.url;else docRecord2.data=dataUrl;
         S.docs.push(docRecord2);
         attachedDocId=docId;
@@ -11268,6 +11429,192 @@ function exportReportCSV(cid){
    SERVICE AGREEMENT & DUTCH LEGAL CONTRACTS
    عقود الخدمة والاتفاقيات القانونية الهولندية
    ═══════════════════════════════════════════════════════════════════════════════════ */
+
+// ══════════════════════════════════════════════════════════════════
+// ربط العقود/العملاء الحقيقيين (المُنشأين فورًا) بمستند اتفاقية قابل
+// للتوقيع إلكترونيًا يظهر في Documents. هذا يعيد استخدام نفس نظام
+// service agreements القائم أصلًا، لكن بدون انتظار الموافقة قبل إنشاء
+// العميل/العقد الحقيقيين (بعكس generateServiceAgreement أدناه، المخصصة
+// لعميل "محتمل" لم يُنشأ بعد).
+// ══════════════════════════════════════════════════════════════════
+function createContractAgreement(client,contract){
+  if(!S.serviceAgreements)S.serviceAgreements=[];
+  if(!S.docs)S.docs=[];
+  const token=UID()+UID();
+
+  // لقطة من بيانات العميل + تفاصيل العقد (إن وُجد) لتغذية قالب العقد القانوني
+  const clientSnapshot={
+    ...client,
+    contractStartDate:contract?.startDate||client.contractStartDate||TODAY(),
+    contractDuration:contract?contractMonthsBetween(contract.startDate,contract.endDate):(client.contractDuration||12),
+    monthlyFee:contract?.plan||client.monthlyFee||0,
+    paymentTerms:client.paymentTerms||15,
+    terminationNotice:client.terminationNotice||1,
+  };
+
+  const agreement={
+    id:UID(),token,
+    cid:client.id,
+    contractId:contract?contract.id:null,
+    clientData:clientSnapshot,
+    createdDate:TODAY(),
+    status:'pending_review',
+    clientSignDate:null,clientSignature:null,clientNotes:null,changeRequests:[],
+    adminSignDate:null,adminSignature:null
+  };
+  S.serviceAgreements.push(agreement);
+
+  S.docs.push({
+    id:UID(),cid:client.id,
+    name:(contract?.title||'Service Agreement')+' — '+client.name,
+    type:'agreement',category:'agreement',
+    agreementId:agreement.id,contractId:contract?contract.id:null,
+    date:TODAY(),from:'anb',size:'—',
+    deleted:false
+  });
+
+  return agreement;
+}
+// فرق الأشهر التقريبي بين تاريخي بداية/نهاية العقد - يُستخدم فقط لعرض "مدة" منطقية في نص الاتفاقية
+function contractMonthsBetween(start,end){
+  if(!start||!end)return 12;
+  const s=new Date(start),e=new Date(end);
+  const months=(e.getFullYear()-s.getFullYear())*12+(e.getMonth()-s.getMonth());
+  return months>0?months:12;
+}
+
+// ── مراجعة/توقيع اتفاقية من داخل التطبيق مباشرة (بدون رابط بريد خارجي - المستخدم مسجّل دخوله أصلًا) ──
+function reviewAgreementDoc(docId){
+  const doc=(S.docs||[]).find(d=>d.id===docId);
+  if(!doc||!doc.agreementId){toast('Agreement not found');return;}
+  const agreement=(S.serviceAgreements||[]).find(a=>a.id===doc.agreementId);
+  if(!agreement){toast('Agreement not found');return;}
+  const client=agreement.clientData;
+  const contractHTML=generateDutchContractHTML(client);
+
+  const statusLabels={pending_review:'Pending Review',client_signed:'Signed — Awaiting Approval',changes_requested:'Changes Requested',active:'✓ Signed & Active',client_rejected:'Rejected by Client',rejected:'Rejected'};
+
+  let actionButtons='';
+  if(agreement.status==='pending_review'&&!isAdmin()){
+    actionButtons=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px">
+      <button class="btn btn-success btn-xs" onclick="signAgreementInApp('${agreement.id}')">✓ Sign</button>
+      <button class="btn btn-p btn-xs" onclick="requestChangesInApp('${agreement.id}')">✎ Request Changes</button>
+      <button class="btn btn-danger btn-xs" onclick="rejectAgreementInApp('${agreement.id}')">✕ Reject</button>
+    </div>`;
+  }else if(isAdmin()&&agreement.status==='client_signed'){
+    actionButtons=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px">
+      <button class="btn btn-success btn-xs" onclick="approveAgreementInApp('${agreement.id}')">✓ Approve & Finalize</button>
+      <button class="btn btn-danger btn-xs" onclick="rejectAgreementInApp('${agreement.id}')">✕ Reject</button>
+    </div>`;
+  }
+
+  showModal('📄 '+(doc.name||'Service Agreement'),`
+    <div style="max-height:420px;overflow-y:auto">${contractHTML}</div>
+    <div style="margin-top:14px;padding:10px;background:var(--bg1);border-radius:6px;font-size:11px">
+      <strong>Status:</strong> ${statusLabels[agreement.status]||agreement.status}
+      ${agreement.clientNotes?'<br/><strong>Requested changes:</strong> '+escapeHtml(agreement.clientNotes):''}
+    </div>
+    ${actionButtons}
+  `,closeModal,'Close');
+}
+
+function signAgreementInApp(agreementId){
+  const agreement=(S.serviceAgreements||[]).find(a=>a.id===agreementId);
+  if(!agreement)return;
+  const client=agreement.clientData;
+  closeModal();
+  showModal('✓ Sign Agreement',`
+    <div style="padding:4px">
+      <div style="margin-bottom:16px;padding:12px;background:rgba(77,168,118,0.1);border-radius:6px;border-left:3px solid #4dA876">
+        <div style="font-weight:600;margin-bottom:8px;font-size:12px">📝 Electronic Signature</div>
+        <div style="font-size:11px;color:var(--t2);line-height:1.6">
+          <strong>Signer:</strong> ${escapeHtml(client.contactPerson||'')}<br/>
+          <strong>Email:</strong> ${escapeHtml(client.email||'')}<br/>
+          <strong>Company:</strong> ${escapeHtml(client.name||'')}
+        </div>
+      </div>
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:11px;margin-bottom:10px;padding:10px;background:var(--bg1);border-radius:6px">
+        <input type="checkbox" id="agree-terms-inapp" style="margin-top:2px;cursor:pointer"/>
+        <span>I have read and accept the terms of this service agreement</span>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:11px;padding:10px;background:var(--bg1);border-radius:6px">
+        <input type="checkbox" id="agree-privacy-inapp" style="margin-top:2px;cursor:pointer"/>
+        <span>I consent to the processing of my data as described (GDPR)</span>
+      </label>
+    </div>
+  `,()=>{
+    const agreedTerms=document.getElementById('agree-terms-inapp')?.checked;
+    const agreedPrivacy=document.getElementById('agree-privacy-inapp')?.checked;
+    if(!agreedTerms||!agreedPrivacy){toast('❌ Please accept both checkboxes first');return;}
+
+    agreement.status='client_signed';
+    agreement.clientSignDate=TODAY();
+    agreement.clientSignature=(client.contactPerson||'')+' ('+(client.email||'')+')';
+    const doc=(S.docs||[]).find(d=>d.agreementId===agreementId);
+    if(doc)doc.status='client_signed';
+    sv();closeModal();renderApp();
+    toast('✓ Agreement signed — awaiting admin approval');
+  },'Confirm & Sign');
+}
+
+function requestChangesInApp(agreementId){
+  const agreement=(S.serviceAgreements||[]).find(a=>a.id===agreementId);
+  if(!agreement)return;
+  closeModal();
+  showModal('✎ Request Changes',`
+    <div style="padding:4px">
+      <div style="margin-bottom:12px;font-size:11px;color:var(--t2);line-height:1.6">Describe what needs to change in this agreement. The admin will review your request.</div>
+      <textarea id="changes-notes-inapp" placeholder="e.g. please change the monthly fee to..." style="width:100%;height:110px;padding:10px;border:1px solid var(--gr2);border-radius:6px;font-size:12px;font-family:inherit;resize:none;background:var(--bg1)"></textarea>
+    </div>
+  `,()=>{
+    const notes=document.getElementById('changes-notes-inapp')?.value?.trim();
+    if(!notes){toast('❌ Please describe the requested changes');return;}
+    agreement.status='changes_requested';
+    agreement.clientNotes=notes;
+    agreement.clientSignDate=TODAY();
+    const doc=(S.docs||[]).find(d=>d.agreementId===agreementId);
+    if(doc)doc.status='changes_requested';
+    sv();closeModal();renderApp();
+    toast('✎ Change request sent to admin');
+  },'Send Request');
+}
+
+function rejectAgreementInApp(agreementId){
+  showConfirmDialog(t('confirm_reject')||'Reject Agreement','Are you sure you want to reject this agreement?',()=>{
+    const agreement=(S.serviceAgreements||[]).find(a=>a.id===agreementId);
+    if(!agreement)return;
+    agreement.status=isAdmin()?'rejected':'client_rejected';
+    if(!isAdmin())agreement.clientSignDate=TODAY();
+    else agreement.adminSignDate=TODAY();
+    const doc=(S.docs||[]).find(d=>d.agreementId===agreementId);
+    if(doc)doc.status=agreement.status;
+    sv();closeModal();renderApp();
+    toast('✕ Agreement rejected');
+  });
+}
+
+// موافقة الأدمن النهائية: تُفعّل العقد المرتبط (إن وُجد) وتجعله "موقّعًا" وقابلًا للتصفح في قائمة Contracts
+function approveAgreementInApp(agreementId){
+  const agreement=(S.serviceAgreements||[]).find(a=>a.id===agreementId);
+  if(!agreement){toast('Agreement not found');return;}
+  if(agreement.status!=='client_signed'){toast('Agreement must be signed by client first');return;}
+
+  showConfirmDialog(t('confirm_approve')||'Approve Agreement','Approve and finalize this signed agreement?',()=>{
+    agreement.status='active';
+    agreement.adminSignDate=TODAY();
+    agreement.adminSignature=currentActorName();
+
+    if(agreement.contractId){
+      const con=(S.contracts||[]).find(c=>c.id===agreement.contractId);
+      if(con){con.status='active';con.signedDate=TODAY();}
+    }
+    const doc=(S.docs||[]).find(d=>d.agreementId===agreementId);
+    if(doc)doc.status='active';
+
+    sv();closeModal();renderApp();
+    toast('✓ Agreement finalized — contract is now active');
+  });
+}
 
 function generateServiceAgreement(clientData){
   if(!S.pendingClients)S.pendingClients=[];
