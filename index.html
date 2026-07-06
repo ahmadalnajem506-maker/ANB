@@ -674,13 +674,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=2.99">
+<link rel="manifest" href="manifest.json?v=3.02">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=2.99').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.02').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -1441,7 +1441,7 @@ var I18N={
     dashboard_new_messages:'New Messages',
     dashboard_new_documents:'New Documents',
     dashboard_hours_logged:'Hours Logged',
-    dashboard_active_contracts:'Active Contracts', dashboard_contracts_renewal:'Contracts Needing Renewal', employees:'Employees', card_employees_desc:'Payroll & Employment Contracts', add_employee:'Add Employee', edit_employee:'Edit Employee', no_employees_yet:'No employees added yet', generate_payslip:'Generate Payslip', net_pay:'Net Pay', payslip_history:'Payslip History', no_payslips_yet:'No payslips generated yet', download:'Download', close:'Close', matched_to:'Matched', remaining_to_allocate:'Remaining to allocate', fully_matched:'Fully matched', no_match_needed:'No match needed (internal transfer / bank fee)', suggested_matches:'Suggested Matches', remaining:'Remaining', match:'Match', search_manually:'Search Manually', contact_direct:'Contact (direct, no invoice)', match_transaction:'Match Transaction', done:'Done', enter_amount_to_match:'Amount to match', invalid_amount:'Invalid amount', marked_no_match:'Marked as no match needed', matched:'Matched', partial:'Partial', left:'left', no_match_needed_short:'N/A', sort_by:'Sort by', sort_name_az:'Name (A-Z)', sort_name_za:'Name (Z-A)', sort_newest:'Newest first', sort_oldest:'Oldest first', sort_plan_high:'Plan (high-low)', sort_salary_high:'Salary (high-low)', sort_title_az:'Title (A-Z)', sort_end_soon:'End date (soonest)', sort_amount_high:'Amount (high-low)', sort_amount_low:'Amount (low-high)', sort_desc_az:'Description (A-Z)', back_to_employees:'Back to Employees', benefits:'Benefits', end_employment:'End Employment', export_contract:'Export Contract PDF', export_payslip:'Export Payslip PDF', status_concept:'CONCEPT — month not yet ended', status_confirmed:'CONFIRMED', rep_payroll_title:'Payroll Report', rep_payroll_desc:'Employees & Salary Overview', active_employees:'Active Employees', ended_employees:'Ended Employees', monthly_fixed_payroll:'Monthly Fixed Payroll', hourly_employees_note:'employee(s) on variable hourly pay — not included in fixed monthly total above (depends on hours worked each month)', ytd_summary:'Year Summary', ytd_net_paid:'Net paid this year', accrued_vacation_total:'Accrued vacation allowance (unpaid)', accrued_13th_total:'Accrued 13th month (unpaid)', vacation_money_payout:'Vacation Allowance Payout', accrued_paid_may:'Accrued monthly, paid out once in May', paid_monthly:'Paid monthly with salary', vacation_payout:'Vacation allowance payout (accrued)', vacation_accruing:'Vacation allowance accruing (reserved for May)', rep_emp_financial_title:'Employee Financial Report', rep_emp_financial_desc:'Payroll Costs & Payments', rep_emp_stats_title:'Employee Statistics Report', rep_emp_stats_desc:'Workforce Overview & Trends', avg_cost_per_employee:'Avg. Cost / Fixed Employee', ytd_gross_paid:'Gross paid this year (taxable)', ytd_loonheffing:'Loonheffing withheld this year', ytd_pension:'Pension deducted this year', outstanding_liabilities:'Outstanding Liabilities (Accrued, Unpaid)', total_liability:'Total accrued liability', per_employee_breakdown:'Per-Employee Financial Breakdown', ytd_gross:'YTD Gross', total_ever_hired:'Total Ever Hired', avg_tenure:'Avg. Tenure', months:'mo', contract_type_breakdown:'Contract Type', permanent:'Permanent (Onbepaalde tijd)', fixed_term:'Fixed-term (Bepaalde tijd)', salary_type_breakdown:'Salary Type', avg_hours_week:'Avg. hours/week', job_title_breakdown:'Job Titles', nationality_breakdown:'Nationality', contracts_expiring_soon:'Fixed-Term Contracts Ending Within 90 Days', none_expiring:'None — all fixed-term contracts have more than 90 days remaining.', ocr_high_conf:'Confident match', ocr_low_conf:'Please verify — uncertain reading', ocr_low_quality:'Reading quality was low — please double-check every field carefully', ocr_extracted:'Data extracted automatically — colored fields show confidence, please review', confirm_delete:'Confirm Delete', confirm_delete_contract:'Delete this contract?', confirm_delete_contact:'Delete this contact? (Ledger entries will not be deleted)', confirm_reset_pw:'Reset Password', confirm_reset_client_pw:"Reset this client's password? They will need to set a new one on next login.", confirm_delete_generic:'Delete this item?', confirm_delete_client:'Remove this client and ALL their data?', confirm_stop_recurring:'Stop this recurring invoice schedule? Already-generated invoices stay.', confirm_restore:'Restore Backup', confirm_reject:'Reject', confirm_reject_agreement:'Are you sure you want to reject this agreement?', confirm_approve:'Approve Agreement', confirm_disable_2fa_title:'Disable Two-Factor Authentication',
+    dashboard_active_contracts:'Active Contracts', dashboard_contracts_renewal:'Contracts Needing Renewal', needs_attention:'Needs Attention', nothing_needs_attention:'Nothing needs attention right now', for_reference:'For Reference', active_contracts:'Active Contracts', employees:'Employees', card_employees_desc:'Payroll & Employment Contracts', add_employee:'Add Employee', edit_employee:'Edit Employee', no_employees_yet:'No employees added yet', generate_payslip:'Generate Payslip', net_pay:'Net Pay', payslip_history:'Payslip History', no_payslips_yet:'No payslips generated yet', download:'Download', close:'Close', matched_to:'Matched', remaining_to_allocate:'Remaining to allocate', fully_matched:'Fully matched', no_match_needed:'No match needed (internal transfer / bank fee)', suggested_matches:'Suggested Matches', remaining:'Remaining', match:'Match', search_manually:'Search Manually', contact_direct:'Contact (direct, no invoice)', match_transaction:'Match Transaction', done:'Done', enter_amount_to_match:'Amount to match', invalid_amount:'Invalid amount', marked_no_match:'Marked as no match needed', matched:'Matched', partial:'Partial', left:'left', no_match_needed_short:'N/A', sort_by:'Sort by', sort_name_az:'Name (A-Z)', sort_name_za:'Name (Z-A)', sort_newest:'Newest first', sort_oldest:'Oldest first', sort_plan_high:'Plan (high-low)', sort_salary_high:'Salary (high-low)', sort_title_az:'Title (A-Z)', sort_end_soon:'End date (soonest)', sort_amount_high:'Amount (high-low)', sort_amount_low:'Amount (low-high)', sort_desc_az:'Description (A-Z)', back_to_employees:'Back to Employees', benefits:'Benefits', end_employment:'End Employment', export_contract:'Export Contract PDF', export_payslip:'Export Payslip PDF', status_concept:'CONCEPT — month not yet ended', status_confirmed:'CONFIRMED', rep_payroll_title:'Payroll Report', rep_payroll_desc:'Employees & Salary Overview', active_employees:'Active Employees', ended_employees:'Ended Employees', monthly_fixed_payroll:'Monthly Fixed Payroll', hourly_employees_note:'employee(s) on variable hourly pay — not included in fixed monthly total above (depends on hours worked each month)', ytd_summary:'Year Summary', ytd_net_paid:'Net paid this year', accrued_vacation_total:'Accrued vacation allowance (unpaid)', accrued_13th_total:'Accrued 13th month (unpaid)', vacation_money_payout:'Vacation Allowance Payout', accrued_paid_may:'Accrued monthly, paid out once in May', paid_monthly:'Paid monthly with salary', vacation_payout:'Vacation allowance payout (accrued)', vacation_accruing:'Vacation allowance accruing (reserved for May)', rep_emp_financial_title:'Employee Financial Report', rep_emp_financial_desc:'Payroll Costs & Payments', rep_emp_stats_title:'Employee Statistics Report', rep_emp_stats_desc:'Workforce Overview & Trends', avg_cost_per_employee:'Avg. Cost / Fixed Employee', ytd_gross_paid:'Gross paid this year (taxable)', ytd_loonheffing:'Loonheffing withheld this year', ytd_pension:'Pension deducted this year', outstanding_liabilities:'Outstanding Liabilities (Accrued, Unpaid)', total_liability:'Total accrued liability', per_employee_breakdown:'Per-Employee Financial Breakdown', ytd_gross:'YTD Gross', total_ever_hired:'Total Ever Hired', avg_tenure:'Avg. Tenure', months:'mo', contract_type_breakdown:'Contract Type', permanent:'Permanent (Onbepaalde tijd)', fixed_term:'Fixed-term (Bepaalde tijd)', salary_type_breakdown:'Salary Type', avg_hours_week:'Avg. hours/week', job_title_breakdown:'Job Titles', nationality_breakdown:'Nationality', contracts_expiring_soon:'Fixed-Term Contracts Ending Within 90 Days', none_expiring:'None — all fixed-term contracts have more than 90 days remaining.', ocr_high_conf:'Confident match', ocr_low_conf:'Please verify — uncertain reading', ocr_low_quality:'Reading quality was low — please double-check every field carefully', ocr_extracted:'Data extracted automatically — colored fields show confidence, please review', confirm_delete:'Confirm Delete', confirm_delete_contract:'Delete this contract?', confirm_delete_contact:'Delete this contact? (Ledger entries will not be deleted)', confirm_reset_pw:'Reset Password', confirm_reset_client_pw:"Reset this client's password? They will need to set a new one on next login.", confirm_delete_generic:'Delete this item?', confirm_delete_client:'Remove this client and ALL their data?', confirm_stop_recurring:'Stop this recurring invoice schedule? Already-generated invoices stay.', confirm_restore:'Restore Backup', confirm_reject:'Reject', confirm_reject_agreement:'Are you sure you want to reject this agreement?', confirm_approve:'Approve Agreement', confirm_disable_2fa_title:'Disable Two-Factor Authentication',
     dashboard_pending_agreements:'Pending Agreements',
     // Sidebar messages
     sidebar_use_cards:'← Use the cards to navigate',
@@ -1645,7 +1645,7 @@ var I18N={
     dashboard_new_messages:'Nieuwe Berichten',
     dashboard_new_documents:'Nieuwe Documenten',
     dashboard_hours_logged:'Gewerkte Uren',
-    dashboard_active_contracts:'Actieve Overeenkomsten', dashboard_contracts_renewal:'Contracten die Verlenging Nodig Hebben', employees:'Werknemers', card_employees_desc:'Loonadministratie & Arbeidscontracten', add_employee:'Werknemer Toevoegen', edit_employee:'Werknemer Bewerken', no_employees_yet:'Nog geen werknemers toegevoegd', generate_payslip:'Loonstrook Genereren', net_pay:'Netto Loon', payslip_history:'Loonstrookgeschiedenis', no_payslips_yet:'Nog geen loonstroken gegenereerd', download:'Downloaden', close:'Sluiten', matched_to:'Gematcht', remaining_to_allocate:'Nog te matchen', fully_matched:'Volledig gematcht', no_match_needed:'Geen match nodig (interne overboeking / bankkosten)', suggested_matches:'Voorgestelde Matches', remaining:'Resterend', match:'Matchen', search_manually:'Handmatig Zoeken', contact_direct:'Contact (direct, geen factuur)', match_transaction:'Transactie Matchen', done:'Klaar', enter_amount_to_match:'Te matchen bedrag', invalid_amount:'Ongeldig bedrag', marked_no_match:'Gemarkeerd als geen match nodig', matched:'Gematcht', partial:'Gedeeltelijk', left:'resterend', no_match_needed_short:'N.v.t.', sort_by:'Sorteer op', sort_name_az:'Naam (A-Z)', sort_name_za:'Naam (Z-A)', sort_newest:'Nieuwste eerst', sort_oldest:'Oudste eerst', sort_plan_high:'Abonnement (hoog-laag)', sort_salary_high:'Salaris (hoog-laag)', sort_title_az:'Titel (A-Z)', sort_end_soon:'Einddatum (eerst)', sort_amount_high:'Bedrag (hoog-laag)', sort_amount_low:'Bedrag (laag-hoog)', sort_desc_az:'Omschrijving (A-Z)', back_to_employees:'Terug naar Werknemers', benefits:'Secundaire Arbeidsvoorwaarden', end_employment:'Dienstverband Beëindigen', export_contract:'Contract PDF Exporteren', export_payslip:'Loonstrook PDF Exporteren', status_concept:'CONCEPT — maand nog niet afgelopen', status_confirmed:'BEVESTIGD', rep_payroll_title:'Loonrapport', rep_payroll_desc:'Overzicht Werknemers & Salarissen', active_employees:'Actieve Werknemers', ended_employees:'Beëindigde Dienstverbanden', monthly_fixed_payroll:'Maandelijkse Vaste Loonkosten', hourly_employees_note:'werknemer(s) met variabel uurloon — niet inbegrepen in het vaste maandtotaal hierboven (afhankelijk van gewerkte uren per maand)', ytd_summary:'Jaaroverzicht', ytd_net_paid:'Netto uitbetaald dit jaar', accrued_vacation_total:'Opgebouwd vakantiegeld (onbetaald)', accrued_13th_total:'Opgebouwde 13e maand (onbetaald)', vacation_money_payout:'Uitbetaling Vakantiegeld', accrued_paid_may:'Maandelijks opgebouwd, uitbetaald in mei', paid_monthly:'Maandelijks uitbetaald met salaris', vacation_payout:'Uitbetaling vakantiegeld (opgebouwd)', vacation_accruing:'Vakantiegeld wordt opgebouwd (gereserveerd voor mei)', rep_emp_financial_title:'Financieel Rapport Werknemers', rep_emp_financial_desc:'Loonkosten & Uitbetalingen', rep_emp_stats_title:'Statistisch Rapport Werknemers', rep_emp_stats_desc:'Personeelsoverzicht & Trends', avg_cost_per_employee:'Gem. Kosten / Vaste Werknemer', ytd_gross_paid:'Bruto uitbetaald dit jaar (belastbaar)', ytd_loonheffing:'Loonheffing ingehouden dit jaar', ytd_pension:'Pensioen ingehouden dit jaar', outstanding_liabilities:'Openstaande Verplichtingen (Opgebouwd, Onbetaald)', total_liability:'Totale opgebouwde verplichting', per_employee_breakdown:'Financieel Overzicht per Werknemer', ytd_gross:'YTD Bruto', total_ever_hired:'Totaal Ooit Aangenomen', avg_tenure:'Gem. Dienstverband', months:'mnd', contract_type_breakdown:'Contracttype', permanent:'Vast (Onbepaalde tijd)', fixed_term:'Tijdelijk (Bepaalde tijd)', salary_type_breakdown:'Salaristype', avg_hours_week:'Gem. uren/week', job_title_breakdown:'Functietitels', nationality_breakdown:'Nationaliteit', contracts_expiring_soon:'Tijdelijke Contracten die Binnen 90 Dagen Aflopen', none_expiring:'Geen — alle tijdelijke contracten hebben meer dan 90 dagen resterend.', ocr_high_conf:'Betrouwbare match', ocr_low_conf:'Controleer — onzekere lezing', ocr_low_quality:'Leeskwaliteit was laag — controleer elk veld zorgvuldig', ocr_extracted:'Gegevens automatisch gehaald — gekleurde velden tonen betrouwbaarheid, controleer a.u.b.', confirm_delete:'Verwijderen Bevestigen', confirm_delete_contract:'Dit contract verwijderen?', confirm_delete_contact:'Dit contact verwijderen? (Grootboekregels blijven behouden)', confirm_reset_pw:'Wachtwoord Resetten', confirm_reset_client_pw:'Wachtwoord van deze klant resetten? Ze moeten een nieuw wachtwoord instellen bij de volgende login.', confirm_delete_generic:'Dit item verwijderen?', confirm_delete_client:'Deze klant en AL hun gegevens verwijderen?', confirm_stop_recurring:'Deze terugkerende factuurschema stoppen? Reeds gegenereerde facturen blijven behouden.', confirm_restore:'Back-up Herstellen', confirm_reject:'Afwijzen', confirm_reject_agreement:'Weet u zeker dat u deze overeenkomst wilt afwijzen?', confirm_approve:'Overeenkomst Goedkeuren', confirm_disable_2fa_title:'Tweefactorauthenticatie Uitschakelen',
+    dashboard_active_contracts:'Actieve Overeenkomsten', dashboard_contracts_renewal:'Contracten die Verlenging Nodig Hebben', needs_attention:'Vereist Aandacht', nothing_needs_attention:'Niets vereist momenteel aandacht', for_reference:'Ter Informatie', active_contracts:'Actieve Contracten', employees:'Werknemers', card_employees_desc:'Loonadministratie & Arbeidscontracten', add_employee:'Werknemer Toevoegen', edit_employee:'Werknemer Bewerken', no_employees_yet:'Nog geen werknemers toegevoegd', generate_payslip:'Loonstrook Genereren', net_pay:'Netto Loon', payslip_history:'Loonstrookgeschiedenis', no_payslips_yet:'Nog geen loonstroken gegenereerd', download:'Downloaden', close:'Sluiten', matched_to:'Gematcht', remaining_to_allocate:'Nog te matchen', fully_matched:'Volledig gematcht', no_match_needed:'Geen match nodig (interne overboeking / bankkosten)', suggested_matches:'Voorgestelde Matches', remaining:'Resterend', match:'Matchen', search_manually:'Handmatig Zoeken', contact_direct:'Contact (direct, geen factuur)', match_transaction:'Transactie Matchen', done:'Klaar', enter_amount_to_match:'Te matchen bedrag', invalid_amount:'Ongeldig bedrag', marked_no_match:'Gemarkeerd als geen match nodig', matched:'Gematcht', partial:'Gedeeltelijk', left:'resterend', no_match_needed_short:'N.v.t.', sort_by:'Sorteer op', sort_name_az:'Naam (A-Z)', sort_name_za:'Naam (Z-A)', sort_newest:'Nieuwste eerst', sort_oldest:'Oudste eerst', sort_plan_high:'Abonnement (hoog-laag)', sort_salary_high:'Salaris (hoog-laag)', sort_title_az:'Titel (A-Z)', sort_end_soon:'Einddatum (eerst)', sort_amount_high:'Bedrag (hoog-laag)', sort_amount_low:'Bedrag (laag-hoog)', sort_desc_az:'Omschrijving (A-Z)', back_to_employees:'Terug naar Werknemers', benefits:'Secundaire Arbeidsvoorwaarden', end_employment:'Dienstverband Beëindigen', export_contract:'Contract PDF Exporteren', export_payslip:'Loonstrook PDF Exporteren', status_concept:'CONCEPT — maand nog niet afgelopen', status_confirmed:'BEVESTIGD', rep_payroll_title:'Loonrapport', rep_payroll_desc:'Overzicht Werknemers & Salarissen', active_employees:'Actieve Werknemers', ended_employees:'Beëindigde Dienstverbanden', monthly_fixed_payroll:'Maandelijkse Vaste Loonkosten', hourly_employees_note:'werknemer(s) met variabel uurloon — niet inbegrepen in het vaste maandtotaal hierboven (afhankelijk van gewerkte uren per maand)', ytd_summary:'Jaaroverzicht', ytd_net_paid:'Netto uitbetaald dit jaar', accrued_vacation_total:'Opgebouwd vakantiegeld (onbetaald)', accrued_13th_total:'Opgebouwde 13e maand (onbetaald)', vacation_money_payout:'Uitbetaling Vakantiegeld', accrued_paid_may:'Maandelijks opgebouwd, uitbetaald in mei', paid_monthly:'Maandelijks uitbetaald met salaris', vacation_payout:'Uitbetaling vakantiegeld (opgebouwd)', vacation_accruing:'Vakantiegeld wordt opgebouwd (gereserveerd voor mei)', rep_emp_financial_title:'Financieel Rapport Werknemers', rep_emp_financial_desc:'Loonkosten & Uitbetalingen', rep_emp_stats_title:'Statistisch Rapport Werknemers', rep_emp_stats_desc:'Personeelsoverzicht & Trends', avg_cost_per_employee:'Gem. Kosten / Vaste Werknemer', ytd_gross_paid:'Bruto uitbetaald dit jaar (belastbaar)', ytd_loonheffing:'Loonheffing ingehouden dit jaar', ytd_pension:'Pensioen ingehouden dit jaar', outstanding_liabilities:'Openstaande Verplichtingen (Opgebouwd, Onbetaald)', total_liability:'Totale opgebouwde verplichting', per_employee_breakdown:'Financieel Overzicht per Werknemer', ytd_gross:'YTD Bruto', total_ever_hired:'Totaal Ooit Aangenomen', avg_tenure:'Gem. Dienstverband', months:'mnd', contract_type_breakdown:'Contracttype', permanent:'Vast (Onbepaalde tijd)', fixed_term:'Tijdelijk (Bepaalde tijd)', salary_type_breakdown:'Salaristype', avg_hours_week:'Gem. uren/week', job_title_breakdown:'Functietitels', nationality_breakdown:'Nationaliteit', contracts_expiring_soon:'Tijdelijke Contracten die Binnen 90 Dagen Aflopen', none_expiring:'Geen — alle tijdelijke contracten hebben meer dan 90 dagen resterend.', ocr_high_conf:'Betrouwbare match', ocr_low_conf:'Controleer — onzekere lezing', ocr_low_quality:'Leeskwaliteit was laag — controleer elk veld zorgvuldig', ocr_extracted:'Gegevens automatisch gehaald — gekleurde velden tonen betrouwbaarheid, controleer a.u.b.', confirm_delete:'Verwijderen Bevestigen', confirm_delete_contract:'Dit contract verwijderen?', confirm_delete_contact:'Dit contact verwijderen? (Grootboekregels blijven behouden)', confirm_reset_pw:'Wachtwoord Resetten', confirm_reset_client_pw:'Wachtwoord van deze klant resetten? Ze moeten een nieuw wachtwoord instellen bij de volgende login.', confirm_delete_generic:'Dit item verwijderen?', confirm_delete_client:'Deze klant en AL hun gegevens verwijderen?', confirm_stop_recurring:'Deze terugkerende factuurschema stoppen? Reeds gegenereerde facturen blijven behouden.', confirm_restore:'Back-up Herstellen', confirm_reject:'Afwijzen', confirm_reject_agreement:'Weet u zeker dat u deze overeenkomst wilt afwijzen?', confirm_approve:'Overeenkomst Goedkeuren', confirm_disable_2fa_title:'Tweefactorauthenticatie Uitschakelen',
     dashboard_pending_agreements:'Hangende Akkoorden',
     // Sidebar messages
     sidebar_use_cards:'← Gebruik de kaarten om te navigeren',
@@ -1837,7 +1837,7 @@ var I18N={
     dashboard_new_messages:'الرسائل الجديدة',
     dashboard_new_documents:'المستندات الجديدة',
     dashboard_hours_logged:'ساعات العمل المسجلة',
-    dashboard_active_contracts:'الاتفاقيات النشطة', dashboard_contracts_renewal:'عقود بحاجة لمراجعة/تجديد', employees:'الموظفون', card_employees_desc:'الرواتب وعقود العمل', add_employee:'إضافة موظف', edit_employee:'تعديل موظف', no_employees_yet:'لا يوجد موظفون بعد', generate_payslip:'إصدار بيان راتب', net_pay:'صافي الراتب', payslip_history:'سجل بيانات الرواتب', no_payslips_yet:'لا توجد بيانات رواتب صادرة بعد', download:'تحميل', close:'إغلاق', matched_to:'مطابَق', remaining_to_allocate:'المتبقي للمطابقة', fully_matched:'مطابقة كاملة', no_match_needed:'لا تحتاج مطابقة (تحويل داخلي / رسوم بنكية)', suggested_matches:'مطابقات مقترحة', remaining:'المتبقي', match:'مطابقة', search_manually:'بحث يدوي', contact_direct:'جهة اتصال (مباشرة، بلا فاتورة)', match_transaction:'مطابقة الحركة', done:'تم', enter_amount_to_match:'المبلغ المراد مطابقته', invalid_amount:'مبلغ غير صالح', marked_no_match:'تم الوسم كـ«لا يحتاج مطابقة»', matched:'مطابَقة', partial:'جزئية', left:'متبقٍ', no_match_needed_short:'غير منطبق', sort_by:'ترتيب حسب', sort_name_az:'الاسم (أ-ي)', sort_name_za:'الاسم (ي-أ)', sort_newest:'الأحدث أولاً', sort_oldest:'الأقدم أولاً', sort_plan_high:'الباقة (الأعلى-الأقل)', sort_salary_high:'الراتب (الأعلى-الأقل)', sort_title_az:'العنوان (أ-ي)', sort_end_soon:'تاريخ الانتهاء (الأقرب)', sort_amount_high:'المبلغ (الأعلى-الأقل)', sort_amount_low:'المبلغ (الأقل-الأعلى)', sort_desc_az:'الوصف (أ-ي)', back_to_employees:'العودة للموظفين', benefits:'المزايا', end_employment:'إنهاء التعاقد', export_contract:'تصدير العقد PDF', export_payslip:'تصدير بيان الراتب PDF', status_concept:'مسودة — الشهر لم ينتهِ بعد', status_confirmed:'مؤكد', rep_payroll_title:'تقرير الرواتب', rep_payroll_desc:'نظرة عامة على الموظفين والرواتب', active_employees:'الموظفون النشطون', ended_employees:'تعاقدات منتهية', monthly_fixed_payroll:'إجمالي الرواتب الثابتة الشهرية', hourly_employees_note:'موظف(ين) براتب متغيّر بالساعة — غير مشمولين في الإجمالي الثابت أعلاه (يعتمد على الساعات الفعلية كل شهر)', ytd_summary:'ملخص السنة', ytd_net_paid:'صافي المدفوع هذا العام', accrued_vacation_total:'بدل الإجازة المتراكم (غير مدفوع)', accrued_13th_total:'راتب ١٣ المتراكم (غير مدفوع)', vacation_money_payout:'طريقة دفع بدل الإجازة', accrued_paid_may:'يُجمَّع شهريًا، ويُدفع دفعة واحدة في مايو', paid_monthly:'يُدفع شهريًا مع الراتب', vacation_payout:'دفعة بدل الإجازة المتراكمة', vacation_accruing:'بدل الإجازة يتراكم (محجوز لدفعة مايو)', rep_emp_financial_title:'التقرير المالي للموظفين', rep_emp_financial_desc:'تكاليف الرواتب والمدفوعات', rep_emp_stats_title:'التقرير الإحصائي للموظفين', rep_emp_stats_desc:'نظرة عامة على القوى العاملة والاتجاهات', avg_cost_per_employee:'متوسط التكلفة / موظف براتب ثابت', ytd_gross_paid:'الإجمالي المدفوع هذا العام (خاضع للضريبة)', ytd_loonheffing:'الضريبة المحجوزة هذا العام', ytd_pension:'التقاعد المخصوم هذا العام', outstanding_liabilities:'التزامات مستحقة (متراكمة غير مدفوعة)', total_liability:'إجمالي الالتزامات المتراكمة', per_employee_breakdown:'التفصيل المالي لكل موظف', ytd_gross:'الإجمالي هذا العام', total_ever_hired:'إجمالي من تم توظيفهم', avg_tenure:'متوسط مدة الخدمة', months:'شهر', contract_type_breakdown:'نوع العقد', permanent:'دائم (Onbepaalde tijd)', fixed_term:'محدد المدة (Bepaalde tijd)', salary_type_breakdown:'نوع الراتب', avg_hours_week:'متوسط الساعات/الأسبوع', job_title_breakdown:'المسميات الوظيفية', nationality_breakdown:'الجنسية', contracts_expiring_soon:'عقود محدودة المدة تنتهي خلال 90 يومًا', none_expiring:'لا يوجد — كل العقود محدودة المدة متبقٍ لها أكثر من 90 يومًا.', ocr_high_conf:'قراءة موثوقة', ocr_low_conf:'يُرجى التحقق — قراءة غير مؤكدة', ocr_low_quality:'جودة القراءة كانت منخفضة — تحقق من كل حقل بعناية', ocr_extracted:'استُخرجت البيانات تلقائيًا — ألوان الحقول تعكس درجة الثقة، يُرجى المراجعة', confirm_delete:'تأكيد الحذف', confirm_delete_contract:'حذف هذا العقد؟', confirm_delete_contact:'حذف جهة الاتصال هذه؟ (سجلات دفتر الأستاذ لن تُحذف)', confirm_reset_pw:'إعادة تعيين كلمة المرور', confirm_reset_client_pw:'إعادة تعيين كلمة مرور هذا العميل؟ سيحتاج لتعيين كلمة جديدة عند الدخول التالي.', confirm_delete_generic:'حذف هذا العنصر؟', confirm_delete_client:'إزالة هذا العميل وكل بياناته؟', confirm_stop_recurring:'إيقاف جدولة الفاتورة المتكررة هذه؟ الفواتير المُصدرة مسبقًا تبقى كما هي.', confirm_restore:'استعادة النسخة الاحتياطية', confirm_reject:'رفض', confirm_reject_agreement:'هل أنت متأكد من رفض هذه الاتفاقية؟', confirm_approve:'الموافقة على الاتفاقية', confirm_disable_2fa_title:'تعطيل التحقق بخطوتين',
+    dashboard_active_contracts:'الاتفاقيات النشطة', dashboard_contracts_renewal:'عقود بحاجة لمراجعة/تجديد', needs_attention:'يحتاج إجراء', nothing_needs_attention:'لا شيء يحتاج إجراءً الآن', for_reference:'للعِلم فقط', active_contracts:'العقود النشطة', employees:'الموظفون', card_employees_desc:'الرواتب وعقود العمل', add_employee:'إضافة موظف', edit_employee:'تعديل موظف', no_employees_yet:'لا يوجد موظفون بعد', generate_payslip:'إصدار بيان راتب', net_pay:'صافي الراتب', payslip_history:'سجل بيانات الرواتب', no_payslips_yet:'لا توجد بيانات رواتب صادرة بعد', download:'تحميل', close:'إغلاق', matched_to:'مطابَق', remaining_to_allocate:'المتبقي للمطابقة', fully_matched:'مطابقة كاملة', no_match_needed:'لا تحتاج مطابقة (تحويل داخلي / رسوم بنكية)', suggested_matches:'مطابقات مقترحة', remaining:'المتبقي', match:'مطابقة', search_manually:'بحث يدوي', contact_direct:'جهة اتصال (مباشرة، بلا فاتورة)', match_transaction:'مطابقة الحركة', done:'تم', enter_amount_to_match:'المبلغ المراد مطابقته', invalid_amount:'مبلغ غير صالح', marked_no_match:'تم الوسم كـ«لا يحتاج مطابقة»', matched:'مطابَقة', partial:'جزئية', left:'متبقٍ', no_match_needed_short:'غير منطبق', sort_by:'ترتيب حسب', sort_name_az:'الاسم (أ-ي)', sort_name_za:'الاسم (ي-أ)', sort_newest:'الأحدث أولاً', sort_oldest:'الأقدم أولاً', sort_plan_high:'الباقة (الأعلى-الأقل)', sort_salary_high:'الراتب (الأعلى-الأقل)', sort_title_az:'العنوان (أ-ي)', sort_end_soon:'تاريخ الانتهاء (الأقرب)', sort_amount_high:'المبلغ (الأعلى-الأقل)', sort_amount_low:'المبلغ (الأقل-الأعلى)', sort_desc_az:'الوصف (أ-ي)', back_to_employees:'العودة للموظفين', benefits:'المزايا', end_employment:'إنهاء التعاقد', export_contract:'تصدير العقد PDF', export_payslip:'تصدير بيان الراتب PDF', status_concept:'مسودة — الشهر لم ينتهِ بعد', status_confirmed:'مؤكد', rep_payroll_title:'تقرير الرواتب', rep_payroll_desc:'نظرة عامة على الموظفين والرواتب', active_employees:'الموظفون النشطون', ended_employees:'تعاقدات منتهية', monthly_fixed_payroll:'إجمالي الرواتب الثابتة الشهرية', hourly_employees_note:'موظف(ين) براتب متغيّر بالساعة — غير مشمولين في الإجمالي الثابت أعلاه (يعتمد على الساعات الفعلية كل شهر)', ytd_summary:'ملخص السنة', ytd_net_paid:'صافي المدفوع هذا العام', accrued_vacation_total:'بدل الإجازة المتراكم (غير مدفوع)', accrued_13th_total:'راتب ١٣ المتراكم (غير مدفوع)', vacation_money_payout:'طريقة دفع بدل الإجازة', accrued_paid_may:'يُجمَّع شهريًا، ويُدفع دفعة واحدة في مايو', paid_monthly:'يُدفع شهريًا مع الراتب', vacation_payout:'دفعة بدل الإجازة المتراكمة', vacation_accruing:'بدل الإجازة يتراكم (محجوز لدفعة مايو)', rep_emp_financial_title:'التقرير المالي للموظفين', rep_emp_financial_desc:'تكاليف الرواتب والمدفوعات', rep_emp_stats_title:'التقرير الإحصائي للموظفين', rep_emp_stats_desc:'نظرة عامة على القوى العاملة والاتجاهات', avg_cost_per_employee:'متوسط التكلفة / موظف براتب ثابت', ytd_gross_paid:'الإجمالي المدفوع هذا العام (خاضع للضريبة)', ytd_loonheffing:'الضريبة المحجوزة هذا العام', ytd_pension:'التقاعد المخصوم هذا العام', outstanding_liabilities:'التزامات مستحقة (متراكمة غير مدفوعة)', total_liability:'إجمالي الالتزامات المتراكمة', per_employee_breakdown:'التفصيل المالي لكل موظف', ytd_gross:'الإجمالي هذا العام', total_ever_hired:'إجمالي من تم توظيفهم', avg_tenure:'متوسط مدة الخدمة', months:'شهر', contract_type_breakdown:'نوع العقد', permanent:'دائم (Onbepaalde tijd)', fixed_term:'محدد المدة (Bepaalde tijd)', salary_type_breakdown:'نوع الراتب', avg_hours_week:'متوسط الساعات/الأسبوع', job_title_breakdown:'المسميات الوظيفية', nationality_breakdown:'الجنسية', contracts_expiring_soon:'عقود محدودة المدة تنتهي خلال 90 يومًا', none_expiring:'لا يوجد — كل العقود محدودة المدة متبقٍ لها أكثر من 90 يومًا.', ocr_high_conf:'قراءة موثوقة', ocr_low_conf:'يُرجى التحقق — قراءة غير مؤكدة', ocr_low_quality:'جودة القراءة كانت منخفضة — تحقق من كل حقل بعناية', ocr_extracted:'استُخرجت البيانات تلقائيًا — ألوان الحقول تعكس درجة الثقة، يُرجى المراجعة', confirm_delete:'تأكيد الحذف', confirm_delete_contract:'حذف هذا العقد؟', confirm_delete_contact:'حذف جهة الاتصال هذه؟ (سجلات دفتر الأستاذ لن تُحذف)', confirm_reset_pw:'إعادة تعيين كلمة المرور', confirm_reset_client_pw:'إعادة تعيين كلمة مرور هذا العميل؟ سيحتاج لتعيين كلمة جديدة عند الدخول التالي.', confirm_delete_generic:'حذف هذا العنصر؟', confirm_delete_client:'إزالة هذا العميل وكل بياناته؟', confirm_stop_recurring:'إيقاف جدولة الفاتورة المتكررة هذه؟ الفواتير المُصدرة مسبقًا تبقى كما هي.', confirm_restore:'استعادة النسخة الاحتياطية', confirm_reject:'رفض', confirm_reject_agreement:'هل أنت متأكد من رفض هذه الاتفاقية؟', confirm_approve:'الموافقة على الاتفاقية', confirm_disable_2fa_title:'تعطيل التحقق بخطوتين',
     dashboard_pending_agreements:'الاتفاقيات المعلقة',
     // Sidebar messages
     sidebar_use_cards:'← استخدم الكروت للتنقل',
@@ -3434,8 +3434,9 @@ function rAdminContracts(el){
       <option value="" ${initialFilter===''?'selected':''}>All statuses</option>
       <option value="active" ${initialFilter==='active'?'selected':''}>✅ Active only</option>
       <option value="needsRenewal" ${initialFilter==='needsRenewal'?'selected':''}>🔔 Needs review/renewal</option>
-      <option value="draft" ${initialFilter==='draft'?'selected':''}>📝 Draft only</option>
-      <option value="Renewed" ${initialFilter==='Renewed'?'selected':''}>🔁 Renewed only</option>
+      <option value="draft" ${initialFilter==='draft'?'selected':''}>📝 Pending signature</option>
+      <option value="suspended" ${initialFilter==='suspended'?'selected':''}>⏸ Suspended</option>
+      <option value="cancelled" ${initialFilter==='cancelled'?'selected':''}>🚫 Cancelled</option>
     </select>
     <select id="contracts-sort" onchange="S.tableSort.contracts={field:this.value.split('|')[0],dir:this.value.split('|')[1]};renderContractsList(document.getElementById('contracts-status-filter').value)"
       style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--t1);cursor:pointer">
@@ -4363,59 +4364,97 @@ function filterClients(term){
 }
 
 /* ═══════════════════════════ ADMIN DASHBOARD ═══════════════════════════ */
-function rAdminDash(el){
-  const totalClients=S.clients.filter(c=>!c.deleted).length;
-  const pendingInvoices=S.invoices.filter(i=>['Openstaand','Verzonden','Verlopen'].includes(i.status)).length;
-  const newMessages=S.messages.filter(m=>m.from==='client'&&!m.isRead&&!m.deleted).length;
-  const totalHours=S.hours.reduce((s,h)=>s+h.hrs,0);
-  const overdueInvoices=S.invoices.filter(i=>i.status==='Verlopen').length;
-  const newDocuments=S.docs.filter(d=>d.isNew).length;
-  // ✅ عقد "نشط" فعليًا فقط إن كان تاريخ انتهائه لم يمضِ بعد - وإلا فهو بحاجة لمراجعة/تجديد رغم بقاء وسمه "Active"
-  const totalContracts=S.contracts.filter(c=>c.status==='active'&&!isContractExpired(c)).length;
-  const contractsNeedingRenewal=S.contracts.filter(c=>c.status==='active'&&isContractExpired(c)).length;
-  const pendingAgreements=S.serviceAgreements?S.serviceAgreements.filter(a=>['pending_review','client_signed'].includes(a.status)).length:0;
+// ══════════════════════════════════════════════════════════════════
+// عنصر مشترك لعرض لوحات المعلومات الثلاث (أدمن، عميل، عرض الأدمن لعميل)
+// بنمط: شريط إجراءات سريعة + قسم "يحتاج إجراء" (بارز) + شبكة مضغوطة
+// "للعِلم فقط" (بلا وصف نصي، فقط أيقونة+رقم). القسم الأول يختفي تلقائيًا
+// إن لم تكن هناك أي تنبيهات فعلية.
+// ══════════════════════════════════════════════════════════════════
+function renderQuickDashboard(el,quickActions,cards){
+  const attention=cards.filter(c=>c.alertText);
+  const calm=cards.filter(c=>!c.alertText);
+  let html='';
 
-  const cards=[
-    {icon:'📄',value:pendingInvoices,label:t('dashboard_pending_invoices'),action:'invoices',bg:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
-    {icon:'💼',value:totalClients,label:t('active_clients'),action:'clients',bg:'linear-gradient(135deg, #0F3025 0%, #1A4A2A 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
-    {icon:'⚠️',value:overdueInvoices,label:t('dashboard_overdue'),action:'overdue',bg:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
-    {icon:'📁',value:newDocuments,label:t('dashboard_new_documents'),action:'documents',bg:'linear-gradient(135deg, #1B5E35 0%, #2d7a4f 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
-    {icon:'🕐',value:totalHours.toFixed(0),label:t('dashboard_hours_logged'),action:'hours',bg:'linear-gradient(135deg, #2A6040 0%, #4da876 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
-    {icon:'📜',value:pendingAgreements,label:t('dashboard_pending_agreements'),action:'agreements',bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
-    {icon:'💬',value:newMessages,label:t('dashboard_new_messages'),action:'messages',bg:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
-    {icon:'📋',value:totalContracts,label:t('dashboard_active_contracts'),action:'contracts',bg:'linear-gradient(135deg, #9dd4bf 0%, #B8E6D1 100%)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
-    {icon:'🔔',value:contractsNeedingRenewal,label:t('dashboard_contracts_renewal')||'Contracts Needing Renewal',action:'contracts_renewal',bg:'linear-gradient(135deg, #B8E6D1 0%, #E0F5ED 100%)',border:contractsNeedingRenewal>0?'#B8860B':'#C89010',text:'#0A2218',accent:'#FFD700'}
-  ];
-
-  let html='<div style="display:flex;flex-direction:column;gap:10px;padding:0">';
-
-  cards.forEach(c=>{
-    html+='<div onclick="goToAdminStat(\''+c.action+'\')"';
-    html+=' style="padding:14px 16px;background:'+c.bg+';border:2px solid '+c.border+';border-radius:12px;cursor:pointer;transition:all .25s ease;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1)"';
-    html+=' onmouseover="this.style.transform=\'translateX(6px)\';this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.18)\';this.style.borderColor=\''+c.accent+'\'"';
-    html+=' onmouseout="this.style.transform=\'translateX(0)\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.1)\';this.style.borderColor=\''+c.border+'\'">';
-
-    html+='<div style="display:flex;align-items:center;gap:14px;min-width:0">';
-    html+='<div style="font-size:26px;flex-shrink:0">'+c.icon+'</div>';
-    html+='<div style="font-size:13px;font-weight:600;color:'+c.text+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.label+'</div>';
+  if(quickActions&&quickActions.length){
+    html+='<div style="display:flex;gap:8px;margin-bottom:14px">';
+    quickActions.forEach(q=>{
+      html+='<div onclick="'+q.onclickAttr+'" style="flex:1;background:#0A2218;border:2px solid #C89010;border-radius:10px;padding:10px 6px;text-align:center;color:#fff;cursor:pointer">';
+      html+='<div style="font-size:20px;margin-bottom:2px">'+q.icon+'</div>';
+      html+='<div style="font-size:9.5px;font-weight:700">'+q.label+'</div>';
+      html+='</div>';
+    });
     html+='</div>';
+  }
 
-    html+='<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">';
-    html+='<div style="font-size:22px;font-weight:700;color:'+c.text+'">'+c.value+'</div>';
-    html+='<div style="font-size:14px;color:'+c.accent+';opacity:0.8">→</div>';
+  if(attention.length){
+    html+='<div style="font-size:10px;font-weight:800;letter-spacing:.5px;color:#8a6410;text-transform:uppercase;margin:14px 0 8px">🔔 '+(t('needs_attention')||'Needs Attention')+'</div>';
+    attention.forEach(c=>{
+      html+='<div onclick="'+c.onclickAttr+'" style="padding:11px 14px;border-radius:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;color:'+(c.textColor||'#ffffff')+';background:'+c.color+';cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.12)">';
+      html+='<div style="display:flex;align-items:center;gap:10px"><div style="font-size:19px">'+c.icon+'</div><div style="font-size:12.5px;font-weight:700">'+c.name+'</div></div>';
+      html+='<div style="background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.5);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700">'+c.alertText+'</div>';
+      html+='</div>';
+    });
+  }else{
+    html+='<div style="font-size:10px;font-weight:800;color:#2A6040;text-transform:uppercase;margin:14px 0 8px">✓ '+(t('nothing_needs_attention')||'Nothing needs attention right now')+'</div>';
+  }
+
+  if(calm.length){
+    html+='<div style="font-size:10px;font-weight:800;color:#2A6040;text-transform:uppercase;margin:14px 0 8px">'+(t('for_reference')||'For Reference')+'</div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+    calm.forEach(c=>{
+      html+='<div onclick="'+c.onclickAttr+'" style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:9px 10px;display:flex;align-items:center;gap:8px;cursor:pointer">';
+      html+='<div style="font-size:17px">'+c.icon+'</div>';
+      html+='<div style="min-width:0"><div style="font-size:10.5px;font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:13px;font-weight:800;color:#0A2218">'+c.value+'</div></div>';
+      html+='</div>';
+    });
     html+='</div>';
-
-    html+='</div>';
-  });
-
-  html+='</div>';
+  }
 
   el.innerHTML=html;
 }
 
+function rAdminDash(el){
+  // ✅ لا يُحتسب ضمن "العملاء النشطين" من عقده ملغى أو معلَّق حاليًا
+  const totalClients=S.clients.filter(c=>!c.deleted&&c.accountStatus!=='cancelled'&&c.accountStatus!=='suspended').length;
+  const pendingInvoices=S.invoices.filter(i=>['Openstaand','Verzonden','Verlopen'].includes(i.status)).length;
+  const newMessages=S.messages.filter(m=>m.from==='client'&&!m.isRead&&!m.deleted).length;
+  const totalHours=S.hours.reduce((s,h)=>s+h.hrs,0);
+  const overdueInvoices=S.invoices.filter(i=>i.status==='Verlopen').length;
+  // ✅ لا يُحتسب ضمن "المستندات الجديدة" إيصالات المصاريف (category:'receipt') بما أنها مستبعدة أصلًا من شاشة Documents نفسها
+  const newDocuments=S.docs.filter(d=>d.isNew&&d.category!=='receipt').length;
+
+  const contractsActive=S.contracts.filter(c=>c.status==='active'&&!isContractExpired(c)).length;
+  const contractsNeedingRenewal=S.contracts.filter(c=>c.status==='active'&&isContractExpired(c)).length;
+  const contractsPendingSignature=S.contracts.filter(c=>c.status==='draft').length;
+  const contractsSuspended=S.contracts.filter(c=>c.status==='suspended').length;
+
+  const cards=[
+    {icon:'📄',name:t('dashboard_pending_invoices'),alertText:pendingInvoices>0?pendingInvoices:null,value:pendingInvoices,color:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',onclickAttr:"goToAdminStat('invoices')"},
+    {icon:'⚠️',name:t('dashboard_overdue'),alertText:overdueInvoices>0?overdueInvoices:null,value:overdueInvoices,color:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',onclickAttr:"goToAdminStat('overdue')"},
+    {icon:'📁',name:t('dashboard_new_documents'),alertText:newDocuments>0?newDocuments:null,value:newDocuments,color:'linear-gradient(135deg, #1B5E35 0%, #2d7a4f 100%)',onclickAttr:"goToAdminStat('documents')"},
+    {icon:'💬',name:t('dashboard_new_messages'),alertText:newMessages>0?newMessages:null,value:newMessages,color:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',textColor:'#0A2218',onclickAttr:"goToAdminStat('messages')"},
+    {icon:'🚫',name:'Suspended Contracts',alertText:contractsSuspended>0?contractsSuspended:null,value:contractsSuspended,color:'linear-gradient(135deg, #a83232 0%, #c24545 100%)',onclickAttr:"goToAdminStat('contracts_filter:suspended')"},
+    {icon:'💼',name:t('active_clients'),value:totalClients,onclickAttr:"goToAdminStat('clients')"},
+    {icon:'🕐',name:t('dashboard_hours_logged'),value:totalHours.toFixed(0),onclickAttr:"goToAdminStat('hours')"},
+    {icon:'📋',name:t('active_contracts')||'Active Contracts',value:contractsActive,onclickAttr:"goToAdminStat('contracts_filter:active')"},
+    {icon:'🔔',name:t('dashboard_contracts_renewal')||'Needs Renewal',value:contractsNeedingRenewal,onclickAttr:"goToAdminStat('contracts_filter:needsRenewal')"},
+    {icon:'📝',name:t('dashboard_pending_agreements')||'Pending Signature',value:contractsPendingSignature,onclickAttr:"goToAdminStat('contracts_filter:draft')"}
+  ];
+
+  renderQuickDashboard(el,[
+    {icon:'👤',label:t('add_client_title')||'Client',onclickAttr:'openAddClient()'},
+    {icon:'📋',label:t('add')+' '+(t('contracts')||'Contract'),onclickAttr:'openNewContractDialog()'},
+    {icon:'💬',label:t('messages')||'Messages',onclickAttr:"goToAdminStat('messages')"}
+  ],cards);
+}
+
+
 function goToAdminStat(type){
-  S.adminStatFilter=type;
-  
+  // الشارات داخل كرت Contracts الموحّد ترسل 'contracts_filter:<status>' - نستخرج الفلتر منها
+  const isContractsFilter=type.startsWith('contracts_filter:');
+  const baseType=isContractsFilter?'contracts':type;
+  S.adminStatFilter=baseType;
+
   // تخزين معلومات الكرت للاستخدام في الصفحات التفصيلية
   const cardThemes={
     'clients':{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
@@ -4424,14 +4463,12 @@ function goToAdminStat(type){
     'messages':{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
     'documents':{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'hours':{bg:'rgba(42,96,64,0.08)',border:'#2A6040',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
-    'contracts':{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
-    'agreements':{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
-    'contracts_renewal':{bg:'rgba(184,134,11,0.08)',border:'#B8860B',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'}
+    'contracts':{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'}
   };
   
-  S.cardTheme=cardThemes[type]||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
+  S.cardTheme=cardThemes[baseType]||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   
-  switch(type){
+  switch(baseType){
     case 'clients':
       S.tab='clients';
       break;
@@ -4459,15 +4496,8 @@ function goToAdminStat(type){
       break;
     case 'contracts':
       S.tab='contracts_stat';
+      S.contractsInitialFilter=isContractsFilter?type.split(':')[1]:'';
       break;
-    case 'contracts_renewal':
-      S.tab='contracts_stat';
-      S.contractsInitialFilter='needsRenewal';
-      break;
-    case 'agreements':
-      // اتفاقيات الخدمة المعلّقة تُعرض كنافذة منبثقة (وليست شاشة كاملة) عبر دالة جاهزة مسبقًا
-      viewPendingAgreements();
-      return;
   }
   renderApp();
 }
@@ -4491,145 +4521,27 @@ function rClientDash(el,cid){
   const msgs=S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.isRead&&!m.deleted);
   const unreadMsgs=msgs.length;
   
-  const docs=S.docs.filter(d=>d.cid===cid&&d.isNew);
+  const docs=S.docs.filter(d=>d.cid===cid&&d.isNew&&d.category!=='receipt');
   const unreadDocs=docs.length;
-  
-  // بطاقات العميل - مع تقييد الوصول
+
+  const invoiceAlertParts=[overdue>0?overdue+' overdue':null,pending>0?pending+' pending':null].filter(Boolean);
+
   const cards=[
-    {
-      id:'invoices',
-      icon:'📄',
-      name:t('card_invoices_title'),
-      desc:t('card_invoices_desc'),
-      bg:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:[
-        overdue>0?{icon:'⚠️',text:overdue+' overdue',color:'#B8860B'}:null,
-        pending>0?{icon:'⏳',text:pending+' pending',color:'#FFB700'}:null
-      ].filter(a=>a)
-    },
-    {
-      id:'expenses',
-      icon:'🧾',
-      name:t('card_expenses_title'),
-      desc:t('card_expenses_desc'),
-      bg:'linear-gradient(135deg, #0F3025 0%, #1A4A2A 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:expTotal>0?[{icon:'📊',text:expTotal+' total',color:'#FFD700'}]:[]
-    },
-    {
-      id:'debtors',
-      icon:'💵',
-      name:t('card_debtors_title'),
-      desc:t('card_debtors_desc'),
-      bg:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:[]
-    },
-    {
-      id:'creditors',
-      icon:'🤝',
-      name:t('card_creditors_title'),
-      desc:t('card_creditors_desc'),
-      bg:'linear-gradient(135deg, #1a4d2e 0%, #1B5E35 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:[]
-    },
-    {
-      id:'hours',
-      icon:'🕐',
-      name:t('hours_time')||'Hours',
-      desc:t('card_hours_desc'),
-      bg:'linear-gradient(135deg, #1B5E35 0%, #2A6040 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:billableHrs>0?[{icon:'💰',text:billableHrs+' unbilled',color:'#FFD700'}]:[]
-    },
-    {
-      id:'documents',
-      icon:'📁',
-      name:t('documents')||'Documents',
-      desc:'View Shared Documents',
-      bg:'linear-gradient(135deg, #2A6040 0%, #2d7a4f 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:unreadDocs>0?[{icon:'📄',text:unreadDocs+' new',color:'#FFD700'}]:[]
-    },
-    {
-      id:'messages',
-      icon:'💬',
-      name:t('messages_with_anb'),
-      desc:'Communicate With ANB',
-      bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:unreadMsgs>0?[{icon:'🔔',text:unreadMsgs+' new',color:'#FFD700'}]:[]
-    },
-    {
-      id:'security',
-      icon:'🔒',
-      name:t('security')||'Security',
-      desc:t('card_security_desc')||'Password & Two-Factor Login',
-      bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',
-      border:'#C89010',
-      text:'#0A2218',
-      accent:'#FFD700',
-      alerts:c?.totpEnabled?[{icon:'✅',text:t('enabled')||'2FA on',color:'#FFD700'}]:[]
-    }
+    {icon:'📄',name:t('card_invoices_title'),alertText:invoiceAlertParts.length?invoiceAlertParts.join(', '):null,value:inv.length,color:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',onclickAttr:"selectCard('invoices')"},
+    {icon:'💬',name:t('messages_with_anb'),alertText:unreadMsgs>0?unreadMsgs+' new':null,value:unreadMsgs,color:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',onclickAttr:"selectCard('messages')"},
+    {icon:'🕐',name:t('hours_time')||'Hours',alertText:billableHrs>0?billableHrs+' unbilled':null,value:billableHrs,color:'linear-gradient(135deg, #1B5E35 0%, #2A6040 100%)',onclickAttr:"selectCard('hours')"},
+    {icon:'📁',name:t('documents')||'Documents',alertText:unreadDocs>0?unreadDocs+' new':null,value:unreadDocs,color:'linear-gradient(135deg, #2A6040 0%, #2d7a4f 100%)',onclickAttr:"selectCard('documents')"},
+    {icon:'🧾',name:t('card_expenses_title'),value:expTotal,onclickAttr:"selectCard('expenses')"},
+    {icon:'💵',name:t('card_debtors_title'),value:'→',onclickAttr:"selectCard('debtors')"},
+    {icon:'🤝',name:t('card_creditors_title'),value:'→',onclickAttr:"selectCard('creditors')"},
+    {icon:'🔒',name:t('security')||'Security',value:c?.totpEnabled?'✓ 2FA':'→',onclickAttr:"selectCard('security')"}
   ];
-  
-  // عرض الكروت بشكل مضغوط: أيقونة+عنوان على اليسار، تنبيهات على اليمين
-  let html='<div style="display:flex;flex-direction:column;gap:10px;padding:0">';
 
-  cards.forEach(card=>{
-    html+='<div class="card" style="background:'+card.bg+';border:2px solid '+card.border+
-      ';cursor:pointer;transition:all .25s ease;position:relative;overflow:hidden;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px" '+
-      'onclick="selectCard(\''+card.id+'\')" '+
-      'onmouseover="this.style.transform=\'translateX(6px)\';this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.18)\';this.style.borderColor=\''+card.accent+'\'" '+
-      'onmouseout="this.style.transform=\'translateX(0)\';this.style.boxShadow=\'none\';this.style.borderColor=\''+card.border+'\'">';
-
-    html+='<div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">';
-    html+='<div style="font-size:24px;flex-shrink:0">'+card.icon+'</div>';
-    html+='<div style="min-width:0">';
-    html+='<div style="font-size:13px;font-weight:700;color:'+card.text+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+card.name+'</div>';
-    html+='<div style="font-size:10px;opacity:0.8;color:'+card.text+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+card.desc+'</div>';
-    html+='</div></div>';
-
-    // Alerts (يمين الكارت)
-    if(card.alerts.length>0){
-      html+='<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">';
-      card.alerts.forEach(alert=>{
-        const rgb=alert.color.substring(1).match(/.{1,2}/g).map(x=>parseInt(x,16)).join(',');
-        html+='<div style="font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:'+alert.color+';background:rgba('+rgb+',0.22);border:1px solid '+alert.color+';padding:3px 7px;border-radius:5px">'+
-          alert.icon+' '+alert.text+'</div>';
-      });
-      html+='</div>';
-    }else{
-      html+='<div style="font-size:14px;opacity:0.6;color:'+card.text+';flex-shrink:0">→</div>';
-    }
-
-    html+='</div>';
-  });
-
-  html+='</div>';
-  
-  // CSS for hover effect
-  html+='<style>'+
-    '.card:hover .card-overlay { opacity: 0.05 !important; }'+
-  '</style>';
-  
-  el.innerHTML=html;
+  renderQuickDashboard(el,[
+    {icon:'💬',label:t('messages')||'Messages',onclickAttr:"selectCard('messages')"},
+    {icon:'📁',label:t('documents')||'Documents',onclickAttr:"selectCard('documents')"},
+    {icon:'🔒',label:t('security')||'Security',onclickAttr:"selectCard('security')"}
+  ],cards);
 }
 
 function rClientSecurity(el,cid){
@@ -4750,196 +4662,42 @@ function rClientActionCards(el,cid){
   const msgs=S.messages.filter(m=>m.cid===cid&&m.from==='client'&&!m.isRead&&!m.deleted);
   const unreadMsgs=msgs.length;
   
-  const contracts=S.contracts?.filter(c=>c.cid===cid&&c.status==='pending_review')||[];
-  const pendingContracts=contracts.length;
+  // ⚠️ إصلاح: كانت تبحث سابقًا عن status==='pending_review' وهي ليست حالة عقد
+  // إطلاقًا (بل حالة اتفاقية) - فالتنبيه لم يكن يظهر أبدًا. الحالة الصحيحة
+  // لعقد بانتظار أول توقيع هي 'draft'.
+  const clientContract=(S.contracts||[]).find(x=>x.cid===cid);
+  const contractAwaitingSignature=clientContract&&clientContract.status==='draft';
+  const contractSuspended=clientContract&&clientContract.status==='suspended';
   
   const assets=S.assets?.filter(a=>a.cid===cid)||[];
-  
-  // بطاقات الخيارات مع الألوان المتسقة
+  const activeEmployees=(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length;
+
+  const invoiceAlertParts=[overdue>0?overdue+' overdue':null,pending>0?pending+' pending':null].filter(Boolean);
+  let contractAlert=null;
+  if(contractSuspended)contractAlert='Suspended';
+  else if(contractAwaitingSignature)contractAlert='Awaiting signature';
+
   const cards=[
-    {
-      id:'invoices',
-      icon:'📄',
-      name:t('card_invoices_title'),
-      desc:t('card_invoices_desc'),
-      bg:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:[
-        overdue>0?{icon:'⚠️',text:overdue+' overdue',color:'#B8860B'}:null,
-        pending>0?{icon:'⏳',text:pending+' pending',color:'#FFB700'}:null
-      ].filter(a=>a)
-    },
-    {
-      id:'expenses',
-      icon:'🧾',
-      name:t('card_expenses_title'),
-      desc:t('card_expenses_desc'),
-      bg:'linear-gradient(135deg, #0F3025 0%, #1A4A2A 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:expTotal>0?[{icon:'📊',text:expTotal+' total',color:'#FFD700'}]:[]
-    },
-    {
-      id:'bank',
-      icon:'🏦',
-      name:t('tab_bank')||'Bank',
-      desc:t('card_bank_desc'),
-      bg:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:[]
-    },
-    {
-      id:'assets',
-      icon:'🏢',
-      name:t('assets')||'Assets',
-      desc:t('card_assets_desc'),
-      bg:'linear-gradient(135deg, #1a4d2e 0%, #1B5E35 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:assets.length>0?[{icon:'📦',text:assets.length+' registered',color:'#FFD700'}]:[]
-    },
-    {
-      id:'debtors',
-      icon:'💵',
-      name:t('card_debtors_title'),
-      desc:t('card_debtors_desc'),
-      bg:'linear-gradient(135deg, #1B5E35 0%, #2A6040 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:[]
-    },
-    {
-      id:'creditors',
-      icon:'🤝',
-      name:t('card_creditors_title'),
-      desc:t('card_creditors_desc'),
-      bg:'linear-gradient(135deg, #2A6040 0%, #2d7a4f 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:[]
-    },
-    {
-      id:'employees',
-      icon:'👥',
-      name:t('employees')||'Employees',
-      desc:t('card_employees_desc')||'Payroll & Employment Contracts',
-      bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',
-      border:'#C89010',
-      text:'#ffffff',
-      accent:'#FFD700',
-      alerts:(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length>0?[{icon:'👥',text:(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length+' active',color:'#FFD700'}]:[]
-    },
-    {
-      id:'hours',
-      icon:'🕐',
-      name:t('tab_hours'),
-      desc:t('card_hours_desc'),
-      bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',
-      border:'#C89010',
-      text:'#0A2218',
-      accent:'#FFD700',
-      alerts:billableHrs>0?[{icon:'💰',text:billableHrs+' billable hours',color:'#0A2218'}]:[]
-    },
-    {
-      id:'reports',
-      icon:'📈',
-      name:t('tab_reports'),
-      desc:t('card_reports_desc'),
-      bg:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',
-      border:'#C89010',
-      text:'#0A2218',
-      accent:'#FFD700',
-      alerts:[]
-    },
-    {
-      id:'messages',
-      icon:'💬',
-      name:t('messages'),
-      desc:t('card_messages_desc'),
-      bg:'linear-gradient(135deg, #9dd4bf 0%, #B8E6D1 100%)',
-      border:'#C89010',
-      text:'#0A2218',
-      accent:'#FFD700',
-      alerts:unreadMsgs>0?[{icon:'🔔',text:unreadMsgs+' unread',color:'#0A2218'}]:[]
-    },
-    {
-      id:'contracts',
-      icon:'📋',
-      name:t('contracts')||'Contracts',
-      desc:t('card_contracts_desc'),
-      bg:'linear-gradient(135deg, #B8E6D1 0%, #E0F5ED 100%)',
-      border:'#C89010',
-      text:'#0A2218',
-      accent:'#FFD700',
-      alerts:pendingContracts>0?[{icon:'⏳',text:pendingContracts+' pending approval',color:'#0A2218'}]:[]
-    },
-    {
-      id:'edit_client',
-      icon:'✏️',
-      name:t('card_edit_client'),
-      desc:t('card_edit_client_desc'),
-      bg:'linear-gradient(135deg, #E0F5ED 0%, #F5FBF9 100%)',
-      border:'#C89010',
-      text:'#0A2218',
-      accent:'#FFD700',
-      alerts:[]
-    },
-    {
-      id:'client_activity',
-      icon:'📜',
-      name:t('activity_log_title')||'Activity Log',
-      desc:t('card_activity_log_desc')||'Who Changed What, and When',
-      bg:'linear-gradient(135deg, #E0B830 0%, #F5DC70 100%)',
-      border:'#C89010',
-      text:'#0A2218',
-      accent:'#FFD700',
-      alerts:[]
-    }
-  ].filter(card=>card.id!=='employees'||isAdmin()); // ✅ كارت الموظفين للأدمن فقط - بنفس منطق حماية التقارير
-  
-  let html='<div style="padding:16px">';
-  
-  cards.forEach(card=>{
-    // كارت مع تأثيرات
-    html+='<div style="margin-bottom:12px;padding:16px;background:'+card.bg+';border:2px solid '+card.border+';border-radius:10px;cursor:pointer;transition:all .3s ease;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;justify-content:space-between;align-items:center" onclick="selectCard(\''+card.id+'\')" onmouseover="this.style.transform=\'translateX(6px)\';this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.15)\';this.style.borderColor=\''+card.accent+'\'" onmouseout="this.style.transform=\'translateX(0)\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\';this.style.borderColor=\''+card.border+'\'">';
-    
-    // الجزء الأيسر: الأيقونة والنص
-    html+='<div style="flex:1">';
-    html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">';
-    html+='<div style="font-size:28px">'+card.icon+'</div>';
-    html+='<div>';
-    html+='<div style="font-size:14px;font-weight:600;color:'+card.text+'">'+card.name+'</div>';
-    html+='<div style="font-size:11px;color:rgba('+(card.text==='#ffffff'?'255,255,255':'10,34,24')+',0.7)">'+card.desc+'</div>';
-    html+='</div>';
-    html+='</div>';
-    html+='</div>';
-    
-    // الجزء الأيمن: التنبيهات
-    if(card.alerts.length>0){
-      html+='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">';
-      card.alerts.forEach(alert=>{
-        html+='<div style="background:rgba('+alert.color.substring(1).match(/.{1,2}/g).map(x=>parseInt(x,16)).join(',')+',0.2);border:1px solid '+alert.color+';padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600;color:'+alert.color+';white-space:nowrap;display:flex;align-items:center;gap:4px">';
-        html+=alert.icon+' '+alert.text;
-        html+='</div>';
-      });
-      html+='</div>';
-    } else {
-      html+='<div style="font-size:12px;color:rgba('+(card.text==='#ffffff'?'255,255,255':'10,34,24')+',0.5);font-weight:500">→</div>';
-    }
-    
-    html+='</div>';
-  });
-  
-  html+='</div>';
-  el.innerHTML=html;
+    {icon:'📄',name:t('card_invoices_title'),alertText:invoiceAlertParts.length?invoiceAlertParts.join(', '):null,value:inv.length,color:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',onclickAttr:"selectCard('invoices')"},
+    {icon:'📋',name:t('contracts')||'Contract',alertText:contractAlert,value:clientContract?(clientContract.status||'—'):'—',color:contractSuspended?'linear-gradient(135deg, #a83232 0%, #c24545 100%)':'linear-gradient(135deg, #B8860B 0%, #d4a017 100%)',onclickAttr:"selectCard('contracts')"},
+    {icon:'💬',name:t('messages'),alertText:unreadMsgs>0?unreadMsgs+' unread':null,value:unreadMsgs,color:'linear-gradient(135deg, #9dd4bf 0%, #B8E6D1 100%)',textColor:'#0A2218',onclickAttr:"selectCard('messages')"},
+    {icon:'🕐',name:t('tab_hours'),alertText:billableHrs>0?billableHrs+' billable':null,value:billableHrs,color:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',textColor:'#0A2218',onclickAttr:"selectCard('hours')"},
+    {icon:'🧾',name:t('card_expenses_title'),value:expTotal,onclickAttr:"selectCard('expenses')"},
+    {icon:'🏦',name:t('tab_bank')||'Bank',value:'→',onclickAttr:"selectCard('bank')"},
+    {icon:'🏢',name:t('assets')||'Assets',value:assets.length,onclickAttr:"selectCard('assets')"},
+    {icon:'💵',name:t('card_debtors_title'),value:'→',onclickAttr:"selectCard('debtors')"},
+    {icon:'🤝',name:t('card_creditors_title'),value:'→',onclickAttr:"selectCard('creditors')"},
+    {icon:'📈',name:t('tab_reports'),value:'→',onclickAttr:"selectCard('reports')"},
+    {icon:'✏️',name:t('card_edit_client'),value:'→',onclickAttr:"selectCard('edit_client')"},
+    {icon:'📜',name:t('activity_log_title')||'Activity Log',value:'→',onclickAttr:"selectCard('client_activity')"}
+  ];
+  if(isAdmin())cards.splice(4,0,{icon:'👥',name:t('employees')||'Employees',value:activeEmployees,onclickAttr:"selectCard('employees')"});
+
+  renderQuickDashboard(el,[
+    {icon:'✏️',label:t('card_edit_client')||'Edit',onclickAttr:"selectCard('edit_client')"},
+    {icon:'📋',label:t('contracts')||'Contract',onclickAttr:"selectCard('contracts')"},
+    {icon:'💬',label:t('messages')||'Messages',onclickAttr:"selectCard('messages')"}
+  ],cards);
 }
 
 /* ═══════════════════════════ SHARED VIEWS ═══════════════════════════ */
@@ -4948,15 +4706,85 @@ function goBackToOverview(){
   renderApp();
 }
 
-function getOrCreateGeneralDebtor(){
+// ⚠️ إصلاح: كانت getOrCreateGeneralDebtor لا تُفلتر بـ cid إطلاقًا - يعني كل
+// عملاء ANB يشتركون في نفس سجل "General Debtors"! الآن كل عميل له سجله الخاص.
+function getOrCreateGeneralDebtor(cid){
   if(!S.contacts)S.contacts=[];
-  let gd=S.contacts.find(c=>c.type==='debtor'&&c.isGeneral&&!c.deleted);
+  let gd=S.contacts.find(c=>c.type==='debtor'&&c.isGeneral&&c.cid===cid&&!c.deleted);
   if(!gd){
-    gd={id:UID(),cid:'GENERAL',type:'debtor',name:'General Debtors',isGeneral:true,accountNumber:'4999'};
+    gd={id:UID(),cid,type:'debtor',name:'General Debtors',isGeneral:true,accountNumber:'4999'};
     S.contacts.push(gd);
   }
   return gd;
 }
+function getOrCreateGeneralCreditor(cid){
+  if(!S.contacts)S.contacts=[];
+  let gc=S.contacts.find(c=>c.type==='creditor'&&c.isGeneral&&c.cid===cid&&!c.deleted);
+  if(!gc){
+    gc={id:UID(),cid,type:'creditor',name:'General Creditors',isGeneral:true,accountNumber:'1999'};
+    S.contacts.push(gc);
+  }
+  return gc;
+}
+
+function viewDebtorLedger(debtorId){
+  const debtor=(S.contacts||[]).find(c=>c.id===debtorId);
+  if(!debtor)return;
+  const invoices=(S.invoices||[]).filter(i=>i.billToId===debtorId&&!i.deleted).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const totalInvoiced=invoices.reduce((s,i)=>s+(i.total||0),0);
+  const totalPaid=invoices.reduce((s,i)=>s+(i.amountPaid||0),0);
+  const balance=totalInvoiced-totalPaid;
+
+  const rows=invoices.length===0?'<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">No invoices linked to this debtor yet</div>':
+    invoices.map(i=>{
+      const remaining=getInvoiceRemaining(i);
+      const paid=remaining<=0.01;
+      const statusColor=paid?'#2d7a4f':(i.status==='Verlopen'?'#a83232':'#B8860B');
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gr2)">'+
+        '<div><div style="font-size:12px;font-weight:600">'+escapeHtml(i.num||'')+'</div><div style="font-size:10px;color:var(--t3)">'+FD(i.date)+' - '+escapeHtml(i.desc||'')+'</div></div>'+
+        '<div style="text-align:right"><div style="font-size:12px;font-weight:700">'+FMT(i.total)+'</div><div style="font-size:10px;color:'+statusColor+'">'+(paid?'Paid':FMT(remaining)+' due')+'</div></div>'+
+        '</div>';
+    }).join('');
+
+  showModal('Debtor: '+escapeHtml(debtor.name),
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+    '<div style="background:var(--bg2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--t3)">Total Invoiced</div><div style="font-size:16px;font-weight:700">'+FMT(totalInvoiced)+'</div></div>'+
+    '<div style="background:'+(balance>0.01?'rgba(184,134,11,0.1)':'rgba(45,122,79,0.1)')+';border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--t3)">Balance Due</div><div style="font-size:16px;font-weight:700;color:'+(balance>0.01?'#B8860B':'#2d7a4f')+'">'+FMT(balance)+'</div></div>'+
+    '</div>'+
+    '<div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:8px">Invoices ('+invoices.length+')</div>'+
+    '<div style="max-height:280px;overflow-y:auto">'+rows+'</div>'
+  ,closeModal,'Close');
+}
+
+function viewCreditorLedger(creditorId){
+  const creditor=(S.contacts||[]).find(c=>c.id===creditorId);
+  if(!creditor)return;
+  const expenses=(S.expenses||[]).filter(e=>e.payToId===creditorId&&!e.deleted).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const totalExpensed=expenses.reduce((s,e)=>s+(e.amount||0)+(e.btw||0),0);
+  const totalPaid=expenses.reduce((s,e)=>s+(e.amountPaid||0),0);
+  const balance=totalExpensed-totalPaid;
+
+  const rows=expenses.length===0?'<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">No expenses linked to this creditor yet</div>':
+    expenses.map(e=>{
+      const remaining=getExpenseRemaining(e);
+      const total=(e.amount||0)+(e.btw||0);
+      const paid=remaining<=0.01;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gr2)">'+
+        '<div><div style="font-size:12px;font-weight:600">'+escapeHtml(e.desc||'')+'</div><div style="font-size:10px;color:var(--t3)">'+FD(e.date)+' - '+escapeHtml(e.cat||'')+'</div></div>'+
+        '<div style="text-align:right"><div style="font-size:12px;font-weight:700">'+FMT(total)+'</div><div style="font-size:10px;color:'+(paid?'#2d7a4f':'#B8860B')+'">'+(paid?'Paid':FMT(remaining)+' due')+'</div></div>'+
+        '</div>';
+    }).join('');
+
+  showModal('Creditor: '+escapeHtml(creditor.name),
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+    '<div style="background:var(--bg2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--t3)">Total Expensed</div><div style="font-size:16px;font-weight:700">'+FMT(totalExpensed)+'</div></div>'+
+    '<div style="background:'+(balance>0.01?'rgba(184,134,11,0.1)':'rgba(45,122,79,0.1)')+';border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--t3)">Balance Owed</div><div style="font-size:16px;font-weight:700;color:'+(balance>0.01?'#B8860B':'#2d7a4f')+'">'+FMT(balance)+'</div></div>'+
+    '</div>'+
+    '<div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:8px">Expenses ('+expenses.length+')</div>'+
+    '<div style="max-height:280px;overflow-y:auto">'+rows+'</div>'
+  ,closeModal,'Close');
+}
+
 function migrateContactAccountNumbers(){
   if(!S.contacts||!S.contacts.length)return;
   let changed=false;
@@ -4991,7 +4819,7 @@ function migrateOneTimeDebtors(){
     if(i.billToManual&&i.billToManual.name){
       const existing=i.billToId?(S.contacts||[]).find(c=>c.id===i.billToId):null;
       if(!existing){
-        const gd=getOrCreateGeneralDebtor();
+        const gd=getOrCreateGeneralDebtor(i.cid);
         i.billToId=gd.id;
         if(!i.billTo)i.billTo=i.billToManual.name;
         changed=true;
@@ -7261,7 +7089,7 @@ function endEmployment(employeeId){
 function rDebtors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  const allDebtors=S.contacts.filter(c=>(c.cid===cid||c.isGeneral)&&c.type==='debtor'&&!c.deleted);
+  const allDebtors=S.contacts.filter(c=>(c.cid===cid||(c.isGeneral&&c.cid==='GENERAL'))&&c.type==='debtor'&&!c.deleted);
 
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -7283,7 +7111,7 @@ function renderDebtorsTable(cid,searchTerm){
   const theme=S.cardTheme||{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   const term=(searchTerm||'').toLowerCase().trim();
   let debtors=S.contacts.filter(c=>{
-    if(!((c.cid===cid||c.isGeneral)&&c.type==='debtor'&&!c.deleted))return false;
+    if(!((c.cid===cid||(c.isGeneral&&c.cid==='GENERAL'))&&c.type==='debtor'&&!c.deleted))return false;
     if(!term)return true;
     return (c.name||'').toLowerCase().includes(term)||
       (c.email||'').toLowerCase().includes(term)||
@@ -7303,9 +7131,14 @@ function renderDebtorsTable(cid,searchTerm){
         ${sortTh('Name','name','debtors',`renderDebtorsTable(${reArgs})`)}
         ${sortTh('Email','email','debtors',`renderDebtorsTable(${reArgs})`)}
         ${sortTh('Account #','accountNumber','debtors',`renderDebtorsTable(${reArgs})`)}
+        <th style="text-align:right;padding:8px">Balance</th>
         <th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
-      ${debtors.map(d=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+(d.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+(d.accountNumber||'—')+'</td><td style="text-align:right;padding:8px">'+(d.isGeneral?'<span style="font-size:10px;color:var(--t3)">One-time invoices ledger</span>':'<button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button>')+'</td></tr>').join('')}
+      ${debtors.map(d=>{
+        const invoices=(S.invoices||[]).filter(i=>i.billToId===d.id&&!i.deleted);
+        const balance=invoices.reduce((s,i)=>s+getInvoiceRemaining(i),0);
+        return '<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+(d.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+(d.accountNumber||'—')+'</td><td style="text-align:right;padding:8px;font-weight:700;color:'+(balance>0.01?'#B8860B':'#2d7a4f')+'">'+(invoices.length?FMT(balance):'—')+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="viewDebtorLedger(\''+d.id+'\')">📖 Ledger</button>'+(d.isGeneral?'':'<button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button>')+'</td></tr>';
+      }).join('')}
       </tbody>
     </table>`}
   </div>`;
@@ -7357,9 +7190,14 @@ function renderCreditorsTable(cid,searchTerm){
         ${sortTh('Name','name','creditors',`renderCreditorsTable(${reArgs})`)}
         ${sortTh('Email','email','creditors',`renderCreditorsTable(${reArgs})`)}
         ${sortTh('Account #','accountNumber','creditors',`renderCreditorsTable(${reArgs})`)}
+        <th style="text-align:right;padding:8px">Balance</th>
         <th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
-      ${creditors.map(cr=>'<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button></td></tr>').join('')}
+      ${creditors.map(cr=>{
+        const expenses=(S.expenses||[]).filter(e=>e.payToId===cr.id&&!e.deleted);
+        const balance=expenses.reduce((s,e)=>s+getExpenseRemaining(e),0);
+        return '<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+(cr.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px;font-weight:700;color:'+(balance>0.01?'#B8860B':'#2d7a4f')+'">'+(expenses.length?FMT(balance):'—')+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="viewCreditorLedger(\''+cr.id+'\')">📖 Ledger</button>'+(cr.isGeneral?'':'<button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button>')+'</td></tr>';
+      }).join('')}
       </tbody>
     </table>`}
   </div>`;
@@ -8927,7 +8765,7 @@ function openInvoiceModal(inv){
           email:document.getElementById('bt-manual-email')?.value||'',
           phone:document.getElementById('bt-manual-phone')?.value||'',
           address:document.getElementById('bt-manual-address')?.value||''};
-        const gd=getOrCreateGeneralDebtor();
+        const gd=getOrCreateGeneralDebtor(cid);
         billToId=gd.id;
         billTo=name;
       }
@@ -9021,7 +8859,7 @@ function openNewExpense(){
   const cid=S.currentClient;
   let currentMode='manual';
   let attachedDocId=null;
-  
+
   // Create global file inputs once (persistent across modals)
   if(!window._expenseFileInput){
     window._expenseFileInput=document.createElement('input');
@@ -9030,7 +8868,7 @@ function openNewExpense(){
     window._expenseFileInput.style.display='none';
     document.body.appendChild(window._expenseFileInput);
   }
-  
+
   if(!window._expenseCameraInput){
     window._expenseCameraInput=document.createElement('input');
     window._expenseCameraInput.type='file';
@@ -9039,7 +8877,10 @@ function openNewExpense(){
     window._expenseCameraInput.style.display='none';
     document.body.appendChild(window._expenseCameraInput);
   }
-  
+
+  const creditors=(S.contacts||[]).filter(c=>c.cid===cid&&c.type==='creditor'&&!c.isGeneral&&!c.deleted);
+  const payToOptions=creditors.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+
   showModal(t('new_expense').replace('+ ',''),`
     <div style="display:flex;gap:8px;margin-bottom:16px">
       <button type="button" class="btn btn-xs" id="ex-manual-btn" style="flex:1;background:var(--g1);color:var(--gold3);border:none;cursor:pointer">✏️ Manual</button>
@@ -9051,7 +8892,33 @@ function openNewExpense(){
         <div class="fg"><label>Date</label><input type="date" id="ex-d" value="${TODAY()}"/></div>
         <div class="fg"><label>Category</label><select id="ex-c">${['Software','Hardware','Kantoor','Marketing','Transport','Opleiding','Telecom','Overig'].map(c=>`<option>${c}</option>`).join('')}</select></div>
       </div>
-      <div class="fg"><label>Supplier</label><input id="ex-s"/></div>
+
+      <div class="fg"><label>Pay to (Supplier) *</label>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button type="button" class="btn btn-xs" id="pt-mode-manual" style="flex:1;background:var(--g1);color:var(--gold3);border:none;cursor:pointer">✍️ Type name</button>
+          <button type="button" class="btn btn-xs" id="pt-mode-select" style="flex:1;background:transparent;color:var(--t3);border:none;cursor:pointer">📋 From list</button>
+          <button type="button" class="btn btn-xs" id="pt-mode-new" style="flex:1;background:transparent;color:var(--t3);border:none;cursor:pointer">➕ New creditor</button>
+        </div>
+        <div id="pt-panel-manual" style="display:block">
+          <input id="ex-s"/>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">✍️ Booked under a general "one-time suppliers" account, not a specific creditor</div>
+        </div>
+        <div id="pt-panel-select" style="display:none">
+          <select id="ex-payto-sel">
+            <option value="">-- Select supplier --</option>
+            ${payToOptions}
+          </select>
+        </div>
+        <div id="pt-panel-new" style="display:none">
+          <input id="pt-new-name" placeholder="Supplier name"/>
+          <div class="fr2" style="margin-top:8px">
+            <div class="fg"><label>Email</label><input id="pt-new-email" type="email"/></div>
+            <div class="fg"><label>Phone</label><input id="pt-new-phone"/></div>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">➕ Will be added to your Creditors list with its own ledger</div>
+        </div>
+      </div>
+
       <div class="fg"><label>Description</label><input id="ex-desc"/></div>
       <div class="fr2">
         <div class="fg"><label>Amount excl. BTW (€)</label><input type="number" id="ex-a" step="0.01"/></div>
@@ -9070,15 +8937,42 @@ function openNewExpense(){
       const r=parseFloat(document.getElementById('ex-r').value);
       if(!document.getElementById('ex-desc').value.trim()){toast('❌ Description required');markFieldError('ex-desc');return;}
       const exDesc=document.getElementById('ex-desc').value;
+
+      const ptMode=window._ptMode||'manual';
+      let payToId='',payTo='';
+      if(ptMode==='select'){
+        payToId=document.getElementById('ex-payto-sel')?.value||'';
+        const creditor=(S.contacts||[]).find(c=>c.id===payToId);
+        payTo=creditor?creditor.name:'';
+        if(!payToId){toast('❌ Please select a supplier');return;}
+      }else if(ptMode==='new'){
+        const name=(document.getElementById('pt-new-name')?.value||'').trim();
+        if(!name){toast('❌ Supplier name required');markFieldError('pt-new-name');return;}
+        const existingCreditors=(S.contacts||[]).filter(c=>c.type==='creditor'&&c.cid===cid);
+        const accNum=(1100+existingCreditors.length).toString();
+        const newContact={id:UID(),cid,type:'creditor',name,accountNumber:accNum,
+          email:document.getElementById('pt-new-email')?.value||'',
+          phone:document.getElementById('pt-new-phone')?.value||''};
+        if(!S.contacts)S.contacts=[];
+        S.contacts.push(newContact);
+        payToId=newContact.id;payTo=name;
+        logAudit('create','contact','Added creditor "'+name+'" via new expense',cid);
+      }else{
+        payTo=(document.getElementById('ex-s')?.value||'').trim();
+        if(!payTo){toast('❌ Supplier required');markFieldError('ex-s');return;}
+        const gc=getOrCreateGeneralCreditor(cid);
+        payToId=gc.id;
+      }
+
       S.expenses.push({id:UID(),cid,date:document.getElementById('ex-d').value,
-        supplier:document.getElementById('ex-s').value,desc:exDesc,
+        supplier:payTo,payToId,desc:exDesc,
         cat:document.getElementById('ex-c').value,amount:a,btw:a*(r/100),receiptDocId:attachedDocId,
         amountPaid:0,paymentStatus:'Onbetaald'});
       logAudit('create','expense','Added expense '+exDesc+' — '+FMT(a),cid);
       sv();closeModal();renderContent();toast(t('tab_expenses')+' ✓','ti-check');
     }
   },'Save Expense');
-  
+
   // Get modal elements
   const manualBtn=document.getElementById('ex-manual-btn');
   const uploadBtn=document.getElementById('ex-upload-btn');
@@ -9087,7 +8981,7 @@ function openNewExpense(){
   const uploadMsg=document.getElementById('ex-upload-msg');
   const cameraMsg=document.getElementById('ex-camera-msg');
   const moSaveBtn=document.getElementById('mo-s');
-  
+
   const switchMode=(mode)=>{
     currentMode=mode;
     if(manualBtn){manualBtn.style.background=mode==='manual'?'var(--g1)':'transparent';manualBtn.style.color=mode==='manual'?'var(--gold3)':'var(--t3)';}
@@ -9098,7 +8992,28 @@ function openNewExpense(){
     if(cameraMsg)cameraMsg.style.display=mode==='camera'?'block':'none';
     if(moSaveBtn)moSaveBtn.textContent=mode==='manual'?'Save Expense':'Cancel';
   };
-  
+
+  // ── Pay-to mode switcher (type name / from list / new creditor) ──
+  window._ptMode='manual';
+  const ptSelBtn=document.getElementById('pt-mode-select');
+  const ptNewBtn=document.getElementById('pt-mode-new');
+  const ptManBtn=document.getElementById('pt-mode-manual');
+  const ptSelPanel=document.getElementById('pt-panel-select');
+  const ptNewPanel=document.getElementById('pt-panel-new');
+  const ptManPanel=document.getElementById('pt-panel-manual');
+  const setPtMode=(m)=>{
+    window._ptMode=m;
+    if(ptSelBtn){ptSelBtn.style.background=m==='select'?'var(--g1)':'transparent';ptSelBtn.style.color=m==='select'?'var(--gold3)':'var(--t3)';}
+    if(ptNewBtn){ptNewBtn.style.background=m==='new'?'var(--g1)':'transparent';ptNewBtn.style.color=m==='new'?'var(--gold3)':'var(--t3)';}
+    if(ptManBtn){ptManBtn.style.background=m==='manual'?'var(--g1)':'transparent';ptManBtn.style.color=m==='manual'?'var(--gold3)':'var(--t3)';}
+    if(ptSelPanel)ptSelPanel.style.display=m==='select'?'block':'none';
+    if(ptNewPanel)ptNewPanel.style.display=m==='new'?'block':'none';
+    if(ptManPanel)ptManPanel.style.display=m==='manual'?'block':'none';
+  };
+  if(ptSelBtn)ptSelBtn.addEventListener('click',e=>{e.preventDefault();setPtMode('select');});
+  if(ptNewBtn)ptNewBtn.addEventListener('click',e=>{e.preventDefault();setPtMode('new');});
+  if(ptManBtn)ptManBtn.addEventListener('click',e=>{e.preventDefault();setPtMode('manual');});
+
   // Manual button
   if(manualBtn)manualBtn.addEventListener('click',(e)=>{
     e.preventDefault();
@@ -11390,6 +11305,7 @@ function renderMatchSearchResults(txId){
   const container=document.getElementById('match-search-results');
   if(!container)return;
   const cid=tx.cid;
+  const isIncoming=tx.amount>=0;
   let results=[];
 
   if(type==='invoice'){
@@ -11401,7 +11317,10 @@ function renderMatchSearchResults(txId){
       .filter(e=>!term||(e.desc||'').toLowerCase().includes(term)||(e.supplier||'').toLowerCase().includes(term))
       .map(e=>({type:'expense',id:e.id,label:(e.desc||e.supplier||'Expense'),remaining:getExpenseRemaining(e)}));
   }else{
-    results=(S.contacts||[]).filter(c=>c.cid===cid&&!c.deleted)
+    // ✅ إصلاح: كانت تعرض كل جهات الاتصال (مدينين وموردين معًا) بلا تمييز -
+    // الآن نطابق فقط النوع المنطقي حسب اتجاه الحركة (دخل → مدين، خرج → مورد)
+    const contactType=isIncoming?'debtor':'creditor';
+    results=(S.contacts||[]).filter(c=>c.cid===cid&&c.type===contactType&&!c.deleted)
       .filter(c=>!term||(c.name||'').toLowerCase().includes(term))
       .map(c=>({type:'contact',id:c.id,label:c.name+' ('+(c.type||'')+')',remaining:null}));
   }
