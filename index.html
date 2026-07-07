@@ -674,13 +674,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.12">
+<link rel="manifest" href="manifest.json?v=3.13">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.12').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.13').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -10209,10 +10209,11 @@ function _exportReportPDF(type,cid){
   doc.setTextColor(200,144,16); // Gold
   doc.text('ANB FINANCIAL SERVICES',M+5,y+8);
   
-  // Client name
+  // Client name (or internal-report label when this is ANB's own book)
   doc.setFontSize(11);
   doc.setTextColor(255,255,255);
-  doc.text(`Client: ${c?.name||'Report'}`,M+5,y+15);
+  const isANBSelfReport=cid===ANB_SELF_ID;
+  doc.text(isANBSelfReport?'Internal Company Report':`Client: ${c?.name||'Report'}`,M+5,y+15);
   
   y+=25;
   
@@ -10262,7 +10263,7 @@ function _exportReportPDF(type,cid){
     doc.text('Financial Overview',M,y);y+=12;
     
     // Summary boxes
-    const boxH=20, boxW=(W-3*M)/3;
+    const boxH=20, boxW=(W-4*M)/3;
     
     // Revenue box
     doc.setFillColor(10,34,24);
@@ -10384,7 +10385,7 @@ function _exportReportPDF(type,cid){
     const btwIn=exp.reduce((s,e)=>s+(parseFloat(e.btw)||0),0);
     const btwPayable=btwOut-btwIn;
     
-    const boxH=18, boxW=(W-3*M)/3;
+    const boxH=18, boxW=(W-4*M)/3;
     
     // VAT Output
     doc.setFillColor(10,34,24);
@@ -10611,7 +10612,7 @@ function _exportReportPDF(type,cid){
     const accruedVacationTotal=active.reduce((s,e)=>s+getAccruedVacationMoney(e.id),0);
     const accrued13thTotal=active.reduce((s,e)=>s+getAccrued13thMonth(e.id),0);
 
-    const boxH=20, boxW=(W-3*M)/3;
+    const boxH=20, boxW=(W-4*M)/3;
     doc.setFillColor(10,34,24);doc.rect(M,y,boxW,boxH,'F');
     doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
     doc.text('Active Employees',M+3,y+6);
@@ -10671,7 +10672,7 @@ function _exportReportPDF(type,cid){
     const salaryFixed=active.filter(e=>e.salaryType==='fixed').length;
     const salaryHourly=active.filter(e=>e.salaryType==='hourly').length;
 
-    const boxH=20, boxW=(W-3*M)/3;
+    const boxH=20, boxW=(W-4*M)/3;
     doc.setFillColor(10,34,24);doc.rect(M,y,boxW,boxH,'F');
     doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
     doc.text('Total Ever Hired',M+3,y+6);
@@ -10749,6 +10750,7 @@ async function exportReportExcel(type,cid){
 }
 function _exportReportExcel(type,cid){
   const c=S.clients.find(c=>c.id===cid);
+  const isANBSelfReport=cid===ANB_SELF_ID;
   const XLSX=window.XLSX;
   if(!XLSX){toast('Loading Excel library...','ti-loader');return;}
   
@@ -10765,7 +10767,7 @@ function _exportReportExcel(type,cid){
     
     data=[
       ['📊 FINANCIAL SUMMARY REPORT'],
-      ['Client',c?.name],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       ['Report Date',FD(new Date())],
       ['Fiscal Year',new Date().getFullYear()],
       [],
@@ -10790,7 +10792,7 @@ function _exportReportExcel(type,cid){
     
     data=[
       ['📈 PROFIT & LOSS STATEMENT'],
-      ['Client',c?.name],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       [],
       ['REVENUE','Amount'],
       ['Invoiced Revenue',revenue],
@@ -10823,7 +10825,7 @@ function _exportReportExcel(type,cid){
     
     data=[
       ['💰 VAT/BTW TAX RETURN'],
-      ['Client',c?.name],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       ['Report Period',new Date().getFullYear()],
       [],
       ['VAT Item','Amount','EUR'],
@@ -10843,7 +10845,7 @@ function _exportReportExcel(type,cid){
     
     data=[
       ['🧾 EXPENSES REPORT'],
-      ['Client',c?.name],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       ['Report Date',FD(new Date())],
       [],
       ['Date','Supplier','Description','Category','Amount','Notes']
@@ -10871,7 +10873,7 @@ function _exportReportExcel(type,cid){
     
     data=[
       ['💵 DEBTORS AGING REPORT'],
-      ['Client',c?.name],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       ['Report Date',FD(new Date())],
       [],
       ['Invoice #','Date','Amount','Status','Days Outstanding','Amount EUR']
@@ -10900,7 +10902,7 @@ function _exportReportExcel(type,cid){
     
     data=[
       ['💵 CASH FLOW ANALYSIS'],
-      ['Client',c?.name],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       ['Report Date',FD(new Date())],
       [],
       ['Cash Flow Item','Amount','EUR','Percentage'],
@@ -10932,7 +10934,7 @@ function _exportReportExcel(type,cid){
 
     data=[
       ['💰 EMPLOYEE FINANCIAL REPORT'],
-      ['Client',c?.name],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       ['Report Date',FD(new Date())],
       ['Fiscal Year',curYear],
       [],
@@ -10977,7 +10979,7 @@ function _exportReportExcel(type,cid){
 
     data=[
       ['📊 EMPLOYEE STATISTICS REPORT'],
-      ['Client',c?.name],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       ['Report Date',FD(new Date())],
       [],
       ['Key Metrics','Value'],
