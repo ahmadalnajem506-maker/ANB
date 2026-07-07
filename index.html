@@ -674,13 +674,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.06">
+<link rel="manifest" href="manifest.json?v=3.08">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.06').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.08').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -3190,7 +3190,7 @@ function renderTopbar(){
     tabs.innerHTML='';
     const acts={
       client_overview:'',
-      invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_invoice')}</button> <button class="btn btn-xs" onclick="openDailyRevenueEntry()" title="Quick entry for a single day's total takings">📊 Daily Total</button>`,
+      invoices:c?.id===ANB_SELF_ID?`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_invoice')}</button> <button class="btn btn-xs" onclick="generateAllClientInvoices()" title="Generate this month's subscription invoice for every active client">🧾 Generate All Client Invoices</button>`:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_invoice')}</button> <button class="btn btn-xs" onclick="openDailyRevenueEntry()" title="Quick entry for a single day's total takings">📊 Daily Total</button>`,
       expenses:`<button class="btn btn-p btn-xs" onclick="openNewExpense()">${t('new_expense')}</button>`,
       hours:`<button class="btn btn-p btn-xs" onclick="openLogHours()">${t('log_hours')}</button>`,
       info:`<button class="btn btn-xs" onclick="openEditClient('${c?.id}')">✏ ${t('edit')}</button>
@@ -4456,7 +4456,7 @@ function rAdminDash(el){
     {icon:'💬',label:t('messages')||'Messages',onclickAttr:"goToAdminStat('messages')"}
   ],cards);
 
-  el.innerHTML=anbCardHtml+cardsWrap.innerHTML;
+  el.innerHTML=cardsWrap.innerHTML+anbCardHtml;
 }
 
 
@@ -4699,7 +4699,6 @@ function rClientActionCards(el,cid){
     {icon:'💵',name:t('card_debtors_title'),value:'→',onclickAttr:"selectCard('debtors')"},
     {icon:'🤝',name:t('card_creditors_title'),value:'→',onclickAttr:"selectCard('creditors')"},
     {icon:'📈',name:t('tab_reports'),value:'→',onclickAttr:"selectCard('reports')"},
-    {icon:'✏️',name:t('card_edit_client'),value:'→',onclickAttr:"selectCard('edit_client')"},
     {icon:'📜',name:t('activity_log_title')||'Activity Log',value:'→',onclickAttr:"selectCard('client_activity')"}
   ];
   if(isAdmin())cards.splice(4,0,{icon:'👥',name:t('employees')||'Employees',value:activeEmployees,onclickAttr:"selectCard('employees')"});
@@ -4743,6 +4742,99 @@ function openANBSelfAccounts(){
   S.currentClient=anb.id;
   S.tab='client_overview';
   renderApp();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// عند إصدار فاتورة اشتراك من ANB لعميل حقيقي (فرديًا أو جماعيًا)، تُنسخ
+// نسخة "بانتظار المراجعة" إلى مستندات ذلك العميل نفسه. وعند موافقته
+// عليها، تتحول تلقائيًا لمصروف حقيقي في حساباته الخاصة.
+// ══════════════════════════════════════════════════════════════════
+function postANBInvoiceToClientDocs(invoice,clientId){
+  if(!S.docs)S.docs=[];
+  const client=S.clients.find(c=>c.id===clientId);
+  if(!client)return;
+  S.docs.push({
+    id:UID(),cid:clientId,
+    name:'ANB Invoice — '+(invoice.desc||invoice.num)+' ('+FMT(invoice.total)+')',
+    type:'anb_invoice',category:'anb_invoice',
+    sourceInvoiceId:invoice.id,
+    date:invoice.date,from:'anb',size:'—',
+    status:'pending_review'
+  });
+}
+
+// يولّد فاتورة اشتراك شهرية لكل عميل نشط بضغطة واحدة، ويتخطى من لديه
+// فاتورة بالفعل هذا الشهر لتفادي التكرار
+function generateAllClientInvoices(){
+  const realClients=S.clients.filter(cl=>cl.id!==ANB_SELF_ID&&!cl.deleted&&cl.accountStatus!=='cancelled');
+  if(realClients.length===0){toast('No active clients to invoice');return;}
+
+  const monthLabel=new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  showConfirmDialog('Generate All Client Invoices','Generate a subscription invoice for '+realClients.length+' client(s) for '+monthLabel+'? Clients who already have an invoice this month will be skipped.',()=>{
+    let created=0,skipped=0;
+    const today=TODAY();
+    const thisMonth=today.slice(0,7);
+    realClients.forEach(cl=>{
+      const fee=parseFloat(cl.monthlyFee)||0;
+      if(!fee){skipped++;return;}
+      const alreadyInvoiced=S.invoices.some(i=>i.cid===ANB_SELF_ID&&i.billToId===cl.id&&(i.date||'').slice(0,7)===thisMonth&&!i.deleted);
+      if(alreadyInvoiced){skipped++;return;}
+      const ni={id:UID(),cid:ANB_SELF_ID,num:nextNum(ANB_SELF_ID),
+        desc:'Monthly subscription — '+monthLabel,date:today,
+        due:new Date(Date.now()+14*864e5).toISOString().slice(0,10),
+        status:'Openstaand',amount:fee,btw:fee*0.21,total:fee*1.21,btwRate:21,
+        amountPaid:0,billTo:cl.name,billToId:cl.id,billToManual:null};
+      S.invoices.push(ni);
+      postANBInvoiceToClientDocs(ni,cl.id);
+      created++;
+    });
+    logAudit('create','invoice','Bulk-generated '+created+' client subscription invoices for '+monthLabel,ANB_SELF_ID);
+    sv();renderApp();closeModal();
+    toast('✓ Generated '+created+' invoice(s)'+(skipped>0?' — skipped '+skipped+' (already invoiced or no fee set)':''));
+  });
+}
+
+// مراجعة فاتورة ANB الواردة من داخل مستندات العميل نفسه
+function reviewIncomingBillDoc(docId){
+  const doc=(S.docs||[]).find(d=>d.id===docId);
+  if(!doc)return;
+  const invoice=(S.invoices||[]).find(i=>i.id===doc.sourceInvoiceId);
+  if(!invoice){toast('Source invoice not found');return;}
+
+  const actionButtons=doc.status==='pending_review'?
+    '<div style="margin-top:16px"><button class="btn btn-success btn-xs" style="width:100%" onclick="approveIncomingBill(\''+doc.id+'\')">✓ Approve &amp; Add to My Expenses</button></div>':'';
+
+  showModal('📄 '+doc.name,
+    '<div style="padding:4px">'+
+    '<div style="font-size:12px;color:var(--t3);margin-bottom:4px">From ANB Financial Services</div>'+
+    '<div style="font-size:20px;font-weight:700;margin-bottom:10px">'+FMT(invoice.total)+'</div>'+
+    '<div style="font-size:12px;margin-bottom:4px"><strong>Description:</strong> '+escapeHtml(invoice.desc||'')+'</div>'+
+    '<div style="font-size:12px;margin-bottom:4px"><strong>Date:</strong> '+FD(invoice.date)+'</div>'+
+    '<div style="font-size:11px;padding:8px;background:var(--bg1);border-radius:6px;margin-top:10px">Status: '+(doc.status==='approved'?'✓ Approved — added to your expenses':'Pending your review')+'</div>'+
+    '</div>'+actionButtons
+  ,closeModal,'Close');
+}
+
+// موافقة العميل (أو الأدمن نيابة عنه) على فاتورة ANB - تُضاف تلقائيًا كمصروف حقيقي في حساباته
+function approveIncomingBill(docId){
+  const doc=(S.docs||[]).find(d=>d.id===docId);
+  if(!doc)return;
+  const invoice=(S.invoices||[]).find(i=>i.id===doc.sourceInvoiceId);
+  if(!invoice){toast('Source invoice not found');return;}
+
+  if(!S.expenses)S.expenses=[];
+  S.expenses.push({
+    id:UID(),cid:doc.cid,date:invoice.date,
+    supplier:'ANB Financial Services',payToId:null,
+    desc:invoice.desc||'ANB subscription fee',cat:'Kantoor',
+    amount:invoice.amount,btw:invoice.btw,
+    amountPaid:0,paymentStatus:'Onbetaald',
+    sourceInvoiceId:invoice.id
+  });
+  doc.status='approved';
+  logAudit('create','expense','Approved ANB invoice and added to expenses: '+(invoice.desc||''),doc.cid);
+  sv();closeModal();renderApp();
+  toast('✓ Added to your expenses');
 }
 
 function getOrCreateGeneralDebtor(cid){
@@ -5514,6 +5606,10 @@ function rDocs(el,cid){
     client_rejected:{label:'Rejected',color:'#a83232',bg:'rgba(168,50,50,0.15)'},
     rejected:{label:'Rejected',color:'#a83232',bg:'rgba(168,50,50,0.15)'}
   };
+  const billStatusMeta={
+    pending_review:{label:'Pending Review',color:'#8a6410',bg:'rgba(200,144,16,0.15)'},
+    approved:{label:'✓ Approved — In Expenses',color:'#2d7a4f',bg:'rgba(45,122,79,0.15)'}
+  };
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}';this.style.transform='translateX(0)'">
@@ -5545,6 +5641,17 @@ function rDocs(el,cid){
             <div style="font-size:11px;margin-top:2px"><span style="background:${meta.bg};color:${meta.color};font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px">${meta.label}</span></div>
           </div>
           <button class="btn btn-xs" onclick="reviewAgreementDoc('${d.id}')">👁 Review</button>
+        </div>`;
+      }
+      if(d.category==='anb_invoice'){
+        const meta=billStatusMeta[d.status]||billStatusMeta.pending_review;
+        return `<div class="doc-item">
+          <div class="doc-icon"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🧾</span></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.name)}</div>
+            <div style="font-size:11px;margin-top:2px"><span style="background:${meta.bg};color:${meta.color};font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px">${meta.label}</span></div>
+          </div>
+          <button class="btn btn-xs" onclick="reviewIncomingBillDoc('${d.id}')">👁 Review</button>
         </div>`;
       }
       return `<div class="doc-item">
@@ -8928,6 +9035,9 @@ function openInvoiceModal(inv){
       return;
     }
     if(isN)S.invoices.push(ni);else S.invoices=S.invoices.map(i=>i.id===ni.id?ni:i);
+    if(isN&&isANBSelfBook&&ni.billToId&&ni.billToId!==ANB_SELF_ID){
+      postANBInvoiceToClientDocs(ni,ni.billToId);
+    }
     logAudit(isN?'create':'edit','invoice',(isN?'Created':'Edited')+' invoice '+ni.num+' — '+FMT(ni.total)+' ('+getBillToName(ni)+')',cid);
     if(isN&&document.getElementById('if-rec')?.checked){
       const freq=document.getElementById('if-rec-freq').value;
