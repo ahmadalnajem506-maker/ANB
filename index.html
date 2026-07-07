@@ -674,13 +674,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.02">
+<link rel="manifest" href="manifest.json?v=3.04">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.02').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.04').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -3012,7 +3012,6 @@ function renderSidebar(){
       clients.innerHTML='';
       const adminMainTabs=[
         {id:'dashboard',icon:'◼',key:'dashboard'},
-        {id:'clients',icon:'💼',key:'clients_list'},
         {id:'trash',icon:'🗑️',key:'trash_title'},
         {id:'settings',icon:'⚙',key:'settings'}
       ];
@@ -3054,7 +3053,6 @@ function renderSidebar(){
     // Admin main tabs at bottom
     const adminMainTabs=[
       {id:'dashboard',icon:'◼',key:'dashboard'},
-      {id:'clients',icon:'💼',key:'clients_list'},
       {id:'trash',icon:'🗑️',key:'trash_title'},
       {id:'settings',icon:'⚙',key:'settings'}
     ];
@@ -3192,10 +3190,9 @@ function renderTopbar(){
     tabs.innerHTML='';
     const acts={
       client_overview:'',
-      invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_invoice')}</button>`,
+      invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_invoice')}</button> <button class="btn btn-xs" onclick="openDailyRevenueEntry()" title="Quick entry for a single day's total takings">📊 Daily Total</button>`,
       expenses:`<button class="btn btn-p btn-xs" onclick="openNewExpense()">${t('new_expense')}</button>`,
       hours:`<button class="btn btn-p btn-xs" onclick="openLogHours()">${t('log_hours')}</button>`,
-      messages:`<button class="btn btn-p btn-xs" onclick="openSendMsg()">${t('send_message')}</button>`,
       bank:`<button class="btn btn-p btn-xs" onclick="openImportBank()">📥 ${t('import_bank')||'Import'}</button>`,
       import:`<button class="btn btn-p btn-xs" onclick="openImportBank()">📥 ${t('import_bank')||'Import'}</button>`,
       info:`<button class="btn btn-xs" onclick="openEditClient('${c?.id}')">✏ ${t('edit')}</button>
@@ -3215,7 +3212,6 @@ function renderTopbar(){
       invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_request')}</button>`,
       expenses:`<button class="btn btn-p btn-xs" onclick="openNewExpense()">${t('add_expense')}</button>`,
       hours:`<button class="btn btn-p btn-xs" onclick="openLogHours()">${t('log_hours')}</button>`,
-      messages:`<button class="btn btn-p btn-xs" onclick="openSendMsg()">${t('send_message')}</button>`,
       // dashboard: لا أزرار
     };
     right.innerHTML=cacts[S.tab]||'';
@@ -4402,9 +4398,9 @@ function renderQuickDashboard(el,quickActions,cards){
     html+='<div style="font-size:10px;font-weight:800;color:#2A6040;text-transform:uppercase;margin:14px 0 8px">'+(t('for_reference')||'For Reference')+'</div>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
     calm.forEach(c=>{
-      html+='<div onclick="'+c.onclickAttr+'" style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:9px 10px;display:flex;align-items:center;gap:8px;cursor:pointer">';
-      html+='<div style="font-size:17px">'+c.icon+'</div>';
-      html+='<div style="min-width:0"><div style="font-size:10.5px;font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:13px;font-weight:800;color:#0A2218">'+c.value+'</div></div>';
+      html+='<div onclick="'+c.onclickAttr+'" style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:9px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden">';
+      html+='<div style="font-size:17px;flex-shrink:0">'+c.icon+'</div>';
+      html+='<div style="min-width:0;overflow:hidden"><div style="font-size:10.5px;font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:13px;font-weight:800;color:#0A2218">'+c.value+'</div></div>';
       html+='</div>';
     });
     html+='</div>';
@@ -4442,7 +4438,7 @@ function rAdminDash(el){
   ];
 
   renderQuickDashboard(el,[
-    {icon:'👤',label:t('add_client_title')||'Client',onclickAttr:'openAddClient()'},
+    {icon:'💼',label:t('clients_list')||'Clients List',onclickAttr:"setTab('clients')"},
     {icon:'📋',label:t('add')+' '+(t('contracts')||'Contract'),onclickAttr:'openNewContractDialog()'},
     {icon:'💬',label:t('messages')||'Messages',onclickAttr:"goToAdminStat('messages')"}
   ],cards);
@@ -6081,7 +6077,7 @@ function rMessages(el,cid){
       el.innerHTML=`
       <div style="display:flex;flex-direction:column;height:600px;background:var(--gr2);border-radius:8px;overflow:hidden;border:2px solid ${theme.border}">
         <div style="padding:12px;border-bottom:3px solid ${theme.border};display:flex;align-items:center;gap:12px;background:${theme.bg}">
-          <button onclick="goBackToClients()" style="background:transparent;border:none;color:${theme.text};font-size:18px;cursor:pointer;padding:0">←</button>
+          <button onclick="goBackToOverview()" style="background:transparent;border:none;color:${theme.text};font-size:18px;cursor:pointer;padding:0">←</button>
           <div style="font-weight:600;color:${theme.text};flex:1">${clientName}</div>
         </div>
         <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
@@ -8654,6 +8650,58 @@ function nextNum(clientId){
 function openNewInvoice(){
   openInvoiceModal(null);
 }
+
+// ══════════════════════════════════════════════════════════════════
+// تسجيل دخل يومي سريع - لعملاء مثل الحلاق أو البائع الذي يجمع دخله في
+// نهاية اليوم ولا يستطيع تذكر تفاصيل كل خدمة/عملية. يُنشئ فاتورة مبسطة
+// (رقمًا إجماليًا واحدًا لليوم) تدخل مباشرة في نفس نظام مطابقة حركات
+// البنك الموجود أصلًا - بلا أي تعديل على محرك المطابقة نفسه، فحركة بنكية
+// واحدة أو عدة حركات (دفعات بطاقة متفرقة خلال اليوم) يمكنها أن تُطابَق
+// مع هذه الفاتورة جزئيًا كما يعمل النظام الحالي تمامًا.
+// ══════════════════════════════════════════════════════════════════
+function openDailyRevenueEntry(){
+  const cid=S.currentClient;
+  showModal('📊 Daily Revenue Entry',`
+    <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:10px;border-radius:4px;font-size:11px;color:var(--t3);margin-bottom:14px">
+      ℹ️ For businesses that collect many small payments per day (barbers, retail counters...) and just need one total to reconcile against the bank — instead of itemizing every single sale.
+    </div>
+    <div class="fr2">
+      <div class="fg"><label>Date</label><input type="date" id="dre-date" value="${TODAY()}"/></div>
+      <div class="fg"><label>${t('lbl_btw')}</label><select id="dre-r"><option value="21">21%</option><option value="9">9%</option><option value="0">0%</option></select></div>
+    </div>
+    <div class="fg"><label>Total takings for the day, excl. BTW (€) *</label><input type="number" id="dre-amount" step="0.01" placeholder="e.g. 450.00" oninput="upDailyRevenueTotal()"/></div>
+    <div class="itot">
+      <div class="itr"><span>BTW</span><span id="dre-btw-out">€0.00</span></div>
+      <div class="itr fin"><span>Total incl. BTW</span><span id="dre-total-out">€0.00</span></div>
+    </div>
+    <div class="fg"><label>Note (optional)</label><input id="dre-note" placeholder="e.g. Saturday takings"/></div>
+  `,()=>{
+    const a=parseFloat(document.getElementById('dre-amount').value)||0;
+    const r=parseFloat(document.getElementById('dre-r').value);
+    const date=document.getElementById('dre-date').value||TODAY();
+    const note=(document.getElementById('dre-note').value||'').trim();
+    if(a<=0){toast('❌ Enter the day\'s total takings');markFieldError('dre-amount');return;}
+
+    const gd=getOrCreateGeneralDebtor(cid);
+    const ni={id:UID(),cid,num:nextNum(cid),
+      desc:note||('Daily takings — '+FD(date)),date,due:date,status:'Openstaand',
+      amount:a,btw:a*(r/100),total:a+a*(r/100),btwRate:r,
+      amountPaid:0,billTo:gd.name,billToId:gd.id,billToManual:null,isDailyRevenue:true};
+
+    S.invoices.push(ni);
+    logAudit('create','invoice','Daily revenue entry '+FD(date)+' — '+FMT(ni.total),cid);
+    sv();closeModal();renderContent();
+    toast('✓ Daily total recorded — ready to match against bank transactions');
+  },'Save Daily Total');
+  setTimeout(upDailyRevenueTotal,50);
+}
+function upDailyRevenueTotal(){
+  const a=parseFloat(document.getElementById('dre-amount')?.value)||0;
+  const r=parseFloat(document.getElementById('dre-r')?.value)||21;
+  const b=document.getElementById('dre-btw-out'),t=document.getElementById('dre-total-out');
+  if(b)b.textContent=FMT(a*(r/100));if(t)t.textContent=FMT(a+a*(r/100));
+}
+
 function editInvoice(id){openInvoiceModal(S.invoices.find(i=>i.id===id));}
 function openInvoiceModal(inv){
   const isN=!inv;const cid=S.currentClient;
@@ -8714,10 +8762,23 @@ function openInvoiceModal(inv){
       <div class="fg"><label>Date</label><input type="date" id="if-d" value="${inv?.date||TODAY()}"/></div>
       <div class="fg"><label>Due date</label><input type="date" id="if-dd" value="${inv?.due||new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"/></div>
     </div>
-    <div class="fg"><label>Description</label><input id="if-desc" value="${inv?.desc||''}" placeholder="e.g. Financial advisory services Q2"/></div>
-    <div class="fr2">
-      <div class="fg"><label>Amount excl. BTW (€)</label><input type="number" id="if-a" value="${inv?.amount||''}" oninput="uIT()" step="0.01"/></div>
-      <div class="fg"><label>${t('lbl_btw')}</label><select id="if-r" onchange="uIT()"><option value="21" ${inv?.btwRate===21?'selected':''}>21%</option><option value="9" ${inv?.btwRate===9?'selected':''}>9%</option><option value="0" ${inv?.btwRate===0?'selected':''}>0% KOR</option></select></div>
+    ${isN?`<div class="fg" style="margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;font-size:12px;color:var(--t1)">
+        <input type="checkbox" id="if-multi" onchange="toggleInvoiceMultiItem()" style="width:auto"/>
+        🧾 Multiple items (sell several products/services on this invoice)
+      </label>
+    </div>`:''}
+    <div id="if-single-wrap">
+      <div class="fg"><label>Description</label><input id="if-desc" value="${inv?.desc||''}" placeholder="e.g. Financial advisory services Q2"/></div>
+      <div class="fr2">
+        <div class="fg"><label>Amount excl. BTW (€)</label><input type="number" id="if-a" value="${inv?.amount||''}" oninput="uIT()" step="0.01"/></div>
+        <div class="fg"><label>${t('lbl_btw')}</label><select id="if-r" onchange="uIT()"><option value="21" ${inv?.btwRate===21?'selected':''}>21%</option><option value="9" ${inv?.btwRate===9?'selected':''}>9%</option><option value="0" ${inv?.btwRate===0?'selected':''}>0% KOR</option></select></div>
+      </div>
+    </div>
+    <div id="if-multi-wrap" style="display:none">
+      <div id="if-items-list"></div>
+      <button type="button" class="btn btn-xs" onclick="addInvoiceItemRow()" style="margin:6px 0 10px">➕ Add item</button>
+      <div class="fg"><label>${t('lbl_btw')} (applied to the whole invoice)</label><select id="if-multi-r" onchange="uITMulti()"><option value="21">21%</option><option value="9">9%</option><option value="0">0% KOR</option></select></div>
     </div>
     <div class="itot">
       <div class="itr"><span>BTW</span><span id="it-b">€0.00</span></div>
@@ -8736,8 +8797,24 @@ function openInvoiceModal(inv){
       </div>
     </div>`:''}
   `,()=>{
-    const a=parseFloat(document.getElementById('if-a').value)||0;
-    const r=parseFloat(document.getElementById('if-r').value);
+    const isMulti=document.getElementById('if-multi')?.checked;
+    let a=0,r=21,items=null,descVal='';
+    if(isMulti){
+      const rows=Array.from(document.querySelectorAll('.if-item-row'));
+      items=rows.map(row=>{
+        const idesc=row.querySelector('.if-item-desc')?.value||'';
+        const qty=parseFloat(row.querySelector('.if-item-qty')?.value)||0;
+        const price=parseFloat(row.querySelector('.if-item-price')?.value)||0;
+        return {desc:idesc.trim(),qty,price,subtotal:qty*price};
+      }).filter(it=>it.desc&&it.qty>0);
+      a=items.reduce((s,it)=>s+it.subtotal,0);
+      r=parseFloat(document.getElementById('if-multi-r')?.value)||21;
+      descVal=items.length?items.map(it=>it.desc).join(', ').slice(0,140):'';
+    }else{
+      a=parseFloat(document.getElementById('if-a').value)||0;
+      r=parseFloat(document.getElementById('if-r').value);
+      descVal=document.getElementById('if-desc').value;
+    }
     const btw=a*(r/100);
     const mode=window._btMode||'select';
 
@@ -8772,12 +8849,12 @@ function openInvoiceModal(inv){
     }
 
     const ni={id:inv?.id||UID(),cid,num:document.getElementById('if-n').value,
-      desc:document.getElementById('if-desc').value,date:document.getElementById('if-d').value,
+      desc:descVal,date:document.getElementById('if-d').value,
       due:document.getElementById('if-dd').value,status:document.getElementById('if-s').value,
-      amount:a,btw,total:a+btw,btwRate:r,
+      amount:a,btw,total:a+btw,btwRate:r,items:items&&items.length?items:null,
       amountPaid:inv?.amountPaid||0,
       billTo,billToId,billToManual};
-    
+
     // Comprehensive validation for all required fields
     clearFieldErrors(['if-desc','if-a','bt-manual-name','bt-new-name']);
     const errors=[];
@@ -8785,9 +8862,10 @@ function openInvoiceModal(inv){
       errors.push('📋 Select, add, or enter a recipient (Bill To)');
       markFieldError(mode==='manual'?'bt-manual-name':mode==='new'?'bt-new-name':'if-billto-sel');
     }
-    if(!ni.desc){errors.push('📝 Description is required');markFieldError('if-desc');}
-    if(a<=0){errors.push('💶 Amount must be greater than 0');markFieldError('if-a');}
-    
+    if(isMulti&&(!items||items.length===0)){errors.push('🧾 Add at least one item with a description, quantity, and price');}
+    if(!isMulti&&!ni.desc){errors.push('📝 Description is required');markFieldError('if-desc');}
+    if(a<=0){errors.push('💶 Amount must be greater than 0');if(!isMulti)markFieldError('if-a');}
+
     if(errors.length>0){
       toast('❌ Please complete all required fields:\n\n'+errors.join('\n'));
       return;
@@ -8853,6 +8931,50 @@ function uIT(){
   const r=parseFloat(document.getElementById('if-r')?.value)||21;
   const b=document.getElementById('it-b'),t=document.getElementById('it-t');
   if(b)b.textContent=FMT(a*(r/100));if(t)t.textContent=FMT(a+a*(r/100));
+}
+
+// ══════════════════════════════════════════════════════════════════
+// وضع "فاتورة متعددة البنود" - لعميل بائع تجزئة يبيع أكثر من سلعة في
+// نفس الفاتورة. المجموع الكلي يبقى رقمًا واحدًا (amount/btw/total) تمامًا
+// كالسابق، فلا حاجة لأي تعديل في تقارير BTW أو محرك مطابقة البنك - فقط
+// شاشة الإنشاء والعرض/PDF تصبحان قادرتين على تفصيل البنود.
+// ══════════════════════════════════════════════════════════════════
+function toggleInvoiceMultiItem(){
+  const isMulti=document.getElementById('if-multi')?.checked;
+  const singleWrap=document.getElementById('if-single-wrap');
+  const multiWrap=document.getElementById('if-multi-wrap');
+  if(singleWrap)singleWrap.style.display=isMulti?'none':'block';
+  if(multiWrap)multiWrap.style.display=isMulti?'block':'none';
+  if(isMulti&&document.querySelectorAll('.if-item-row').length===0){
+    addInvoiceItemRow();addInvoiceItemRow();
+  }
+}
+function addInvoiceItemRow(){
+  const list=document.getElementById('if-items-list');
+  if(!list)return;
+  const rowId='item-row-'+UID();
+  const row=document.createElement('div');
+  row.className='if-item-row';
+  row.id=rowId;
+  row.style.cssText='display:flex;gap:6px;margin-bottom:8px;align-items:center';
+  row.innerHTML=`
+    <input class="if-item-desc" placeholder="Item/service name" style="flex:2;padding:8px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:12px" oninput="uITMulti()"/>
+    <input class="if-item-qty" type="number" placeholder="Qty" value="1" min="0" step="1" style="width:55px;padding:8px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:12px" oninput="uITMulti()"/>
+    <input class="if-item-price" type="number" placeholder="Price €" step="0.01" style="width:80px;padding:8px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:12px" oninput="uITMulti()"/>
+    <button type="button" onclick="document.getElementById('${rowId}').remove();uITMulti()" style="background:none;border:none;color:#a83232;font-size:16px;cursor:pointer;padding:0 4px">✕</button>
+  `;
+  list.appendChild(row);
+}
+function uITMulti(){
+  const rows=Array.from(document.querySelectorAll('.if-item-row'));
+  const total=rows.reduce((s,row)=>{
+    const qty=parseFloat(row.querySelector('.if-item-qty')?.value)||0;
+    const price=parseFloat(row.querySelector('.if-item-price')?.value)||0;
+    return s+qty*price;
+  },0);
+  const r=parseFloat(document.getElementById('if-multi-r')?.value)||21;
+  const b=document.getElementById('it-b'),t=document.getElementById('it-t');
+  if(b)b.textContent=FMT(total*(r/100));if(t)t.textContent=FMT(total+total*(r/100));
 }
 
 function openNewExpense(){
@@ -9254,15 +9376,33 @@ function _exportPDF(id){
   allBillLines.forEach(line=>{doc.text(line,M+5,by);by+=4.5;});
   y+=cardH+10;
 
-  // ── جدول العناصر
+  // ── جدول العناصر (متعدد البنود إن وُجدت، وإلا سطر واحد كما كان)
   doc.setFillColor(10,34,24);doc.rect(M,y,W-M*2,8,'F');
   doc.setTextColor(245,220,112);doc.setFontSize(8);doc.setFont('helvetica','bold');
-  doc.text('DESCRIPTION',M+3,y+5.3);doc.text('AMOUNT',W-M-3,y+5.3,{align:'right'});
-  y+=8;
-  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(20,20,20);
-  doc.text(i.desc,M+3,y+8);doc.text(FMT(i.amount),W-M-3,y+8,{align:'right'});
-  doc.setDrawColor(231,229,221);doc.line(M,y+13,W-M,y+13);
-  y+=22;
+  if(i.items&&i.items.length){
+    doc.text('DESCRIPTION',M+3,y+5.3);
+    doc.text('QTY',W-M-58,y+5.3,{align:'right'});
+    doc.text('PRICE',W-M-32,y+5.3,{align:'right'});
+    doc.text('SUBTOTAL',W-M-3,y+5.3,{align:'right'});
+    y+=8;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(20,20,20);
+    i.items.forEach(it=>{
+      doc.text(String(it.desc).slice(0,50),M+3,y+6);
+      doc.text(String(it.qty),W-M-58,y+6,{align:'right'});
+      doc.text(FMT(it.price),W-M-32,y+6,{align:'right'});
+      doc.text(FMT(it.subtotal),W-M-3,y+6,{align:'right'});
+      y+=6.5;
+    });
+    doc.setDrawColor(231,229,221);doc.line(M,y+2,W-M,y+2);
+    y+=11;
+  }else{
+    doc.text('DESCRIPTION',M+3,y+5.3);doc.text('AMOUNT',W-M-3,y+5.3,{align:'right'});
+    y+=8;
+    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(20,20,20);
+    doc.text(i.desc,M+3,y+8);doc.text(FMT(i.amount),W-M-3,y+8,{align:'right'});
+    doc.setDrawColor(231,229,221);doc.line(M,y+13,W-M,y+13);
+    y+=22;
+  }
 
   // ── صندوق الإجمالي (يسار: subtotal/BTW رمادي، صف الإجمالي أخضر داكن بنص ذهبي)
   const bx=W-M-65;
