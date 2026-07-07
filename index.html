@@ -674,13 +674,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.04">
+<link rel="manifest" href="manifest.json?v=3.06">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.04').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.06').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -3193,8 +3193,6 @@ function renderTopbar(){
       invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_invoice')}</button> <button class="btn btn-xs" onclick="openDailyRevenueEntry()" title="Quick entry for a single day's total takings">📊 Daily Total</button>`,
       expenses:`<button class="btn btn-p btn-xs" onclick="openNewExpense()">${t('new_expense')}</button>`,
       hours:`<button class="btn btn-p btn-xs" onclick="openLogHours()">${t('log_hours')}</button>`,
-      bank:`<button class="btn btn-p btn-xs" onclick="openImportBank()">📥 ${t('import_bank')||'Import'}</button>`,
-      import:`<button class="btn btn-p btn-xs" onclick="openImportBank()">📥 ${t('import_bank')||'Import'}</button>`,
       info:`<button class="btn btn-xs" onclick="openEditClient('${c?.id}')">✏ ${t('edit')}</button>
             <button class="btn btn-danger btn-xs" onclick="delClient('${c?.id}')">🗑 ${t('remove')}</button>`,
     };
@@ -4253,7 +4251,7 @@ function renderClientsList(searchTerm){
   
   // فلترة حسب البحث والباقة
   const filtered=S.clients.filter(c=>{
-    if(c.deleted)return false;
+    if(c.deleted||c.isANBSelf)return false;
     const matchesSearch=term===''||c.name.toLowerCase().includes(term)||c.email.toLowerCase().includes(term)||c.phone.includes(term);
     const isExpiredClient=x=>parseInt(x.monthlyFee)>0&&x.planExpiry&&new Date(x.planExpiry)<new Date(new Date().toDateString());
     const matchesPlan=planFilter===''||
@@ -4437,11 +4435,28 @@ function rAdminDash(el){
     {icon:'📝',name:t('dashboard_pending_agreements')||'Pending Signature',value:contractsPendingSignature,onclickAttr:"goToAdminStat('contracts_filter:draft')"}
   ];
 
-  renderQuickDashboard(el,[
+  const anbCardHtml=`
+  <div onclick="openANBSelfAccounts()" style="margin-bottom:14px;padding:16px;background:linear-gradient(135deg, #0A2218 0%, #0F3025 60%, #1a4d2e 100%);border:2px solid #C89010;border-radius:12px;cursor:pointer;transition:all .25s ease;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 3px 10px rgba(0,0,0,0.18)"
+    onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 20px rgba(0,0,0,0.25)'"
+    onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 3px 10px rgba(0,0,0,0.18)'">
+    <div style="display:flex;align-items:center;gap:14px;min-width:0">
+      <div style="width:40px;height:40px;border-radius:10px;background:rgba(200,144,16,0.15);border:1.5px solid #C89010;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#FFD700;flex-shrink:0">A</div>
+      <div>
+        <div style="font-size:14px;font-weight:800;color:#FFD700;letter-spacing:0.5px">ANB Financial Services</div>
+        <div style="font-size:10.5px;color:rgba(255,255,255,0.65)">Manage the company's own accounts</div>
+      </div>
+    </div>
+    <div style="font-size:16px;color:#FFD700">→</div>
+  </div>`;
+
+  const cardsWrap=document.createElement('div');
+  renderQuickDashboard(cardsWrap,[
     {icon:'💼',label:t('clients_list')||'Clients List',onclickAttr:"setTab('clients')"},
     {icon:'📋',label:t('add')+' '+(t('contracts')||'Contract'),onclickAttr:'openNewContractDialog()'},
     {icon:'💬',label:t('messages')||'Messages',onclickAttr:"goToAdminStat('messages')"}
   ],cards);
+
+  el.innerHTML=anbCardHtml+cardsWrap.innerHTML;
 }
 
 
@@ -4704,6 +4719,32 @@ function goBackToOverview(){
 
 // ⚠️ إصلاح: كانت getOrCreateGeneralDebtor لا تُفلتر بـ cid إطلاقًا - يعني كل
 // عملاء ANB يشتركون في نفس سجل "General Debtors"! الآن كل عميل له سجله الخاص.
+// ══════════════════════════════════════════════════════════════════
+// ANB Financial Services كـ"عميل خاص" داخل نظامها نفسه - يعيد استخدام
+// كل شاشات المحاسبة الجاهزة (فواتير/مصاريف/بنك/تقارير) لإدارة حسابات
+// الشركة نفسها، بدل بناء نظام منفصل. مخفي عن قائمة العملاء العادية.
+// ══════════════════════════════════════════════════════════════════
+const ANB_SELF_ID='anb-self';
+function getOrCreateANBSelfClient(){
+  let anb=S.clients.find(c=>c.id===ANB_SELF_ID);
+  if(!anb){
+    anb={id:ANB_SELF_ID,name:S.settings?.companyName||'ANB Financial Services',
+      type:'internal',isANBSelf:true,
+      email:S.settings?.email||'',phone:S.settings?.phone||'',
+      kvk:S.settings?.kvk||'',btw:S.settings?.btw||'',iban:S.settings?.iban||'',
+      address:S.settings?.address||'',color:'#C89010',createdDate:TODAY()};
+    S.clients.push(anb);
+    sv();
+  }
+  return anb;
+}
+function openANBSelfAccounts(){
+  const anb=getOrCreateANBSelfClient();
+  S.currentClient=anb.id;
+  S.tab='client_overview';
+  renderApp();
+}
+
 function getOrCreateGeneralDebtor(cid){
   if(!S.contacts)S.contacts=[];
   let gd=S.contacts.find(c=>c.type==='debtor'&&c.isGeneral&&c.cid===cid&&!c.deleted);
@@ -4724,7 +4765,7 @@ function getOrCreateGeneralCreditor(cid){
 }
 
 function viewDebtorLedger(debtorId){
-  const debtor=(S.contacts||[]).find(c=>c.id===debtorId);
+  const debtor=(S.contacts||[]).find(c=>c.id===debtorId)||S.clients.find(c=>c.id===debtorId);
   if(!debtor)return;
   const invoices=(S.invoices||[]).filter(i=>i.billToId===debtorId&&!i.deleted).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const totalInvoiced=invoices.reduce((s,i)=>s+(i.total||0),0);
@@ -4956,7 +4997,7 @@ function isContractExpired(con){
 function getBillToName(inv){
   if(inv.billToManual&&inv.billToManual.name)return inv.billToManual.name;
   if(inv.billToId){
-    const contact=(S.contacts||[]).find(c=>c.id===inv.billToId);
+    const contact=(S.contacts||[]).find(c=>c.id===inv.billToId)||S.clients.find(c=>c.id===inv.billToId);
     if(contact)return contact.name;
   }
   if(inv.billTo)return inv.billTo;
@@ -7106,34 +7147,46 @@ function renderDebtorsTable(cid,searchTerm){
   if(!container)return;
   const theme=S.cardTheme||{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   const term=(searchTerm||'').toLowerCase().trim();
-  let debtors=S.contacts.filter(c=>{
-    if(!((c.cid===cid||(c.isGeneral&&c.cid==='GENERAL'))&&c.type==='debtor'&&!c.deleted))return false;
-    if(!term)return true;
-    return (c.name||'').toLowerCase().includes(term)||
-      (c.email||'').toLowerCase().includes(term)||
-      (c.accountNumber||'').toLowerCase().includes(term);
-  });
+  const isANBSelfBook=cid===ANB_SELF_ID;
+
+  let debtors;
+  if(isANBSelfBook){
+    // ⚠️ مدينو ANB نفسها هم عملاؤها الحقيقيون (رسوم الباقة الشهرية) - وليسوا جهات اتصال منفصلة
+    debtors=S.clients.filter(cl=>{
+      if(cl.id===ANB_SELF_ID||cl.deleted)return false;
+      if(!term)return true;
+      return (cl.name||'').toLowerCase().includes(term)||(cl.email||'').toLowerCase().includes(term);
+    }).map(cl=>({id:cl.id,name:cl.name,email:cl.email,accountNumber:cl.monthlyFee?'€'+cl.monthlyFee+'/mo':'—',isClientRecord:true}));
+  }else{
+    debtors=S.contacts.filter(c=>{
+      if(!((c.cid===cid||(c.isGeneral&&c.cid==='GENERAL'))&&c.type==='debtor'&&!c.deleted))return false;
+      if(!term)return true;
+      return (c.name||'').toLowerCase().includes(term)||
+        (c.email||'').toLowerCase().includes(term)||
+        (c.accountNumber||'').toLowerCase().includes(term);
+    });
+  }
   const sortState=getSortState('debtors','name','asc');
   debtors=sortRows(debtors,sortState.field,sortState.dir);
   const reArgs=`'${cid}',document.getElementById('deb-search')?.value||''`;
 
   container.innerHTML=`<div class="card">
-    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💵 Debtors (Customers)</span>
-      <button class="btn btn-p btn-xs" onclick="openContactModal(null,'debtor')">➕ Add Debtor</button>
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💵 ${isANBSelfBook?'Debtors (Subscribing Clients)':'Debtors (Customers)'}</span>
+      ${isANBSelfBook?'':'<button class="btn btn-p btn-xs" onclick="openContactModal(null,\'debtor\')">➕ Add Debtor</button>'}
     </div>
     ${debtors.length===0?`<div class="empty">💵 ${term?(t('no_results')||'No matching debtors'):'No debtors yet'}</div>`:
     `<table style="width:100%;font-size:11px">
       <thead><tr style="border-bottom:2px solid var(--bd2)">
         ${sortTh('Name','name','debtors',`renderDebtorsTable(${reArgs})`)}
         ${sortTh('Email','email','debtors',`renderDebtorsTable(${reArgs})`)}
-        ${sortTh('Account #','accountNumber','debtors',`renderDebtorsTable(${reArgs})`)}
+        <th style="text-align:left;padding:8px">${isANBSelfBook?'Plan':'Account #'}</th>
         <th style="text-align:right;padding:8px">Balance</th>
         <th style="text-align:right;padding:8px">Actions</th></tr></thead>
       <tbody>
       ${debtors.map(d=>{
         const invoices=(S.invoices||[]).filter(i=>i.billToId===d.id&&!i.deleted);
         const balance=invoices.reduce((s,i)=>s+getInvoiceRemaining(i),0);
-        return '<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+(d.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+(d.accountNumber||'—')+'</td><td style="text-align:right;padding:8px;font-weight:700;color:'+(balance>0.01?'#B8860B':'#2d7a4f')+'">'+(invoices.length?FMT(balance):'—')+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="viewDebtorLedger(\''+d.id+'\')">📖 Ledger</button>'+(d.isGeneral?'':'<button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button>')+'</td></tr>';
+        return '<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+(d.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+(d.accountNumber||'—')+'</td><td style="text-align:right;padding:8px;font-weight:700;color:'+(balance>0.01?'#B8860B':'#2d7a4f')+'">'+(invoices.length?FMT(balance):'—')+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="viewDebtorLedger(\''+d.id+'\')">📖 Ledger</button>'+(d.isGeneral||d.isClientRecord?'':'<button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button>')+'</td></tr>';
       }).join('')}
       </tbody>
     </table>`}
@@ -8706,9 +8759,13 @@ function editInvoice(id){openInvoiceModal(S.invoices.find(i=>i.id===id));}
 function openInvoiceModal(inv){
   const isN=!inv;const cid=S.currentClient;
   const isClientPortal=S.role==='client';
-  
-  // Filter contacts by current client ID
-  const contacts=(S.contacts||[]).filter(c=>c.cid===cid&&!c.deleted);
+  const isANBSelfBook=cid===ANB_SELF_ID;
+
+  // ⚠️ عند عرض حسابات ANB نفسها، "Bill To" يُسحب من قائمة العملاء الحقيقيين
+  // (رسوم الباقة الشهرية)، وليس من جهات اتصال منفصلة يجب إنشاؤها يدويًا
+  const contacts=isANBSelfBook
+    ?S.clients.filter(cl=>cl.id!==ANB_SELF_ID&&!cl.deleted).map(cl=>({id:cl.id,name:cl.name,type:'Client'}))
+    :(S.contacts||[]).filter(c=>c.cid===cid&&!c.deleted);
   const billToOptions=contacts.filter(c=>!c.isGeneral).map(c=>`<option value="${c.id}" data-name="${escapeHtml(c.name)}"${inv?.billToId===c.id?'selected':''}>${escapeHtml(c.name)} (${c.type})</option>`).join('');
   const initMode=inv?.billToManual?'manual':'select';
   showModal(isN?t('btn_new_invoice').replace('+ ',''):t('edit')+' '+t('tab_invoices').slice(0,-1),`
@@ -8909,9 +8966,11 @@ function upBillTo(){
   const detDiv=document.getElementById('if-billto-details');
   const billtoId=sel?.value;
   if(!billtoId){if(detDiv)detDiv.style.display='none';return;}
-  // Use S.contacts (filtered by current client) instead of old S.clients/S.debtors
   const cid=S.currentClient;
-  const contacts=(S.contacts||[]).filter(c=>c.cid===cid&&!c.deleted);
+  // ⚠️ عند عرض حسابات ANB نفسها، جهة الفاتورة عميل حقيقي من S.clients وليست S.contacts
+  const contacts=cid===ANB_SELF_ID
+    ?S.clients.filter(cl=>cl.id!==ANB_SELF_ID&&!cl.deleted)
+    :(S.contacts||[]).filter(c=>c.cid===cid&&!c.deleted);
   const entity=contacts.find(e=>e.id===billtoId);
   if(!entity)return;
   document.getElementById('if-billto-id').value=billtoId;
@@ -9622,9 +9681,9 @@ function renderBankTable(cid,searchTerm){
       const matchStatus=getTxMatchStatus(tx);
       const allocatedCount=(tx.allocations||[]).length;
       let statusBadge;
-      if(matchStatus==='full')statusBadge=`<span class="bdg b-paid">✓ ${allocatedCount>1?allocatedCount+'× ':''}${t('matched')||'Matched'}</span>`;
-      else if(matchStatus==='partial')statusBadge=`<span class="bdg" style="background:rgba(184,134,11,0.15);color:#B8860B">◐ ${t('partial')||'Partial'} (${FMT(getTxRemaining(tx))} ${t('left')||'left'})</span>`;
-      else if(matchStatus==='no_match_needed')statusBadge=`<span class="bdg" style="background:var(--gr2);color:var(--t3)">— ${t('no_match_needed_short')||'N/A'}</span>`;
+      if(matchStatus==='full')statusBadge=`<span class="bdg b-paid">✓ ${allocatedCount>1?allocatedCount+'× ':''}${t('matched')||'Matched'}</span> <button class="btn btn-xs" onclick="unmatchTransaction('${tx.id}')" title="Undo match">↩</button>`;
+      else if(matchStatus==='partial')statusBadge=`<span class="bdg" style="background:rgba(184,134,11,0.15);color:#B8860B">◐ ${t('partial')||'Partial'} (${FMT(getTxRemaining(tx))} ${t('left')||'left'})</span> <button class="btn btn-xs" onclick="unmatchTransaction('${tx.id}')" title="Undo match">↩</button>`;
+      else if(matchStatus==='no_match_needed')statusBadge=`<span class="bdg" style="background:var(--gr2);color:var(--t3)">— ${t('no_match_needed_short')||'N/A'}</span> <button class="btn btn-xs" onclick="unmatchTransaction('${tx.id}')" title="Undo">↩</button>`;
       else statusBadge=`<button class="btn btn-xs" onclick="matchTx('${tx.id}')">${t('match')||'Match'} →</button>`;
       return `<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;border-bottom:1px solid var(--gr2);font-size:11px;cursor:pointer" onclick="matchTx('${tx.id}')">
       <span style="color:var(--t3);width:70px;flex-shrink:0;font-size:10px">${FD(tx.date)}</span>
@@ -9886,6 +9945,65 @@ function rReports(el,cid){
 }
 
 /* ── REPORTS LIST PAGE ── */
+// ══════════════════════════════════════════════════════════════════
+// فلترة زمنية موحّدة للتقارير (هذا الشهر / هذا الربع / هذه السنة / نطاق
+// مخصص / كل الوقت) - تُستخدم في كل تقرير مالي بدل حساب الإجمالي منذ
+// البداية دائمًا. تُطبَّق على أي عميل، بما فيها حسابات ANB نفسها.
+// ══════════════════════════════════════════════════════════════════
+function getReportPeriodRange(){
+  const period=S.reportPeriod||'all';
+  const now=new Date();
+  let start=null,end=null;
+  if(period==='month'){
+    start=new Date(now.getFullYear(),now.getMonth(),1);
+    end=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59);
+  }else if(period==='quarter'){
+    const q=Math.floor(now.getMonth()/3);
+    start=new Date(now.getFullYear(),q*3,1);
+    end=new Date(now.getFullYear(),q*3+3,0,23,59,59);
+  }else if(period==='year'){
+    start=new Date(now.getFullYear(),0,1);
+    end=new Date(now.getFullYear(),11,31,23,59,59);
+  }else if(period==='custom'){
+    start=S.reportPeriodStart?new Date(S.reportPeriodStart):null;
+    end=S.reportPeriodEnd?new Date(S.reportPeriodEnd+'T23:59:59'):null;
+  }
+  return {start,end,period};
+}
+function isDateInReportPeriod(dateStr){
+  if(!dateStr)return false;
+  const {start,end}=getReportPeriodRange();
+  if(!start&&!end)return true;
+  const d=new Date(dateStr);
+  if(start&&d<start)return false;
+  if(end&&d>end)return false;
+  return true;
+}
+function reportPeriodLabel(){
+  const {start,end,period}=getReportPeriodRange();
+  if(period==='all')return 'All Time';
+  if(!start||!end)return 'Custom Range';
+  return FD(start.toISOString().slice(0,10))+' – '+FD(end.toISOString().slice(0,10));
+}
+function renderReportPeriodSelector(){
+  const period=S.reportPeriod||'all';
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;padding:10px;background:var(--bg2);border-radius:8px">
+    <span style="font-size:11px;color:var(--t3);font-weight:600">📅 Period:</span>
+    <select id="report-period-sel" onchange="S.reportPeriod=this.value;renderApp()" style="padding:7px 10px;border:1px solid var(--gr2);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--t1);cursor:pointer">
+      <option value="all" ${period==='all'?'selected':''}>All Time</option>
+      <option value="month" ${period==='month'?'selected':''}>This Month</option>
+      <option value="quarter" ${period==='quarter'?'selected':''}>This Quarter</option>
+      <option value="year" ${period==='year'?'selected':''}>This Year</option>
+      <option value="custom" ${period==='custom'?'selected':''}>Custom Range</option>
+    </select>
+    ${period==='custom'?`
+    <input type="date" id="report-period-start" value="${S.reportPeriodStart||''}" onchange="S.reportPeriodStart=this.value;renderApp()" style="padding:7px;border:1px solid var(--gr2);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--t1)">
+    <span style="font-size:11px;color:var(--t3)">to</span>
+    <input type="date" id="report-period-end" value="${S.reportPeriodEnd||''}" onchange="S.reportPeriodEnd=this.value;renderApp()" style="padding:7px;border:1px solid var(--gr2);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--t1)">
+    `:''}
+  </div>`;
+}
+
 function rReportsList(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
@@ -10136,15 +10254,15 @@ function rReportEmployeeStats(el,cid){
 function rReportCashFlow(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
-  const exp=S.expenses.filter(e=>e.cid===cid);
-  
+  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+  const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const cashIn=inv.reduce((s,i)=>s+(i.amount||0),0);
   const cashOut=exp.reduce((s,e)=>s+(e.amount||0),0);
   const netCashFlow=cashIn-cashOut;
   
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
+  html+=renderReportPeriodSelector();
   html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💵 Cash Flow Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'cashflow\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'cashflow\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
   
@@ -10195,8 +10313,8 @@ function rReportCashFlow(el,cid){
 function rReportSummary(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
-  const exp=S.expenses.filter(e=>e.cid===cid);
+  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+  const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
   const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
   const profit=revenue-expenses;
@@ -10205,6 +10323,7 @@ function rReportSummary(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
+  html+=renderReportPeriodSelector();
   html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">📊 '+(t('rep_summary')||'Summary')+' — '+c?.name+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'summary\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'summary\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px">';
   html+='<div style="background:rgba(46,125,50,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--green)">';
@@ -10231,8 +10350,8 @@ function rReportSummary(el,cid){
 function rReportPL(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(15,48,37,0.08)',border:'#0F3025',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
-  const exp=S.expenses.filter(e=>e.cid===cid);
+  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+  const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
   const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
   const profit=revenue-expenses;
@@ -10243,6 +10362,7 @@ function rReportPL(el,cid){
   let html='<div style="padding:16px">';
   html+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
   html+='<button onclick="goBackToReportsList()" style="padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
+  html+=renderReportPeriodSelector();
   html+='</div>';
   html+='<div class="card" style="border:2px solid '+theme.border+'">';
   html+='<div class="ch" style="background:'+theme.bg+'"><span class="ct">📈 Profit & Loss Statement</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'pl\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'pl\',\''+cid+'\')">📊 Excel</button></div></div>';
@@ -10279,15 +10399,15 @@ function rReportPL(el,cid){
 function rReportBTW(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald');
-  const exp=S.expenses.filter(e=>e.cid===cid);
-  
+  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+  const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const btwOut=inv.reduce((s,i)=>s+(i.btw||0),0);
   const btwIn=exp.reduce((s,e)=>s+(e.btw||0),0);
   const btwPayable=btwOut-btwIn;
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
+  html+=renderReportPeriodSelector();
   html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💰 BTW Return (VAT)</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'btw\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'btw\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
   html+='<div style="margin-bottom:16px;padding:12px;background:rgba(200,144,16,.08);border-radius:var(--r);border-left:3px solid var(--gold)">';
@@ -10357,7 +10477,7 @@ function rReportDebtors(el,cid){
 function rReportExpenses(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  const expenses=S.expenses.filter(e=>e.cid===cid).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const expenses=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date)).sort((a,b)=>new Date(b.date)-new Date(a.date));
   const total=expenses.reduce((s,e)=>s+e.amount,0);
   
   const expByCat={};
@@ -10365,6 +10485,7 @@ function rReportExpenses(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
+  html+=renderReportPeriodSelector();
   html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">🧾 Expenses Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'expenses\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'expenses\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
   html+='<div style="margin-bottom:16px;padding:12px;background:rgba(184,134,11,.08);border-radius:var(--r);border-left:3px solid var(--red)">';
@@ -11525,6 +11646,27 @@ function createAllocation(tx,type,targetId,targetLabel,amount){
   logAudit('edit','bank_tx','Matched transaction "'+tx.desc+'" ('+FMT(amount)+') to '+targetLabel,tx.cid);
   sv();
   renderMatchModalContent(tx.id); // إعادة رسم النافذة نفسها لتحديث المتبقي والاقتراحات فورًا
+}
+
+// إلغاء مطابقة حركة بنكية بالكامل بضغطة واحدة (يعكس كل التخصيصات المرتبطة بها
+// ويمسح علامة "لا تحتاج مطابقة" إن وُجدت) - بدل الاضطرار لفتح النافذة وإزالة
+// كل تخصيص على حدة
+function unmatchTransaction(txId){
+  const tx=(S.bankTx||[]).find(t=>t.id===txId);
+  if(!tx)return;
+  const hasAllocations=(tx.allocations||[]).length>0;
+  const hasNoMatchFlag=!!tx.noMatchNeeded;
+  if(!hasAllocations&&!hasNoMatchFlag)return;
+
+  showConfirmDialog('Undo Match','Undo the match for this transaction? Any linked invoices/expenses will show as unpaid (or partially unpaid) again.',()=>{
+    (tx.allocations||[]).forEach(a=>reverseAllocationFromTarget(a.type,a.targetId,a.amount));
+    tx.allocations=[];
+    tx.noMatchNeeded=false;
+    logAudit('edit','bank_tx','Undid match for "'+(tx.desc||'')+'"',tx.cid);
+    sv();
+    renderContent();
+    toast('✓ Match undone — transaction is unmatched again');
+  });
 }
 
 function removeAllocation(txId,allocationId){
