@@ -557,13 +557,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.30">
+<link rel="manifest" href="manifest.json?v=3.33">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.30').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.33').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -1324,7 +1324,7 @@ var I18N={
     dashboard_new_messages:'New Messages',
     dashboard_new_documents:'New Documents',
     dashboard_hours_logged:'Hours Logged',
-    dashboard_active_contracts:'Active Contracts', dashboard_contracts_renewal:'Contracts Needing Renewal', needs_attention:'Needs Attention', apply:'Apply', logged_today:'logged today', agreement_status_pending:'Awaiting client review', agreement_status_signed:'Signed — awaiting your approval', agreement_status_changes:'Client requested changes', agreement_status_active:'Signed & active', agreement_status_rejected:'Rejected by client', view:'View', tracking:'Tracking', timer_stopped:'Timer stopped', task_placeholder:'Task...', pause:'Pause', start:'Start', stop_and_log:'Stop & log', timer_urencriterium_hint:'Logged hours count toward the 1,225-hour urencriterium threshold', urencriterium_title:'Urencriterium', criterion_met:'Met', criterion_not_met:'Not yet met', hours_short:'hrs', urencriterium_hint:'Hours worked toward the 1,225-hour threshold required for the self-employed tax deduction (Zelfstandigenaftrek)', kvk_registration_date:'KVK Registration Date', kvk_date_hint:'Used to auto-detect starter status (startersaftrek) in the Tax Liability report', auto_detected_from_hours:'Auto-detected from Hours log', auto_detected_from_kvk:'Auto-detected from KVK registration date', no_kvk_date_set:'No KVK registration date on file — please verify manually, or add it in Edit Client', deductions_explainer:'Common deductible personal expenses: mortgage interest on your own home (hypotheekrenteaftrek), pension/annuity premiums (lijfrente), charitable donations above the threshold (giftenaftrek), uncovered medical costs, and professional education/training costs.', rep_tax_liability_title:'Tax Liability', rep_tax_liability_desc:'Estimated Income/Corporate Tax', add_asset:'Add Asset', asset_name:'Asset Name', asset_category:'Category', acquisition_cost:'Acquisition Cost (€, excl. BTW)', acquisition_date:'Acquisition Date', useful_life_years:'Useful Life (years)', residual_value:'Residual Value (€)', generate_depreciation:'Generate Depreciation', depreciation:'Depreciation', taxable_profit:'Taxable Profit', revenue:'Revenue', operating_expenses:'Operating Expenses', total_cost:'Total Cost', current_book_value:'Book Value', annual_depreciation:'Annual Depreciation', book_value:'Book Value', accumulated:'Accumulated', per_year:'Per Year', acquired:'Acquired', cost:'Cost', useful_life:'Life', expensed_immediately:'Expensed immediately (< €450)', save_asset:'Save Asset', confirm_delete_asset:'Delete this asset?', years:'years', year:'year', month:'month', vpb_estimate:'Estimated Corporate Tax (Vennootschapsbelasting 2026)', first_bracket:'first €200,000', personal_tax_note:'This legal form is subject to personal income tax (Inkomstenbelasting), which depends on the total personal income and deductions of the owner (zelfstandigenaftrek, MKB-winstvrijstelling, etc.). We show the taxable business profit above only — please consult a tax advisor for the exact personal tax amount.', kia_hint:'Small-Scale Investment Deduction (KIA)', invested_this_period:'invested this period', kia_may_apply:'may be eligible for KIA (check current Belastingdienst table for exact %)', kia_not_in_range:'outside the KIA range (€2,901–€398,236)', asset_immediate_expense_hint:'Below €450 — Dutch tax rules require this to be booked as a regular expense, not depreciated as an asset. Consider using "Add Expense" instead.', asset_min_life_hint:'Dutch tax law requires a minimum useful life of', max_per_year:'max depreciation per year', asset_life_adjusted:'Useful life adjusted to the legal minimum', asset_name_required:'Asset name required', acquisition_cost_required:'Acquisition cost required', asset_saved:'Asset saved', depreciation_for:'Depreciation for', entries_created:'entries created', skipped_already_exist:'skipped (already exist or zero)', yrs_short:'y', customer_base_label:'Customer Base', calculate_personal_tax:'Calculate Personal Income Tax', personal_tax_calc_hint:'This is an estimate based on the figures you enter, it does not replace a tax advisors exact calculation.', meets_hour_criterion:'Meets the 1,225-hour criterion (urencriterium)', is_starter:'Starting business (eligible for startersaftrek, first 3 years)', other_personal_income:'Other Personal Income (€, this year)', other_personal_deductions:'Other Personal Deductions (€)', calculate:'Calculate', total_box1_income:'Total Box 1 Income', recalculate:'Recalculate', customer_base_business:'Mostly businesses (B2B)', customer_base_individuals:'Mostly private individuals — 90%+ (B2C)', customer_base_hint:'Determines the legal VAT accounting basis (Factuurstelsel/invoice basis for B2B, or Kasstelsel/cash basis eligible for 90%+ consumer sales — per Belastingdienst rules)', confirm_delete_message:'Delete this message?', edit_message:'Edit Message', message_cannot_be_empty:'Message cannot be empty', edited:'edited', delete:'Delete', save:'Save', company_settings:'Company Settings', this_month_revenue:'This Month Revenue', pending_expenses:'Pending Expenses', financial_operations:'Financial Operations', company_management:'Company Management', your_account_with_anb:'Your Account with ANB Financial Services', pending_invoices:'Pending Invoices', new_messages:'New Messages', unbilled_hours:'Unbilled Hours', my_finances:'My Finances', nothing_needs_attention:'Nothing needs attention right now', for_reference:'For Reference', active_contracts:'Active Contracts', employees:'Employees', card_employees_desc:'Payroll & Employment Contracts', add_employee:'Add Employee', edit_employee:'Edit Employee', no_employees_yet:'No employees added yet', generate_payslip:'Generate Payslip', net_pay:'Net Pay', payslip_history:'Payslip History', no_payslips_yet:'No payslips generated yet', download:'Download', close:'Close', matched_to:'Matched', remaining_to_allocate:'Remaining to allocate', fully_matched:'Fully matched', no_match_needed:'No match needed (internal transfer / bank fee)', suggested_matches:'Suggested Matches', remaining:'Remaining', match:'Match', search_manually:'Search Manually', contact_direct:'Contact (direct, no invoice)', match_transaction:'Match Transaction', done:'Done', enter_amount_to_match:'Amount to match', invalid_amount:'Invalid amount', marked_no_match:'Marked as no match needed', matched:'Matched', partial:'Partial', left:'left', no_match_needed_short:'N/A', sort_by:'Sort by', sort_name_az:'Name (A-Z)', sort_name_za:'Name (Z-A)', sort_newest:'Newest first', sort_oldest:'Oldest first', sort_plan_high:'Plan (high-low)', sort_salary_high:'Salary (high-low)', sort_title_az:'Title (A-Z)', sort_end_soon:'End date (soonest)', sort_amount_high:'Amount (high-low)', sort_amount_low:'Amount (low-high)', sort_desc_az:'Description (A-Z)', back_to_employees:'Back to Employees', benefits:'Benefits', end_employment:'End Employment', export_contract:'Export Contract PDF', export_payslip:'Export Payslip PDF', status_concept:'CONCEPT — month not yet ended', status_confirmed:'CONFIRMED', rep_payroll_title:'Payroll Report', rep_payroll_desc:'Employees & Salary Overview', active_employees:'Active Employees', ended_employees:'Ended Employees', monthly_fixed_payroll:'Monthly Fixed Payroll', hourly_employees_note:'employee(s) on variable hourly pay — not included in fixed monthly total above (depends on hours worked each month)', ytd_summary:'Year Summary', ytd_net_paid:'Net paid this year', accrued_vacation_total:'Accrued vacation allowance (unpaid)', accrued_13th_total:'Accrued 13th month (unpaid)', vacation_money_payout:'Vacation Allowance Payout', accrued_paid_may:'Accrued monthly, paid out once in May', paid_monthly:'Paid monthly with salary', vacation_payout:'Vacation allowance payout (accrued)', vacation_accruing:'Vacation allowance accruing (reserved for May)', rep_emp_financial_title:'Employee Financial Report', rep_emp_financial_desc:'Payroll Costs & Payments', rep_emp_stats_title:'Employee Statistics Report', rep_emp_stats_desc:'Workforce Overview & Trends', avg_cost_per_employee:'Avg. Cost / Fixed Employee', ytd_gross_paid:'Gross paid this year (taxable)', ytd_loonheffing:'Loonheffing withheld this year', ytd_pension:'Pension deducted this year', outstanding_liabilities:'Outstanding Liabilities (Accrued, Unpaid)', total_liability:'Total accrued liability', per_employee_breakdown:'Per-Employee Financial Breakdown', ytd_gross:'YTD Gross', total_ever_hired:'Total Ever Hired', avg_tenure:'Avg. Tenure', months:'mo', contract_type_breakdown:'Contract Type', permanent:'Permanent (Onbepaalde tijd)', fixed_term:'Fixed-term (Bepaalde tijd)', salary_type_breakdown:'Salary Type', avg_hours_week:'Avg. hours/week', job_title_breakdown:'Job Titles', nationality_breakdown:'Nationality', contracts_expiring_soon:'Fixed-Term Contracts Ending Within 90 Days', none_expiring:'None — all fixed-term contracts have more than 90 days remaining.', ocr_high_conf:'Confident match', ocr_low_conf:'Please verify — uncertain reading', ocr_low_quality:'Reading quality was low — please double-check every field carefully', ocr_extracted:'Data extracted automatically — colored fields show confidence, please review', confirm_delete:'Confirm Delete', confirm_delete_contract:'Delete this contract?', confirm_delete_contact:'Delete this contact? (Ledger entries will not be deleted)', confirm_reset_pw:'Reset Password', confirm_reset_client_pw:"Reset this client's password? They will need to set a new one on next login.", confirm_delete_generic:'Delete this item?', confirm_delete_client:'Remove this client and ALL their data?', confirm_stop_recurring:'Stop this recurring invoice schedule? Already-generated invoices stay.', confirm_restore:'Restore Backup', confirm_reject:'Reject', confirm_reject_agreement:'Are you sure you want to reject this agreement?', confirm_approve:'Approve Agreement', confirm_disable_2fa_title:'Disable Two-Factor Authentication',
+    dashboard_active_contracts:'Active Contracts', dashboard_contracts_renewal:'Contracts Needing Renewal', needs_attention:'Needs Attention', apply:'Apply', export_language:'Export Language', logged_today:'logged today', agreement_status_pending:'Awaiting client review', agreement_status_signed:'Signed — awaiting your approval', agreement_status_changes:'Client requested changes', agreement_status_active:'Signed & active', agreement_status_rejected:'Rejected by client', view:'View', tracking:'Tracking', timer_stopped:'Timer stopped', task_placeholder:'Task...', pause:'Pause', start:'Start', stop_and_log:'Stop & log', timer_urencriterium_hint:'Logged hours count toward the 1,225-hour urencriterium threshold', urencriterium_title:'Urencriterium', criterion_met:'Met', criterion_not_met:'Not yet met', hours_short:'hrs', urencriterium_hint:'Hours worked toward the 1,225-hour threshold required for the self-employed tax deduction (Zelfstandigenaftrek)', kvk_registration_date:'KVK Registration Date', kvk_date_hint:'Used to auto-detect starter status (startersaftrek) in the Tax Liability report', auto_detected_from_hours:'Auto-detected from Hours log', auto_detected_from_kvk:'Auto-detected from KVK registration date', no_kvk_date_set:'No KVK registration date on file — please verify manually, or add it in Edit Client', deductions_explainer:'Common deductible personal expenses: mortgage interest on your own home (hypotheekrenteaftrek), pension/annuity premiums (lijfrente), charitable donations above the threshold (giftenaftrek), uncovered medical costs, and professional education/training costs.', rep_tax_liability_title:'Tax Liability', rep_tax_liability_desc:'Estimated Income/Corporate Tax', add_asset:'Add Asset', asset_name:'Asset Name', asset_category:'Category', acquisition_cost:'Acquisition Cost (€, excl. BTW)', acquisition_date:'Acquisition Date', useful_life_years:'Useful Life (years)', residual_value:'Residual Value (€)', generate_depreciation:'Generate Depreciation', depreciation:'Depreciation', taxable_profit:'Taxable Profit', revenue:'Revenue', operating_expenses:'Operating Expenses', total_cost:'Total Cost', current_book_value:'Book Value', annual_depreciation:'Annual Depreciation', book_value:'Book Value', accumulated:'Accumulated', per_year:'Per Year', acquired:'Acquired', cost:'Cost', useful_life:'Life', expensed_immediately:'Expensed immediately (< €450)', save_asset:'Save Asset', confirm_delete_asset:'Delete this asset?', years:'years', year:'year', month:'month', vpb_estimate:'Estimated Corporate Tax (Vennootschapsbelasting 2026)', first_bracket:'first €200,000', personal_tax_note:'This legal form is subject to personal income tax (Inkomstenbelasting), which depends on the total personal income and deductions of the owner (zelfstandigenaftrek, MKB-winstvrijstelling, etc.). We show the taxable business profit above only — please consult a tax advisor for the exact personal tax amount.', kia_hint:'Small-Scale Investment Deduction (KIA)', invested_this_period:'invested this period', kia_may_apply:'may be eligible for KIA (check current Belastingdienst table for exact %)', kia_not_in_range:'outside the KIA range (€2,901–€398,236)', asset_immediate_expense_hint:'Below €450 — Dutch tax rules require this to be booked as a regular expense, not depreciated as an asset. Consider using "Add Expense" instead.', asset_min_life_hint:'Dutch tax law requires a minimum useful life of', max_per_year:'max depreciation per year', asset_life_adjusted:'Useful life adjusted to the legal minimum', asset_name_required:'Asset name required', acquisition_cost_required:'Acquisition cost required', asset_saved:'Asset saved', depreciation_for:'Depreciation for', entries_created:'entries created', skipped_already_exist:'skipped (already exist or zero)', yrs_short:'y', customer_base_label:'Customer Base', calculate_personal_tax:'Calculate Personal Income Tax', personal_tax_calc_hint:'This is an estimate based on the figures you enter, it does not replace a tax advisors exact calculation.', meets_hour_criterion:'Meets the 1,225-hour criterion (urencriterium)', is_starter:'Starting business (eligible for startersaftrek, first 3 years)', other_personal_income:'Other Personal Income (€, this year)', other_personal_deductions:'Other Personal Deductions (€)', calculate:'Calculate', total_box1_income:'Total Box 1 Income', recalculate:'Recalculate', customer_base_business:'Mostly businesses (B2B)', customer_base_individuals:'Mostly private individuals — 90%+ (B2C)', customer_base_hint:'Determines the legal VAT accounting basis (Factuurstelsel/invoice basis for B2B, or Kasstelsel/cash basis eligible for 90%+ consumer sales — per Belastingdienst rules)', confirm_delete_message:'Delete this message?', edit_message:'Edit Message', message_cannot_be_empty:'Message cannot be empty', edited:'edited', delete:'Delete', save:'Save', company_settings:'Company Settings', this_month_revenue:'This Month Revenue', pending_expenses:'Pending Expenses', financial_operations:'Financial Operations', company_management:'Company Management', your_account_with_anb:'Your Account with ANB Financial Services', pending_invoices:'Pending Invoices', new_messages:'New Messages', unbilled_hours:'Unbilled Hours', my_finances:'My Finances', nothing_needs_attention:'Nothing needs attention right now', for_reference:'For Reference', active_contracts:'Active Contracts', employees:'Employees', card_employees_desc:'Payroll & Employment Contracts', add_employee:'Add Employee', edit_employee:'Edit Employee', no_employees_yet:'No employees added yet', generate_payslip:'Generate Payslip', net_pay:'Net Pay', payslip_history:'Payslip History', no_payslips_yet:'No payslips generated yet', download:'Download', close:'Close', matched_to:'Matched', remaining_to_allocate:'Remaining to allocate', fully_matched:'Fully matched', no_match_needed:'No match needed (internal transfer / bank fee)', suggested_matches:'Suggested Matches', remaining:'Remaining', match:'Match', search_manually:'Search Manually', contact_direct:'Contact (direct, no invoice)', match_transaction:'Match Transaction', done:'Done', enter_amount_to_match:'Amount to match', invalid_amount:'Invalid amount', marked_no_match:'Marked as no match needed', matched:'Matched', partial:'Partial', left:'left', no_match_needed_short:'N/A', sort_by:'Sort by', sort_name_az:'Name (A-Z)', sort_name_za:'Name (Z-A)', sort_newest:'Newest first', sort_oldest:'Oldest first', sort_plan_high:'Plan (high-low)', sort_salary_high:'Salary (high-low)', sort_title_az:'Title (A-Z)', sort_end_soon:'End date (soonest)', sort_amount_high:'Amount (high-low)', sort_amount_low:'Amount (low-high)', sort_desc_az:'Description (A-Z)', back_to_employees:'Back to Employees', benefits:'Benefits', end_employment:'End Employment', export_contract:'Export Contract PDF', export_payslip:'Export Payslip PDF', status_concept:'CONCEPT — month not yet ended', status_confirmed:'CONFIRMED', rep_payroll_title:'Payroll Report', rep_payroll_desc:'Employees & Salary Overview', active_employees:'Active Employees', ended_employees:'Ended Employees', monthly_fixed_payroll:'Monthly Fixed Payroll', hourly_employees_note:'employee(s) on variable hourly pay — not included in fixed monthly total above (depends on hours worked each month)', ytd_summary:'Year Summary', ytd_net_paid:'Net paid this year', accrued_vacation_total:'Accrued vacation allowance (unpaid)', accrued_13th_total:'Accrued 13th month (unpaid)', vacation_money_payout:'Vacation Allowance Payout', accrued_paid_may:'Accrued monthly, paid out once in May', paid_monthly:'Paid monthly with salary', vacation_payout:'Vacation allowance payout (accrued)', vacation_accruing:'Vacation allowance accruing (reserved for May)', rep_emp_financial_title:'Employee Financial Report', rep_emp_financial_desc:'Payroll Costs & Payments', rep_emp_stats_title:'Employee Statistics Report', rep_emp_stats_desc:'Workforce Overview & Trends', avg_cost_per_employee:'Avg. Cost / Fixed Employee', ytd_gross_paid:'Gross paid this year (taxable)', ytd_loonheffing:'Loonheffing withheld this year', ytd_pension:'Pension deducted this year', outstanding_liabilities:'Outstanding Liabilities (Accrued, Unpaid)', total_liability:'Total accrued liability', per_employee_breakdown:'Per-Employee Financial Breakdown', ytd_gross:'YTD Gross', total_ever_hired:'Total Ever Hired', avg_tenure:'Avg. Tenure', months:'mo', contract_type_breakdown:'Contract Type', permanent:'Permanent (Onbepaalde tijd)', fixed_term:'Fixed-term (Bepaalde tijd)', salary_type_breakdown:'Salary Type', avg_hours_week:'Avg. hours/week', job_title_breakdown:'Job Titles', nationality_breakdown:'Nationality', contracts_expiring_soon:'Fixed-Term Contracts Ending Within 90 Days', none_expiring:'None — all fixed-term contracts have more than 90 days remaining.', ocr_high_conf:'Confident match', ocr_low_conf:'Please verify — uncertain reading', ocr_low_quality:'Reading quality was low — please double-check every field carefully', ocr_extracted:'Data extracted automatically — colored fields show confidence, please review', confirm_delete:'Confirm Delete', confirm_delete_contract:'Delete this contract?', confirm_delete_contact:'Delete this contact? (Ledger entries will not be deleted)', confirm_reset_pw:'Reset Password', confirm_reset_client_pw:"Reset this client's password? They will need to set a new one on next login.", confirm_delete_generic:'Delete this item?', confirm_delete_client:'Remove this client and ALL their data?', confirm_stop_recurring:'Stop this recurring invoice schedule? Already-generated invoices stay.', confirm_restore:'Restore Backup', confirm_reject:'Reject', confirm_reject_agreement:'Are you sure you want to reject this agreement?', confirm_approve:'Approve Agreement', confirm_disable_2fa_title:'Disable Two-Factor Authentication',
     dashboard_pending_agreements:'Pending Agreements',
     // Sidebar messages
     sidebar_use_cards:'← Use the cards to navigate',
@@ -1520,7 +1520,7 @@ var I18N={
     dashboard_new_messages:'Nieuwe Berichten',
     dashboard_new_documents:'Nieuwe Documenten',
     dashboard_hours_logged:'Gewerkte Uren',
-    dashboard_active_contracts:'Actieve Overeenkomsten', dashboard_contracts_renewal:'Contracten die Verlenging Nodig Hebben', needs_attention:'Vereist Aandacht', apply:'Toepassen', logged_today:'vandaag geregistreerd', agreement_status_pending:'Wacht op klantbeoordeling', agreement_status_signed:'Ondertekend — wacht op uw goedkeuring', agreement_status_changes:'Klant heeft wijzigingen aangevraagd', agreement_status_active:'Ondertekend & actief', agreement_status_rejected:'Afgewezen door klant', view:'Bekijken', tracking:'Registreren', timer_stopped:'Timer gestopt', task_placeholder:'Taak...', pause:'Pauze', start:'Start', stop_and_log:'Stop & registreer', timer_urencriterium_hint:'Geregistreerde uren tellen mee voor de 1.225-uursgrens (urencriterium)', urencriterium_title:'Urencriterium', criterion_met:'Voldaan', criterion_not_met:'Nog niet voldaan', hours_short:'uur', urencriterium_hint:'Uren gewerkt richting de 1.225-uursgrens die vereist is voor de zelfstandigenaftrek', kvk_registration_date:'KVK Registratiedatum', kvk_date_hint:'Wordt gebruikt om startersstatus (startersaftrek) automatisch te herkennen in het belastingrapport', auto_detected_from_hours:'Automatisch herkend uit urenregistratie', auto_detected_from_kvk:'Automatisch herkend uit KVK-registratiedatum', no_kvk_date_set:'Geen KVK-registratiedatum bekend — controleer handmatig, of voeg deze toe bij Klant Bewerken', deductions_explainer:'Veelvoorkomende aftrekbare persoonlijke kosten: hypotheekrenteaftrek, lijfrentepremies, giftenaftrek boven de drempel, niet-vergoede zorgkosten, en scholingsuitgaven.', rep_tax_liability_title:'Belastingverplichting', rep_tax_liability_desc:'Geschatte Inkomsten-/Vennootschapsbelasting', add_asset:'Activum Toevoegen', asset_name:'Naam Activum', asset_category:'Categorie', acquisition_cost:'Aanschafkosten (€, excl. btw)', acquisition_date:'Aanschafdatum', useful_life_years:'Gebruiksduur (jaren)', residual_value:'Restwaarde (€)', generate_depreciation:'Afschrijving Genereren', depreciation:'Afschrijving', taxable_profit:'Belastbare Winst', revenue:'Omzet', operating_expenses:'Bedrijfskosten', total_cost:'Totale Kosten', current_book_value:'Boekwaarde', annual_depreciation:'Jaarlijkse Afschrijving', book_value:'Boekwaarde', accumulated:'Cumulatief', per_year:'Per Jaar', acquired:'Aangeschaft', cost:'Kosten', useful_life:'Duur', expensed_immediately:'Direct afgeschreven (< €450)', save_asset:'Activum Opslaan', confirm_delete_asset:'Dit activum verwijderen?', years:'jaren', year:'jaar', month:'maand', vpb_estimate:'Geschatte Vennootschapsbelasting 2026', first_bracket:'eerste €200.000', personal_tax_note:'Deze rechtsvorm valt onder de inkomstenbelasting, die afhangt van het totale persoonlijke inkomen en de aftrekposten van de eigenaar (zelfstandigenaftrek, MKB-winstvrijstelling, etc.). We tonen hierboven alleen de belastbare bedrijfswinst — raadpleeg een belastingadviseur voor het exacte bedrag.', kia_hint:'Kleinschaligheidsinvesteringsaftrek (KIA)', invested_this_period:'geïnvesteerd in deze periode', kia_may_apply:'mogelijk in aanmerking voor KIA (controleer actuele tabel Belastingdienst voor exact %)', kia_not_in_range:'buiten het KIA-bereik (€2.901–€398.236)', asset_immediate_expense_hint:'Onder €450 — moet volgens de Belastingdienst als gewone kostenpost worden geboekt, niet als af te schrijven activum. Overweeg "Uitgave Toevoegen" te gebruiken.', asset_min_life_hint:'De Nederlandse belastingwet vereist een minimale gebruiksduur van', max_per_year:'max. afschrijving per jaar', asset_life_adjusted:'Gebruiksduur aangepast naar het wettelijke minimum', asset_name_required:'Naam activum verplicht', acquisition_cost_required:'Aanschafkosten verplicht', asset_saved:'Activum opgeslagen', depreciation_for:'Afschrijving voor', entries_created:'boekingen aangemaakt', skipped_already_exist:'overgeslagen (bestaan al of nul)', yrs_short:'j', customer_base_label:'Klantenbestand', calculate_personal_tax:'Bereken Inkomstenbelasting', personal_tax_calc_hint:'Dit is een schatting op basis van de ingevoerde cijfers, het vervangt geen exacte berekening van een belastingadviseur.', meets_hour_criterion:'Voldoet aan het urencriterium van 1.225 uur', is_starter:'Startende onderneming (recht op startersaftrek, eerste 3 jaar)', other_personal_income:'Overig Persoonlijk Inkomen (€, dit jaar)', other_personal_deductions:'Overige Persoonlijke Aftrekposten (€)', calculate:'Berekenen', total_box1_income:'Totaal Box 1 Inkomen', recalculate:'Opnieuw Berekenen', customer_base_business:'Voornamelijk bedrijven (B2B)', customer_base_individuals:'Voornamelijk particulieren — 90%+ (B2C)', customer_base_hint:'Bepaalt de wettelijke btw-grondslag (factuurstelsel voor B2B, of kasstelsel mogelijk bij 90%+ verkoop aan particulieren — volgens de regels van de Belastingdienst)', confirm_delete_message:'Dit bericht verwijderen?', edit_message:'Bericht Bewerken', message_cannot_be_empty:'Bericht mag niet leeg zijn', edited:'bewerkt', delete:'Verwijderen', save:'Opslaan', company_settings:'Bedrijfsinstellingen', this_month_revenue:'Omzet Deze Maand', pending_expenses:'Openstaande Kosten', financial_operations:'Financiële Activiteiten', company_management:'Bedrijfsbeheer', your_account_with_anb:'Uw Account bij ANB Financial Services', pending_invoices:'Openstaande Facturen', new_messages:'Nieuwe Berichten', unbilled_hours:'Niet-Gefactureerde Uren', my_finances:'Mijn Financiën', nothing_needs_attention:'Niets vereist momenteel aandacht', for_reference:'Ter Informatie', active_contracts:'Actieve Contracten', employees:'Werknemers', card_employees_desc:'Loonadministratie & Arbeidscontracten', add_employee:'Werknemer Toevoegen', edit_employee:'Werknemer Bewerken', no_employees_yet:'Nog geen werknemers toegevoegd', generate_payslip:'Loonstrook Genereren', net_pay:'Netto Loon', payslip_history:'Loonstrookgeschiedenis', no_payslips_yet:'Nog geen loonstroken gegenereerd', download:'Downloaden', close:'Sluiten', matched_to:'Gematcht', remaining_to_allocate:'Nog te matchen', fully_matched:'Volledig gematcht', no_match_needed:'Geen match nodig (interne overboeking / bankkosten)', suggested_matches:'Voorgestelde Matches', remaining:'Resterend', match:'Matchen', search_manually:'Handmatig Zoeken', contact_direct:'Contact (direct, geen factuur)', match_transaction:'Transactie Matchen', done:'Klaar', enter_amount_to_match:'Te matchen bedrag', invalid_amount:'Ongeldig bedrag', marked_no_match:'Gemarkeerd als geen match nodig', matched:'Gematcht', partial:'Gedeeltelijk', left:'resterend', no_match_needed_short:'N.v.t.', sort_by:'Sorteer op', sort_name_az:'Naam (A-Z)', sort_name_za:'Naam (Z-A)', sort_newest:'Nieuwste eerst', sort_oldest:'Oudste eerst', sort_plan_high:'Abonnement (hoog-laag)', sort_salary_high:'Salaris (hoog-laag)', sort_title_az:'Titel (A-Z)', sort_end_soon:'Einddatum (eerst)', sort_amount_high:'Bedrag (hoog-laag)', sort_amount_low:'Bedrag (laag-hoog)', sort_desc_az:'Omschrijving (A-Z)', back_to_employees:'Terug naar Werknemers', benefits:'Secundaire Arbeidsvoorwaarden', end_employment:'Dienstverband Beëindigen', export_contract:'Contract PDF Exporteren', export_payslip:'Loonstrook PDF Exporteren', status_concept:'CONCEPT — maand nog niet afgelopen', status_confirmed:'BEVESTIGD', rep_payroll_title:'Loonrapport', rep_payroll_desc:'Overzicht Werknemers & Salarissen', active_employees:'Actieve Werknemers', ended_employees:'Beëindigde Dienstverbanden', monthly_fixed_payroll:'Maandelijkse Vaste Loonkosten', hourly_employees_note:'werknemer(s) met variabel uurloon — niet inbegrepen in het vaste maandtotaal hierboven (afhankelijk van gewerkte uren per maand)', ytd_summary:'Jaaroverzicht', ytd_net_paid:'Netto uitbetaald dit jaar', accrued_vacation_total:'Opgebouwd vakantiegeld (onbetaald)', accrued_13th_total:'Opgebouwde 13e maand (onbetaald)', vacation_money_payout:'Uitbetaling Vakantiegeld', accrued_paid_may:'Maandelijks opgebouwd, uitbetaald in mei', paid_monthly:'Maandelijks uitbetaald met salaris', vacation_payout:'Uitbetaling vakantiegeld (opgebouwd)', vacation_accruing:'Vakantiegeld wordt opgebouwd (gereserveerd voor mei)', rep_emp_financial_title:'Financieel Rapport Werknemers', rep_emp_financial_desc:'Loonkosten & Uitbetalingen', rep_emp_stats_title:'Statistisch Rapport Werknemers', rep_emp_stats_desc:'Personeelsoverzicht & Trends', avg_cost_per_employee:'Gem. Kosten / Vaste Werknemer', ytd_gross_paid:'Bruto uitbetaald dit jaar (belastbaar)', ytd_loonheffing:'Loonheffing ingehouden dit jaar', ytd_pension:'Pensioen ingehouden dit jaar', outstanding_liabilities:'Openstaande Verplichtingen (Opgebouwd, Onbetaald)', total_liability:'Totale opgebouwde verplichting', per_employee_breakdown:'Financieel Overzicht per Werknemer', ytd_gross:'YTD Bruto', total_ever_hired:'Totaal Ooit Aangenomen', avg_tenure:'Gem. Dienstverband', months:'mnd', contract_type_breakdown:'Contracttype', permanent:'Vast (Onbepaalde tijd)', fixed_term:'Tijdelijk (Bepaalde tijd)', salary_type_breakdown:'Salaristype', avg_hours_week:'Gem. uren/week', job_title_breakdown:'Functietitels', nationality_breakdown:'Nationaliteit', contracts_expiring_soon:'Tijdelijke Contracten die Binnen 90 Dagen Aflopen', none_expiring:'Geen — alle tijdelijke contracten hebben meer dan 90 dagen resterend.', ocr_high_conf:'Betrouwbare match', ocr_low_conf:'Controleer — onzekere lezing', ocr_low_quality:'Leeskwaliteit was laag — controleer elk veld zorgvuldig', ocr_extracted:'Gegevens automatisch gehaald — gekleurde velden tonen betrouwbaarheid, controleer a.u.b.', confirm_delete:'Verwijderen Bevestigen', confirm_delete_contract:'Dit contract verwijderen?', confirm_delete_contact:'Dit contact verwijderen? (Grootboekregels blijven behouden)', confirm_reset_pw:'Wachtwoord Resetten', confirm_reset_client_pw:'Wachtwoord van deze klant resetten? Ze moeten een nieuw wachtwoord instellen bij de volgende login.', confirm_delete_generic:'Dit item verwijderen?', confirm_delete_client:'Deze klant en AL hun gegevens verwijderen?', confirm_stop_recurring:'Deze terugkerende factuurschema stoppen? Reeds gegenereerde facturen blijven behouden.', confirm_restore:'Back-up Herstellen', confirm_reject:'Afwijzen', confirm_reject_agreement:'Weet u zeker dat u deze overeenkomst wilt afwijzen?', confirm_approve:'Overeenkomst Goedkeuren', confirm_disable_2fa_title:'Tweefactorauthenticatie Uitschakelen',
+    dashboard_active_contracts:'Actieve Overeenkomsten', dashboard_contracts_renewal:'Contracten die Verlenging Nodig Hebben', needs_attention:'Vereist Aandacht', apply:'Toepassen', export_language:'Exporttaal', logged_today:'vandaag geregistreerd', agreement_status_pending:'Wacht op klantbeoordeling', agreement_status_signed:'Ondertekend — wacht op uw goedkeuring', agreement_status_changes:'Klant heeft wijzigingen aangevraagd', agreement_status_active:'Ondertekend & actief', agreement_status_rejected:'Afgewezen door klant', view:'Bekijken', tracking:'Registreren', timer_stopped:'Timer gestopt', task_placeholder:'Taak...', pause:'Pauze', start:'Start', stop_and_log:'Stop & registreer', timer_urencriterium_hint:'Geregistreerde uren tellen mee voor de 1.225-uursgrens (urencriterium)', urencriterium_title:'Urencriterium', criterion_met:'Voldaan', criterion_not_met:'Nog niet voldaan', hours_short:'uur', urencriterium_hint:'Uren gewerkt richting de 1.225-uursgrens die vereist is voor de zelfstandigenaftrek', kvk_registration_date:'KVK Registratiedatum', kvk_date_hint:'Wordt gebruikt om startersstatus (startersaftrek) automatisch te herkennen in het belastingrapport', auto_detected_from_hours:'Automatisch herkend uit urenregistratie', auto_detected_from_kvk:'Automatisch herkend uit KVK-registratiedatum', no_kvk_date_set:'Geen KVK-registratiedatum bekend — controleer handmatig, of voeg deze toe bij Klant Bewerken', deductions_explainer:'Veelvoorkomende aftrekbare persoonlijke kosten: hypotheekrenteaftrek, lijfrentepremies, giftenaftrek boven de drempel, niet-vergoede zorgkosten, en scholingsuitgaven.', rep_tax_liability_title:'Belastingverplichting', rep_tax_liability_desc:'Geschatte Inkomsten-/Vennootschapsbelasting', add_asset:'Activum Toevoegen', asset_name:'Naam Activum', asset_category:'Categorie', acquisition_cost:'Aanschafkosten (€, excl. btw)', acquisition_date:'Aanschafdatum', useful_life_years:'Gebruiksduur (jaren)', residual_value:'Restwaarde (€)', generate_depreciation:'Afschrijving Genereren', depreciation:'Afschrijving', taxable_profit:'Belastbare Winst', revenue:'Omzet', operating_expenses:'Bedrijfskosten', total_cost:'Totale Kosten', current_book_value:'Boekwaarde', annual_depreciation:'Jaarlijkse Afschrijving', book_value:'Boekwaarde', accumulated:'Cumulatief', per_year:'Per Jaar', acquired:'Aangeschaft', cost:'Kosten', useful_life:'Duur', expensed_immediately:'Direct afgeschreven (< €450)', save_asset:'Activum Opslaan', confirm_delete_asset:'Dit activum verwijderen?', years:'jaren', year:'jaar', month:'maand', vpb_estimate:'Geschatte Vennootschapsbelasting 2026', first_bracket:'eerste €200.000', personal_tax_note:'Deze rechtsvorm valt onder de inkomstenbelasting, die afhangt van het totale persoonlijke inkomen en de aftrekposten van de eigenaar (zelfstandigenaftrek, MKB-winstvrijstelling, etc.). We tonen hierboven alleen de belastbare bedrijfswinst — raadpleeg een belastingadviseur voor het exacte bedrag.', kia_hint:'Kleinschaligheidsinvesteringsaftrek (KIA)', invested_this_period:'geïnvesteerd in deze periode', kia_may_apply:'mogelijk in aanmerking voor KIA (controleer actuele tabel Belastingdienst voor exact %)', kia_not_in_range:'buiten het KIA-bereik (€2.901–€398.236)', asset_immediate_expense_hint:'Onder €450 — moet volgens de Belastingdienst als gewone kostenpost worden geboekt, niet als af te schrijven activum. Overweeg "Uitgave Toevoegen" te gebruiken.', asset_min_life_hint:'De Nederlandse belastingwet vereist een minimale gebruiksduur van', max_per_year:'max. afschrijving per jaar', asset_life_adjusted:'Gebruiksduur aangepast naar het wettelijke minimum', asset_name_required:'Naam activum verplicht', acquisition_cost_required:'Aanschafkosten verplicht', asset_saved:'Activum opgeslagen', depreciation_for:'Afschrijving voor', entries_created:'boekingen aangemaakt', skipped_already_exist:'overgeslagen (bestaan al of nul)', yrs_short:'j', customer_base_label:'Klantenbestand', calculate_personal_tax:'Bereken Inkomstenbelasting', personal_tax_calc_hint:'Dit is een schatting op basis van de ingevoerde cijfers, het vervangt geen exacte berekening van een belastingadviseur.', meets_hour_criterion:'Voldoet aan het urencriterium van 1.225 uur', is_starter:'Startende onderneming (recht op startersaftrek, eerste 3 jaar)', other_personal_income:'Overig Persoonlijk Inkomen (€, dit jaar)', other_personal_deductions:'Overige Persoonlijke Aftrekposten (€)', calculate:'Berekenen', total_box1_income:'Totaal Box 1 Inkomen', recalculate:'Opnieuw Berekenen', customer_base_business:'Voornamelijk bedrijven (B2B)', customer_base_individuals:'Voornamelijk particulieren — 90%+ (B2C)', customer_base_hint:'Bepaalt de wettelijke btw-grondslag (factuurstelsel voor B2B, of kasstelsel mogelijk bij 90%+ verkoop aan particulieren — volgens de regels van de Belastingdienst)', confirm_delete_message:'Dit bericht verwijderen?', edit_message:'Bericht Bewerken', message_cannot_be_empty:'Bericht mag niet leeg zijn', edited:'bewerkt', delete:'Verwijderen', save:'Opslaan', company_settings:'Bedrijfsinstellingen', this_month_revenue:'Omzet Deze Maand', pending_expenses:'Openstaande Kosten', financial_operations:'Financiële Activiteiten', company_management:'Bedrijfsbeheer', your_account_with_anb:'Uw Account bij ANB Financial Services', pending_invoices:'Openstaande Facturen', new_messages:'Nieuwe Berichten', unbilled_hours:'Niet-Gefactureerde Uren', my_finances:'Mijn Financiën', nothing_needs_attention:'Niets vereist momenteel aandacht', for_reference:'Ter Informatie', active_contracts:'Actieve Contracten', employees:'Werknemers', card_employees_desc:'Loonadministratie & Arbeidscontracten', add_employee:'Werknemer Toevoegen', edit_employee:'Werknemer Bewerken', no_employees_yet:'Nog geen werknemers toegevoegd', generate_payslip:'Loonstrook Genereren', net_pay:'Netto Loon', payslip_history:'Loonstrookgeschiedenis', no_payslips_yet:'Nog geen loonstroken gegenereerd', download:'Downloaden', close:'Sluiten', matched_to:'Gematcht', remaining_to_allocate:'Nog te matchen', fully_matched:'Volledig gematcht', no_match_needed:'Geen match nodig (interne overboeking / bankkosten)', suggested_matches:'Voorgestelde Matches', remaining:'Resterend', match:'Matchen', search_manually:'Handmatig Zoeken', contact_direct:'Contact (direct, geen factuur)', match_transaction:'Transactie Matchen', done:'Klaar', enter_amount_to_match:'Te matchen bedrag', invalid_amount:'Ongeldig bedrag', marked_no_match:'Gemarkeerd als geen match nodig', matched:'Gematcht', partial:'Gedeeltelijk', left:'resterend', no_match_needed_short:'N.v.t.', sort_by:'Sorteer op', sort_name_az:'Naam (A-Z)', sort_name_za:'Naam (Z-A)', sort_newest:'Nieuwste eerst', sort_oldest:'Oudste eerst', sort_plan_high:'Abonnement (hoog-laag)', sort_salary_high:'Salaris (hoog-laag)', sort_title_az:'Titel (A-Z)', sort_end_soon:'Einddatum (eerst)', sort_amount_high:'Bedrag (hoog-laag)', sort_amount_low:'Bedrag (laag-hoog)', sort_desc_az:'Omschrijving (A-Z)', back_to_employees:'Terug naar Werknemers', benefits:'Secundaire Arbeidsvoorwaarden', end_employment:'Dienstverband Beëindigen', export_contract:'Contract PDF Exporteren', export_payslip:'Loonstrook PDF Exporteren', status_concept:'CONCEPT — maand nog niet afgelopen', status_confirmed:'BEVESTIGD', rep_payroll_title:'Loonrapport', rep_payroll_desc:'Overzicht Werknemers & Salarissen', active_employees:'Actieve Werknemers', ended_employees:'Beëindigde Dienstverbanden', monthly_fixed_payroll:'Maandelijkse Vaste Loonkosten', hourly_employees_note:'werknemer(s) met variabel uurloon — niet inbegrepen in het vaste maandtotaal hierboven (afhankelijk van gewerkte uren per maand)', ytd_summary:'Jaaroverzicht', ytd_net_paid:'Netto uitbetaald dit jaar', accrued_vacation_total:'Opgebouwd vakantiegeld (onbetaald)', accrued_13th_total:'Opgebouwde 13e maand (onbetaald)', vacation_money_payout:'Uitbetaling Vakantiegeld', accrued_paid_may:'Maandelijks opgebouwd, uitbetaald in mei', paid_monthly:'Maandelijks uitbetaald met salaris', vacation_payout:'Uitbetaling vakantiegeld (opgebouwd)', vacation_accruing:'Vakantiegeld wordt opgebouwd (gereserveerd voor mei)', rep_emp_financial_title:'Financieel Rapport Werknemers', rep_emp_financial_desc:'Loonkosten & Uitbetalingen', rep_emp_stats_title:'Statistisch Rapport Werknemers', rep_emp_stats_desc:'Personeelsoverzicht & Trends', avg_cost_per_employee:'Gem. Kosten / Vaste Werknemer', ytd_gross_paid:'Bruto uitbetaald dit jaar (belastbaar)', ytd_loonheffing:'Loonheffing ingehouden dit jaar', ytd_pension:'Pensioen ingehouden dit jaar', outstanding_liabilities:'Openstaande Verplichtingen (Opgebouwd, Onbetaald)', total_liability:'Totale opgebouwde verplichting', per_employee_breakdown:'Financieel Overzicht per Werknemer', ytd_gross:'YTD Bruto', total_ever_hired:'Totaal Ooit Aangenomen', avg_tenure:'Gem. Dienstverband', months:'mnd', contract_type_breakdown:'Contracttype', permanent:'Vast (Onbepaalde tijd)', fixed_term:'Tijdelijk (Bepaalde tijd)', salary_type_breakdown:'Salaristype', avg_hours_week:'Gem. uren/week', job_title_breakdown:'Functietitels', nationality_breakdown:'Nationaliteit', contracts_expiring_soon:'Tijdelijke Contracten die Binnen 90 Dagen Aflopen', none_expiring:'Geen — alle tijdelijke contracten hebben meer dan 90 dagen resterend.', ocr_high_conf:'Betrouwbare match', ocr_low_conf:'Controleer — onzekere lezing', ocr_low_quality:'Leeskwaliteit was laag — controleer elk veld zorgvuldig', ocr_extracted:'Gegevens automatisch gehaald — gekleurde velden tonen betrouwbaarheid, controleer a.u.b.', confirm_delete:'Verwijderen Bevestigen', confirm_delete_contract:'Dit contract verwijderen?', confirm_delete_contact:'Dit contact verwijderen? (Grootboekregels blijven behouden)', confirm_reset_pw:'Wachtwoord Resetten', confirm_reset_client_pw:'Wachtwoord van deze klant resetten? Ze moeten een nieuw wachtwoord instellen bij de volgende login.', confirm_delete_generic:'Dit item verwijderen?', confirm_delete_client:'Deze klant en AL hun gegevens verwijderen?', confirm_stop_recurring:'Deze terugkerende factuurschema stoppen? Reeds gegenereerde facturen blijven behouden.', confirm_restore:'Back-up Herstellen', confirm_reject:'Afwijzen', confirm_reject_agreement:'Weet u zeker dat u deze overeenkomst wilt afwijzen?', confirm_approve:'Overeenkomst Goedkeuren', confirm_disable_2fa_title:'Tweefactorauthenticatie Uitschakelen',
     dashboard_pending_agreements:'Hangende Akkoorden',
     // Sidebar messages
     sidebar_use_cards:'← Gebruik de kaarten om te navigeren',
@@ -1704,7 +1704,7 @@ var I18N={
     dashboard_new_messages:'الرسائل الجديدة',
     dashboard_new_documents:'المستندات الجديدة',
     dashboard_hours_logged:'ساعات العمل المسجلة',
-    dashboard_active_contracts:'الاتفاقيات النشطة', dashboard_contracts_renewal:'عقود بحاجة لمراجعة/تجديد', needs_attention:'يحتاج إجراء', apply:'تطبيق', logged_today:'مُسجَّل اليوم', agreement_status_pending:'بانتظار مراجعة العميل', agreement_status_signed:'وقّعها العميل — بانتظار موافقتك', agreement_status_changes:'طلب العميل تعديلات', agreement_status_active:'موقَّعة وسارية', agreement_status_rejected:'رفضها العميل', view:'عرض', tracking:'قيد التسجيل', timer_stopped:'العدّاد متوقف', task_placeholder:'المهمة...', pause:'إيقاف مؤقت', start:'ابدأ', stop_and_log:'إيقاف وتسجيل', timer_urencriterium_hint:'الساعات المُسجَّلة تُحتسَب ضمن معيار الـ١,٢٢٥ ساعة (Urencriterium)', urencriterium_title:'معيار الساعات (Urencriterium)', criterion_met:'مُستوفى', criterion_not_met:'غير مُستوفى بعد', hours_short:'ساعة', urencriterium_hint:'ساعات العمل المُحتسَبة نحو حد الـ١,٢٢٥ ساعة اللازم لخصم صاحب العمل الفردي (Zelfstandigenaftrek)', kvk_registration_date:'تاريخ تسجيل KVK', kvk_date_hint:'يُستخدَم لاكتشاف حالة "المشروع الناشئ" (startersaftrek) تلقائيًا في تقرير الخصوم الضريبية', auto_detected_from_hours:'اكتُشف تلقائيًا من سجل الساعات', auto_detected_from_kvk:'اكتُشف تلقائيًا من تاريخ تسجيل KVK', no_kvk_date_set:'لا يوجد تاريخ تسجيل KVK محفوظ — يُرجى التحقق يدويًا، أو إضافته من تعديل بيانات العميل', deductions_explainer:'خصومات شخصية شائعة قابلة للاحتساب: فوائد قرض المنزل الخاص (Hypotheekrenteaftrek)، أقساط التقاعد/المعاش (Lijfrente)، التبرعات الخيرية فوق الحد الأدنى (Giftenaftrek)، التكاليف الطبية غير المُغطاة، وتكاليف التعليم/التدريب المهني.', rep_tax_liability_title:'الخصوم الضريبية', rep_tax_liability_desc:'تقدير ضريبة الدخل/الشركات', add_asset:'إضافة أصل', asset_name:'اسم الأصل', asset_category:'الفئة', acquisition_cost:'تكلفة الشراء (€، بدون ضريبة)', acquisition_date:'تاريخ الشراء', useful_life_years:'العمر الإنتاجي (سنوات)', residual_value:'القيمة المتبقية (€)', generate_depreciation:'توليد الإهلاك', depreciation:'الإهلاك', taxable_profit:'الربح الخاضع للضريبة', revenue:'الإيراد', operating_expenses:'المصاريف التشغيلية', total_cost:'إجمالي التكلفة', current_book_value:'القيمة الدفترية', annual_depreciation:'الإهلاك السنوي', book_value:'القيمة الدفترية', accumulated:'المتراكم', per_year:'سنويًا', acquired:'تاريخ الشراء', cost:'التكلفة', useful_life:'العمر', expensed_immediately:'مقيَّد كمصروف فوري (أقل من ٤٥٠€)', save_asset:'حفظ الأصل', confirm_delete_asset:'حذف هذا الأصل؟', years:'سنوات', year:'سنة', month:'شهر', vpb_estimate:'تقدير ضريبة الشركات (Vennootschapsbelasting ٢٠٢٦)', first_bracket:'أول ٢٠٠,٠٠٠€', personal_tax_note:'هذا الشكل القانوني يخضع لضريبة الدخل الشخصي، والتي تعتمد على دخل المالك الشخصي الكامل وخصوماته (Zelfstandigenaftrek، MKB-winstvrijstelling، إلخ). نعرض أعلاه الربح التجاري الخاضع للضريبة فقط — يُرجى مراجعة مختص ضريبي للمبلغ الدقيق.', kia_hint:'خصم الاستثمار الصغير (KIA)', invested_this_period:'استُثمر خلال هذه الفترة', kia_may_apply:'قد يكون مؤهَّلًا لخصم KIA (راجع جدول Belastingdienst الحالي للنسبة الدقيقة)', kia_not_in_range:'خارج نطاق KIA (٢,٩٠١€–٣٩٨,٢٣٦€)', asset_immediate_expense_hint:'أقل من ٤٥٠€ — تنص القواعد الضريبية الهولندية على تسجيله كمصروف عادي، لا كأصل يُهلَك. فكِّر باستخدام "إضافة مصروف" بدلًا من ذلك.', asset_min_life_hint:'يشترط القانون الضريبي الهولندي حدًا أدنى للعمر الإنتاجي قدره', max_per_year:'كحد أقصى للإهلاك سنويًا', asset_life_adjusted:'تم تعديل العمر الإنتاجي للحد الأدنى القانوني', asset_name_required:'اسم الأصل مطلوب', acquisition_cost_required:'تكلفة الشراء مطلوبة', asset_saved:'تم حفظ الأصل', depreciation_for:'إهلاك', entries_created:'قيدًا أُنشئ', skipped_already_exist:'تم تخطيها (موجودة مسبقًا أو صفرية)', yrs_short:'سنة', customer_base_label:'طبيعة الزبائن', calculate_personal_tax:'حساب ضريبة الدخل الشخصي', personal_tax_calc_hint:'هذا تقدير مبني على الأرقام التي تُدخلها، ولا يُغني عن حساب دقيق من مختص ضريبي.', meets_hour_criterion:'يستوفي معيار الساعات (١,٢٢٥ ساعة/سنة)', is_starter:'شركة ناشئة (مؤهَّلة لخصم البداية، أول ٣ سنوات)', other_personal_income:'دخل شخصي آخر (€، هذا العام)', other_personal_deductions:'خصومات شخصية أخرى (€)', calculate:'احسب', total_box1_income:'إجمالي دخل Box 1', recalculate:'إعادة الحساب', customer_base_business:'شركات بشكل أساسي (B2B)', customer_base_individuals:'أفراد بشكل أساسي — ٩٠٪+ (B2C)', customer_base_hint:'يحدِّد الأساس القانوني لاحتساب ضريبة القيمة المضافة (أساس الفاتورة إلزامي للشركات، أو أساس النقد ممكن عند بيع ٩٠٪+ لأفراد — حسب قواعد Belastingdienst)', confirm_delete_message:'حذف هذه الرسالة؟', edit_message:'تعديل الرسالة', message_cannot_be_empty:'لا يمكن أن تكون الرسالة فارغة', edited:'مُعدَّلة', delete:'حذف', save:'حفظ', company_settings:'إعدادات الشركة', this_month_revenue:'دخل هذا الشهر', pending_expenses:'مصاريف معلَّقة', financial_operations:'العمليات المالية', company_management:'إدارة الشركة', your_account_with_anb:'حسابك مع ANB Financial Services', pending_invoices:'فواتير معلَّقة', new_messages:'رسائل جديدة', unbilled_hours:'ساعات غير مفوترة', my_finances:'حساباتي المالية', nothing_needs_attention:'لا شيء يحتاج إجراءً الآن', for_reference:'للعِلم فقط', active_contracts:'العقود النشطة', employees:'الموظفون', card_employees_desc:'الرواتب وعقود العمل', add_employee:'إضافة موظف', edit_employee:'تعديل موظف', no_employees_yet:'لا يوجد موظفون بعد', generate_payslip:'إصدار بيان راتب', net_pay:'صافي الراتب', payslip_history:'سجل بيانات الرواتب', no_payslips_yet:'لا توجد بيانات رواتب صادرة بعد', download:'تحميل', close:'إغلاق', matched_to:'مطابَق', remaining_to_allocate:'المتبقي للمطابقة', fully_matched:'مطابقة كاملة', no_match_needed:'لا تحتاج مطابقة (تحويل داخلي / رسوم بنكية)', suggested_matches:'مطابقات مقترحة', remaining:'المتبقي', match:'مطابقة', search_manually:'بحث يدوي', contact_direct:'جهة اتصال (مباشرة، بلا فاتورة)', match_transaction:'مطابقة الحركة', done:'تم', enter_amount_to_match:'المبلغ المراد مطابقته', invalid_amount:'مبلغ غير صالح', marked_no_match:'تم الوسم كـ«لا يحتاج مطابقة»', matched:'مطابَقة', partial:'جزئية', left:'متبقٍ', no_match_needed_short:'غير منطبق', sort_by:'ترتيب حسب', sort_name_az:'الاسم (أ-ي)', sort_name_za:'الاسم (ي-أ)', sort_newest:'الأحدث أولاً', sort_oldest:'الأقدم أولاً', sort_plan_high:'الباقة (الأعلى-الأقل)', sort_salary_high:'الراتب (الأعلى-الأقل)', sort_title_az:'العنوان (أ-ي)', sort_end_soon:'تاريخ الانتهاء (الأقرب)', sort_amount_high:'المبلغ (الأعلى-الأقل)', sort_amount_low:'المبلغ (الأقل-الأعلى)', sort_desc_az:'الوصف (أ-ي)', back_to_employees:'العودة للموظفين', benefits:'المزايا', end_employment:'إنهاء التعاقد', export_contract:'تصدير العقد PDF', export_payslip:'تصدير بيان الراتب PDF', status_concept:'مسودة — الشهر لم ينتهِ بعد', status_confirmed:'مؤكد', rep_payroll_title:'تقرير الرواتب', rep_payroll_desc:'نظرة عامة على الموظفين والرواتب', active_employees:'الموظفون النشطون', ended_employees:'تعاقدات منتهية', monthly_fixed_payroll:'إجمالي الرواتب الثابتة الشهرية', hourly_employees_note:'موظف(ين) براتب متغيّر بالساعة — غير مشمولين في الإجمالي الثابت أعلاه (يعتمد على الساعات الفعلية كل شهر)', ytd_summary:'ملخص السنة', ytd_net_paid:'صافي المدفوع هذا العام', accrued_vacation_total:'بدل الإجازة المتراكم (غير مدفوع)', accrued_13th_total:'راتب ١٣ المتراكم (غير مدفوع)', vacation_money_payout:'طريقة دفع بدل الإجازة', accrued_paid_may:'يُجمَّع شهريًا، ويُدفع دفعة واحدة في مايو', paid_monthly:'يُدفع شهريًا مع الراتب', vacation_payout:'دفعة بدل الإجازة المتراكمة', vacation_accruing:'بدل الإجازة يتراكم (محجوز لدفعة مايو)', rep_emp_financial_title:'التقرير المالي للموظفين', rep_emp_financial_desc:'تكاليف الرواتب والمدفوعات', rep_emp_stats_title:'التقرير الإحصائي للموظفين', rep_emp_stats_desc:'نظرة عامة على القوى العاملة والاتجاهات', avg_cost_per_employee:'متوسط التكلفة / موظف براتب ثابت', ytd_gross_paid:'الإجمالي المدفوع هذا العام (خاضع للضريبة)', ytd_loonheffing:'الضريبة المحجوزة هذا العام', ytd_pension:'التقاعد المخصوم هذا العام', outstanding_liabilities:'التزامات مستحقة (متراكمة غير مدفوعة)', total_liability:'إجمالي الالتزامات المتراكمة', per_employee_breakdown:'التفصيل المالي لكل موظف', ytd_gross:'الإجمالي هذا العام', total_ever_hired:'إجمالي من تم توظيفهم', avg_tenure:'متوسط مدة الخدمة', months:'شهر', contract_type_breakdown:'نوع العقد', permanent:'دائم (Onbepaalde tijd)', fixed_term:'محدد المدة (Bepaalde tijd)', salary_type_breakdown:'نوع الراتب', avg_hours_week:'متوسط الساعات/الأسبوع', job_title_breakdown:'المسميات الوظيفية', nationality_breakdown:'الجنسية', contracts_expiring_soon:'عقود محدودة المدة تنتهي خلال 90 يومًا', none_expiring:'لا يوجد — كل العقود محدودة المدة متبقٍ لها أكثر من 90 يومًا.', ocr_high_conf:'قراءة موثوقة', ocr_low_conf:'يُرجى التحقق — قراءة غير مؤكدة', ocr_low_quality:'جودة القراءة كانت منخفضة — تحقق من كل حقل بعناية', ocr_extracted:'استُخرجت البيانات تلقائيًا — ألوان الحقول تعكس درجة الثقة، يُرجى المراجعة', confirm_delete:'تأكيد الحذف', confirm_delete_contract:'حذف هذا العقد؟', confirm_delete_contact:'حذف جهة الاتصال هذه؟ (سجلات دفتر الأستاذ لن تُحذف)', confirm_reset_pw:'إعادة تعيين كلمة المرور', confirm_reset_client_pw:'إعادة تعيين كلمة مرور هذا العميل؟ سيحتاج لتعيين كلمة جديدة عند الدخول التالي.', confirm_delete_generic:'حذف هذا العنصر؟', confirm_delete_client:'إزالة هذا العميل وكل بياناته؟', confirm_stop_recurring:'إيقاف جدولة الفاتورة المتكررة هذه؟ الفواتير المُصدرة مسبقًا تبقى كما هي.', confirm_restore:'استعادة النسخة الاحتياطية', confirm_reject:'رفض', confirm_reject_agreement:'هل أنت متأكد من رفض هذه الاتفاقية؟', confirm_approve:'الموافقة على الاتفاقية', confirm_disable_2fa_title:'تعطيل التحقق بخطوتين',
+    dashboard_active_contracts:'الاتفاقيات النشطة', dashboard_contracts_renewal:'عقود بحاجة لمراجعة/تجديد', needs_attention:'يحتاج إجراء', apply:'تطبيق', export_language:'لغة التصدير', logged_today:'مُسجَّل اليوم', agreement_status_pending:'بانتظار مراجعة العميل', agreement_status_signed:'وقّعها العميل — بانتظار موافقتك', agreement_status_changes:'طلب العميل تعديلات', agreement_status_active:'موقَّعة وسارية', agreement_status_rejected:'رفضها العميل', view:'عرض', tracking:'قيد التسجيل', timer_stopped:'العدّاد متوقف', task_placeholder:'المهمة...', pause:'إيقاف مؤقت', start:'ابدأ', stop_and_log:'إيقاف وتسجيل', timer_urencriterium_hint:'الساعات المُسجَّلة تُحتسَب ضمن معيار الـ١,٢٢٥ ساعة (Urencriterium)', urencriterium_title:'معيار الساعات (Urencriterium)', criterion_met:'مُستوفى', criterion_not_met:'غير مُستوفى بعد', hours_short:'ساعة', urencriterium_hint:'ساعات العمل المُحتسَبة نحو حد الـ١,٢٢٥ ساعة اللازم لخصم صاحب العمل الفردي (Zelfstandigenaftrek)', kvk_registration_date:'تاريخ تسجيل KVK', kvk_date_hint:'يُستخدَم لاكتشاف حالة "المشروع الناشئ" (startersaftrek) تلقائيًا في تقرير الخصوم الضريبية', auto_detected_from_hours:'اكتُشف تلقائيًا من سجل الساعات', auto_detected_from_kvk:'اكتُشف تلقائيًا من تاريخ تسجيل KVK', no_kvk_date_set:'لا يوجد تاريخ تسجيل KVK محفوظ — يُرجى التحقق يدويًا، أو إضافته من تعديل بيانات العميل', deductions_explainer:'خصومات شخصية شائعة قابلة للاحتساب: فوائد قرض المنزل الخاص (Hypotheekrenteaftrek)، أقساط التقاعد/المعاش (Lijfrente)، التبرعات الخيرية فوق الحد الأدنى (Giftenaftrek)، التكاليف الطبية غير المُغطاة، وتكاليف التعليم/التدريب المهني.', rep_tax_liability_title:'الخصوم الضريبية', rep_tax_liability_desc:'تقدير ضريبة الدخل/الشركات', add_asset:'إضافة أصل', asset_name:'اسم الأصل', asset_category:'الفئة', acquisition_cost:'تكلفة الشراء (€، بدون ضريبة)', acquisition_date:'تاريخ الشراء', useful_life_years:'العمر الإنتاجي (سنوات)', residual_value:'القيمة المتبقية (€)', generate_depreciation:'توليد الإهلاك', depreciation:'الإهلاك', taxable_profit:'الربح الخاضع للضريبة', revenue:'الإيراد', operating_expenses:'المصاريف التشغيلية', total_cost:'إجمالي التكلفة', current_book_value:'القيمة الدفترية', annual_depreciation:'الإهلاك السنوي', book_value:'القيمة الدفترية', accumulated:'المتراكم', per_year:'سنويًا', acquired:'تاريخ الشراء', cost:'التكلفة', useful_life:'العمر', expensed_immediately:'مقيَّد كمصروف فوري (أقل من ٤٥٠€)', save_asset:'حفظ الأصل', confirm_delete_asset:'حذف هذا الأصل؟', years:'سنوات', year:'سنة', month:'شهر', vpb_estimate:'تقدير ضريبة الشركات (Vennootschapsbelasting ٢٠٢٦)', first_bracket:'أول ٢٠٠,٠٠٠€', personal_tax_note:'هذا الشكل القانوني يخضع لضريبة الدخل الشخصي، والتي تعتمد على دخل المالك الشخصي الكامل وخصوماته (Zelfstandigenaftrek، MKB-winstvrijstelling، إلخ). نعرض أعلاه الربح التجاري الخاضع للضريبة فقط — يُرجى مراجعة مختص ضريبي للمبلغ الدقيق.', kia_hint:'خصم الاستثمار الصغير (KIA)', invested_this_period:'استُثمر خلال هذه الفترة', kia_may_apply:'قد يكون مؤهَّلًا لخصم KIA (راجع جدول Belastingdienst الحالي للنسبة الدقيقة)', kia_not_in_range:'خارج نطاق KIA (٢,٩٠١€–٣٩٨,٢٣٦€)', asset_immediate_expense_hint:'أقل من ٤٥٠€ — تنص القواعد الضريبية الهولندية على تسجيله كمصروف عادي، لا كأصل يُهلَك. فكِّر باستخدام "إضافة مصروف" بدلًا من ذلك.', asset_min_life_hint:'يشترط القانون الضريبي الهولندي حدًا أدنى للعمر الإنتاجي قدره', max_per_year:'كحد أقصى للإهلاك سنويًا', asset_life_adjusted:'تم تعديل العمر الإنتاجي للحد الأدنى القانوني', asset_name_required:'اسم الأصل مطلوب', acquisition_cost_required:'تكلفة الشراء مطلوبة', asset_saved:'تم حفظ الأصل', depreciation_for:'إهلاك', entries_created:'قيدًا أُنشئ', skipped_already_exist:'تم تخطيها (موجودة مسبقًا أو صفرية)', yrs_short:'سنة', customer_base_label:'طبيعة الزبائن', calculate_personal_tax:'حساب ضريبة الدخل الشخصي', personal_tax_calc_hint:'هذا تقدير مبني على الأرقام التي تُدخلها، ولا يُغني عن حساب دقيق من مختص ضريبي.', meets_hour_criterion:'يستوفي معيار الساعات (١,٢٢٥ ساعة/سنة)', is_starter:'شركة ناشئة (مؤهَّلة لخصم البداية، أول ٣ سنوات)', other_personal_income:'دخل شخصي آخر (€، هذا العام)', other_personal_deductions:'خصومات شخصية أخرى (€)', calculate:'احسب', total_box1_income:'إجمالي دخل Box 1', recalculate:'إعادة الحساب', customer_base_business:'شركات بشكل أساسي (B2B)', customer_base_individuals:'أفراد بشكل أساسي — ٩٠٪+ (B2C)', customer_base_hint:'يحدِّد الأساس القانوني لاحتساب ضريبة القيمة المضافة (أساس الفاتورة إلزامي للشركات، أو أساس النقد ممكن عند بيع ٩٠٪+ لأفراد — حسب قواعد Belastingdienst)', confirm_delete_message:'حذف هذه الرسالة؟', edit_message:'تعديل الرسالة', message_cannot_be_empty:'لا يمكن أن تكون الرسالة فارغة', edited:'مُعدَّلة', delete:'حذف', save:'حفظ', company_settings:'إعدادات الشركة', this_month_revenue:'دخل هذا الشهر', pending_expenses:'مصاريف معلَّقة', financial_operations:'العمليات المالية', company_management:'إدارة الشركة', your_account_with_anb:'حسابك مع ANB Financial Services', pending_invoices:'فواتير معلَّقة', new_messages:'رسائل جديدة', unbilled_hours:'ساعات غير مفوترة', my_finances:'حساباتي المالية', nothing_needs_attention:'لا شيء يحتاج إجراءً الآن', for_reference:'للعِلم فقط', active_contracts:'العقود النشطة', employees:'الموظفون', card_employees_desc:'الرواتب وعقود العمل', add_employee:'إضافة موظف', edit_employee:'تعديل موظف', no_employees_yet:'لا يوجد موظفون بعد', generate_payslip:'إصدار بيان راتب', net_pay:'صافي الراتب', payslip_history:'سجل بيانات الرواتب', no_payslips_yet:'لا توجد بيانات رواتب صادرة بعد', download:'تحميل', close:'إغلاق', matched_to:'مطابَق', remaining_to_allocate:'المتبقي للمطابقة', fully_matched:'مطابقة كاملة', no_match_needed:'لا تحتاج مطابقة (تحويل داخلي / رسوم بنكية)', suggested_matches:'مطابقات مقترحة', remaining:'المتبقي', match:'مطابقة', search_manually:'بحث يدوي', contact_direct:'جهة اتصال (مباشرة، بلا فاتورة)', match_transaction:'مطابقة الحركة', done:'تم', enter_amount_to_match:'المبلغ المراد مطابقته', invalid_amount:'مبلغ غير صالح', marked_no_match:'تم الوسم كـ«لا يحتاج مطابقة»', matched:'مطابَقة', partial:'جزئية', left:'متبقٍ', no_match_needed_short:'غير منطبق', sort_by:'ترتيب حسب', sort_name_az:'الاسم (أ-ي)', sort_name_za:'الاسم (ي-أ)', sort_newest:'الأحدث أولاً', sort_oldest:'الأقدم أولاً', sort_plan_high:'الباقة (الأعلى-الأقل)', sort_salary_high:'الراتب (الأعلى-الأقل)', sort_title_az:'العنوان (أ-ي)', sort_end_soon:'تاريخ الانتهاء (الأقرب)', sort_amount_high:'المبلغ (الأعلى-الأقل)', sort_amount_low:'المبلغ (الأقل-الأعلى)', sort_desc_az:'الوصف (أ-ي)', back_to_employees:'العودة للموظفين', benefits:'المزايا', end_employment:'إنهاء التعاقد', export_contract:'تصدير العقد PDF', export_payslip:'تصدير بيان الراتب PDF', status_concept:'مسودة — الشهر لم ينتهِ بعد', status_confirmed:'مؤكد', rep_payroll_title:'تقرير الرواتب', rep_payroll_desc:'نظرة عامة على الموظفين والرواتب', active_employees:'الموظفون النشطون', ended_employees:'تعاقدات منتهية', monthly_fixed_payroll:'إجمالي الرواتب الثابتة الشهرية', hourly_employees_note:'موظف(ين) براتب متغيّر بالساعة — غير مشمولين في الإجمالي الثابت أعلاه (يعتمد على الساعات الفعلية كل شهر)', ytd_summary:'ملخص السنة', ytd_net_paid:'صافي المدفوع هذا العام', accrued_vacation_total:'بدل الإجازة المتراكم (غير مدفوع)', accrued_13th_total:'راتب ١٣ المتراكم (غير مدفوع)', vacation_money_payout:'طريقة دفع بدل الإجازة', accrued_paid_may:'يُجمَّع شهريًا، ويُدفع دفعة واحدة في مايو', paid_monthly:'يُدفع شهريًا مع الراتب', vacation_payout:'دفعة بدل الإجازة المتراكمة', vacation_accruing:'بدل الإجازة يتراكم (محجوز لدفعة مايو)', rep_emp_financial_title:'التقرير المالي للموظفين', rep_emp_financial_desc:'تكاليف الرواتب والمدفوعات', rep_emp_stats_title:'التقرير الإحصائي للموظفين', rep_emp_stats_desc:'نظرة عامة على القوى العاملة والاتجاهات', avg_cost_per_employee:'متوسط التكلفة / موظف براتب ثابت', ytd_gross_paid:'الإجمالي المدفوع هذا العام (خاضع للضريبة)', ytd_loonheffing:'الضريبة المحجوزة هذا العام', ytd_pension:'التقاعد المخصوم هذا العام', outstanding_liabilities:'التزامات مستحقة (متراكمة غير مدفوعة)', total_liability:'إجمالي الالتزامات المتراكمة', per_employee_breakdown:'التفصيل المالي لكل موظف', ytd_gross:'الإجمالي هذا العام', total_ever_hired:'إجمالي من تم توظيفهم', avg_tenure:'متوسط مدة الخدمة', months:'شهر', contract_type_breakdown:'نوع العقد', permanent:'دائم (Onbepaalde tijd)', fixed_term:'محدد المدة (Bepaalde tijd)', salary_type_breakdown:'نوع الراتب', avg_hours_week:'متوسط الساعات/الأسبوع', job_title_breakdown:'المسميات الوظيفية', nationality_breakdown:'الجنسية', contracts_expiring_soon:'عقود محدودة المدة تنتهي خلال 90 يومًا', none_expiring:'لا يوجد — كل العقود محدودة المدة متبقٍ لها أكثر من 90 يومًا.', ocr_high_conf:'قراءة موثوقة', ocr_low_conf:'يُرجى التحقق — قراءة غير مؤكدة', ocr_low_quality:'جودة القراءة كانت منخفضة — تحقق من كل حقل بعناية', ocr_extracted:'استُخرجت البيانات تلقائيًا — ألوان الحقول تعكس درجة الثقة، يُرجى المراجعة', confirm_delete:'تأكيد الحذف', confirm_delete_contract:'حذف هذا العقد؟', confirm_delete_contact:'حذف جهة الاتصال هذه؟ (سجلات دفتر الأستاذ لن تُحذف)', confirm_reset_pw:'إعادة تعيين كلمة المرور', confirm_reset_client_pw:'إعادة تعيين كلمة مرور هذا العميل؟ سيحتاج لتعيين كلمة جديدة عند الدخول التالي.', confirm_delete_generic:'حذف هذا العنصر؟', confirm_delete_client:'إزالة هذا العميل وكل بياناته؟', confirm_stop_recurring:'إيقاف جدولة الفاتورة المتكررة هذه؟ الفواتير المُصدرة مسبقًا تبقى كما هي.', confirm_restore:'استعادة النسخة الاحتياطية', confirm_reject:'رفض', confirm_reject_agreement:'هل أنت متأكد من رفض هذه الاتفاقية؟', confirm_approve:'الموافقة على الاتفاقية', confirm_disable_2fa_title:'تعطيل التحقق بخطوتين',
     dashboard_pending_agreements:'الاتفاقيات المعلقة',
     // Sidebar messages
     sidebar_use_cards:'← استخدم الكروت للتنقل',
@@ -2917,6 +2917,7 @@ function selClient(id){
   S.currentClient=id;
   S.tab='client_overview';  // ✅ عرض البطاقات الذكية بدلاً من الـ Sidebar
   S.reportTab=null;  // ✅ Reset report tab when switching clients
+  resetReportPeriodFilter();
   S.selectedMsgClient=id;  // ✅ Set selected client for messages
   // Mark all documents as viewed
   S.docs.filter(d=>d.cid===id).forEach(d=>d.isNew=false);
@@ -4698,6 +4699,7 @@ function selectCard(cardId){
   
   if(cardId==='reports'){
     S.reportTab=null;
+    resetReportPeriodFilter();
   }
   
   setTab(cardId);
@@ -9967,6 +9969,37 @@ function isDateInReportPeriod(dateStr){
 }
 
 // ══════════════════════════════════════════════════════════════════
+// الفترة السابقة المقابلة (بنفس طول ونوع الفترة الحالية) - تُستخدَم لحساب
+// نسبة التغيّر وتوضيح نقاط التباين في التقارير المُصدَّرة. لا معنى لهذا
+// عندما تكون الفترة الحالية "كل الوقت" (لا حدود لمقارنتها).
+// ══════════════════════════════════════════════════════════════════
+function getPriorPeriodRange(){
+  const {start,end,period}=getReportPeriodRange();
+  if(!start||!end||period==='all')return {start:null,end:null};
+  const durationMs=end.getTime()-start.getTime();
+  const priorEnd=new Date(start.getTime()-1000); // ثانية واحدة قبل بداية الفترة الحالية
+  const priorStart=new Date(priorEnd.getTime()-durationMs);
+  return {start:priorStart,end:priorEnd};
+}
+function isDateInPriorPeriod(dateStr){
+  if(!dateStr)return false;
+  const {start,end}=getPriorPeriodRange();
+  if(!start||!end)return false;
+  const d=new Date(dateStr);
+  return d>=start&&d<=end;
+}
+// نسبة التغيّر بين قيمتين، مع معالجة آمنة لحالة الصفر (تفادي القسمة على صفر)
+function pctChange(current,prior){
+  if(prior===0)return current===0?0:null; // null = تغيّر غير قابل للحساب كنسبة مئوية
+  return ((current-prior)/Math.abs(prior))*100;
+}
+function formatPctChange(pct){
+  if(pct===null)return 'N/A';
+  const sign=pct>0?'+':'';
+  return sign+pct.toFixed(1)+'%';
+}
+
+// ══════════════════════════════════════════════════════════════════
 // الأساس القانوني لاحتساب ضريبة القيمة المضافة حسب طبيعة زبائن العميل
 // (وفق قواعد Belastingdienst الهولندية):
 // - 'invoice' (Factuurstelsel): إلزامي لأي عميل يبيع بشكل أساسي لشركات
@@ -9992,10 +10025,19 @@ function getReportableInvoices(cid){
   // ضمن الفترة، بغضّ النظر عن حالة الدفع - الضريبة مستحقة عند الإصدار
   return S.invoices.filter(i=>i.cid===cid&&!i.deleted&&isDateInReportPeriod(i.date));
 }
+// نظير الدالة أعلاه لكن للفترة السابقة المقابلة - لتحليل التباين/نسبة التغيّر
+function getReportableInvoicesForPriorPeriod(cid){
+  const basis=getClientVatBasis(cid);
+  if(basis==='cash'){
+    return S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInPriorPeriod(i.paidDate||i.date));
+  }
+  return S.invoices.filter(i=>i.cid===cid&&!i.deleted&&isDateInPriorPeriod(i.date));
+}
 function renderReportPeriodSelector(){
   const period=S.reportPeriodDraft!==undefined?S.reportPeriodDraft:(S.reportPeriod||'all');
   const draftStart=S.reportPeriodStartDraft!==undefined?S.reportPeriodStartDraft:(S.reportPeriodStart||'');
   const draftEnd=S.reportPeriodEndDraft!==undefined?S.reportPeriodEndDraft:(S.reportPeriodEnd||'');
+  const exportLang=S.reportExportLang||S.lang||'en';
   return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;padding:10px;background:var(--bg2);border-radius:8px">
     <span style="font-size:11px;color:var(--t3);font-weight:600">📅 Period:</span>
     <select id="report-period-sel" onchange="S.reportPeriodDraft=this.value;renderApp()" style="padding:7px 10px;border:1px solid var(--gr2);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--t1);cursor:pointer">
@@ -10011,6 +10053,14 @@ function renderReportPeriodSelector(){
     <input type="date" id="report-period-end" value="${draftEnd}" onchange="S.reportPeriodEndDraft=this.value" style="padding:7px;border:1px solid var(--gr2);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--t1)">
     `:''}
     <button class="btn btn-p btn-xs" onclick="applyReportPeriodFilter()">🔍 ${t('apply')||'Apply'}</button>
+    <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+      <span style="font-size:11px;color:var(--t3);font-weight:600">🌐 ${t('export_language')||'Export Language'}:</span>
+      <select id="report-export-lang-sel" onchange="S.reportExportLang=this.value;sv();" style="padding:6px 8px;border:1px solid var(--gr2);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--t1);cursor:pointer">
+        <option value="en" ${exportLang==='en'?'selected':''}>English</option>
+        <option value="nl" ${exportLang==='nl'?'selected':''}>Nederlands</option>
+        <option value="ar" ${exportLang==='ar'?'selected':''}>العربية</option>
+      </select>
+    </div>
   </div>`;
 }
 // يُطبَّق التغيير فعليًا فقط عند الضغط على "تطبيق" - قبل ذلك القائمة المنسدلة
@@ -10051,26 +10101,19 @@ function rReportsList(el,cid){
   html+='<span style="font-size:11px;color:var(--t3);font-weight:500">'+c?.name+' — '+new Date().getFullYear()+'</span>';
   html+='</div>';
   
-  // عرض البطاقات في صيغة قائمة
+  // ⭐ إعادة تصميم: شبكة عمودين مضغوطة بدل قائمة عمودية طويلة - أسهل للمسح
+  // البصري السريع وأقل تمريرًا، مع الحفاظ على نفس ألوان كل تقرير وتأثير التحويم
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
   reports.forEach(report=>{
-    html+='<div style="margin-bottom:12px;padding:16px;background:'+report.bg+';border:2px solid '+report.border+';border-radius:10px;cursor:pointer;transition:all .3s ease;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;justify-content:space-between;align-items:center" onclick="S.reportTab=\''+report.id+'\';renderApp()" onmouseover="this.style.transform=\'translateX(6px)\';this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.15)\';this.style.borderColor=\''+report.accent+'\'" onmouseout="this.style.transform=\'translateX(0)\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\';this.style.borderColor=\''+report.border+'\'">';
-    
-    // الجزء الأيسر
-    html+='<div style="flex:1">';
-    html+='<div style="display:flex;align-items:center;gap:12px">';
-    html+='<div style="font-size:28px">'+report.icon+'</div>';
-    html+='<div>';
-    html+='<div style="font-size:14px;font-weight:600;color:'+report.text+'">'+report.name+'</div>';
-    html+='<div style="font-size:11px;color:rgba('+(report.text==='#ffffff'?'255,255,255':'10,34,24')+',0.7)">'+report.desc+'</div>';
-    html+='</div>';
-    html+='</div>';
-    html+='</div>';
-    
-    // الجزء الأيمن
-    html+='<div style="font-size:12px;color:rgba('+(report.text==='#ffffff'?'255,255,255':'10,34,24')+',0.5);font-weight:500;margin-left:12px">→</div>';
-    
+    const textRgb=report.text==='#ffffff'?'255,255,255':'10,34,24';
+    html+='<div style="padding:14px 12px;background:'+report.bg+';border:2px solid '+report.border+';border-radius:12px;cursor:pointer;transition:all .25s ease;box-shadow:0 2px 6px rgba(0,0,0,0.1);min-height:110px;display:flex;flex-direction:column" onclick="resetReportPeriodFilter();S.reportTab=\''+report.id+'\';renderApp()" onmouseover="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.18)\';this.style.borderColor=\''+report.accent+'\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.1)\';this.style.borderColor=\''+report.border+'\'">';
+    html+='<div style="font-size:24px;margin-bottom:8px">'+report.icon+'</div>';
+    html+='<div style="font-size:12.5px;font-weight:700;color:'+report.text+';line-height:1.25;margin-bottom:4px">'+report.name+'</div>';
+    html+='<div style="font-size:9.5px;color:rgba('+textRgb+',0.7);line-height:1.3;flex:1">'+report.desc+'</div>';
+    html+='<div style="font-size:11px;color:rgba('+textRgb+',0.5);font-weight:600;margin-top:6px;align-self:flex-end">→</div>';
     html+='</div>';
   });
+  html+='</div>';
   
   html+='</div>';
   el.innerHTML=html;
@@ -10079,7 +10122,19 @@ function rReportsList(el,cid){
 /* ── BACK BUTTON FOR REPORTS ── */
 function goBackToReportsList(){
   S.reportTab=null;
+  resetReportPeriodFilter();
   renderApp();
+}
+// ⚠️ إصلاح: كان فلتر الفترة الزمنية يبقى محفوظًا عند الانتقال بين التقارير
+// أو الخروج والدخول لنفس التقرير - الآن يُعاد ضبطه دائمًا لـ"كل الوقت" عند
+// أي دخول جديد لأي تقرير، بدل أن يرث فلتر تقرير سابق دون قصد
+function resetReportPeriodFilter(){
+  S.reportPeriod='all';
+  S.reportPeriodStart='';
+  S.reportPeriodEnd='';
+  delete S.reportPeriodDraft;
+  delete S.reportPeriodStartDraft;
+  delete S.reportPeriodEndDraft;
 }
 
 /* ── REPORT: Cash Flow ── */
@@ -10279,7 +10334,7 @@ function rReportEmployeeStats(el,cid){
 function rReportCashFlow(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.paidDate||i.date));
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   // ✅ إصلاح: التدفق النقدي يجب أن يعكس النقد الفعلي المتحرك عبر الحساب
   // البنكي - والعميل يدفع المبلغ الإجمالي شامل الضريبة (total)، وليس فقط
@@ -10727,6 +10782,219 @@ async function exportReportPDF(type,cid){
     hideLoading();
   }
 }
+// ══════════════════════════════════════════════════════════════════
+// أدوات رسم بيانية مشتركة للتقارير المُصدَّرة PDF (jsPDF لا يملك رسمًا
+// بيانيًا جاهزًا، فبنيت رسمًا بالمستطيلات/الخطوط الأساسية بدقة كاملة)
+// ══════════════════════════════════════════════════════════════════
+
+// رسم بياني بالأعمدة العمودية لمقارنة عدة قيم (مثل: الإيراد/المصاريف/الربح)
+function pdfDrawBarChart(doc,x,y,width,height,items){
+  const maxVal=Math.max(1,...items.map(it=>Math.abs(it.value)));
+  const barGap=4;
+  const barWidth=(width-barGap*(items.length-1))/items.length;
+  const baselineY=y+height;
+
+  items.forEach((it,i)=>{
+    const barX=x+i*(barWidth+barGap);
+    const barH=Math.max(1,(Math.abs(it.value)/maxVal)*height);
+    const barY=baselineY-barH;
+    const [r,g,b]=it.color||[77,168,118];
+    doc.setFillColor(r,g,b);
+    doc.rect(barX,barY,barWidth,barH,'F');
+    // القيمة أعلى العمود
+    doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(40,40,40);
+    doc.text(`€${Math.round(it.value).toLocaleString()}`,barX+barWidth/2,barY-2,{align:'center'});
+    // التسمية أسفل العمود
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(90,90,90);
+    doc.text(it.label,barX+barWidth/2,baselineY+5,{align:'center'});
+  });
+  // خط الأساس
+  doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);
+  doc.line(x,baselineY,x+width,baselineY);
+}
+
+// شريط نسبي واحد (100% مُقسَّم) لعرض توزيع فئات المصاريف بصريًا + وسيلة إيضاح
+function pdfDrawProportionBar(doc,x,y,width,barHeight,items){
+  const total=items.reduce((s,it)=>s+it.value,0)||1;
+  let curX=x;
+  const palette=[[10,34,24],[200,144,16],[77,168,118],[184,134,11],[45,122,79],[168,168,168],[126,87,60]];
+  items.forEach((it,i)=>{
+    const segW=(it.value/total)*width;
+    const [r,g,b]=palette[i%palette.length];
+    doc.setFillColor(r,g,b);
+    doc.rect(curX,y,Math.max(0.3,segW),barHeight,'F');
+    curX+=segW;
+  });
+  // وسيلة الإيضاح (Legend) أسفل الشريط
+  let legendY=y+barHeight+6;
+  let legendX=x;
+  doc.setFontSize(7.5);
+  items.forEach((it,i)=>{
+    const [r,g,b]=palette[i%palette.length];
+    const pct=((it.value/total)*100).toFixed(0);
+    const label=`${it.label} (${pct}%)`;
+    const labelWidth=doc.getTextWidth(label)+8;
+    if(legendX+labelWidth>x+width){legendX=x;legendY+=6;}
+    doc.setFillColor(r,g,b);doc.rect(legendX,legendY-3,3,3,'F');
+    doc.setTextColor(60,60,60);doc.setFont('helvetica','normal');
+    doc.text(label,legendX+5,legendY);
+    legendX+=labelWidth+4;
+  });
+  return legendY+6; // نُعيد الموضع y التالي المتاح بعد الرسم بالكامل
+}
+
+// صندوق شروحات/نقاط تباين تلقائية (Insights) - نص توضيحي بلون مميَّز يشرح
+// أهم ما يلفت الانتباه في التقرير (نسبة الربح، أكبر بند مصاريف، إلخ)
+function pdfInsightBox(doc,x,y,width,lines){
+  if(!lines||lines.length===0)return y;
+  const lineHeight=5.5;
+  const padding=5;
+  const boxHeight=lines.length*lineHeight+padding*2;
+  doc.setFillColor(245,240,225);
+  doc.setDrawColor(200,144,16);
+  doc.setLineWidth(0.4);
+  doc.roundedRect?doc.roundedRect(x,y,width,boxHeight,2,2,'FD'):doc.rect(x,y,width,boxHeight,'FD');
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(10,34,24);
+  doc.text('💡 '+(typeof t==='function'?(t('insights_title')||'Key Insights'):'Key Insights'),x+padding,y+padding+2);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(60,60,60);
+  lines.forEach((line,i)=>{
+    doc.text('• '+line,x+padding,y+padding+2+lineHeight*(i+1));
+  });
+  return y+boxHeight+8;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// أدوات مساعدة لتحسين المظهر البصري للتقارير المُصدَّرة PDF: رسم بياني
+// شريطي بسيط، وصندوق "تحليل وملاحظات" يوضّح نقاط التباين لكل تقرير
+// ══════════════════════════════════════════════════════════════════
+function drawBarChartPDF(doc,x,y,width,height,bars){
+  // bars: [{label, value, color:[r,g,b]}]
+  const maxVal=Math.max(...bars.map(b=>Math.abs(b.value)),1);
+  const slotW=width/bars.length;
+  const barW=slotW*0.5;
+  const chartBottom=y+height-10; // نترك مساحة أسفل الرسم لتسميات الفئات
+
+  bars.forEach((bar,i)=>{
+    const barH=Math.max(0.5,(Math.abs(bar.value)/maxVal)*(height-22));
+    const barX=x+i*slotW+(slotW-barW)/2;
+    const barY=chartBottom-barH;
+
+    doc.setFillColor(bar.color[0],bar.color[1],bar.color[2]);
+    doc.roundedRect(barX,barY,barW,barH,1,1,'F');
+
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(8);
+    doc.setTextColor(40,40,40);
+    const valLabel='€'+Math.round(bar.value).toLocaleString('en-US');
+    const valW=doc.getTextWidth(valLabel);
+    doc.text(valLabel,barX+barW/2-valW/2,barY-2);
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(90,90,90);
+    const lblW=doc.getTextWidth(bar.label);
+    doc.text(bar.label,barX+barW/2-lblW/2,chartBottom+6);
+  });
+
+  // خط الأساس (صفر)
+  doc.setDrawColor(200,200,200);
+  doc.setLineWidth(0.2);
+  doc.line(x,chartBottom,x+width,chartBottom);
+
+  return y+height+4;
+}
+// صندوق "تحليل وملاحظات" - يوضّح نقاط تباين حقيقية محسوبة من أرقام
+// التقرير نفسه، وليس نصًا عامًا ثابتًا
+// ══════════════════════════════════════════════════════════════════
+// قاموس ترجمة مخصَّص لتصدير التقارير (PDF/Excel) - منفصل تمامًا عن لغة
+// النظام I18N، ويُختار بشكل مستقل عبر "Export Language" في شاشة التقرير.
+// يغطي المصطلحات الأساسية المشتركة + التقارير الخمسة الأكثر استخدامًا
+// (الملخص، الأرباح والخسائر، BTW، التدفق النقدي، الخصوم الضريبية).
+// ══════════════════════════════════════════════════════════════════
+const REPORT_I18N={
+  en:{
+    client:'Client',internalReport:'Internal Company Report',generated:'Generated',financialYear:'Financial Year',
+    revenue:'Revenue',expenses:'Expenses',operatingExpenses:'Operating Expenses',totalExpenses:'Total Expenses',
+    netProfit:'Net Profit',netProfitLoss:'Net Profit/Loss',depreciation:'Depreciation',taxableProfit:'Taxable Profit',
+    profitMargin:'Profit Margin',numberOfInvoices:'Number of Invoices',numberOfExpenses:'Number of Expenses',
+    financialOverview:'Financial Overview',analysis:'ANALYSIS',trend:'Trend',profitMarginTrend:'Profit Margin & Trend',spendingBreakdown:'Spending Breakdown',
+    collectionRisk:'Collection Risk',cashPosition:'Cash Position & Trend',vatPosition:'VAT Position & Trend',
+    taxPosition:'Tax Position',category:'Category',date:'Date',amount:'Amount',status:'Status',description:'Description',
+    vatOutput:'VAT Output (Sales Tax)',vatInput:'VAT Input (Purchase Tax)',vatPayable:'Payable',vatRecoverable:'Recoverable',
+    cashInflow:'Cash Inflow',cashOutflow:'Cash Outflow',netCashFlow:'Net Cash Flow',
+    estimatedCorporateTax:'Estimated Corporate Tax (VPB)',estimatedPersonalTax:'Estimated Personal Income Tax',
+    totalOutstanding:'Total Outstanding',totalBox1Income:'Total Box 1 Income',confidential:'Confidential',
+    summaryTitle:'Financial Summary Report',plTitle:'Profit & Loss Statement',btwTitle:'VAT/BTW Tax Return',
+    debtorsTitle:'Debtors Aging Report',expensesTitle:'Expenses Report',cashflowTitle:'Cash Flow Analysis',
+    taxLiabilityTitle:'Tax Liability Report',
+  },
+  nl:{
+    client:'Klant',internalReport:'Interne Bedrijfsrapportage',generated:'Gegenereerd',financialYear:'Boekjaar',
+    revenue:'Omzet',expenses:'Kosten',operatingExpenses:'Bedrijfskosten',totalExpenses:'Totale Kosten',
+    netProfit:'Nettowinst',netProfitLoss:'Netto Winst/Verlies',depreciation:'Afschrijving',taxableProfit:'Belastbare Winst',
+    profitMargin:'Winstmarge',numberOfInvoices:'Aantal Facturen',numberOfExpenses:'Aantal Uitgaven',
+    financialOverview:'Financieel Overzicht',analysis:'ANALYSE',trend:'Trend',profitMarginTrend:'Winstmarge & Trend',spendingBreakdown:'Uitgavenoverzicht',
+    collectionRisk:'Incassorisico',cashPosition:'Kaspositie & Trend',vatPosition:'Btw-positie & Trend',
+    taxPosition:'Belastingpositie',category:'Categorie',date:'Datum',amount:'Bedrag',status:'Status',description:'Omschrijving',
+    vatOutput:'Btw Uitgaande (Verkoop)',vatInput:'Btw Inkomende (Inkoop)',vatPayable:'Te Betalen',vatRecoverable:'Terug te Vorderen',
+    cashInflow:'Kasinstroom',cashOutflow:'Kasuitstroom',netCashFlow:'Netto Kasstroom',
+    estimatedCorporateTax:'Geschatte Vennootschapsbelasting (VPB)',estimatedPersonalTax:'Geschatte Inkomstenbelasting',
+    totalOutstanding:'Totaal Openstaand',totalBox1Income:'Totaal Box 1 Inkomen',confidential:'Vertrouwelijk',
+    summaryTitle:'Financieel Samenvattingsrapport',plTitle:'Winst- en Verliesrekening',btwTitle:'Btw-aangifte',
+    debtorsTitle:'Debiteuren Ouderdomsrapport',expensesTitle:'Uitgavenrapport',cashflowTitle:'Kasstroomanalyse',
+    taxLiabilityTitle:'Belastingverplichtingrapport',
+  },
+  ar:{
+    client:'العميل',internalReport:'تقرير الشركة الداخلي',generated:'تاريخ الإصدار',financialYear:'السنة المالية',
+    revenue:'الإيراد',expenses:'المصاريف',operatingExpenses:'المصاريف التشغيلية',totalExpenses:'إجمالي المصاريف',
+    netProfit:'صافي الربح',netProfitLoss:'صافي الربح/الخسارة',depreciation:'الإهلاك',taxableProfit:'الربح الخاضع للضريبة',
+    profitMargin:'هامش الربح',numberOfInvoices:'عدد الفواتير',numberOfExpenses:'عدد المصاريف',
+    financialOverview:'النظرة المالية العامة',analysis:'تحليل',trend:'الاتجاه',profitMarginTrend:'هامش الربح والاتجاه',spendingBreakdown:'تفصيل الإنفاق',
+    collectionRisk:'مخاطر التحصيل',cashPosition:'الوضع النقدي والاتجاه',vatPosition:'وضع ضريبة القيمة المضافة والاتجاه',
+    taxPosition:'الوضع الضريبي',category:'الفئة',date:'التاريخ',amount:'المبلغ',status:'الحالة',description:'الوصف',
+    vatOutput:'ضريبة المخرجات (المبيعات)',vatInput:'ضريبة المدخلات (المشتريات)',vatPayable:'مستحقة الدفع',vatRecoverable:'قابلة للاسترداد',
+    cashInflow:'النقد الداخل',cashOutflow:'النقد الخارج',netCashFlow:'صافي التدفق النقدي',
+    estimatedCorporateTax:'تقدير ضريبة الشركات (VPB)',estimatedPersonalTax:'تقدير ضريبة الدخل الشخصي',
+    totalOutstanding:'إجمالي المستحق',totalBox1Income:'إجمالي دخل Box 1',confidential:'سرّي',
+    summaryTitle:'تقرير الملخص المالي',plTitle:'قائمة الأرباح والخسائر',btwTitle:'إقرار ضريبة القيمة المضافة',
+    debtorsTitle:'تقرير أعمار ديون المدينين',expensesTitle:'تقرير المصاريف',cashflowTitle:'تحليل التدفق النقدي',
+    taxLiabilityTitle:'تقرير الخصوم الضريبية',
+  },
+};
+// دالة ترجمة التقرير - تقرأ لغة التصدير المختارة (منفصلة عن لغة النظام)،
+// وتتراجع للإنجليزية تلقائيًا لأي مصطلح غير مُترجَم بعد
+function rt(key){
+  const lang=S.reportExportLang||S.lang||'en';
+  return (REPORT_I18N[lang]&&REPORT_I18N[lang][key])||REPORT_I18N.en[key]||key;
+}
+
+function drawInsightBoxPDF(doc,x,y,width,title,lines){
+  const padding=4;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8.5);
+  const wrapped=[];
+  lines.forEach(line=>{wrapped.push(...doc.splitTextToSize(line,width-2*padding));});
+  const boxHeight=9+wrapped.length*4.3+padding;
+
+  doc.setFillColor(250,247,238);
+  doc.setDrawColor(200,144,16);
+  doc.setLineWidth(0.35);
+  doc.roundedRect(x,y,width,boxHeight,2,2,'FD');
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.setTextColor(140,100,10);
+  doc.text(rt('analysis')+': '+title,x+padding,y+6.5);
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8.3);
+  doc.setTextColor(70,70,70);
+  let ly=y+11.5;
+  wrapped.forEach(l=>{doc.text(l,x+padding,ly);ly+=4.3;});
+
+  return y+boxHeight+6;
+}
+
 function _exportReportPDF(type,cid){
   const c=S.clients.find(c=>c.id===cid);
   const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
@@ -10755,18 +11023,19 @@ function _exportReportPDF(type,cid){
   doc.setFontSize(11);
   doc.setTextColor(255,255,255);
   const isANBSelfReport=cid===ANB_SELF_ID;
-  doc.text(isANBSelfReport?'Internal Company Report':`Client: ${c?.name||'Report'}`,M+5,y+15);
+  doc.text(isANBSelfReport?rt('internalReport'):`${rt('client')}: ${c?.name||'Report'}`,M+5,y+15);
   
   y+=25;
   
   // Report title
   const titles={
-    'summary':'Financial Summary Report',
-    'pl':'Profit & Loss Statement',
-    'btw':'VAT/BTW Tax Return',
-    'debtors':'Debtors Aging Report',
-    'expenses':'Expenses Report',
-    'cashflow':'Cash Flow Analysis',
+    'summary':rt('summaryTitle'),
+    'pl':rt('plTitle'),
+    'btw':rt('btwTitle'),
+    'debtors':rt('debtorsTitle'),
+    'expenses':rt('expensesTitle'),
+    'cashflow':rt('cashflowTitle'),
+    'tax_liability':rt('taxLiabilityTitle'),
     'emp_financial':'Employee Financial Report',
     'emp_stats':'Employee Statistics Report'
   };
@@ -10781,7 +11050,7 @@ function _exportReportPDF(type,cid){
   doc.setFont('helvetica','normal');
   doc.setFontSize(9);
   doc.setTextColor(100,100,100);
-  doc.text(`Generated: ${FD(new Date())} | Financial Year: ${new Date().getFullYear()}`,M,y);
+  doc.text(`${rt('generated')}: ${FD(new Date())} | ${rt('financialYear')}: ${new Date().getFullYear()}`,M,y);
   y+=10;
   
   // Separator line
@@ -10802,7 +11071,7 @@ function _exportReportPDF(type,cid){
     
     doc.setFont('helvetica','bold');
     doc.setFontSize(12);
-    doc.text('Financial Overview',M,y);y+=12;
+    doc.text(rt('financialOverview'),M,y);y+=12;
     
     // Summary boxes
     const boxH=20, boxW=(W-4*M)/3;
@@ -10813,7 +11082,7 @@ function _exportReportPDF(type,cid){
     doc.setTextColor(255,255,255);
     doc.setFont('helvetica','normal');
     doc.setFontSize(9);
-    doc.text('Total Revenue',M+3,y+6);
+    doc.text(rt('revenue'),M+3,y+6);
     doc.setFont('helvetica','bold');
     doc.setFontSize(12);
     doc.text(`€${revenue.toFixed(2)}`,M+3,y+14);
@@ -10824,7 +11093,7 @@ function _exportReportPDF(type,cid){
     doc.setTextColor(255,255,255);
     doc.setFont('helvetica','normal');
     doc.setFontSize(9);
-    doc.text('Total Expenses',M+boxW+M+3,y+6);
+    doc.text(rt('totalExpenses'),M+boxW+M+3,y+6);
     doc.setFont('helvetica','bold');
     doc.setFontSize(12);
     doc.text(`€${expenses.toFixed(2)}`,M+boxW+M+3,y+14);
@@ -10835,7 +11104,7 @@ function _exportReportPDF(type,cid){
     doc.setTextColor(255,255,255);
     doc.setFont('helvetica','normal');
     doc.setFontSize(9);
-    doc.text('Net Profit',M+2*boxW+2*M+3,y+6);
+    doc.text(rt('netProfit'),M+2*boxW+2*M+3,y+6);
     doc.setFont('helvetica','bold');
     doc.setFontSize(12);
     doc.text(`€${profit.toFixed(2)}`,M+2*boxW+2*M+3,y+14);
@@ -10851,9 +11120,36 @@ function _exportReportPDF(type,cid){
     doc.setFont('helvetica','normal');
     doc.setFontSize(10);
     doc.setTextColor(0,0,0);
-    doc.text(`Number of Invoices: ${inv.length}`,M,y);y+=7;
-    doc.text(`Number of Expenses: ${exp.length}`,M,y);y+=7;
-    doc.text(`Profit Margin: ${((profit/revenue)*100).toFixed(1)}%`,M,y);
+    doc.text(`${rt('numberOfInvoices')}: ${inv.length}`,M,y);y+=7;
+    doc.text(`${rt('numberOfExpenses')}: ${exp.length}`,M,y);y+=7;
+    // ✅ إصلاح: كانت تُظهر "NaN%" عند عدم وجود إيراد إطلاقًا (قسمة على صفر بلا حماية)
+    doc.text(`${rt('profitMargin')}: ${revenue>0?((profit/revenue)*100).toFixed(1)+'%':'N/A (no revenue)'}`,M,y);
+    y+=14;
+
+    // رسم بياني مقارن + صندوق تحليل يشمل مقارنة فعلية بالفترة السابقة
+    if(y>225){doc.addPage();y=M;}
+    y=drawBarChartPDF(doc,M,y,W-2*M,45,[
+      {label:rt('revenue'),value:revenue,color:[10,34,24]},
+      {label:rt('expenses'),value:expenses,color:[184,134,11]},
+      {label:rt('netProfit'),value:profit,color:profit>=0?[77,168,118]:[168,77,77]},
+    ]);
+    const summaryInsightLines=[];
+    const {start:sumPriorStart}=getPriorPeriodRange();
+    if(sumPriorStart){
+      const priorInv=getReportableInvoicesForPriorPeriod(cid);
+      const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
+      const priorRevenue=priorInv.reduce((s,i)=>s+(i.amount||0),0);
+      const priorExpenses=priorExp.reduce((s,e)=>s+(e.amount||0),0);
+      const priorProfit=priorRevenue-priorExpenses;
+      const revPct=pctChange(revenue,priorRevenue);
+      const expPct=pctChange(expenses,priorExpenses);
+      if(revPct!==null)summaryInsightLines.push(`Revenue ${revPct>=0?'grew':'shrank'} by ${formatPctChange(Math.abs(revPct))} vs. the previous period.`);
+      if(expPct!==null)summaryInsightLines.push(`Expenses ${expPct>=0?'increased':'decreased'} by ${formatPctChange(Math.abs(expPct))} vs. the previous period.`);
+    }else{
+      summaryInsightLines.push('Select a specific period (month, quarter, or year) instead of "All Time" to see period-over-period trend comparisons here.');
+    }
+    if(y>250){doc.addPage();y=M;}
+    y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('trend'),summaryInsightLines);
   }
   else if(type==='pl'){
     const inv=getReportableInvoices(cid);
@@ -10869,13 +11165,13 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(10,34,24);
     doc.setTextColor(255,255,255);
     doc.rect(M,y,W-2*M,6,'F');
-    doc.text('REVENUE',M+3,y+5);
+    doc.text(rt('revenue').toUpperCase(),M+3,y+5);
     y+=8;
     
     doc.setFont('helvetica','normal');
     doc.setFontSize(10);
     doc.setTextColor(0,0,0);
-    doc.text(`Total Invoiced Revenue`,M,y);
+    doc.text(rt('revenue'),M,y);
     doc.setFont('helvetica','bold');
     doc.text(`€${revenue.toFixed(2)}`,W-M-30,y);
     y+=10;
@@ -10886,7 +11182,7 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(184,134,11);
     doc.setTextColor(255,255,255);
     doc.rect(M,y,W-2*M,6,'F');
-    doc.text('EXPENSES',M+3,y+5);
+    doc.text(rt('expenses').toUpperCase(),M+3,y+5);
     y+=8;
     
     doc.setFont('helvetica','normal');
@@ -10908,14 +11204,14 @@ function _exportReportPDF(type,cid){
     });
     if(depreciation>0){
       if(y>270){doc.addPage();y=M;}
-      doc.text('Depreciation',M+5,y);
+      doc.text(rt('depreciation'),M+5,y);
       doc.setFont('helvetica','normal');
       doc.text(`€${depreciation.toFixed(2)}`,W-M-30,y);
       y+=7;
     }
     
     y+=5;
-    doc.text('Total Expenses',M,y);
+    doc.text(rt('totalExpenses'),M,y);
     doc.setFont('helvetica','bold');
     doc.text(`€${expenses.toFixed(2)}`,W-M-30,y);
     y+=10;
@@ -10926,7 +11222,42 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(77,168,118);
     doc.setTextColor(255,255,255);
     doc.rect(M,y,W-2*M,8,'F');
-    doc.text(`NET PROFIT/LOSS: €${profit.toFixed(2)}`,M+3,y+6);
+    doc.text(`${rt('netProfitLoss').toUpperCase()}: €${profit.toFixed(2)}`,M+3,y+6);
+    y+=16;
+
+    // رسم بياني مقارن: الإيراد مقابل المصاريف مقابل الربح الصافي
+    if(y>230){doc.addPage();y=M;}
+    y=drawBarChartPDF(doc,M,y,W-2*M,45,[
+      {label:rt('revenue'),value:revenue,color:[10,34,24]},
+      {label:rt('expenses'),value:expenses,color:[184,134,11]},
+      {label:rt('netProfit'),value:profit,color:profit>=0?[77,168,118]:[168,77,77]},
+    ]);
+
+    // صندوق التحليل: هامش الربح، ونسبة المصاريف من الإيراد - أرقام محسوبة فعليًا من التقرير نفسه
+    const margin=revenue>0?(profit/revenue*100):0;
+    const expenseRatio=revenue>0?(expenses/revenue*100):0;
+    const insightLines=[
+      revenue>0
+        ?`Your net profit margin this period is ${margin.toFixed(1)}% (expenses consume ${expenseRatio.toFixed(1)}% of revenue).`
+        :'No revenue recorded in this period — expenses shown above are not yet offset by income.',
+    ];
+    if(depreciation>0)insightLines.push(`Depreciation of €${depreciation.toFixed(2)} is included as a non-cash expense, reducing taxable profit without affecting cash flow.`);
+    if(profit<0)insightLines.push('This period shows a net loss — expenses exceeded revenue.');
+    // ⭐ مقارنة فعلية بالفترة السابقة المقابلة - نقطة التباين الحقيقية المطلوبة
+    const {start:priorStart}=getPriorPeriodRange();
+    if(priorStart){
+      const priorInv=getReportableInvoicesForPriorPeriod(cid);
+      const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
+      const priorRevenue=priorInv.reduce((s,i)=>s+(i.amount||0),0);
+      const priorExpenses=priorExp.reduce((s,e)=>s+(e.amount||0),0);
+      const priorProfit=priorRevenue-priorExpenses;
+      const revPct=pctChange(revenue,priorRevenue);
+      const profPct=pctChange(profit,priorProfit);
+      if(revPct!==null)insightLines.push(`Revenue ${revPct>=0?'increased':'decreased'} by ${formatPctChange(Math.abs(revPct))} vs. the previous period (€${priorRevenue.toFixed(2)} → €${revenue.toFixed(2)}).`);
+      if(profPct!==null)insightLines.push(`Net profit ${profPct>=0?'improved':'declined'} by ${formatPctChange(Math.abs(profPct))} compared to the previous period (€${priorProfit.toFixed(2)} → €${profit.toFixed(2)}).`);
+    }
+    if(y>250){doc.addPage();y=M;}
+    y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('profitMarginTrend'),insightLines);
   }
   else if(type==='btw'){
     const inv=getReportableInvoices(cid);
@@ -10943,7 +11274,7 @@ function _exportReportPDF(type,cid){
     doc.setTextColor(255,255,255);
     doc.setFont('helvetica','normal');
     doc.setFontSize(9);
-    doc.text('VAT Output (Sales)',M+3,y+5);
+    doc.text(rt('vatOutput'),M+3,y+5);
     doc.setFont('helvetica','bold');
     doc.setFontSize(11);
     doc.text(`€${btwOut.toFixed(2)}`,M+3,y+12);
@@ -10954,7 +11285,7 @@ function _exportReportPDF(type,cid){
     doc.setTextColor(0,0,0);
     doc.setFont('helvetica','normal');
     doc.setFontSize(9);
-    doc.text('VAT Input (Purchases)',M+boxW+M+3,y+5);
+    doc.text(rt('vatInput'),M+boxW+M+3,y+5);
     doc.setFont('helvetica','bold');
     doc.setFontSize(11);
     doc.text(`€${btwIn.toFixed(2)}`,M+boxW+M+3,y+12);
@@ -10966,7 +11297,7 @@ function _exportReportPDF(type,cid){
     doc.setTextColor(255,255,255);
     doc.setFont('helvetica','normal');
     doc.setFontSize(9);
-    doc.text('VAT Payable/Recoverable',M+2*boxW+2*M+3,y+5);
+    doc.text(`${rt('vatPayable')}/${rt('vatRecoverable')}`,M+2*boxW+2*M+3,y+5);
     doc.setFont('helvetica','bold');
     doc.setFontSize(11);
     doc.text(`€${btwPayable.toFixed(2)}`,M+2*boxW+2*M+3,y+12);
@@ -10981,8 +11312,37 @@ function _exportReportPDF(type,cid){
     doc.setFont('helvetica','normal');
     doc.setFontSize(10);
     doc.setTextColor(0,0,0);
-    doc.text(`Invoices with VAT: ${inv.length}`,M,y);y+=7;
-    doc.text(`Expenses with VAT: ${exp.length}`,M,y);
+    doc.text(`${rt('numberOfInvoices')}: ${inv.length}`,M,y);y+=7;
+    doc.text(`${rt('numberOfExpenses')}: ${exp.length}`,M,y);
+    y+=14;
+
+    // رسم بياني مقارن: مخرجات الضريبة مقابل مدخلاتها مقابل الصافي
+    if(y>230){doc.addPage();y=M;}
+    y=drawBarChartPDF(doc,M,y,W-2*M,45,[
+      {label:rt('vatOutput'),value:btwOut,color:[10,34,24]},
+      {label:rt('vatInput'),value:btwIn,color:[200,144,16]},
+      {label:'Net',value:btwPayable,color:btwPayable>0?[184,134,11]:[77,168,118]},
+    ]);
+
+    // صندوق التحليل: توضيح ما يعنيه الرقم الصافي فعليًا
+    const btwInsightLines=btwPayable>0
+      ?[`You owe €${btwPayable.toFixed(2)} in VAT this period because your VAT collected on sales (€${btwOut.toFixed(2)}) exceeds VAT paid on purchases (€${btwIn.toFixed(2)}).`,
+        'This amount is due to the Belastingdienst by the filing deadline for this period.']
+      :[`You are entitled to reclaim €${Math.abs(btwPayable).toFixed(2)} this period because VAT paid on purchases (€${btwIn.toFixed(2)}) exceeds VAT collected on sales (€${btwOut.toFixed(2)}).`,
+        'This typically happens with large equipment purchases or a slow sales period.'];
+    // ⭐ مقارنة فعلية بالفترة السابقة المقابلة
+    const {start:btwPriorStart}=getPriorPeriodRange();
+    if(btwPriorStart){
+      const priorInv=getReportableInvoicesForPriorPeriod(cid);
+      const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
+      const priorBtwOut=priorInv.reduce((s,i)=>s+(parseFloat(i.btw)||0),0);
+      const priorBtwIn=priorExp.reduce((s,e)=>s+(parseFloat(e.btw)||0),0);
+      const priorBtwPayable=priorBtwOut-priorBtwIn;
+      const btwPct=pctChange(btwPayable,priorBtwPayable);
+      if(btwPct!==null)btwInsightLines.push(`Net VAT position ${btwPayable>=priorBtwPayable?'increased':'decreased'} by ${formatPctChange(Math.abs(btwPct))} vs. the previous period (€${priorBtwPayable.toFixed(2)} → €${btwPayable.toFixed(2)}).`);
+    }
+    if(y>250){doc.addPage();y=M;}
+    y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('vatPosition'),btwInsightLines);
   }
   else if(type==='debtors'){
     const invoices=S.invoices.filter(i=>i.cid===cid&&['Openstaand','Verzonden','Verlopen'].includes(i.status));
@@ -11048,6 +11408,22 @@ function _exportReportPDF(type,cid){
       doc.setFontSize(11);
       doc.setTextColor(184,134,11);
       doc.text(`TOTAL OUTSTANDING: €${total.toFixed(2)}`,M,y);
+      y+=14;
+
+      // رسم بياني لتوزيع الاستحقاق (حديث / متأخر) + صندوق تحليل يوضّح مدى خطورة التأخر الفعلي
+      const overdueTotal=invoices.filter(i=>i.status==='Verlopen').reduce((s,i)=>s+(i.amount||0),0);
+      const pendingTotal=total-overdueTotal;
+      if(y>215){doc.addPage();y=M;}
+      y=drawBarChartPDF(doc,M,y,W-2*M,45,[
+        {label:'Pending (not yet due)',value:pendingTotal,color:[77,168,118]},
+        {label:'Overdue',value:overdueTotal,color:[184,74,74]},
+      ]);
+      const overdueShare=total>0?(overdueTotal/total*100):0;
+      const debtorsInsightLines=[`${FMT(overdueTotal)} (${overdueShare.toFixed(1)}% of outstanding balance) is currently overdue.`];
+      if(overdueShare>30)debtorsInsightLines.push('A significant share of receivables is overdue — consider following up with these clients to improve cash flow.');
+      else if(overdueTotal===0)debtorsInsightLines.push('No overdue amounts — all outstanding invoices are still within their payment terms.');
+      if(y>250){doc.addPage();y=M;}
+      y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('collectionRisk'),debtorsInsightLines);
     }
   }
   else if(type==='expenses'){
@@ -11107,10 +11483,31 @@ function _exportReportPDF(type,cid){
       doc.setFontSize(11);
       doc.setTextColor(184,134,11);
       doc.text(`TOTAL EXPENSES: €${total.toFixed(2)}`,M,y);
+      y+=14;
+
+      // رسم بياني لأعلى 5 فئات مصاريف + صندوق تحليل يوضّح مدى التركّز في فئة واحدة
+      const catTotals={};
+      expenses.forEach(e=>{const k=e.cat||'Other';catTotals[k]=(catTotals[k]||0)+(e.amount||0);});
+      const topCats=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,5);
+      if(topCats.length>1){
+        if(y>215){doc.addPage();y=M;}
+        const catColors=[[10,34,24],[184,134,11],[77,168,118],[157,212,191],[168,77,77]];
+        y=drawBarChartPDF(doc,M,y,W-2*M,45,topCats.map(([cat,amt],i)=>({label:cat.length>10?cat.slice(0,9)+'…':cat,value:amt,color:catColors[i%catColors.length]})));
+
+        const [topCatName,topCatAmt]=topCats[0];
+        const topCatShare=total>0?(topCatAmt/total*100):0;
+        const expInsightLines=[`"${topCatName}" is the largest expense category at ${FMT(topCatAmt)} (${topCatShare.toFixed(1)}% of total expenses).`];
+        if(topCatShare>50)expInsightLines.push('This category represents more than half of all spending this period — worth reviewing for cost-optimization opportunities.');
+        if(y>250){doc.addPage();y=M;}
+        y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('spendingBreakdown'),expInsightLines);
+      }
     }
   }
   else if(type==='cashflow'){
-    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+    // ✅ إصلاح: التدفق النقدي يجب أن يعكس متى تحرَّك النقد فعليًا (تاريخ
+    // التحصيل)، وليس تاريخ إصدار الفاتورة - فاتورة صدرت الشهر الماضي
+    // ودُفعت هذا الشهر يجب أن تظهر في تدفق هذا الشهر، وليس الماضي
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.paidDate||i.date));
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     const inflow=inv.reduce((s,i)=>s+(i.total||0),0);
     const outflow=exp.reduce((s,e)=>s+(e.amount||0)+(e.btw||0),0);
@@ -11124,7 +11521,7 @@ function _exportReportPDF(type,cid){
     doc.setTextColor(255,255,255);
     doc.setFont('helvetica','normal');
     doc.setFontSize(10);
-    doc.text('Cash Inflow',M+3,y+6);
+    doc.text(rt('cashInflow'),M+3,y+6);
     doc.setFont('helvetica','bold');
     doc.setFontSize(13);
     doc.text(`€${inflow.toFixed(2)}`,M+3,y+15);
@@ -11135,7 +11532,7 @@ function _exportReportPDF(type,cid){
     doc.setTextColor(255,255,255);
     doc.setFont('helvetica','normal');
     doc.setFontSize(10);
-    doc.text('Cash Outflow',M+boxW+M+3,y+6);
+    doc.text(rt('cashOutflow'),M+boxW+M+3,y+6);
     doc.setFont('helvetica','bold');
     doc.setFontSize(13);
     doc.text(`€${outflow.toFixed(2)}`,M+boxW+M+3,y+15);
@@ -11148,7 +11545,33 @@ function _exportReportPDF(type,cid){
     doc.setTextColor(255,255,255);
     doc.setFont('helvetica','bold');
     doc.setFontSize(12);
-    doc.text(`NET CASH FLOW: €${netflow.toFixed(2)}`,M+3,y+8);
+    doc.text(`${rt('netCashFlow').toUpperCase()}: €${netflow.toFixed(2)}`,M+3,y+8);
+    y+=22;
+
+    // رسم بياني مقارن + صندوق تحليل يشمل مقارنة فعلية بالفترة السابقة
+    if(y>225){doc.addPage();y=M;}
+    y=drawBarChartPDF(doc,M,y,W-2*M,45,[
+      {label:rt('cashInflow'),value:inflow,color:[77,168,118]},
+      {label:rt('cashOutflow'),value:outflow,color:[184,134,11]},
+      {label:rt('netCashFlow'),value:netflow,color:netflow>=0?[10,34,24]:[168,77,77]},
+    ]);
+    const cfInsightLines=[
+      netflow>=0
+        ?`Cash position improved by €${netflow.toFixed(2)} this period — more cash came in than went out.`
+        :`Cash position declined by €${Math.abs(netflow).toFixed(2)} this period — outflow exceeded inflow.`,
+    ];
+    const {start:cfPriorStart}=getPriorPeriodRange();
+    if(cfPriorStart){
+      const priorInv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInPriorPeriod(i.paidDate||i.date));
+      const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
+      const priorInflow=priorInv.reduce((s,i)=>s+(i.total||0),0);
+      const priorOutflow=priorExp.reduce((s,e)=>s+(e.amount||0)+(e.btw||0),0);
+      const priorNetflow=priorInflow-priorOutflow;
+      const netPct=pctChange(netflow,priorNetflow);
+      if(netPct!==null)cfInsightLines.push(`Net cash flow ${netflow>=priorNetflow?'improved':'declined'} by ${formatPctChange(Math.abs(netPct))} vs. the previous period (€${priorNetflow.toFixed(2)} → €${netflow.toFixed(2)}).`);
+    }
+    if(y>250){doc.addPage();y=M;}
+    y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('cashPosition'),cfInsightLines);
   }
   else if(type==='emp_financial'){
     const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
@@ -11280,11 +11703,11 @@ function _exportReportPDF(type,cid){
     const isCorporate=c?.type==='BV'||c?.type==='NV';
 
     doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
-    doc.text('Revenue',M,y);doc.text(`€${revenue.toFixed(2)}`,W-M-35,y);y+=7;
-    doc.text('Operating Expenses',M,y);doc.text(`-€${operatingExpenses.toFixed(2)}`,W-M-35,y);y+=7;
-    doc.text('Depreciation',M,y);doc.text(`-€${depreciation.toFixed(2)}`,W-M-35,y);y+=7;
+    doc.text(rt('revenue'),M,y);doc.text(`€${revenue.toFixed(2)}`,W-M-35,y);y+=7;
+    doc.text(rt('operatingExpenses'),M,y);doc.text(`-€${operatingExpenses.toFixed(2)}`,W-M-35,y);y+=7;
+    doc.text(rt('depreciation'),M,y);doc.text(`-€${depreciation.toFixed(2)}`,W-M-35,y);y+=7;
     doc.setFont('helvetica','bold');
-    doc.text('Taxable Profit',M,y);doc.text(`€${rawProfit.toFixed(2)}`,W-M-35,y);y+=10;
+    doc.text(rt('taxableProfit'),M,y);doc.text(`€${rawProfit.toFixed(2)}`,W-M-35,y);y+=10;
 
     if(isCorporate){
       const bracket1Amt=Math.min(taxableProfit,200000);
@@ -11292,8 +11715,22 @@ function _exportReportPDF(type,cid){
       const estimatedTax=bracket1Amt*0.19+bracket2Amt*0.258;
       doc.setFillColor(200,144,16);doc.setTextColor(255,255,255);
       doc.rect(M,y,W-2*M,8,'F');
-      doc.text(`Estimated Corporate Tax (VPB): €${estimatedTax.toFixed(2)}`,M+3,y+6);
-      y+=14;
+      doc.text(`${rt('estimatedCorporateTax')}: €${estimatedTax.toFixed(2)}`,M+3,y+6);
+      y+=16;
+
+      if(y>210){doc.addPage();y=M;}
+      y=drawBarChartPDF(doc,M,y,W-2*M,45,[
+        {label:rt('revenue'),value:revenue,color:[10,34,24]},
+        {label:rt('expenses')+'+Dep.',value:operatingExpenses+depreciation,color:[184,134,11]},
+        {label:rt('taxableProfit'),value:taxableProfit,color:[77,168,118]},
+        {label:'Est. Tax',value:estimatedTax,color:[168,77,77]},
+      ]);
+      const effectiveRate=taxableProfit>0?(estimatedTax/taxableProfit*100):0;
+      const vpbInsightLines=[`Effective corporate tax rate: ${effectiveRate.toFixed(1)}% of taxable profit.`];
+      if(bracket2Amt>0)vpbInsightLines.push(`Profit exceeds the €200,000 first bracket — €${bracket2Amt.toFixed(0)} is taxed at the higher 25.8% rate.`);
+      else vpbInsightLines.push('Entire taxable profit falls within the lower 19% bracket (up to €200,000).');
+      if(y>250){doc.addPage();y=M;}
+      y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('taxPosition'),vpbInsightLines);
     }else{
       const ptInputs=(S.personalTaxInputs||{})[cid];
       if(ptInputs){
@@ -11305,11 +11742,23 @@ function _exportReportPDF(type,cid){
         if(ptInputs.otherIncome>0){doc.text('+ Other Personal Income',M,y);doc.text(`€${ptInputs.otherIncome.toFixed(2)}`,W-M-35,y);y+=6;}
         if(ptInputs.otherDeductions>0){doc.text('- Other Personal Deductions',M,y);doc.text(`-€${ptInputs.otherDeductions.toFixed(2)}`,W-M-35,y);y+=6;}
         doc.setFont('helvetica','bold');
-        doc.text('Total Box 1 Income',M,y);doc.text(`€${pt.totalBox1Income.toFixed(2)}`,W-M-35,y);y+=8;
+        doc.text(rt('totalBox1Income'),M,y);doc.text(`€${pt.totalBox1Income.toFixed(2)}`,W-M-35,y);y+=8;
         doc.setFillColor(184,134,11);doc.setTextColor(255,255,255);
         doc.rect(M,y,W-2*M,8,'F');
-        doc.text(`Estimated Personal Income Tax: €${pt.totalTax.toFixed(2)}`,M+3,y+6);
-        y+=14;
+        doc.text(`${rt('estimatedPersonalTax')}: €${pt.totalTax.toFixed(2)}`,M+3,y+6);
+        y+=16;
+
+        if(y>210){doc.addPage();y=M;}
+        y=drawBarChartPDF(doc,M,y,W-2*M,45,[
+          {label:'Business Profit',value:rawProfit,color:[10,34,24]},
+          {label:'Deductions',value:pt.ondernemersaftrek+pt.mkbVrijstelling,color:[184,134,11]},
+          {label:rt('totalBox1Income'),value:pt.totalBox1Income,color:[77,168,118]},
+          {label:'Est. Tax',value:pt.totalTax,color:[168,77,77]},
+        ]);
+        const effRate=rawProfit>0?(pt.totalTax/rawProfit*100):0;
+        const ibInsightLines=[`Estimated overall tax burden: ${effRate.toFixed(1)}% of business profit.`,'This is an estimate before general tax credits (heffingskortingen) — consult a tax advisor for the exact final amount.'];
+        if(y>250){doc.addPage();y=M;}
+        y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('taxPosition'),ibInsightLines);
       }else{
         doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
         const note=doc.splitTextToSize('This legal form is subject to personal income tax, which depends on total personal income and deductions. Consult a tax advisor for the exact amount.',W-2*M);
@@ -11327,7 +11776,7 @@ function _exportReportPDF(type,cid){
   doc.setFont('helvetica','normal');
   doc.setFontSize(8);
   doc.setTextColor(100,100,100);
-  doc.text('ANB Financial Services | www.anbfinancial.nl | Confidential',M,y);
+  doc.text(`ANB Financial Services | www.anbfinancial.nl | ${rt('confidential')}`,M,y);
   doc.text(new Date().toLocaleString(),W-M-50,y);
   
   doc.save(`Report_${type}_${escapeHtml(c?.name)}_${new Date().getFullYear()}.pdf`);
@@ -11363,22 +11812,37 @@ function _exportReportExcel(type,cid){
     const margin=(profit/revenue)*100||0;
     
     data=[
-      ['📊 FINANCIAL SUMMARY REPORT'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
+      ['📊 '+rt('summaryTitle').toUpperCase()],
+      isANBSelfReport?['Report Type',rt('internalReport')]:[rt('client'),c?.name],
       ['Report Date',FD(new Date())],
       ['Fiscal Year',new Date().getFullYear()],
       [],
       ['Key Metrics','Amount','Percentage'],
-      ['Total Revenue',revenue,'100%'],
-      ['Total Expenses',expenses,((expenses/revenue)*100).toFixed(1)+'%'],
-      ['Net Profit',profit,margin.toFixed(1)+'%'],
+      [rt('revenue'),revenue,'100%'],
+      [rt('totalExpenses'),expenses,((expenses/revenue)*100).toFixed(1)+'%'],
+      [rt('netProfit'),profit,margin.toFixed(1)+'%'],
       [],
       ['Additional Information','Value'],
-      ['Number of Invoices',inv.length],
-      ['Number of Expenses',exp.length],
+      [rt('numberOfInvoices'),inv.length],
+      [rt('numberOfExpenses'),exp.length],
       ['Average Invoice',revenue/inv.length||0],
-      ['Average Expense',expenses/exp.length||0]
+      ['Average Expense',expenses/exp.length||0],
+      [],
+      ['📈 Analysis Notes']
     ];
+    const {start:xlsSumPriorStart}=getPriorPeriodRange();
+    if(xlsSumPriorStart){
+      const priorInv=getReportableInvoicesForPriorPeriod(cid);
+      const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
+      const priorRevenue=priorInv.reduce((s,i)=>s+(i.amount||0),0);
+      const priorExpenses=priorExp.reduce((s,e)=>s+(e.amount||0),0);
+      const revPct=pctChange(revenue,priorRevenue);
+      const expPct=pctChange(expenses,priorExpenses);
+      if(revPct!==null)data.push([`Revenue ${revPct>=0?'grew':'shrank'} by ${formatPctChange(Math.abs(revPct))} vs. the previous period`]);
+      if(expPct!==null)data.push([`Expenses ${expPct>=0?'increased':'decreased'} by ${formatPctChange(Math.abs(expPct))} vs. the previous period`]);
+    }else{
+      data.push(['Select a specific period instead of "All Time" to see period-over-period trends']);
+    }
     sheets['Summary']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='pl'){
     const inv=getReportableInvoices(cid);
@@ -11389,13 +11853,13 @@ function _exportReportExcel(type,cid){
     const profit=revenue-expenses;
     
     data=[
-      ['📈 PROFIT & LOSS STATEMENT'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
+      ['📈 '+rt('plTitle').toUpperCase()],
+      isANBSelfReport?['Report Type',rt('internalReport')]:[rt('client'),c?.name],
       [],
-      ['REVENUE','Amount'],
-      ['Invoiced Revenue',revenue],
+      [rt('revenue').toUpperCase(),'Amount'],
+      [rt('revenue'),revenue],
       [],
-      ['EXPENSES','Amount']
+      [rt('expenses').toUpperCase(),'Amount']
     ];
     
     const categories={};
@@ -11407,12 +11871,25 @@ function _exportReportExcel(type,cid){
     Object.entries(categories).forEach(([cat,amt])=>{
       data.push([cat,amt]);
     });
-    if(depreciation>0)data.push(['Depreciation',depreciation]);
+    if(depreciation>0)data.push([rt('depreciation'),depreciation]);
     
     data.push([]);
-    data.push(['Total Expenses',expenses]);
+    data.push([rt('totalExpenses'),expenses]);
     data.push([]);
-    data.push(['NET PROFIT/LOSS',profit]);
+    data.push([rt('netProfitLoss').toUpperCase(),profit]);
+    data.push([]);
+    data.push(['📈 Analysis Notes']);
+    const margin=revenue>0?(profit/revenue*100):null;
+    if(margin!==null)data.push([`Profit margin: ${margin.toFixed(1)}% of revenue`]);
+    const {start:xlsPlPriorStart}=getPriorPeriodRange();
+    if(xlsPlPriorStart){
+      const priorInv=getReportableInvoicesForPriorPeriod(cid);
+      const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
+      const priorRevenue=priorInv.reduce((s,i)=>s+(i.amount||0),0);
+      const priorExpTotal=priorExp.reduce((s,e)=>s+(e.amount||0),0);
+      const profitPct=pctChange(profit,priorRevenue-priorExpTotal);
+      if(profitPct!==null)data.push([`Net profit ${profitPct>=0?'improved':'declined'} by ${formatPctChange(Math.abs(profitPct))} vs. the previous period`]);
+    }
     
     sheets['P&L']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='btw'){
@@ -11423,21 +11900,26 @@ function _exportReportExcel(type,cid){
     const btwPayable=btwOut-btwIn;
     
     data=[
-      ['💰 VAT/BTW TAX RETURN'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
+      ['💰 '+rt('btwTitle').toUpperCase()],
+      isANBSelfReport?['Report Type',rt('internalReport')]:[rt('client'),c?.name],
       ['Report Period',new Date().getFullYear()],
       [],
       ['VAT Item','Amount','EUR'],
-      ['VAT Output (Sales Tax)',btwOut,'€'+btwOut.toFixed(2)],
-      ['VAT Input (Purchase Tax)',btwIn,'€'+btwIn.toFixed(2)],
+      [rt('vatOutput'),btwOut,'€'+btwOut.toFixed(2)],
+      [rt('vatInput'),btwIn,'€'+btwIn.toFixed(2)],
       [],
-      ['VAT Status',btwPayable>0?'Payable':'Recoverable',''],
-      ['VAT Payable/Recoverable',btwPayable,'€'+Math.abs(btwPayable).toFixed(2)],
+      ['VAT Status',btwPayable>0?rt('vatPayable'):rt('vatRecoverable'),''],
+      [`${rt('vatPayable')}/${rt('vatRecoverable')}`,btwPayable,'€'+Math.abs(btwPayable).toFixed(2)],
       [],
       ['Supporting Information',''],
-      ['Invoices with VAT',inv.length],
-      ['Expenses with VAT',exp.length]
+      [rt('numberOfInvoices'),inv.length],
+      [rt('numberOfExpenses'),exp.length],
+      [],
+      ['📈 Analysis Notes']
     ];
+    data.push([btwPayable>0?`€${btwPayable.toFixed(2)} is payable to the tax authority this period`:`€${Math.abs(btwPayable).toFixed(2)} is recoverable this period (input tax exceeds output tax)`]);
+    const vatBasisNote=getClientVatBasis(cid)==='cash'?'This client is on the cash basis (Kasstelsel) — VAT is calculated on collected payments, not invoice dates':'This client is on the invoice basis (Factuurstelsel) — VAT is calculated on invoice dates regardless of payment status';
+    data.push([vatBasisNote]);
     sheets['BTW']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='expenses'){
     const expenses=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
@@ -11465,6 +11947,15 @@ function _exportReportExcel(type,cid){
     Object.entries(categoryTotal).forEach(([cat,amt])=>{
       data.push([cat,amt]);
     });
+    data.push([]);
+    data.push(['📈 Analysis Notes']);
+    const topCatEntries=Object.entries(categoryTotal).sort((a,b)=>b[1]-a[1]);
+    if(topCatEntries.length>0){
+      const [topCatName,topCatAmt]=topCatEntries[0];
+      const topCatShare=total>0?(topCatAmt/total*100):0;
+      data.push([`"${topCatName}" is the largest expense category at €${topCatAmt.toFixed(2)} (${topCatShare.toFixed(1)}% of total)`]);
+      if(topCatShare>50)data.push(['This category represents more than half of all spending — worth reviewing for cost-optimization']);
+    }
     
     sheets['Expenses']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='debtors'){
@@ -11490,32 +11981,43 @@ function _exportReportExcel(type,cid){
     data.push(['Summary','Count','Total Amount']);
     data.push(['Current',invoices.filter(i=>i.status==='Openstaand').length,invoices.filter(i=>i.status==='Openstaand').reduce((s,i)=>s+(i.amount||0),0)]);
     data.push(['Overdue',invoices.filter(i=>i.status==='Verlopen').length,invoices.filter(i=>i.status==='Verlopen').reduce((s,i)=>s+(i.amount||0),0)]);
+    data.push([]);
+    data.push(['📈 Analysis Notes']);
+    const debtorsOverdueTotal=invoices.filter(i=>i.status==='Verlopen').reduce((s,i)=>s+(i.amount||0),0);
+    const debtorsOverdueShare=total>0?(debtorsOverdueTotal/total*100):0;
+    data.push([`€${debtorsOverdueTotal.toFixed(2)} (${debtorsOverdueShare.toFixed(1)}% of outstanding balance) is currently overdue`]);
+    if(debtorsOverdueShare>30)data.push(['A significant share of receivables is overdue — consider following up to improve cash flow']);
+    else if(debtorsOverdueTotal===0)data.push(['No overdue amounts — all outstanding invoices are within their payment terms']);
     
     sheets['Debtors']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='cashflow'){
-    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.paidDate||i.date));
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     const inflow=inv.reduce((s,i)=>s+(i.total||0),0);
     const outflow=exp.reduce((s,e)=>s+(e.amount||0)+(e.btw||0),0);
     const netflow=inflow-outflow;
     
     data=[
-      ['💵 CASH FLOW ANALYSIS'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
+      ['💵 '+rt('cashflowTitle').toUpperCase()],
+      isANBSelfReport?['Report Type',rt('internalReport')]:[rt('client'),c?.name],
       ['Report Date',FD(new Date())],
       [],
       ['Cash Flow Item','Amount','EUR','Percentage'],
-      ['Cash Inflow (Paid Invoices)',inflow,'€'+inflow.toFixed(2),'100%'],
-      ['Cash Outflow (Expenses)',outflow,'€'+outflow.toFixed(2),((outflow/inflow)*100).toFixed(1)+'%'],
+      [rt('cashInflow'),inflow,'€'+inflow.toFixed(2),'100%'],
+      [rt('cashOutflow'),outflow,'€'+outflow.toFixed(2),((outflow/inflow)*100).toFixed(1)+'%'],
       [],
-      ['NET CASH FLOW',netflow,'€'+netflow.toFixed(2),((netflow/inflow)*100).toFixed(1)+'%'],
+      [rt('netCashFlow').toUpperCase(),netflow,'€'+netflow.toFixed(2),((netflow/inflow)*100).toFixed(1)+'%'],
       [],
       ['Metrics','Value'],
       ['Average Inflow per Transaction',inflow/inv.length||0],
       ['Average Outflow per Transaction',outflow/exp.length||0],
       ['Cash Position Strength',netflow>0?'Positive':'Negative'],
-      ['Liquidity Ratio',((inflow/outflow)*100).toFixed(1)+'%']
+      ['Liquidity Ratio',((inflow/outflow)*100).toFixed(1)+'%'],
+      [],
+      ['📈 Analysis Notes']
     ];
+    if(netflow>=0)data.push([`Positive net cash flow of €${netflow.toFixed(2)} — more cash came in than went out this period`]);
+    else data.push([`Negative net cash flow of €${Math.abs(netflow).toFixed(2)} — outflow exceeded inflow this period`]);
     
     sheets['Cash Flow']=XLSX.utils.aoa_to_sheet(data);
   }
@@ -11613,13 +12115,13 @@ function _exportReportExcel(type,cid){
     const isCorporate=c?.type==='BV'||c?.type==='NV';
 
     data=[
-      ['🏛️ TAX LIABILITY REPORT'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
+      ['🏛️ '+rt('taxLiabilityTitle').toUpperCase()],
+      isANBSelfReport?['Report Type',rt('internalReport')]:[rt('client'),c?.name],
       [],
-      ['Revenue',revenue],
-      ['Operating Expenses',-operatingExpenses],
-      ['Depreciation',-depreciation],
-      ['Taxable Profit',rawProfit],
+      [rt('revenue'),revenue],
+      [rt('operatingExpenses'),-operatingExpenses],
+      [rt('depreciation'),-depreciation],
+      [rt('taxableProfit'),rawProfit],
       []
     ];
     if(isCorporate){
@@ -11630,6 +12132,11 @@ function _exportReportExcel(type,cid){
       data.push(['Corporate Tax (VPB) — 19% bracket',tax1]);
       if(bracket2Amt>0)data.push(['Corporate Tax (VPB) — 25.8% bracket',tax2]);
       data.push(['Estimated Total Corporate Tax',tax1+tax2]);
+      data.push([]);
+      data.push(['📈 Analysis Notes']);
+      const vpbEffRate=taxableProfit>0?((tax1+tax2)/taxableProfit*100):0;
+      data.push([`Effective corporate tax rate: ${vpbEffRate.toFixed(1)}% of taxable profit`]);
+      if(bracket2Amt>0)data.push([`Profit exceeds the €200,000 first bracket — €${bracket2Amt.toFixed(0)} is taxed at the higher 25.8% rate`]);
     }else{
       const ptInputs=(S.personalTaxInputs||{})[cid];
       if(ptInputs){
@@ -11639,8 +12146,13 @@ function _exportReportExcel(type,cid){
         data.push(['MKB-winstvrijstelling (12.7%)',-pt.mkbVrijstelling]);
         if(ptInputs.otherIncome>0)data.push(['Other Personal Income',ptInputs.otherIncome]);
         if(ptInputs.otherDeductions>0)data.push(['Other Personal Deductions',-ptInputs.otherDeductions]);
-        data.push(['Total Box 1 Income',pt.totalBox1Income]);
-        data.push(['Estimated Personal Income Tax',pt.totalTax]);
+        data.push([rt('totalBox1Income'),pt.totalBox1Income]);
+        data.push([rt('estimatedPersonalTax'),pt.totalTax]);
+        data.push([]);
+        data.push(['📈 Analysis Notes']);
+        const ibEffRate=rawProfit>0?(pt.totalTax/rawProfit*100):0;
+        data.push([`Estimated overall tax burden: ${ibEffRate.toFixed(1)}% of business profit`]);
+        data.push(['This is an estimate before general tax credits (heffingskortingen) — consult a tax advisor for the exact final amount']);
       }else{
         data.push(['Note','Subject to personal income tax - depends on total personal income and deductions. Consult a tax advisor for the exact amount.']);
       }
