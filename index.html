@@ -557,13 +557,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.21">
+<link rel="manifest" href="manifest.json?v=3.26">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.21').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.26').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -1324,7 +1324,7 @@ var I18N={
     dashboard_new_messages:'New Messages',
     dashboard_new_documents:'New Documents',
     dashboard_hours_logged:'Hours Logged',
-    dashboard_active_contracts:'Active Contracts', dashboard_contracts_renewal:'Contracts Needing Renewal', needs_attention:'Needs Attention', apply:'Apply', company_settings:'Company Settings', this_month_revenue:'This Month Revenue', pending_expenses:'Pending Expenses', financial_operations:'Financial Operations', company_management:'Company Management', your_account_with_anb:'Your Account with ANB Financial Services', pending_invoices:'Pending Invoices', new_messages:'New Messages', unbilled_hours:'Unbilled Hours', my_finances:'My Finances', nothing_needs_attention:'Nothing needs attention right now', for_reference:'For Reference', active_contracts:'Active Contracts', employees:'Employees', card_employees_desc:'Payroll & Employment Contracts', add_employee:'Add Employee', edit_employee:'Edit Employee', no_employees_yet:'No employees added yet', generate_payslip:'Generate Payslip', net_pay:'Net Pay', payslip_history:'Payslip History', no_payslips_yet:'No payslips generated yet', download:'Download', close:'Close', matched_to:'Matched', remaining_to_allocate:'Remaining to allocate', fully_matched:'Fully matched', no_match_needed:'No match needed (internal transfer / bank fee)', suggested_matches:'Suggested Matches', remaining:'Remaining', match:'Match', search_manually:'Search Manually', contact_direct:'Contact (direct, no invoice)', match_transaction:'Match Transaction', done:'Done', enter_amount_to_match:'Amount to match', invalid_amount:'Invalid amount', marked_no_match:'Marked as no match needed', matched:'Matched', partial:'Partial', left:'left', no_match_needed_short:'N/A', sort_by:'Sort by', sort_name_az:'Name (A-Z)', sort_name_za:'Name (Z-A)', sort_newest:'Newest first', sort_oldest:'Oldest first', sort_plan_high:'Plan (high-low)', sort_salary_high:'Salary (high-low)', sort_title_az:'Title (A-Z)', sort_end_soon:'End date (soonest)', sort_amount_high:'Amount (high-low)', sort_amount_low:'Amount (low-high)', sort_desc_az:'Description (A-Z)', back_to_employees:'Back to Employees', benefits:'Benefits', end_employment:'End Employment', export_contract:'Export Contract PDF', export_payslip:'Export Payslip PDF', status_concept:'CONCEPT — month not yet ended', status_confirmed:'CONFIRMED', rep_payroll_title:'Payroll Report', rep_payroll_desc:'Employees & Salary Overview', active_employees:'Active Employees', ended_employees:'Ended Employees', monthly_fixed_payroll:'Monthly Fixed Payroll', hourly_employees_note:'employee(s) on variable hourly pay — not included in fixed monthly total above (depends on hours worked each month)', ytd_summary:'Year Summary', ytd_net_paid:'Net paid this year', accrued_vacation_total:'Accrued vacation allowance (unpaid)', accrued_13th_total:'Accrued 13th month (unpaid)', vacation_money_payout:'Vacation Allowance Payout', accrued_paid_may:'Accrued monthly, paid out once in May', paid_monthly:'Paid monthly with salary', vacation_payout:'Vacation allowance payout (accrued)', vacation_accruing:'Vacation allowance accruing (reserved for May)', rep_emp_financial_title:'Employee Financial Report', rep_emp_financial_desc:'Payroll Costs & Payments', rep_emp_stats_title:'Employee Statistics Report', rep_emp_stats_desc:'Workforce Overview & Trends', avg_cost_per_employee:'Avg. Cost / Fixed Employee', ytd_gross_paid:'Gross paid this year (taxable)', ytd_loonheffing:'Loonheffing withheld this year', ytd_pension:'Pension deducted this year', outstanding_liabilities:'Outstanding Liabilities (Accrued, Unpaid)', total_liability:'Total accrued liability', per_employee_breakdown:'Per-Employee Financial Breakdown', ytd_gross:'YTD Gross', total_ever_hired:'Total Ever Hired', avg_tenure:'Avg. Tenure', months:'mo', contract_type_breakdown:'Contract Type', permanent:'Permanent (Onbepaalde tijd)', fixed_term:'Fixed-term (Bepaalde tijd)', salary_type_breakdown:'Salary Type', avg_hours_week:'Avg. hours/week', job_title_breakdown:'Job Titles', nationality_breakdown:'Nationality', contracts_expiring_soon:'Fixed-Term Contracts Ending Within 90 Days', none_expiring:'None — all fixed-term contracts have more than 90 days remaining.', ocr_high_conf:'Confident match', ocr_low_conf:'Please verify — uncertain reading', ocr_low_quality:'Reading quality was low — please double-check every field carefully', ocr_extracted:'Data extracted automatically — colored fields show confidence, please review', confirm_delete:'Confirm Delete', confirm_delete_contract:'Delete this contract?', confirm_delete_contact:'Delete this contact? (Ledger entries will not be deleted)', confirm_reset_pw:'Reset Password', confirm_reset_client_pw:"Reset this client's password? They will need to set a new one on next login.", confirm_delete_generic:'Delete this item?', confirm_delete_client:'Remove this client and ALL their data?', confirm_stop_recurring:'Stop this recurring invoice schedule? Already-generated invoices stay.', confirm_restore:'Restore Backup', confirm_reject:'Reject', confirm_reject_agreement:'Are you sure you want to reject this agreement?', confirm_approve:'Approve Agreement', confirm_disable_2fa_title:'Disable Two-Factor Authentication',
+    dashboard_active_contracts:'Active Contracts', dashboard_contracts_renewal:'Contracts Needing Renewal', needs_attention:'Needs Attention', apply:'Apply', rep_tax_liability_title:'Tax Liability', rep_tax_liability_desc:'Estimated Income/Corporate Tax', add_asset:'Add Asset', asset_name:'Asset Name', asset_category:'Category', acquisition_cost:'Acquisition Cost (€, excl. BTW)', acquisition_date:'Acquisition Date', useful_life_years:'Useful Life (years)', residual_value:'Residual Value (€)', generate_depreciation:'Generate Depreciation', depreciation:'Depreciation', taxable_profit:'Taxable Profit', revenue:'Revenue', operating_expenses:'Operating Expenses', total_cost:'Total Cost', current_book_value:'Book Value', annual_depreciation:'Annual Depreciation', book_value:'Book Value', accumulated:'Accumulated', per_year:'Per Year', acquired:'Acquired', cost:'Cost', useful_life:'Life', expensed_immediately:'Expensed immediately (< €450)', save_asset:'Save Asset', confirm_delete_asset:'Delete this asset?', years:'years', year:'year', month:'month', vpb_estimate:'Estimated Corporate Tax (Vennootschapsbelasting 2026)', first_bracket:'first €200,000', personal_tax_note:'This legal form is subject to personal income tax (Inkomstenbelasting), which depends on the total personal income and deductions of the owner (zelfstandigenaftrek, MKB-winstvrijstelling, etc.). We show the taxable business profit above only — please consult a tax advisor for the exact personal tax amount.', kia_hint:'Small-Scale Investment Deduction (KIA)', invested_this_period:'invested this period', kia_may_apply:'may be eligible for KIA (check current Belastingdienst table for exact %)', kia_not_in_range:'outside the KIA range (€2,901–€398,236)', asset_immediate_expense_hint:'Below €450 — Dutch tax rules require this to be booked as a regular expense, not depreciated as an asset. Consider using "Add Expense" instead.', asset_min_life_hint:'Dutch tax law requires a minimum useful life of', max_per_year:'max depreciation per year', asset_life_adjusted:'Useful life adjusted to the legal minimum', asset_name_required:'Asset name required', acquisition_cost_required:'Acquisition cost required', asset_saved:'Asset saved', depreciation_for:'Depreciation for', entries_created:'entries created', skipped_already_exist:'skipped (already exist or zero)', yrs_short:'y', customer_base_label:'Customer Base', customer_base_business:'Mostly businesses (B2B)', customer_base_individuals:'Mostly private individuals — 90%+ (B2C)', customer_base_hint:'Determines the legal VAT accounting basis (Factuurstelsel/invoice basis for B2B, or Kasstelsel/cash basis eligible for 90%+ consumer sales — per Belastingdienst rules)', confirm_delete_message:'Delete this message?', edit_message:'Edit Message', message_cannot_be_empty:'Message cannot be empty', edited:'edited', delete:'Delete', save:'Save', company_settings:'Company Settings', this_month_revenue:'This Month Revenue', pending_expenses:'Pending Expenses', financial_operations:'Financial Operations', company_management:'Company Management', your_account_with_anb:'Your Account with ANB Financial Services', pending_invoices:'Pending Invoices', new_messages:'New Messages', unbilled_hours:'Unbilled Hours', my_finances:'My Finances', nothing_needs_attention:'Nothing needs attention right now', for_reference:'For Reference', active_contracts:'Active Contracts', employees:'Employees', card_employees_desc:'Payroll & Employment Contracts', add_employee:'Add Employee', edit_employee:'Edit Employee', no_employees_yet:'No employees added yet', generate_payslip:'Generate Payslip', net_pay:'Net Pay', payslip_history:'Payslip History', no_payslips_yet:'No payslips generated yet', download:'Download', close:'Close', matched_to:'Matched', remaining_to_allocate:'Remaining to allocate', fully_matched:'Fully matched', no_match_needed:'No match needed (internal transfer / bank fee)', suggested_matches:'Suggested Matches', remaining:'Remaining', match:'Match', search_manually:'Search Manually', contact_direct:'Contact (direct, no invoice)', match_transaction:'Match Transaction', done:'Done', enter_amount_to_match:'Amount to match', invalid_amount:'Invalid amount', marked_no_match:'Marked as no match needed', matched:'Matched', partial:'Partial', left:'left', no_match_needed_short:'N/A', sort_by:'Sort by', sort_name_az:'Name (A-Z)', sort_name_za:'Name (Z-A)', sort_newest:'Newest first', sort_oldest:'Oldest first', sort_plan_high:'Plan (high-low)', sort_salary_high:'Salary (high-low)', sort_title_az:'Title (A-Z)', sort_end_soon:'End date (soonest)', sort_amount_high:'Amount (high-low)', sort_amount_low:'Amount (low-high)', sort_desc_az:'Description (A-Z)', back_to_employees:'Back to Employees', benefits:'Benefits', end_employment:'End Employment', export_contract:'Export Contract PDF', export_payslip:'Export Payslip PDF', status_concept:'CONCEPT — month not yet ended', status_confirmed:'CONFIRMED', rep_payroll_title:'Payroll Report', rep_payroll_desc:'Employees & Salary Overview', active_employees:'Active Employees', ended_employees:'Ended Employees', monthly_fixed_payroll:'Monthly Fixed Payroll', hourly_employees_note:'employee(s) on variable hourly pay — not included in fixed monthly total above (depends on hours worked each month)', ytd_summary:'Year Summary', ytd_net_paid:'Net paid this year', accrued_vacation_total:'Accrued vacation allowance (unpaid)', accrued_13th_total:'Accrued 13th month (unpaid)', vacation_money_payout:'Vacation Allowance Payout', accrued_paid_may:'Accrued monthly, paid out once in May', paid_monthly:'Paid monthly with salary', vacation_payout:'Vacation allowance payout (accrued)', vacation_accruing:'Vacation allowance accruing (reserved for May)', rep_emp_financial_title:'Employee Financial Report', rep_emp_financial_desc:'Payroll Costs & Payments', rep_emp_stats_title:'Employee Statistics Report', rep_emp_stats_desc:'Workforce Overview & Trends', avg_cost_per_employee:'Avg. Cost / Fixed Employee', ytd_gross_paid:'Gross paid this year (taxable)', ytd_loonheffing:'Loonheffing withheld this year', ytd_pension:'Pension deducted this year', outstanding_liabilities:'Outstanding Liabilities (Accrued, Unpaid)', total_liability:'Total accrued liability', per_employee_breakdown:'Per-Employee Financial Breakdown', ytd_gross:'YTD Gross', total_ever_hired:'Total Ever Hired', avg_tenure:'Avg. Tenure', months:'mo', contract_type_breakdown:'Contract Type', permanent:'Permanent (Onbepaalde tijd)', fixed_term:'Fixed-term (Bepaalde tijd)', salary_type_breakdown:'Salary Type', avg_hours_week:'Avg. hours/week', job_title_breakdown:'Job Titles', nationality_breakdown:'Nationality', contracts_expiring_soon:'Fixed-Term Contracts Ending Within 90 Days', none_expiring:'None — all fixed-term contracts have more than 90 days remaining.', ocr_high_conf:'Confident match', ocr_low_conf:'Please verify — uncertain reading', ocr_low_quality:'Reading quality was low — please double-check every field carefully', ocr_extracted:'Data extracted automatically — colored fields show confidence, please review', confirm_delete:'Confirm Delete', confirm_delete_contract:'Delete this contract?', confirm_delete_contact:'Delete this contact? (Ledger entries will not be deleted)', confirm_reset_pw:'Reset Password', confirm_reset_client_pw:"Reset this client's password? They will need to set a new one on next login.", confirm_delete_generic:'Delete this item?', confirm_delete_client:'Remove this client and ALL their data?', confirm_stop_recurring:'Stop this recurring invoice schedule? Already-generated invoices stay.', confirm_restore:'Restore Backup', confirm_reject:'Reject', confirm_reject_agreement:'Are you sure you want to reject this agreement?', confirm_approve:'Approve Agreement', confirm_disable_2fa_title:'Disable Two-Factor Authentication',
     dashboard_pending_agreements:'Pending Agreements',
     // Sidebar messages
     sidebar_use_cards:'← Use the cards to navigate',
@@ -1405,11 +1405,7 @@ var I18N={
     doc_scan_prompt:'Tap to scan or upload a document',
     doc_scan_sub:'Photo, PDF, JPG, PNG — max 10MB',
     // Journal
-    jnl_title:'Journal entries', jnl_new:'New booking', jnl_coa:'Chart of accounts',
-    jnl_locked:'🔒 Locked (closed year)',
     // Year-end
-    ye_title:'Year-end closing', ye_client:'Client', ye_year:'Year to close',
-    ye_closed_on:'Closed on', ye_net_result:'Net result',
     // Recurring
     rec_title:'🔁 Recurring invoice schedules', rec_desc:'Description',
     rec_amount:'Amount excl.', rec_freq:'Frequency', rec_next:'Next invoice', rec_status:'Status',
@@ -1524,7 +1520,7 @@ var I18N={
     dashboard_new_messages:'Nieuwe Berichten',
     dashboard_new_documents:'Nieuwe Documenten',
     dashboard_hours_logged:'Gewerkte Uren',
-    dashboard_active_contracts:'Actieve Overeenkomsten', dashboard_contracts_renewal:'Contracten die Verlenging Nodig Hebben', needs_attention:'Vereist Aandacht', apply:'Toepassen', company_settings:'Bedrijfsinstellingen', this_month_revenue:'Omzet Deze Maand', pending_expenses:'Openstaande Kosten', financial_operations:'Financiële Activiteiten', company_management:'Bedrijfsbeheer', your_account_with_anb:'Uw Account bij ANB Financial Services', pending_invoices:'Openstaande Facturen', new_messages:'Nieuwe Berichten', unbilled_hours:'Niet-Gefactureerde Uren', my_finances:'Mijn Financiën', nothing_needs_attention:'Niets vereist momenteel aandacht', for_reference:'Ter Informatie', active_contracts:'Actieve Contracten', employees:'Werknemers', card_employees_desc:'Loonadministratie & Arbeidscontracten', add_employee:'Werknemer Toevoegen', edit_employee:'Werknemer Bewerken', no_employees_yet:'Nog geen werknemers toegevoegd', generate_payslip:'Loonstrook Genereren', net_pay:'Netto Loon', payslip_history:'Loonstrookgeschiedenis', no_payslips_yet:'Nog geen loonstroken gegenereerd', download:'Downloaden', close:'Sluiten', matched_to:'Gematcht', remaining_to_allocate:'Nog te matchen', fully_matched:'Volledig gematcht', no_match_needed:'Geen match nodig (interne overboeking / bankkosten)', suggested_matches:'Voorgestelde Matches', remaining:'Resterend', match:'Matchen', search_manually:'Handmatig Zoeken', contact_direct:'Contact (direct, geen factuur)', match_transaction:'Transactie Matchen', done:'Klaar', enter_amount_to_match:'Te matchen bedrag', invalid_amount:'Ongeldig bedrag', marked_no_match:'Gemarkeerd als geen match nodig', matched:'Gematcht', partial:'Gedeeltelijk', left:'resterend', no_match_needed_short:'N.v.t.', sort_by:'Sorteer op', sort_name_az:'Naam (A-Z)', sort_name_za:'Naam (Z-A)', sort_newest:'Nieuwste eerst', sort_oldest:'Oudste eerst', sort_plan_high:'Abonnement (hoog-laag)', sort_salary_high:'Salaris (hoog-laag)', sort_title_az:'Titel (A-Z)', sort_end_soon:'Einddatum (eerst)', sort_amount_high:'Bedrag (hoog-laag)', sort_amount_low:'Bedrag (laag-hoog)', sort_desc_az:'Omschrijving (A-Z)', back_to_employees:'Terug naar Werknemers', benefits:'Secundaire Arbeidsvoorwaarden', end_employment:'Dienstverband Beëindigen', export_contract:'Contract PDF Exporteren', export_payslip:'Loonstrook PDF Exporteren', status_concept:'CONCEPT — maand nog niet afgelopen', status_confirmed:'BEVESTIGD', rep_payroll_title:'Loonrapport', rep_payroll_desc:'Overzicht Werknemers & Salarissen', active_employees:'Actieve Werknemers', ended_employees:'Beëindigde Dienstverbanden', monthly_fixed_payroll:'Maandelijkse Vaste Loonkosten', hourly_employees_note:'werknemer(s) met variabel uurloon — niet inbegrepen in het vaste maandtotaal hierboven (afhankelijk van gewerkte uren per maand)', ytd_summary:'Jaaroverzicht', ytd_net_paid:'Netto uitbetaald dit jaar', accrued_vacation_total:'Opgebouwd vakantiegeld (onbetaald)', accrued_13th_total:'Opgebouwde 13e maand (onbetaald)', vacation_money_payout:'Uitbetaling Vakantiegeld', accrued_paid_may:'Maandelijks opgebouwd, uitbetaald in mei', paid_monthly:'Maandelijks uitbetaald met salaris', vacation_payout:'Uitbetaling vakantiegeld (opgebouwd)', vacation_accruing:'Vakantiegeld wordt opgebouwd (gereserveerd voor mei)', rep_emp_financial_title:'Financieel Rapport Werknemers', rep_emp_financial_desc:'Loonkosten & Uitbetalingen', rep_emp_stats_title:'Statistisch Rapport Werknemers', rep_emp_stats_desc:'Personeelsoverzicht & Trends', avg_cost_per_employee:'Gem. Kosten / Vaste Werknemer', ytd_gross_paid:'Bruto uitbetaald dit jaar (belastbaar)', ytd_loonheffing:'Loonheffing ingehouden dit jaar', ytd_pension:'Pensioen ingehouden dit jaar', outstanding_liabilities:'Openstaande Verplichtingen (Opgebouwd, Onbetaald)', total_liability:'Totale opgebouwde verplichting', per_employee_breakdown:'Financieel Overzicht per Werknemer', ytd_gross:'YTD Bruto', total_ever_hired:'Totaal Ooit Aangenomen', avg_tenure:'Gem. Dienstverband', months:'mnd', contract_type_breakdown:'Contracttype', permanent:'Vast (Onbepaalde tijd)', fixed_term:'Tijdelijk (Bepaalde tijd)', salary_type_breakdown:'Salaristype', avg_hours_week:'Gem. uren/week', job_title_breakdown:'Functietitels', nationality_breakdown:'Nationaliteit', contracts_expiring_soon:'Tijdelijke Contracten die Binnen 90 Dagen Aflopen', none_expiring:'Geen — alle tijdelijke contracten hebben meer dan 90 dagen resterend.', ocr_high_conf:'Betrouwbare match', ocr_low_conf:'Controleer — onzekere lezing', ocr_low_quality:'Leeskwaliteit was laag — controleer elk veld zorgvuldig', ocr_extracted:'Gegevens automatisch gehaald — gekleurde velden tonen betrouwbaarheid, controleer a.u.b.', confirm_delete:'Verwijderen Bevestigen', confirm_delete_contract:'Dit contract verwijderen?', confirm_delete_contact:'Dit contact verwijderen? (Grootboekregels blijven behouden)', confirm_reset_pw:'Wachtwoord Resetten', confirm_reset_client_pw:'Wachtwoord van deze klant resetten? Ze moeten een nieuw wachtwoord instellen bij de volgende login.', confirm_delete_generic:'Dit item verwijderen?', confirm_delete_client:'Deze klant en AL hun gegevens verwijderen?', confirm_stop_recurring:'Deze terugkerende factuurschema stoppen? Reeds gegenereerde facturen blijven behouden.', confirm_restore:'Back-up Herstellen', confirm_reject:'Afwijzen', confirm_reject_agreement:'Weet u zeker dat u deze overeenkomst wilt afwijzen?', confirm_approve:'Overeenkomst Goedkeuren', confirm_disable_2fa_title:'Tweefactorauthenticatie Uitschakelen',
+    dashboard_active_contracts:'Actieve Overeenkomsten', dashboard_contracts_renewal:'Contracten die Verlenging Nodig Hebben', needs_attention:'Vereist Aandacht', apply:'Toepassen', rep_tax_liability_title:'Belastingverplichting', rep_tax_liability_desc:'Geschatte Inkomsten-/Vennootschapsbelasting', add_asset:'Activum Toevoegen', asset_name:'Naam Activum', asset_category:'Categorie', acquisition_cost:'Aanschafkosten (€, excl. btw)', acquisition_date:'Aanschafdatum', useful_life_years:'Gebruiksduur (jaren)', residual_value:'Restwaarde (€)', generate_depreciation:'Afschrijving Genereren', depreciation:'Afschrijving', taxable_profit:'Belastbare Winst', revenue:'Omzet', operating_expenses:'Bedrijfskosten', total_cost:'Totale Kosten', current_book_value:'Boekwaarde', annual_depreciation:'Jaarlijkse Afschrijving', book_value:'Boekwaarde', accumulated:'Cumulatief', per_year:'Per Jaar', acquired:'Aangeschaft', cost:'Kosten', useful_life:'Duur', expensed_immediately:'Direct afgeschreven (< €450)', save_asset:'Activum Opslaan', confirm_delete_asset:'Dit activum verwijderen?', years:'jaren', year:'jaar', month:'maand', vpb_estimate:'Geschatte Vennootschapsbelasting 2026', first_bracket:'eerste €200.000', personal_tax_note:'Deze rechtsvorm valt onder de inkomstenbelasting, die afhangt van het totale persoonlijke inkomen en de aftrekposten van de eigenaar (zelfstandigenaftrek, MKB-winstvrijstelling, etc.). We tonen hierboven alleen de belastbare bedrijfswinst — raadpleeg een belastingadviseur voor het exacte bedrag.', kia_hint:'Kleinschaligheidsinvesteringsaftrek (KIA)', invested_this_period:'geïnvesteerd in deze periode', kia_may_apply:'mogelijk in aanmerking voor KIA (controleer actuele tabel Belastingdienst voor exact %)', kia_not_in_range:'buiten het KIA-bereik (€2.901–€398.236)', asset_immediate_expense_hint:'Onder €450 — moet volgens de Belastingdienst als gewone kostenpost worden geboekt, niet als af te schrijven activum. Overweeg "Uitgave Toevoegen" te gebruiken.', asset_min_life_hint:'De Nederlandse belastingwet vereist een minimale gebruiksduur van', max_per_year:'max. afschrijving per jaar', asset_life_adjusted:'Gebruiksduur aangepast naar het wettelijke minimum', asset_name_required:'Naam activum verplicht', acquisition_cost_required:'Aanschafkosten verplicht', asset_saved:'Activum opgeslagen', depreciation_for:'Afschrijving voor', entries_created:'boekingen aangemaakt', skipped_already_exist:'overgeslagen (bestaan al of nul)', yrs_short:'j', customer_base_label:'Klantenbestand', customer_base_business:'Voornamelijk bedrijven (B2B)', customer_base_individuals:'Voornamelijk particulieren — 90%+ (B2C)', customer_base_hint:'Bepaalt de wettelijke btw-grondslag (factuurstelsel voor B2B, of kasstelsel mogelijk bij 90%+ verkoop aan particulieren — volgens de regels van de Belastingdienst)', confirm_delete_message:'Dit bericht verwijderen?', edit_message:'Bericht Bewerken', message_cannot_be_empty:'Bericht mag niet leeg zijn', edited:'bewerkt', delete:'Verwijderen', save:'Opslaan', company_settings:'Bedrijfsinstellingen', this_month_revenue:'Omzet Deze Maand', pending_expenses:'Openstaande Kosten', financial_operations:'Financiële Activiteiten', company_management:'Bedrijfsbeheer', your_account_with_anb:'Uw Account bij ANB Financial Services', pending_invoices:'Openstaande Facturen', new_messages:'Nieuwe Berichten', unbilled_hours:'Niet-Gefactureerde Uren', my_finances:'Mijn Financiën', nothing_needs_attention:'Niets vereist momenteel aandacht', for_reference:'Ter Informatie', active_contracts:'Actieve Contracten', employees:'Werknemers', card_employees_desc:'Loonadministratie & Arbeidscontracten', add_employee:'Werknemer Toevoegen', edit_employee:'Werknemer Bewerken', no_employees_yet:'Nog geen werknemers toegevoegd', generate_payslip:'Loonstrook Genereren', net_pay:'Netto Loon', payslip_history:'Loonstrookgeschiedenis', no_payslips_yet:'Nog geen loonstroken gegenereerd', download:'Downloaden', close:'Sluiten', matched_to:'Gematcht', remaining_to_allocate:'Nog te matchen', fully_matched:'Volledig gematcht', no_match_needed:'Geen match nodig (interne overboeking / bankkosten)', suggested_matches:'Voorgestelde Matches', remaining:'Resterend', match:'Matchen', search_manually:'Handmatig Zoeken', contact_direct:'Contact (direct, geen factuur)', match_transaction:'Transactie Matchen', done:'Klaar', enter_amount_to_match:'Te matchen bedrag', invalid_amount:'Ongeldig bedrag', marked_no_match:'Gemarkeerd als geen match nodig', matched:'Gematcht', partial:'Gedeeltelijk', left:'resterend', no_match_needed_short:'N.v.t.', sort_by:'Sorteer op', sort_name_az:'Naam (A-Z)', sort_name_za:'Naam (Z-A)', sort_newest:'Nieuwste eerst', sort_oldest:'Oudste eerst', sort_plan_high:'Abonnement (hoog-laag)', sort_salary_high:'Salaris (hoog-laag)', sort_title_az:'Titel (A-Z)', sort_end_soon:'Einddatum (eerst)', sort_amount_high:'Bedrag (hoog-laag)', sort_amount_low:'Bedrag (laag-hoog)', sort_desc_az:'Omschrijving (A-Z)', back_to_employees:'Terug naar Werknemers', benefits:'Secundaire Arbeidsvoorwaarden', end_employment:'Dienstverband Beëindigen', export_contract:'Contract PDF Exporteren', export_payslip:'Loonstrook PDF Exporteren', status_concept:'CONCEPT — maand nog niet afgelopen', status_confirmed:'BEVESTIGD', rep_payroll_title:'Loonrapport', rep_payroll_desc:'Overzicht Werknemers & Salarissen', active_employees:'Actieve Werknemers', ended_employees:'Beëindigde Dienstverbanden', monthly_fixed_payroll:'Maandelijkse Vaste Loonkosten', hourly_employees_note:'werknemer(s) met variabel uurloon — niet inbegrepen in het vaste maandtotaal hierboven (afhankelijk van gewerkte uren per maand)', ytd_summary:'Jaaroverzicht', ytd_net_paid:'Netto uitbetaald dit jaar', accrued_vacation_total:'Opgebouwd vakantiegeld (onbetaald)', accrued_13th_total:'Opgebouwde 13e maand (onbetaald)', vacation_money_payout:'Uitbetaling Vakantiegeld', accrued_paid_may:'Maandelijks opgebouwd, uitbetaald in mei', paid_monthly:'Maandelijks uitbetaald met salaris', vacation_payout:'Uitbetaling vakantiegeld (opgebouwd)', vacation_accruing:'Vakantiegeld wordt opgebouwd (gereserveerd voor mei)', rep_emp_financial_title:'Financieel Rapport Werknemers', rep_emp_financial_desc:'Loonkosten & Uitbetalingen', rep_emp_stats_title:'Statistisch Rapport Werknemers', rep_emp_stats_desc:'Personeelsoverzicht & Trends', avg_cost_per_employee:'Gem. Kosten / Vaste Werknemer', ytd_gross_paid:'Bruto uitbetaald dit jaar (belastbaar)', ytd_loonheffing:'Loonheffing ingehouden dit jaar', ytd_pension:'Pensioen ingehouden dit jaar', outstanding_liabilities:'Openstaande Verplichtingen (Opgebouwd, Onbetaald)', total_liability:'Totale opgebouwde verplichting', per_employee_breakdown:'Financieel Overzicht per Werknemer', ytd_gross:'YTD Bruto', total_ever_hired:'Totaal Ooit Aangenomen', avg_tenure:'Gem. Dienstverband', months:'mnd', contract_type_breakdown:'Contracttype', permanent:'Vast (Onbepaalde tijd)', fixed_term:'Tijdelijk (Bepaalde tijd)', salary_type_breakdown:'Salaristype', avg_hours_week:'Gem. uren/week', job_title_breakdown:'Functietitels', nationality_breakdown:'Nationaliteit', contracts_expiring_soon:'Tijdelijke Contracten die Binnen 90 Dagen Aflopen', none_expiring:'Geen — alle tijdelijke contracten hebben meer dan 90 dagen resterend.', ocr_high_conf:'Betrouwbare match', ocr_low_conf:'Controleer — onzekere lezing', ocr_low_quality:'Leeskwaliteit was laag — controleer elk veld zorgvuldig', ocr_extracted:'Gegevens automatisch gehaald — gekleurde velden tonen betrouwbaarheid, controleer a.u.b.', confirm_delete:'Verwijderen Bevestigen', confirm_delete_contract:'Dit contract verwijderen?', confirm_delete_contact:'Dit contact verwijderen? (Grootboekregels blijven behouden)', confirm_reset_pw:'Wachtwoord Resetten', confirm_reset_client_pw:'Wachtwoord van deze klant resetten? Ze moeten een nieuw wachtwoord instellen bij de volgende login.', confirm_delete_generic:'Dit item verwijderen?', confirm_delete_client:'Deze klant en AL hun gegevens verwijderen?', confirm_stop_recurring:'Deze terugkerende factuurschema stoppen? Reeds gegenereerde facturen blijven behouden.', confirm_restore:'Back-up Herstellen', confirm_reject:'Afwijzen', confirm_reject_agreement:'Weet u zeker dat u deze overeenkomst wilt afwijzen?', confirm_approve:'Overeenkomst Goedkeuren', confirm_disable_2fa_title:'Tweefactorauthenticatie Uitschakelen',
     dashboard_pending_agreements:'Hangende Akkoorden',
     // Sidebar messages
     sidebar_use_cards:'← Gebruik de kaarten om te navigeren',
@@ -1595,10 +1591,6 @@ var I18N={
     deb_days_overdue:'Dagen te laat',
     doc_scan_prompt:'Tik om te scannen of te uploaden',
     doc_scan_sub:'Foto, PDF, JPG, PNG — max 10 MB',
-    jnl_title:'Journaalposten', jnl_new:'Nieuwe boeking', jnl_coa:'Rekeningschema',
-    jnl_locked:'🔒 Vergrendeld (afgesloten boekjaar)',
-    ye_title:'Jaarafsluiting', ye_client:'Klant', ye_year:'Te sluiten boekjaar',
-    ye_closed_on:'Afgesloten op', ye_net_result:'Netto resultaat',
     rec_title:'🔁 Terugkerende factuurreeksen', rec_desc:'Omschrijving',
     rec_amount:'Bedrag excl.', rec_freq:'Frequentie', rec_next:'Volgende factuur', rec_status:'Status',
     rec_monthly:'Maandelijks', rec_quarterly:'Elke 3 maanden', rec_yearly:'Jaarlijks',
@@ -1712,7 +1704,7 @@ var I18N={
     dashboard_new_messages:'الرسائل الجديدة',
     dashboard_new_documents:'المستندات الجديدة',
     dashboard_hours_logged:'ساعات العمل المسجلة',
-    dashboard_active_contracts:'الاتفاقيات النشطة', dashboard_contracts_renewal:'عقود بحاجة لمراجعة/تجديد', needs_attention:'يحتاج إجراء', apply:'تطبيق', company_settings:'إعدادات الشركة', this_month_revenue:'دخل هذا الشهر', pending_expenses:'مصاريف معلَّقة', financial_operations:'العمليات المالية', company_management:'إدارة الشركة', your_account_with_anb:'حسابك مع ANB Financial Services', pending_invoices:'فواتير معلَّقة', new_messages:'رسائل جديدة', unbilled_hours:'ساعات غير مفوترة', my_finances:'حساباتي المالية', nothing_needs_attention:'لا شيء يحتاج إجراءً الآن', for_reference:'للعِلم فقط', active_contracts:'العقود النشطة', employees:'الموظفون', card_employees_desc:'الرواتب وعقود العمل', add_employee:'إضافة موظف', edit_employee:'تعديل موظف', no_employees_yet:'لا يوجد موظفون بعد', generate_payslip:'إصدار بيان راتب', net_pay:'صافي الراتب', payslip_history:'سجل بيانات الرواتب', no_payslips_yet:'لا توجد بيانات رواتب صادرة بعد', download:'تحميل', close:'إغلاق', matched_to:'مطابَق', remaining_to_allocate:'المتبقي للمطابقة', fully_matched:'مطابقة كاملة', no_match_needed:'لا تحتاج مطابقة (تحويل داخلي / رسوم بنكية)', suggested_matches:'مطابقات مقترحة', remaining:'المتبقي', match:'مطابقة', search_manually:'بحث يدوي', contact_direct:'جهة اتصال (مباشرة، بلا فاتورة)', match_transaction:'مطابقة الحركة', done:'تم', enter_amount_to_match:'المبلغ المراد مطابقته', invalid_amount:'مبلغ غير صالح', marked_no_match:'تم الوسم كـ«لا يحتاج مطابقة»', matched:'مطابَقة', partial:'جزئية', left:'متبقٍ', no_match_needed_short:'غير منطبق', sort_by:'ترتيب حسب', sort_name_az:'الاسم (أ-ي)', sort_name_za:'الاسم (ي-أ)', sort_newest:'الأحدث أولاً', sort_oldest:'الأقدم أولاً', sort_plan_high:'الباقة (الأعلى-الأقل)', sort_salary_high:'الراتب (الأعلى-الأقل)', sort_title_az:'العنوان (أ-ي)', sort_end_soon:'تاريخ الانتهاء (الأقرب)', sort_amount_high:'المبلغ (الأعلى-الأقل)', sort_amount_low:'المبلغ (الأقل-الأعلى)', sort_desc_az:'الوصف (أ-ي)', back_to_employees:'العودة للموظفين', benefits:'المزايا', end_employment:'إنهاء التعاقد', export_contract:'تصدير العقد PDF', export_payslip:'تصدير بيان الراتب PDF', status_concept:'مسودة — الشهر لم ينتهِ بعد', status_confirmed:'مؤكد', rep_payroll_title:'تقرير الرواتب', rep_payroll_desc:'نظرة عامة على الموظفين والرواتب', active_employees:'الموظفون النشطون', ended_employees:'تعاقدات منتهية', monthly_fixed_payroll:'إجمالي الرواتب الثابتة الشهرية', hourly_employees_note:'موظف(ين) براتب متغيّر بالساعة — غير مشمولين في الإجمالي الثابت أعلاه (يعتمد على الساعات الفعلية كل شهر)', ytd_summary:'ملخص السنة', ytd_net_paid:'صافي المدفوع هذا العام', accrued_vacation_total:'بدل الإجازة المتراكم (غير مدفوع)', accrued_13th_total:'راتب ١٣ المتراكم (غير مدفوع)', vacation_money_payout:'طريقة دفع بدل الإجازة', accrued_paid_may:'يُجمَّع شهريًا، ويُدفع دفعة واحدة في مايو', paid_monthly:'يُدفع شهريًا مع الراتب', vacation_payout:'دفعة بدل الإجازة المتراكمة', vacation_accruing:'بدل الإجازة يتراكم (محجوز لدفعة مايو)', rep_emp_financial_title:'التقرير المالي للموظفين', rep_emp_financial_desc:'تكاليف الرواتب والمدفوعات', rep_emp_stats_title:'التقرير الإحصائي للموظفين', rep_emp_stats_desc:'نظرة عامة على القوى العاملة والاتجاهات', avg_cost_per_employee:'متوسط التكلفة / موظف براتب ثابت', ytd_gross_paid:'الإجمالي المدفوع هذا العام (خاضع للضريبة)', ytd_loonheffing:'الضريبة المحجوزة هذا العام', ytd_pension:'التقاعد المخصوم هذا العام', outstanding_liabilities:'التزامات مستحقة (متراكمة غير مدفوعة)', total_liability:'إجمالي الالتزامات المتراكمة', per_employee_breakdown:'التفصيل المالي لكل موظف', ytd_gross:'الإجمالي هذا العام', total_ever_hired:'إجمالي من تم توظيفهم', avg_tenure:'متوسط مدة الخدمة', months:'شهر', contract_type_breakdown:'نوع العقد', permanent:'دائم (Onbepaalde tijd)', fixed_term:'محدد المدة (Bepaalde tijd)', salary_type_breakdown:'نوع الراتب', avg_hours_week:'متوسط الساعات/الأسبوع', job_title_breakdown:'المسميات الوظيفية', nationality_breakdown:'الجنسية', contracts_expiring_soon:'عقود محدودة المدة تنتهي خلال 90 يومًا', none_expiring:'لا يوجد — كل العقود محدودة المدة متبقٍ لها أكثر من 90 يومًا.', ocr_high_conf:'قراءة موثوقة', ocr_low_conf:'يُرجى التحقق — قراءة غير مؤكدة', ocr_low_quality:'جودة القراءة كانت منخفضة — تحقق من كل حقل بعناية', ocr_extracted:'استُخرجت البيانات تلقائيًا — ألوان الحقول تعكس درجة الثقة، يُرجى المراجعة', confirm_delete:'تأكيد الحذف', confirm_delete_contract:'حذف هذا العقد؟', confirm_delete_contact:'حذف جهة الاتصال هذه؟ (سجلات دفتر الأستاذ لن تُحذف)', confirm_reset_pw:'إعادة تعيين كلمة المرور', confirm_reset_client_pw:'إعادة تعيين كلمة مرور هذا العميل؟ سيحتاج لتعيين كلمة جديدة عند الدخول التالي.', confirm_delete_generic:'حذف هذا العنصر؟', confirm_delete_client:'إزالة هذا العميل وكل بياناته؟', confirm_stop_recurring:'إيقاف جدولة الفاتورة المتكررة هذه؟ الفواتير المُصدرة مسبقًا تبقى كما هي.', confirm_restore:'استعادة النسخة الاحتياطية', confirm_reject:'رفض', confirm_reject_agreement:'هل أنت متأكد من رفض هذه الاتفاقية؟', confirm_approve:'الموافقة على الاتفاقية', confirm_disable_2fa_title:'تعطيل التحقق بخطوتين',
+    dashboard_active_contracts:'الاتفاقيات النشطة', dashboard_contracts_renewal:'عقود بحاجة لمراجعة/تجديد', needs_attention:'يحتاج إجراء', apply:'تطبيق', rep_tax_liability_title:'الخصوم الضريبية', rep_tax_liability_desc:'تقدير ضريبة الدخل/الشركات', add_asset:'إضافة أصل', asset_name:'اسم الأصل', asset_category:'الفئة', acquisition_cost:'تكلفة الشراء (€، بدون ضريبة)', acquisition_date:'تاريخ الشراء', useful_life_years:'العمر الإنتاجي (سنوات)', residual_value:'القيمة المتبقية (€)', generate_depreciation:'توليد الإهلاك', depreciation:'الإهلاك', taxable_profit:'الربح الخاضع للضريبة', revenue:'الإيراد', operating_expenses:'المصاريف التشغيلية', total_cost:'إجمالي التكلفة', current_book_value:'القيمة الدفترية', annual_depreciation:'الإهلاك السنوي', book_value:'القيمة الدفترية', accumulated:'المتراكم', per_year:'سنويًا', acquired:'تاريخ الشراء', cost:'التكلفة', useful_life:'العمر', expensed_immediately:'مقيَّد كمصروف فوري (أقل من ٤٥٠€)', save_asset:'حفظ الأصل', confirm_delete_asset:'حذف هذا الأصل؟', years:'سنوات', year:'سنة', month:'شهر', vpb_estimate:'تقدير ضريبة الشركات (Vennootschapsbelasting ٢٠٢٦)', first_bracket:'أول ٢٠٠,٠٠٠€', personal_tax_note:'هذا الشكل القانوني يخضع لضريبة الدخل الشخصي، والتي تعتمد على دخل المالك الشخصي الكامل وخصوماته (Zelfstandigenaftrek، MKB-winstvrijstelling، إلخ). نعرض أعلاه الربح التجاري الخاضع للضريبة فقط — يُرجى مراجعة مختص ضريبي للمبلغ الدقيق.', kia_hint:'خصم الاستثمار الصغير (KIA)', invested_this_period:'استُثمر خلال هذه الفترة', kia_may_apply:'قد يكون مؤهَّلًا لخصم KIA (راجع جدول Belastingdienst الحالي للنسبة الدقيقة)', kia_not_in_range:'خارج نطاق KIA (٢,٩٠١€–٣٩٨,٢٣٦€)', asset_immediate_expense_hint:'أقل من ٤٥٠€ — تنص القواعد الضريبية الهولندية على تسجيله كمصروف عادي، لا كأصل يُهلَك. فكِّر باستخدام "إضافة مصروف" بدلًا من ذلك.', asset_min_life_hint:'يشترط القانون الضريبي الهولندي حدًا أدنى للعمر الإنتاجي قدره', max_per_year:'كحد أقصى للإهلاك سنويًا', asset_life_adjusted:'تم تعديل العمر الإنتاجي للحد الأدنى القانوني', asset_name_required:'اسم الأصل مطلوب', acquisition_cost_required:'تكلفة الشراء مطلوبة', asset_saved:'تم حفظ الأصل', depreciation_for:'إهلاك', entries_created:'قيدًا أُنشئ', skipped_already_exist:'تم تخطيها (موجودة مسبقًا أو صفرية)', yrs_short:'سنة', customer_base_label:'طبيعة الزبائن', customer_base_business:'شركات بشكل أساسي (B2B)', customer_base_individuals:'أفراد بشكل أساسي — ٩٠٪+ (B2C)', customer_base_hint:'يحدِّد الأساس القانوني لاحتساب ضريبة القيمة المضافة (أساس الفاتورة إلزامي للشركات، أو أساس النقد ممكن عند بيع ٩٠٪+ لأفراد — حسب قواعد Belastingdienst)', confirm_delete_message:'حذف هذه الرسالة؟', edit_message:'تعديل الرسالة', message_cannot_be_empty:'لا يمكن أن تكون الرسالة فارغة', edited:'مُعدَّلة', delete:'حذف', save:'حفظ', company_settings:'إعدادات الشركة', this_month_revenue:'دخل هذا الشهر', pending_expenses:'مصاريف معلَّقة', financial_operations:'العمليات المالية', company_management:'إدارة الشركة', your_account_with_anb:'حسابك مع ANB Financial Services', pending_invoices:'فواتير معلَّقة', new_messages:'رسائل جديدة', unbilled_hours:'ساعات غير مفوترة', my_finances:'حساباتي المالية', nothing_needs_attention:'لا شيء يحتاج إجراءً الآن', for_reference:'للعِلم فقط', active_contracts:'العقود النشطة', employees:'الموظفون', card_employees_desc:'الرواتب وعقود العمل', add_employee:'إضافة موظف', edit_employee:'تعديل موظف', no_employees_yet:'لا يوجد موظفون بعد', generate_payslip:'إصدار بيان راتب', net_pay:'صافي الراتب', payslip_history:'سجل بيانات الرواتب', no_payslips_yet:'لا توجد بيانات رواتب صادرة بعد', download:'تحميل', close:'إغلاق', matched_to:'مطابَق', remaining_to_allocate:'المتبقي للمطابقة', fully_matched:'مطابقة كاملة', no_match_needed:'لا تحتاج مطابقة (تحويل داخلي / رسوم بنكية)', suggested_matches:'مطابقات مقترحة', remaining:'المتبقي', match:'مطابقة', search_manually:'بحث يدوي', contact_direct:'جهة اتصال (مباشرة، بلا فاتورة)', match_transaction:'مطابقة الحركة', done:'تم', enter_amount_to_match:'المبلغ المراد مطابقته', invalid_amount:'مبلغ غير صالح', marked_no_match:'تم الوسم كـ«لا يحتاج مطابقة»', matched:'مطابَقة', partial:'جزئية', left:'متبقٍ', no_match_needed_short:'غير منطبق', sort_by:'ترتيب حسب', sort_name_az:'الاسم (أ-ي)', sort_name_za:'الاسم (ي-أ)', sort_newest:'الأحدث أولاً', sort_oldest:'الأقدم أولاً', sort_plan_high:'الباقة (الأعلى-الأقل)', sort_salary_high:'الراتب (الأعلى-الأقل)', sort_title_az:'العنوان (أ-ي)', sort_end_soon:'تاريخ الانتهاء (الأقرب)', sort_amount_high:'المبلغ (الأعلى-الأقل)', sort_amount_low:'المبلغ (الأقل-الأعلى)', sort_desc_az:'الوصف (أ-ي)', back_to_employees:'العودة للموظفين', benefits:'المزايا', end_employment:'إنهاء التعاقد', export_contract:'تصدير العقد PDF', export_payslip:'تصدير بيان الراتب PDF', status_concept:'مسودة — الشهر لم ينتهِ بعد', status_confirmed:'مؤكد', rep_payroll_title:'تقرير الرواتب', rep_payroll_desc:'نظرة عامة على الموظفين والرواتب', active_employees:'الموظفون النشطون', ended_employees:'تعاقدات منتهية', monthly_fixed_payroll:'إجمالي الرواتب الثابتة الشهرية', hourly_employees_note:'موظف(ين) براتب متغيّر بالساعة — غير مشمولين في الإجمالي الثابت أعلاه (يعتمد على الساعات الفعلية كل شهر)', ytd_summary:'ملخص السنة', ytd_net_paid:'صافي المدفوع هذا العام', accrued_vacation_total:'بدل الإجازة المتراكم (غير مدفوع)', accrued_13th_total:'راتب ١٣ المتراكم (غير مدفوع)', vacation_money_payout:'طريقة دفع بدل الإجازة', accrued_paid_may:'يُجمَّع شهريًا، ويُدفع دفعة واحدة في مايو', paid_monthly:'يُدفع شهريًا مع الراتب', vacation_payout:'دفعة بدل الإجازة المتراكمة', vacation_accruing:'بدل الإجازة يتراكم (محجوز لدفعة مايو)', rep_emp_financial_title:'التقرير المالي للموظفين', rep_emp_financial_desc:'تكاليف الرواتب والمدفوعات', rep_emp_stats_title:'التقرير الإحصائي للموظفين', rep_emp_stats_desc:'نظرة عامة على القوى العاملة والاتجاهات', avg_cost_per_employee:'متوسط التكلفة / موظف براتب ثابت', ytd_gross_paid:'الإجمالي المدفوع هذا العام (خاضع للضريبة)', ytd_loonheffing:'الضريبة المحجوزة هذا العام', ytd_pension:'التقاعد المخصوم هذا العام', outstanding_liabilities:'التزامات مستحقة (متراكمة غير مدفوعة)', total_liability:'إجمالي الالتزامات المتراكمة', per_employee_breakdown:'التفصيل المالي لكل موظف', ytd_gross:'الإجمالي هذا العام', total_ever_hired:'إجمالي من تم توظيفهم', avg_tenure:'متوسط مدة الخدمة', months:'شهر', contract_type_breakdown:'نوع العقد', permanent:'دائم (Onbepaalde tijd)', fixed_term:'محدد المدة (Bepaalde tijd)', salary_type_breakdown:'نوع الراتب', avg_hours_week:'متوسط الساعات/الأسبوع', job_title_breakdown:'المسميات الوظيفية', nationality_breakdown:'الجنسية', contracts_expiring_soon:'عقود محدودة المدة تنتهي خلال 90 يومًا', none_expiring:'لا يوجد — كل العقود محدودة المدة متبقٍ لها أكثر من 90 يومًا.', ocr_high_conf:'قراءة موثوقة', ocr_low_conf:'يُرجى التحقق — قراءة غير مؤكدة', ocr_low_quality:'جودة القراءة كانت منخفضة — تحقق من كل حقل بعناية', ocr_extracted:'استُخرجت البيانات تلقائيًا — ألوان الحقول تعكس درجة الثقة، يُرجى المراجعة', confirm_delete:'تأكيد الحذف', confirm_delete_contract:'حذف هذا العقد؟', confirm_delete_contact:'حذف جهة الاتصال هذه؟ (سجلات دفتر الأستاذ لن تُحذف)', confirm_reset_pw:'إعادة تعيين كلمة المرور', confirm_reset_client_pw:'إعادة تعيين كلمة مرور هذا العميل؟ سيحتاج لتعيين كلمة جديدة عند الدخول التالي.', confirm_delete_generic:'حذف هذا العنصر؟', confirm_delete_client:'إزالة هذا العميل وكل بياناته؟', confirm_stop_recurring:'إيقاف جدولة الفاتورة المتكررة هذه؟ الفواتير المُصدرة مسبقًا تبقى كما هي.', confirm_restore:'استعادة النسخة الاحتياطية', confirm_reject:'رفض', confirm_reject_agreement:'هل أنت متأكد من رفض هذه الاتفاقية؟', confirm_approve:'الموافقة على الاتفاقية', confirm_disable_2fa_title:'تعطيل التحقق بخطوتين',
     dashboard_pending_agreements:'الاتفاقيات المعلقة',
     // Sidebar messages
     sidebar_use_cards:'← استخدم الكروت للتنقل',
@@ -1783,10 +1775,6 @@ var I18N={
     deb_days_overdue:'أيام التأخير',
     doc_scan_prompt:'اضغط لتصوير أو رفع مستند',
     doc_scan_sub:'صورة، PDF، JPG، PNG — الحد الأقصى 10 ميجابايت',
-    jnl_title:'قيود اليومية', jnl_new:'قيد جديد', jnl_coa:'دليل الحسابات (Rekeningschema)',
-    jnl_locked:'🔒 مقفَل (سنة مالية مُغلَقة)',
-    ye_title:'الإقفال السنوي', ye_client:'العميل', ye_year:'السنة المراد إقفالها',
-    ye_closed_on:'تاريخ الإقفال', ye_net_result:'النتيجة الصافية',
     rec_title:'🔁 جداول الفواتير المتكررة', rec_desc:'الوصف',
     rec_amount:'المبلغ بدون ضريبة', rec_freq:'الدورة', rec_next:'الفاتورة التالية', rec_status:'الحالة',
     rec_monthly:'شهري', rec_quarterly:'كل 3 أشهر', rec_yearly:'سنوي',
@@ -3962,11 +3950,14 @@ function rContracts(el,cid){
 }
 
 function rAssets(el,cid){
-  const assets=S.assets?.filter(a=>a.cid===cid)||[];
+  const assets=S.assets?.filter(a=>a.cid===cid&&!a.deleted)||[];
   const c=S.clients.find(c=>c.id===cid);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
   const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
+  const totalCost=assets.reduce((s,a)=>s+(a.acquisitionCost||0),0);
+  const totalBookValue=assets.reduce((s,a)=>s+getBookValue(a,TODAY()),0);
+  const totalAnnualDep=assets.filter(a=>!a.isImmediatelyExpensable).reduce((s,a)=>s+getAnnualDepreciation(a),0);
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -3975,17 +3966,62 @@ function rAssets(el,cid){
     </button>
     <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
   </div>
+
+  ${assets.length>0?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+    <div style="background:var(--bg1);border:1.5px solid var(--gr2);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:9px;color:var(--t3)">${t('total_cost')||'Total Cost'}</div>
+      <div style="font-size:14px;font-weight:800">${FMT(totalCost)}</div>
+    </div>
+    <div style="background:var(--bg1);border:1.5px solid var(--gr2);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:9px;color:var(--t3)">${t('current_book_value')||'Book Value'}</div>
+      <div style="font-size:14px;font-weight:800">${FMT(totalBookValue)}</div>
+    </div>
+    <div style="background:var(--bg1);border:1.5px solid var(--gr2);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:9px;color:var(--t3)">${t('annual_depreciation')||'Annual Depreciation'}</div>
+      <div style="font-size:14px;font-weight:800">${FMT(totalAnnualDep)}</div>
+    </div>
+  </div>`:''}
+
   <div class="card">
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🏢 ${t('assets')}</span>
-      <button class="btn btn-p btn-xs" onclick="openAddAsset('${cid}')">➕ ${t('add')}</button>
+      <div style="display:flex;gap:6px">
+        ${assets.some(a=>!a.isImmediatelyExpensable)?`<button class="btn btn-xs" onclick="generateDepreciationEntries('${cid}',new Date().getFullYear())">📊 ${t('generate_depreciation')||'Generate Depreciation'}</button>`:''}
+        <button class="btn btn-p btn-xs" onclick="openAddAsset('${cid}')">➕ ${t('add')}</button>
+      </div>
     </div>
     ${assets.length===0?`<div class="empty">🏢 ${t('no_data')}</div>`:
-    assets.map(a=>`<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
-      <div style="font-weight:500;font-size:12px;color:var(--t1)">${a.name||''}</div>
-      <div style="font-size:11px;color:var(--t3);margin-top:2px">${a.desc||''}</div>
-      <div style="font-size:10px;color:var(--t3);margin-top:4px">Value: ${FMT(a.value||0)} | Added: ${FD(a.date||'')}</div>
-    </div>`).join('')}
+    assets.map(a=>{
+      const bookValue=getBookValue(a,TODAY());
+      const accDep=getAccumulatedDepreciation(a,TODAY());
+      const annualDep=getAnnualDepreciation(a);
+      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:12px;color:var(--t1)">${escapeHtml(a.name||'')} <span style="font-size:9px;color:var(--t3);font-weight:400">(${a.category||'Other'})</span></div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px">${escapeHtml(a.desc||'')}</div>
+            ${a.isImmediatelyExpensable?
+              `<div style="font-size:10px;color:#B8860B;margin-top:4px">⚠️ ${t('expensed_immediately')||'Expensed immediately (< €450)'} — ${FMT(a.acquisitionCost)}</div>`:
+              `<div style="font-size:10px;color:var(--t3);margin-top:4px">${t('acquired')||'Acquired'}: ${FD(a.acquisitionDate)} · ${t('cost')||'Cost'}: ${FMT(a.acquisitionCost)} · ${t('useful_life')||'Life'}: ${a.usefulLifeYears}${t('yrs_short')||'y'}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px">
+                <div style="font-size:10px"><span style="color:var(--t3)">${t('book_value')||'Book Value'}:</span> <strong>${FMT(bookValue)}</strong></div>
+                <div style="font-size:10px"><span style="color:var(--t3)">${t('accumulated')||'Accumulated'}:</span> <strong>${FMT(accDep)}</strong></div>
+                <div style="font-size:10px"><span style="color:var(--t3)">${t('per_year')||'Per Year'}:</span> <strong>${FMT(annualDep)}</strong></div>
+              </div>`}
+          </div>
+          <button class="btn btn-danger btn-xs" onclick="deleteAsset('${a.id}')" title="${t('delete')}">🗑️</button>
+        </div>
+      </div>`;
+    }).join('')}
   </div>`;
+}
+function deleteAsset(assetId){
+  showConfirmDialog(t('confirm_delete')||'Confirm Delete',t('confirm_delete_asset')||'Delete this asset?',()=>{
+    const a=S.assets.find(x=>x.id===assetId);
+    if(!a)return;
+    a.deleted=true;
+    logAudit('delete','asset','Deleted asset "'+a.name+'"',a.cid);
+    sv();closeModal();renderContent();
+  });
 }
 
 /* ── IMPORT DATA ── */
@@ -4030,36 +4066,117 @@ function rImport(el,cid){
 }
 
 function openAddAsset(cid){
-  showModal('Add Asset',`
-    <input type="text" id="asset-name" placeholder="Asset Name" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-    <textarea id="asset-desc" placeholder="Description" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);height:60px;resize:none"></textarea>
-    <input type="number" id="asset-value" placeholder="Value (€)" 
-      style="width:100%;padding:10px;margin-bottom:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)">
-  `, ()=>saveAsset('${cid}'), 'Save Asset');
+  showModal(t('add_asset')||'Add Asset',`
+    <div class="fg"><label>${t('asset_name')||'Asset Name'} *</label>
+      <input type="text" id="asset-name" placeholder="e.g. MacBook Pro, Company Van..." style="width:100%;padding:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)"></div>
+    <div class="fg"><label>${t('lbl_description')}</label>
+      <textarea id="asset-desc" style="width:100%;padding:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);height:50px;resize:none"></textarea></div>
+    <div class="fg"><label>${t('asset_category')||'Category'}</label>
+      <select id="asset-cat" onchange="upAssetLifeHint()" style="width:100%;padding:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);cursor:pointer">
+        ${['Equipment','Vehicle','Furniture','Computer/IT','Machinery','Goodwill','Other'].map(c=>`<option>${c}</option>`).join('')}
+      </select></div>
+    <div class="fr2">
+      <div class="fg"><label>${t('acquisition_cost')||'Acquisition Cost (€, excl. BTW)'} *</label>
+        <input type="number" id="asset-cost" step="0.01" oninput="upAssetLifeHint()" style="width:100%;padding:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)"></div>
+      <div class="fg"><label>${t('acquisition_date')||'Acquisition Date'} *</label>
+        <input type="date" id="asset-date" value="${TODAY()}" style="width:100%;padding:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)"></div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label>${t('useful_life_years')||'Useful Life (years)'} *</label>
+        <input type="number" id="asset-life" value="5" min="1" step="1" oninput="upAssetLifeHint()" style="width:100%;padding:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)"></div>
+      <div class="fg"><label>${t('residual_value')||'Residual Value (€)'}</label>
+        <input type="number" id="asset-residual" value="0" step="0.01" oninput="upAssetLifeHint()" style="width:100%;padding:10px;border:1px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1)"></div>
+    </div>
+    <div id="asset-life-hint" style="font-size:11px;color:var(--t3);padding:8px;background:var(--bg2);border-radius:6px"></div>
+  `,()=>saveAsset(cid),t('save_asset')||'Save Asset');
+  setTimeout(upAssetLifeHint,50);
 }
+// تحديث تلقائي لتنبيه قواعد الإهلاك (الحد الأدنى 5 سنوات، أو أصل صغير <450€ يُقيَّد كمصروف فوري)
+function upAssetLifeHint(){
+  const hint=document.getElementById('asset-life-hint');
+  if(!hint)return;
+  const cost=parseFloat(document.getElementById('asset-cost')?.value)||0;
+  const cat=document.getElementById('asset-cat')?.value||'Other';
+  const life=parseInt(document.getElementById('asset-life')?.value)||0;
+  const residual=parseFloat(document.getElementById('asset-residual')?.value)||0;
+  const minLife=getAssetMinUsefulLife(cat);
 
+  if(isAssetImmediatelyExpensable(cost)&&cost>0){
+    hint.innerHTML=`⚠️ ${t('asset_immediate_expense_hint')||'Below €450 — Dutch tax rules require this to be booked as a regular expense, not depreciated as an asset. Consider using "Add Expense" instead.'}`;
+    return;
+  }
+  if(life>0&&life<minLife){
+    hint.innerHTML=`⚠️ ${t('asset_min_life_hint')||'Dutch tax law requires a minimum useful life of'} ${minLife} ${t('years')||'years'} (${cat==='Goodwill'?'10%':'20%'} ${t('max_per_year')||'max depreciation per year'}).`;
+    return;
+  }
+  if(cost>0&&life>0){
+    const annualDep=(cost-residual)/life;
+    hint.innerHTML=`✓ ${t('annual_depreciation')||'Annual depreciation'}: <strong>${FMT(annualDep)}</strong>/${t('year')||'year'} (${FMT(annualDep/12)}/${t('month')||'month'})`;
+  }
+}
 function saveAsset(cid){
-  const name=document.getElementById('asset-name')?.value||'';
+  const name=document.getElementById('asset-name')?.value?.trim()||'';
   const desc=document.getElementById('asset-desc')?.value||'';
-  const value=parseFloat(document.getElementById('asset-value')?.value||0);
-  
-  if(!name){toast('❌ Asset name required');markFieldError('asset-name');return;}
-  
+  const category=document.getElementById('asset-cat')?.value||'Other';
+  const cost=parseFloat(document.getElementById('asset-cost')?.value)||0;
+  const date=document.getElementById('asset-date')?.value||TODAY();
+  let usefulLifeYears=parseInt(document.getElementById('asset-life')?.value)||0;
+  const residualValue=parseFloat(document.getElementById('asset-residual')?.value)||0;
+
+  if(!name){toast('❌ '+(t('asset_name_required')||'Asset name required'));markFieldError('asset-name');return;}
+  if(!cost||cost<=0){toast('❌ '+(t('acquisition_cost_required')||'Acquisition cost required'));markFieldError('asset-cost');return;}
+
+  // ⚠️ فرض الحد الأدنى القانوني للعمر الإنتاجي (5 سنوات، أو 10 للشهرة التجارية)
+  const minLife=getAssetMinUsefulLife(category);
+  if(usefulLifeYears<minLife){
+    toast('⚠️ '+(t('asset_life_adjusted')||'Useful life adjusted to the legal minimum')+' ('+minLife+' '+(t('years')||'years')+')');
+    usefulLifeYears=minLife;
+  }
+
   if(!S.assets)S.assets=[];
   S.assets.push({
-    id:UID(),
-    cid:cid,
-    name:name,
-    desc:desc,
-    value:value,
-    date:TODAY()
+    id:UID(),cid,name,desc,category,
+    acquisitionCost:cost,acquisitionDate:date,
+    usefulLifeYears,residualValue,
+    isImmediatelyExpensable:isAssetImmediatelyExpensable(cost)
   });
-  
+  logAudit('create','asset','Added asset "'+name+'" ('+FMT(cost)+')',cid);
   sv();
   setTab('assets');
   closeModal();
+  toast('✓ '+(t('asset_saved')||'Asset saved'));
+}
+
+// يولّد قيود إهلاك فعلية (Journal Entries) لكل أصول عميل معيّن ضمن سنة
+// محدَّدة، مع منع التوليد المكرر لنفس الأصل ونفس السنة
+function generateDepreciationEntries(cid,year){
+  year=year||new Date().getFullYear();
+  const periodStart=year+'-01-01';
+  const periodEnd=year+'-12-31';
+  const assets=(S.assets||[]).filter(a=>a.cid===cid&&!a.isImmediatelyExpensable&&!a.deleted);
+  if(assets.length===0){toast('No depreciable assets found for this client');return;}
+
+  if(!S.journal)S.journal=[];
+  let created=0,skipped=0;
+  assets.forEach(a=>{
+    const alreadyExists=S.journal.some(j=>j.assetId===a.id&&j.year===year&&j.type==='depreciation');
+    if(alreadyExists){skipped++;return;}
+    const amount=getDepreciationForPeriod(a,periodStart,periodEnd);
+    if(amount<=0){skipped++;return;}
+    S.journal.push({
+      id:UID(),cid,assetId:a.id,year,type:'depreciation',
+      date:periodEnd,amount,
+      desc:(t('depreciation_for')||'Depreciation for')+' '+a.name+' — '+year
+    });
+    created++;
+  });
+  logAudit('create','journal','Generated '+created+' depreciation entries for '+year,cid);
+  sv();renderApp();
+  toast('✓ '+created+' '+(t('entries_created')||'entries created')+(skipped>0?' — '+skipped+' '+(t('skipped_already_exist')||'skipped (already exist or zero)'):''));
+}
+// إجمالي الإهلاك المُسجَّل فعليًا (كقيود) لعميل معيّن ضمن فترة تقرير معيّنة
+function getRecordedDepreciationForPeriod(cid){
+  return (S.journal||[]).filter(j=>j.cid===cid&&j.type==='depreciation'&&isDateInReportPeriod(j.date)).reduce((s,j)=>s+(j.amount||0),0);
 }
 
 /* ── BACK TO CLIENTS BUTTON IN SIDEBAR ── */
@@ -5926,6 +6043,54 @@ function selectMsgClient(clientId){
 }
 
 
+// ══════════════════════════════════════════════════════════════════
+// فقاعة رسالة موحَّدة تُستخدم في كل شاشات الرسائل الثلاث (أدمن-جوال،
+// أدمن-سطح مكتب، عميل) - تضيف خياري تعديل/حذف حسب صلاحية من يشاهدها:
+// الأدمن يستطيع حذف أي رسالة (إشراف) لكن تعديل ردوده هو فقط، والعميل
+// يستطيع تعديل/حذف رسائله هو فقط.
+// ══════════════════════════════════════════════════════════════════
+function renderMsgBubble(m,viewerRole,align){
+  const canDelete=viewerRole==='admin'||(viewerRole==='client'&&m.from==='client');
+  const canEdit=(viewerRole==='admin'&&m.from==='anb')||(viewerRole==='client'&&m.from==='client');
+  const bg=m.from==='anb'?(viewerRole==='client'?'#C89010':'#C89010'):(viewerRole==='client'?'#0A2218':'#E8E8E8');
+  const fg=m.from==='anb'?'#0A2218':(viewerRole==='client'?'#C89010':'#1a1a1a');
+  const actions=(canEdit||canDelete)?`<div style="display:flex;gap:6px;margin-top:2px;justify-content:${align==='right'?'flex-end':'flex-start'}">
+    ${canEdit?`<span onclick="editMessage('${m.id}')" style="font-size:10px;opacity:0.5;cursor:pointer" title="${t('edit')||'Edit'}">✏️</span>`:''}
+    ${canDelete?`<span onclick="deleteMessage('${m.id}')" style="font-size:10px;opacity:0.5;cursor:pointer" title="${t('delete')||'Delete'}">🗑️</span>`:''}
+  </div>`:'';
+  return `<div style="align-self:${align==='right'?'flex-end':'flex-start'};max-width:80%">
+    <div style="background:${bg};color:${fg};padding:10px 12px;border-radius:6px;line-height:1.4;font-size:13px;word-wrap:break-word">${escapeHtml(m.text)}</div>
+    <div style="font-size:9px;opacity:0.6;margin-top:2px;text-align:${align==='right'?'right':'left'}">${m.date} ${m.time}${m.edited?' · '+(t('edited')||'edited'):''}</div>
+    ${actions}
+  </div>`;
+}
+function deleteMessage(msgId){
+  showConfirmDialog(t('confirm_delete')||'Confirm Delete',t('confirm_delete_message')||'Delete this message?',()=>{
+    const m=S.messages.find(x=>x.id===msgId);
+    if(!m)return;
+    m.deleted=true;
+    logAudit('delete','message','Deleted a message',m.cid);
+    sv();
+    closeModal();
+    renderContent();
+  });
+}
+function editMessage(msgId){
+  const m=S.messages.find(x=>x.id===msgId);
+  if(!m)return;
+  showModal(t('edit_message')||'Edit Message',
+    `<div class="fg"><textarea id="edit-msg-text" style="width:100%;min-height:80px;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px">${escapeHtml(m.text)}</textarea></div>`
+    ,()=>{
+      const newText=document.getElementById('edit-msg-text')?.value?.trim();
+      if(!newText){toast('❌ '+(t('message_cannot_be_empty')||'Message cannot be empty'));return;}
+      m.text=newText;
+      m.edited=true;
+      sv();
+      closeModal();
+      renderContent();
+    },t('save')||'Save');
+}
+
 function rMessages(el,cid){
   if(!S.messages)S.messages=[];
   
@@ -5948,10 +6113,7 @@ function rMessages(el,cid){
         </div>
         <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
           ${S.messages.filter(m=>m.cid===selectedClient&&!m.deleted).length===0?`<div style="color:var(--t3);text-align:center;font-size:12px">No messages</div>`:
-          S.messages.filter(m=>m.cid===selectedClient&&!m.deleted).map(m=>`<div style="align-self:${m.from==='anb'?'flex-end':'flex-start'};max-width:85%">
-            <div style="background:${m.from==='anb'?'#C89010':'#E8E8E8'};color:${m.from==='anb'?'#0A2218':'#1a1a1a'};padding:10px 12px;border-radius:6px;line-height:1.4;font-size:13px;word-wrap:break-word">${escapeHtml(m.text)}</div>
-            <div style="font-size:9px;opacity:0.6;margin-top:2px;text-align:${m.from==='anb'?'right':'left'}">${m.date} ${m.time}</div>
-          </div>`).join('')}
+          S.messages.filter(m=>m.cid===selectedClient&&!m.deleted).map(m=>renderMsgBubble(m,'admin',m.from==='anb'?'right':'left')).join('')}
           <div id="msg-end"></div>
         </div>
         <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px">
@@ -5999,10 +6161,7 @@ function rMessages(el,cid){
           <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1)">${S.clients.find(c=>c.id===selectedClient)?.name}</div>
           <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
             ${S.messages.filter(m=>m.cid===selectedClient&&!m.deleted).length===0?`<div style="color:var(--t3);text-align:center;font-size:12px">No messages</div>`:
-            S.messages.filter(m=>m.cid===selectedClient&&!m.deleted).map(m=>`<div style="align-self:${m.from==='anb'?'flex-end':'flex-start'};max-width:75%">
-              <div style="background:${m.from==='anb'?'#C89010':'#E8E8E8'};color:${m.from==='anb'?'#0A2218':'#1a1a1a'};padding:10px 12px;border-radius:6px;line-height:1.4;font-size:13px">${escapeHtml(m.text)}</div>
-              <div style="font-size:9px;opacity:0.6;margin-top:2px">${m.date} ${m.time}</div>
-            </div>`).join('')}
+            S.messages.filter(m=>m.cid===selectedClient&&!m.deleted).map(m=>renderMsgBubble(m,'admin',m.from==='anb'?'right':'left')).join('')}
             <div id="msg-end"></div>
           </div>
           <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px">
@@ -6037,10 +6196,7 @@ function rMessages(el,cid){
       <div class="ch"><span class="ct">💬 ${t('messages_with_anb')}</span></div>
       <div style="padding:16px;max-height:400px;overflow-y:auto">
         ${S.messages.filter(m=>m.cid===cid&&!m.deleted).length===0?`<div style="color:var(--t3);text-align:center">${t('empty_messages')}</div>`:
-        S.messages.filter(m=>m.cid===cid&&!m.deleted).map(m=>`<div style="margin-bottom:12px;align-self:${m.from==='anb'?'flex-start':'flex-end'};max-width:75%">
-          <div style="background:${m.from==='anb'?'#C89010':'#0A2218'};color:${m.from==='anb'?'#0A2218':'#C89010'};padding:10px 12px;border-radius:6px;line-height:1.4;font-size:13px">${escapeHtml(m.text)}</div>
-          <div style="font-size:9px;opacity:0.6;margin-top:2px">${m.date} ${m.time}</div>
-        </div>`).join('')}
+        S.messages.filter(m=>m.cid===cid&&!m.deleted).map(m=>renderMsgBubble(m,'client',m.from==='anb'?'left':'right')).join('')}
         <div id="msg-end-client"></div>
       </div>
       <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px">
@@ -8113,6 +8269,15 @@ function rEditClient(el,cid){
               <input id="cf-bic" value="${c?.bic||''}" placeholder="ABNANL2A" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
             </div>
           </div>
+
+          <div style="margin-top:12px">
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('customer_base_label')||'Customer Base'}</label>
+            <select id="cf-custbase" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+              <option value="business" ${(c?.customerBase||'business')==='business'?'selected':''}>${t('customer_base_business')||'Mostly businesses (B2B)'}</option>
+              <option value="individuals" ${c?.customerBase==='individuals'?'selected':''}>${t('customer_base_individuals')||'Mostly private individuals — 90%+ (B2C)'}</option>
+            </select>
+            <div style="font-size:11px;color:var(--t3);margin-top:6px">${t('customer_base_hint')||'Determines the legal VAT accounting basis (Factuurstelsel/invoice basis for B2B, or Kasstelsel/cash basis eligible for 90%+ consumer sales — per Belastingdienst rules)'}</div>
+          </div>
         </div>
 
         <!-- Address Section -->
@@ -8224,7 +8389,8 @@ function saveEditClientFromTab(clientId){
     country:document.getElementById('cf-country').value,
     registrationNumber:document.getElementById('cf-regnum').value,
     monthlyFee:parseInt(document.getElementById('cf-fee')?.value)||0,
-    planExpiry:document.getElementById('cf-planexp')?.value||''
+    planExpiry:document.getElementById('cf-planexp')?.value||'',
+    customerBase:document.getElementById('cf-custbase')?.value||'business'
   };
   
   if(updatedClient.monthlyFee!==c.monthlyFee){
@@ -8310,6 +8476,15 @@ function openClientModal(c){
             <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">BIC</label>
             <input id="cf-bic" value="${c?.bic||''}" placeholder="ABNANL2A" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px"/>
           </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('customer_base_label')||'Customer Base'}</label>
+          <select id="cf-custbase" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--bg1);color:var(--t1);font-size:13px;cursor:pointer">
+            <option value="business" ${(c?.customerBase||'business')==='business'?'selected':''}>${t('customer_base_business')||'Mostly businesses (B2B)'}</option>
+            <option value="individuals" ${c?.customerBase==='individuals'?'selected':''}>${t('customer_base_individuals')||'Mostly private individuals — 90%+ (B2C)'}</option>
+          </select>
+          <div style="font-size:11px;color:var(--t3);margin-top:6px">${t('customer_base_hint')||'Determines the legal VAT accounting basis (Factuurstelsel/invoice basis for B2B, or Kasstelsel/cash basis eligible for 90%+ consumer sales — per Belastingdienst rules)'}</div>
         </div>
       </div>
 
@@ -8411,6 +8586,7 @@ function openClientModal(c){
         registrationNumber:document.getElementById('cf-regnum').value,
         monthlyFee:planVal,
         planExpiry:document.getElementById('cf-planexp')?.value||'',
+        customerBase:document.getElementById('cf-custbase')?.value||'business',
         color:'#7dbfa3',
         createdDate:TODAY()
       };
@@ -8441,7 +8617,8 @@ function openClientModal(c){
         country:document.getElementById('cf-country').value,
         registrationNumber:document.getElementById('cf-regnum').value,
         monthlyFee:parseInt(document.getElementById('cf-fee')?.value)||0,
-        planExpiry:document.getElementById('cf-planexp')?.value||''
+        planExpiry:document.getElementById('cf-planexp')?.value||'',
+        customerBase:document.getElementById('cf-custbase')?.value||'business'
       };
       if(updatedClient.monthlyFee!==c.monthlyFee){
         const planNames={0:t('no_subscription')||'No subscription',100:'Basic',150:'Plus',200:'Pro'};
@@ -9644,6 +9821,9 @@ function rReports(el,cid){
     case 'btw':
       rReportBTW(contentEl,cid);
       break;
+    case 'tax_liability':
+      rReportTaxLiability(contentEl,cid);
+      break;
     case 'debtors':
       rReportDebtors(contentEl,cid);
       break;
@@ -9699,6 +9879,33 @@ function isDateInReportPeriod(dateStr){
   if(end&&d>end)return false;
   return true;
 }
+
+// ══════════════════════════════════════════════════════════════════
+// الأساس القانوني لاحتساب ضريبة القيمة المضافة حسب طبيعة زبائن العميل
+// (وفق قواعد Belastingdienst الهولندية):
+// - 'invoice' (Factuurstelsel): إلزامي لأي عميل يبيع بشكل أساسي لشركات
+//   أخرى (B2B) - الضريبة تُستحق بتاريخ إصدار الفاتورة بغضّ النظر عن الدفع
+// - 'cash' (Kasstelsel): مسموح فقط لمن يبيع ٩٠٪+ لأفراد - الضريبة تُستحق
+//   فقط عند التحصيل الفعلي وبتاريخ التحصيل، وليس تاريخ إصدار الفاتورة
+// خصم ضريبة المشتريات (Voorbelasting) يبقى دائمًا بأساس الفاتورة بلا
+// استثناء لكلا النوعين - هذا الجزء لا يتأثر بهذا الإعداد إطلاقًا.
+// ══════════════════════════════════════════════════════════════════
+function getClientVatBasis(cid){
+  const c=S.clients.find(cl=>cl.id===cid);
+  return (c&&c.customerBase==='individuals')?'cash':'invoice';
+}
+// الفواتير التي تُحتسب ضمن فترة تقرير معيّنة، بحسب الأساس القانوني الصحيح
+// لكل عميل - بدل افتراض "مدفوعة فقط" دائمًا للجميع
+function getReportableInvoices(cid){
+  const basis=getClientVatBasis(cid);
+  if(basis==='cash'){
+    // أساس النقد: فقط المدفوعة بالكامل، وبتاريخ التحصيل الفعلي (paidDate)
+    return S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.paidDate||i.date));
+  }
+  // أساس الفاتورة (الافتراضي والإلزامي لعملاء B2B): كل الفواتير الصادرة
+  // ضمن الفترة، بغضّ النظر عن حالة الدفع - الضريبة مستحقة عند الإصدار
+  return S.invoices.filter(i=>i.cid===cid&&!i.deleted&&isDateInReportPeriod(i.date));
+}
 function renderReportPeriodSelector(){
   const period=S.reportPeriodDraft!==undefined?S.reportPeriodDraft:(S.reportPeriod||'all');
   const draftStart=S.reportPeriodStartDraft!==undefined?S.reportPeriodStartDraft:(S.reportPeriodStart||'');
@@ -9742,6 +9949,7 @@ function rReportsList(el,cid){
     {id:'summary',icon:'📊',name:t('rep_summary_title'),desc:t('rep_summary_desc'),bg:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
     {id:'pl',icon:'📈',name:t('rep_pl_title'),desc:t('rep_pl_desc'),bg:'linear-gradient(135deg, #0F3025 0%, #1A4A2A 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
     {id:'btw',icon:'💰',name:t('rep_btw_title'),desc:t('rep_btw_desc'),bg:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
+    {id:'tax_liability',icon:'🏛️',name:t('rep_tax_liability_title')||'Tax Liability',desc:t('rep_tax_liability_desc')||'Estimated Income/Corporate Tax',bg:'linear-gradient(135deg, #1a4d2e 0%, #235c37 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
     {id:'debtors',icon:'💵',name:t('rep_debtors_title'),desc:t('rep_debtors_desc'),bg:'linear-gradient(135deg, #1a4d2e 0%, #2d7a4f 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
     {id:'expenses',icon:'🧾',name:t('rep_expenses_title'),desc:t('rep_expenses_desc'),bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#C89010',text:'#ffffff',accent:'#FFD700'},
     {id:'cashflow',icon:'💵',name:t('rep_cashflow_title'),desc:t('rep_cashflow_desc'),bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#C89010',text:'#0A2218',accent:'#FFD700'},
@@ -9987,8 +10195,12 @@ function rReportCashFlow(el,cid){
   const theme=S.cardTheme||{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
-  const cashIn=inv.reduce((s,i)=>s+(i.amount||0),0);
-  const cashOut=exp.reduce((s,e)=>s+(e.amount||0),0);
+  // ✅ إصلاح: التدفق النقدي يجب أن يعكس النقد الفعلي المتحرك عبر الحساب
+  // البنكي - والعميل يدفع المبلغ الإجمالي شامل الضريبة (total)، وليس فقط
+  // المبلغ قبل الضريبة (amount). كان هذا يُقلِّل كلا التدفقين (الداخل
+  // والخارج) بمقدار الضريبة، ما يجعل التقرير غير متطابق مع حركة البنك الفعلية.
+  const cashIn=inv.reduce((s,i)=>s+(i.total||0),0);
+  const cashOut=exp.reduce((s,e)=>s+(e.amount||0)+(e.btw||0),0);
   const netCashFlow=cashIn-cashOut;
   
   let html='<div style="padding:16px">';
@@ -10026,7 +10238,7 @@ function rReportCashFlow(el,cid){
   html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #FFB700">Outflow Breakdown</div>';
   
   const expByCat={};
-  exp.forEach(e=>{const k=e.cat||'Other';expByCat[k]=(expByCat[k]||0)+(e.amount||0);});
+  exp.forEach(e=>{const k=e.cat||'Other';expByCat[k]=(expByCat[k]||0)+(e.amount||0)+(e.btw||0);});
   
   Object.entries(expByCat).forEach(([cat,amt])=>{
     html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)">';
@@ -10044,7 +10256,7 @@ function rReportCashFlow(el,cid){
 function rReportSummary(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+  const inv=getReportableInvoices(cid);
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
   const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
@@ -10081,10 +10293,11 @@ function rReportSummary(el,cid){
 function rReportPL(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(15,48,37,0.08)',border:'#0F3025',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+  const inv=getReportableInvoices(cid);
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
-  const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+  const depreciation=getRecordedDepreciationForPeriod(cid);
+  const expenses=exp.reduce((s,e)=>s+(e.amount||0),0)+depreciation;
   const profit=revenue-expenses;
   
   const expByCat={};
@@ -10112,6 +10325,11 @@ function rReportPL(el,cid){
     html+='<span>'+cat+'</span><span style="color:var(--red)">-'+FMT(amt)+'</span>';
     html+='</div>';
   });
+  if(depreciation>0){
+    html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)">';
+    html+='<span>📉 '+(t('depreciation')||'Depreciation')+'</span><span style="color:var(--red)">-'+FMT(depreciation)+'</span>';
+    html+='</div>';
+  }
   
   html+='<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:12px;font-weight:600;border-top:1px solid var(--gr2);margin-top:8px">';
   html+='<span>Total Expenses</span><span style="color:var(--red)">-'+FMT(expenses)+'</span>';
@@ -10130,7 +10348,7 @@ function rReportPL(el,cid){
 function rReportBTW(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+  const inv=getReportableInvoices(cid);
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const btwOut=inv.reduce((s,i)=>s+(i.btw||0),0);
   const btwIn=exp.reduce((s,e)=>s+(e.btw||0),0);
@@ -10156,7 +10374,73 @@ function rReportBTW(el,cid){
   el.innerHTML=html;
 }
 
-/* ── REPORT: Debtors ── */
+/* ── REPORT: Tax Liability (ضريبة الأرباح - VPB للشركات، أو ربح خاضع للضريبة فقط لغير ذلك) ── */
+function rReportTaxLiability(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
+  const inv=getReportableInvoices(cid);
+  const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
+  const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
+  const depreciation=getRecordedDepreciationForPeriod(cid);
+  const operatingExpenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+  const totalExpenses=operatingExpenses+depreciation;
+  const rawProfit=revenue-totalExpenses;
+  const taxableProfit=Math.max(0,rawProfit);
+
+  // ⚠️ ضريبة الشركات (Vennootschapsbelasting) محسوبة تلقائيًا فقط لـ BV/NV
+  // (جدول واضح ومحدَّد قانونيًا). لأي شكل قانوني آخر (Eenmanszaak/VOF...)،
+  // نعرض الربح الخاضع للضريبة فقط دون رقم ضريبة دقيق - ضريبة الدخل الشخصي
+  // نظام متدرّج معقّد يعتمد على دخل الشخص الكامل وخصوماته الشخصية، وحساب
+  // رقم تلقائي هنا قد يكون خاطئًا ومضلِّلًا.
+  const isCorporate=c?.type==='BV'||c?.type==='NV';
+  let estimatedTax=0,bracket1Tax=0,bracket2Tax=0,bracket1Amt=0,bracket2Amt=0;
+  if(isCorporate){
+    bracket1Amt=Math.min(taxableProfit,200000);
+    bracket2Amt=Math.max(0,taxableProfit-200000);
+    bracket1Tax=bracket1Amt*0.19;
+    bracket2Tax=bracket2Amt*0.258;
+    estimatedTax=bracket1Tax+bracket2Tax;
+  }
+
+  // معلومة إرشادية فقط عن أهلية خصم الاستثمار الصغير (KIA) - بلا حساب دقيق
+  // للنسبة المتدرجة (تتغيّر سنويًا حسب جدول Belastingdienst)
+  const investmentThisPeriod=(S.assets||[]).filter(a=>a.cid===cid&&isDateInReportPeriod(a.acquisitionDate)&&!a.isImmediatelyExpensable).reduce((s,a)=>s+(a.acquisitionCost||0),0);
+  const kiaEligible=investmentThisPeriod>=2901&&investmentThisPeriod<=398236;
+
+  let html='<div style="padding:16px">';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px">← '+t('back_to_reports')+'</button>';
+  html+=renderReportPeriodSelector();
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">🏛️ '+(t('rep_tax_liability_title')||'Tax Liability')+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'tax_liability\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'tax_liability\',\''+cid+'\')">📊 Excel</button></div></div>';
+  html+='<div style="padding:16px">';
+
+  html+='<div style="margin-bottom:16px">';
+  html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)"><span>'+(t('revenue')||'Revenue')+'</span><span style="color:var(--green);font-weight:600">'+FMT(revenue)+'</span></div>';
+  html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)"><span>'+(t('operating_expenses')||'Operating Expenses')+'</span><span style="color:var(--red)">-'+FMT(operatingExpenses)+'</span></div>';
+  html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)"><span>📉 '+(t('depreciation')||'Depreciation')+'</span><span style="color:var(--red)">-'+FMT(depreciation)+'</span></div>';
+  html+='<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:13px;font-weight:700;border-top:2px solid var(--gr2);margin-top:6px"><span>'+(t('taxable_profit')||'Taxable Profit')+'</span><span style="color:'+(rawProfit>=0?'var(--green)':'var(--red)')+'">'+FMT(rawProfit)+'</span></div>';
+  html+='</div>';
+
+  if(isCorporate){
+    html+='<div style="padding:12px;background:rgba(200,144,16,.08);border-radius:var(--r);border-left:3px solid var(--gold);margin-bottom:12px">';
+    html+='<div style="font-size:11px;color:var(--t3);margin-bottom:8px">'+(t('vpb_estimate')||'Estimated Corporate Tax (Vennootschapsbelasting 2026)')+'</div>';
+    html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:4px 0"><span>19% × '+FMT(bracket1Amt)+' ('+(t('first_bracket')||'first €200,000')+')</span><span>'+FMT(bracket1Tax)+'</span></div>';
+    if(bracket2Amt>0)html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:4px 0"><span>25.8% × '+FMT(bracket2Amt)+'</span><span>'+FMT(bracket2Tax)+'</span></div>';
+    html+='<div style="font-size:20px;font-weight:700;color:var(--gold);margin-top:8px">'+FMT(estimatedTax)+'</div>';
+    html+='</div>';
+  }else{
+    html+='<div style="padding:12px;background:rgba(184,134,11,.08);border-radius:var(--r);border-left:3px solid #B8860B;margin-bottom:12px;font-size:11px;color:var(--t3);line-height:1.6">';
+    html+='⚠️ '+(t('personal_tax_note')||'This legal form is subject to personal income tax (Inkomstenbelasting), which depends on the owner\'s total personal income and deductions (zelfstandigenaftrek, MKB-winstvrijstelling, etc.). We show the taxable business profit above only — please consult a tax advisor for the exact personal tax amount.');
+    html+='</div>';
+  }
+
+  html+='<div style="padding:10px;background:var(--bg1);border-radius:var(--r);border:1px dashed var(--gr2);font-size:11px;color:var(--t3)">';
+  html+='💡 '+(t('kia_hint')||'Small-Scale Investment Deduction (KIA)')+': '+FMT(investmentThisPeriod)+' '+(t('invested_this_period')||'invested this period')+' — ';
+  html+=kiaEligible?('<strong style="color:var(--green)">'+(t('kia_may_apply')||'may be eligible for KIA (check current Belastingdienst table for exact %)')+'</strong>'):(t('kia_not_in_range')||'outside the KIA range (€2,901–€398,236)');
+  html+='</div>';
+
+  html+='</div></div></div>';
+  el.innerHTML=html;
+}
 function rReportDebtors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
@@ -10329,7 +10613,7 @@ function _exportReportPDF(type,cid){
   
   // Content based on type
   if(type==='summary'){
-    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+    const inv=getReportableInvoices(cid);
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
     const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
@@ -10391,10 +10675,11 @@ function _exportReportPDF(type,cid){
     doc.text(`Profit Margin: ${((profit/revenue)*100).toFixed(1)}%`,M,y);
   }
   else if(type==='pl'){
-    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+    const inv=getReportableInvoices(cid);
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
-    const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const depreciation=getRecordedDepreciationForPeriod(cid);
+    const expenses=exp.reduce((s,e)=>s+(e.amount||0),0)+depreciation;
     const profit=revenue-expenses;
     
     // Revenue section
@@ -10440,6 +10725,13 @@ function _exportReportPDF(type,cid){
       doc.text(`€${amt.toFixed(2)}`,W-M-30,y);
       y+=7;
     });
+    if(depreciation>0){
+      if(y>270){doc.addPage();y=M;}
+      doc.text('Depreciation',M+5,y);
+      doc.setFont('helvetica','normal');
+      doc.text(`€${depreciation.toFixed(2)}`,W-M-30,y);
+      y+=7;
+    }
     
     y+=5;
     doc.text('Total Expenses',M,y);
@@ -10456,7 +10748,7 @@ function _exportReportPDF(type,cid){
     doc.text(`NET PROFIT/LOSS: €${profit.toFixed(2)}`,M+3,y+6);
   }
   else if(type==='btw'){
-    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+    const inv=getReportableInvoices(cid);
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     const btwOut=inv.reduce((s,i)=>s+(parseFloat(i.btw)||0),0);
     const btwIn=exp.reduce((s,e)=>s+(parseFloat(e.btw)||0),0);
@@ -10639,8 +10931,8 @@ function _exportReportPDF(type,cid){
   else if(type==='cashflow'){
     const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
-    const inflow=inv.reduce((s,i)=>s+(i.amount||0),0);
-    const outflow=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const inflow=inv.reduce((s,i)=>s+(i.total||0),0);
+    const outflow=exp.reduce((s,e)=>s+(e.amount||0)+(e.btw||0),0);
     const netflow=inflow-outflow;
     
     const boxH=22, boxW=(W-3*M)/2;
@@ -10796,8 +11088,38 @@ function _exportReportPDF(type,cid){
       });
     }
   }
-  
-  // Footer
+  else if(type==='tax_liability'){
+    const inv=getReportableInvoices(cid);
+    const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
+    const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
+    const depreciation=getRecordedDepreciationForPeriod(cid);
+    const operatingExpenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const rawProfit=revenue-operatingExpenses-depreciation;
+    const taxableProfit=Math.max(0,rawProfit);
+    const isCorporate=c?.type==='BV'||c?.type==='NV';
+
+    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+    doc.text('Revenue',M,y);doc.text(`€${revenue.toFixed(2)}`,W-M-35,y);y+=7;
+    doc.text('Operating Expenses',M,y);doc.text(`-€${operatingExpenses.toFixed(2)}`,W-M-35,y);y+=7;
+    doc.text('Depreciation',M,y);doc.text(`-€${depreciation.toFixed(2)}`,W-M-35,y);y+=7;
+    doc.setFont('helvetica','bold');
+    doc.text('Taxable Profit',M,y);doc.text(`€${rawProfit.toFixed(2)}`,W-M-35,y);y+=10;
+
+    if(isCorporate){
+      const bracket1Amt=Math.min(taxableProfit,200000);
+      const bracket2Amt=Math.max(0,taxableProfit-200000);
+      const estimatedTax=bracket1Amt*0.19+bracket2Amt*0.258;
+      doc.setFillColor(200,144,16);doc.setTextColor(255,255,255);
+      doc.rect(M,y,W-2*M,8,'F');
+      doc.text(`Estimated Corporate Tax (VPB): €${estimatedTax.toFixed(2)}`,M+3,y+6);
+      y+=14;
+    }else{
+      doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
+      const note=doc.splitTextToSize('This legal form is subject to personal income tax, which depends on total personal income and deductions. Consult a tax advisor for the exact amount.',W-2*M);
+      doc.text(note,M,y);
+      y+=note.length*5+5;
+    }
+  }
   y=270;
   doc.setDrawColor(200,144,16);
   doc.setLineWidth(0.5);
@@ -10835,7 +11157,7 @@ function _exportReportExcel(type,cid){
   let sheets={};
   
   if(type==='summary'){
-    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+    const inv=getReportableInvoices(cid);
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
     const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
@@ -10861,10 +11183,11 @@ function _exportReportExcel(type,cid){
     ];
     sheets['Summary']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='pl'){
-    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+    const inv=getReportableInvoices(cid);
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
-    const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const depreciation=getRecordedDepreciationForPeriod(cid);
+    const expenses=exp.reduce((s,e)=>s+(e.amount||0),0)+depreciation;
     const profit=revenue-expenses;
     
     data=[
@@ -10886,6 +11209,7 @@ function _exportReportExcel(type,cid){
     Object.entries(categories).forEach(([cat,amt])=>{
       data.push([cat,amt]);
     });
+    if(depreciation>0)data.push(['Depreciation',depreciation]);
     
     data.push([]);
     data.push(['Total Expenses',expenses]);
@@ -10894,7 +11218,7 @@ function _exportReportExcel(type,cid){
     
     sheets['P&L']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='btw'){
-    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
+    const inv=getReportableInvoices(cid);
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     const btwOut=inv.reduce((s,i)=>s+(parseFloat(i.btw)||0),0);
     const btwIn=exp.reduce((s,e)=>s+(parseFloat(e.btw)||0),0);
@@ -10973,8 +11297,8 @@ function _exportReportExcel(type,cid){
   }else if(type==='cashflow'){
     const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
-    const inflow=inv.reduce((s,i)=>s+(i.amount||0),0);
-    const outflow=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const inflow=inv.reduce((s,i)=>s+(i.total||0),0);
+    const outflow=exp.reduce((s,e)=>s+(e.amount||0)+(e.btw||0),0);
     const netflow=inflow-outflow;
     
     data=[
@@ -11080,6 +11404,39 @@ function _exportReportExcel(type,cid){
     });
     sheets['Employee Statistics']=XLSX.utils.aoa_to_sheet(data);
   }
+  else if(type==='tax_liability'){
+    const inv=getReportableInvoices(cid);
+    const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
+    const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
+    const depreciation=getRecordedDepreciationForPeriod(cid);
+    const operatingExpenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+    const rawProfit=revenue-operatingExpenses-depreciation;
+    const taxableProfit=Math.max(0,rawProfit);
+    const isCorporate=c?.type==='BV'||c?.type==='NV';
+
+    data=[
+      ['🏛️ TAX LIABILITY REPORT'],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
+      [],
+      ['Revenue',revenue],
+      ['Operating Expenses',-operatingExpenses],
+      ['Depreciation',-depreciation],
+      ['Taxable Profit',rawProfit],
+      []
+    ];
+    if(isCorporate){
+      const bracket1Amt=Math.min(taxableProfit,200000);
+      const bracket2Amt=Math.max(0,taxableProfit-200000);
+      const tax1=bracket1Amt*0.19;
+      const tax2=bracket2Amt*0.258;
+      data.push(['Corporate Tax (VPB) — 19% bracket',tax1]);
+      if(bracket2Amt>0)data.push(['Corporate Tax (VPB) — 25.8% bracket',tax2]);
+      data.push(['Estimated Total Corporate Tax',tax1+tax2]);
+    }else{
+      data.push(['Note','Subject to personal income tax - depends on total personal income and deductions. Consult a tax advisor for the exact amount.']);
+    }
+    sheets['Tax Liability']=XLSX.utils.aoa_to_sheet(data);
+  }
   
   const workbook=XLSX.utils.book_new();
   Object.entries(sheets).forEach(([name,sheet])=>{
@@ -11117,6 +11474,70 @@ function openAddBankTx(){
 function getInvoiceRemaining(inv){
   return Math.max(0,(inv.total||0)-(inv.amountPaid||0));
 }
+// ══════════════════════════════════════════════════════════════════
+// محرك حساب الإهلاك - وفق قواعد Belastingdienst المُتحقَّق منها:
+// - الطريقة الخطية (lineaire methode) هي الطريقة الافتراضية والأكثر استخدامًا
+// - الحد الأقصى للإهلاك السنوي هو 20% من تكلفة الشراء (أي 5 سنوات كحد أدنى
+//   لعمر الأصل ضريبيًا)، باستثناء الشهرة التجارية (Goodwill) بحد أقصى 10%
+//   سنويًا (10 سنوات كحد أدنى)
+// - أصول أقل من 450€ تُقيَّد كمصروف فوري ولا تُهلَك إطلاقًا (قاعدة إلزامية)
+// ══════════════════════════════════════════════════════════════════
+const ASSET_IMMEDIATE_EXPENSE_THRESHOLD=450; // €450 - الحد الأدنى لاعتبار الشيء "أصلًا" بدل مصروف فوري
+const ASSET_MIN_USEFUL_LIFE_YEARS=5;         // 5 سنوات - الحد الأدنى القانوني (20% كحد أقصى سنويًا)
+const ASSET_GOODWILL_MIN_USEFUL_LIFE_YEARS=10; // 10 سنوات للشهرة التجارية (10% كحد أقصى سنويًا)
+
+function isAssetImmediatelyExpensable(cost){
+  return (cost||0) < ASSET_IMMEDIATE_EXPENSE_THRESHOLD;
+}
+function getAssetMinUsefulLife(category){
+  return category==='Goodwill'?ASSET_GOODWILL_MIN_USEFUL_LIFE_YEARS:ASSET_MIN_USEFUL_LIFE_YEARS;
+}
+// الإهلاك السنوي بالطريقة الخطية: (التكلفة - القيمة المتبقية) ÷ العمر الإنتاجي
+function getAnnualDepreciation(asset){
+  if(!asset||!asset.usefulLifeYears)return 0;
+  const depreciableAmount=(asset.acquisitionCost||0)-(asset.residualValue||0);
+  return Math.max(0,depreciableAmount/asset.usefulLifeYears);
+}
+// عدد الأشهر الكاملة المنقضية منذ الشراء حتى تاريخ معيّن (لا تتجاوز إجمالي أشهر العمر الإنتاجي)
+function getMonthsSinceAcquisition(asset,asOfDate){
+  if(!asset||!asset.acquisitionDate)return 0;
+  const start=new Date(asset.acquisitionDate);
+  const end=new Date(asOfDate||TODAY());
+  let months=(end.getFullYear()-start.getFullYear())*12+(end.getMonth()-start.getMonth());
+  if(end.getDate()<start.getDate())months--;
+  return Math.max(0,months);
+}
+// الإهلاك المتراكم حتى تاريخ معيّن - لا يتجاوز أبدًا (التكلفة - القيمة المتبقية)
+function getAccumulatedDepreciation(asset,asOfDate){
+  if(!asset)return 0;
+  const monthlyDep=getAnnualDepreciation(asset)/12;
+  const months=getMonthsSinceAcquisition(asset,asOfDate);
+  const maxDepreciable=(asset.acquisitionCost||0)-(asset.residualValue||0);
+  return Math.min(maxDepreciable,monthlyDep*months);
+}
+// القيمة الدفترية الحالية = التكلفة - الإهلاك المتراكم (لا تقل أبدًا عن القيمة المتبقية)
+function getBookValue(asset,asOfDate){
+  if(!asset)return 0;
+  return Math.max(asset.residualValue||0,(asset.acquisitionCost||0)-getAccumulatedDepreciation(asset,asOfDate));
+}
+// إهلاك فترة محدَّدة (لتوليد قيود اليومية) - يُقسَّم الإهلاك السنوي حسب عدد
+// الأشهر الفعلية للأصل ضمن تلك الفترة (قد يكون أقل من سنة كاملة إن اشتُري
+// الأصل أثناء الفترة نفسها)
+function getDepreciationForPeriod(asset,periodStart,periodEnd){
+  if(!asset||!asset.acquisitionDate)return 0;
+  const acqDate=new Date(asset.acquisitionDate);
+  const pStart=new Date(periodStart);
+  const pEnd=new Date(periodEnd);
+  const effectiveStart=acqDate>pStart?acqDate:pStart;
+  if(effectiveStart>pEnd)return 0; // الأصل اشتُري بعد نهاية الفترة
+  const monthsInPeriod=(pEnd.getFullYear()-effectiveStart.getFullYear())*12+(pEnd.getMonth()-effectiveStart.getMonth())+1;
+  const annualDep=getAnnualDepreciation(asset);
+  const alreadyDepreciated=getAccumulatedDepreciation(asset,new Date(effectiveStart.getTime()-864e5).toISOString().slice(0,10));
+  const maxDepreciable=(asset.acquisitionCost||0)-(asset.residualValue||0);
+  const remaining=Math.max(0,maxDepreciable-alreadyDepreciated);
+  return Math.min(remaining,(annualDep/12)*Math.max(0,monthsInPeriod));
+}
+
 function getExpenseRemaining(exp){
   return Math.max(0,(exp.amount||0)+(exp.btw||0)-(exp.amountPaid||0));
 }
@@ -11143,7 +11564,12 @@ function applyAllocationToTarget(type,targetId,amount){
     if(!inv)return;
     if(!(inv.amountPaid>0)&&!inv._statusBeforePayment)inv._statusBeforePayment=inv.status; // نحفظ الحالة الأصلية قبل أول دفعة فقط
     inv.amountPaid=(inv.amountPaid||0)+amount;
-    if(inv.amountPaid>=inv.total-0.005)inv.status='Betaald';
+    if(inv.amountPaid>=inv.total-0.005){
+      inv.status='Betaald';
+      // ⚠️ ضروري لعملاء "أساس النقد" (Kasstelsel): ضريبة القيمة المضافة
+      // تُحتسب حسب تاريخ التحصيل الفعلي، وليس تاريخ إصدار الفاتورة
+      if(!inv.paidDate)inv.paidDate=TODAY();
+    }
     else if(inv.amountPaid>0)inv.status='Deels betaald';
   }else if(type==='expense'){
     const exp=S.expenses.find(e=>e.id===targetId);
@@ -11161,8 +11587,8 @@ function reverseAllocationFromTarget(type,targetId,amount){
     const inv=S.invoices.find(i=>i.id===targetId);
     if(!inv)return;
     inv.amountPaid=Math.max(0,(inv.amountPaid||0)-amount);
-    if(inv.amountPaid<=0){inv.status=inv._statusBeforePayment||'Openstaand';}
-    else if(inv.amountPaid<inv.total-0.005)inv.status='Deels betaald';
+    if(inv.amountPaid<=0){inv.status=inv._statusBeforePayment||'Openstaand';inv.paidDate=null;}
+    else if(inv.amountPaid<inv.total-0.005){inv.status='Deels betaald';inv.paidDate=null;}
   }else if(type==='expense'){
     const exp=S.expenses.find(e=>e.id===targetId);
     if(!exp)return;
