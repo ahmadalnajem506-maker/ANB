@@ -59,6 +59,7 @@ export default {
       if (url.pathname === '/login' && request.method === 'POST') return await handleLogin(request, env, cors);
       if (url.pathname === '/verify-2fa' && request.method === 'POST') return await handleVerify2FA(request, env, cors);
       if (url.pathname === '/set-password' && request.method === 'POST') return await handleSetPassword(request, env, cors);
+      if (url.pathname === '/admin/generate-temp-password' && request.method === 'POST') return await handleGenerateTempPassword(request, env, cors);
       if (url.pathname === '/refresh-token' && request.method === 'POST') return await handleRefreshToken(request, env, cors);
       if (url.pathname === '/sync' && request.method === 'GET') return await handleSyncGet(request, env, cors);
       if (url.pathname === '/sync' && request.method === 'POST') return await handleSyncPost(request, env, cors);
@@ -329,11 +330,12 @@ async function verifyTotpCode(secret, userCode) {
 }
 
 /* ═══════════════════════ /set-password ═══════════════════════ */
-// ⚠️ يحافظ هذا على نفس مستوى التحقق الموجود سابقًا في التطبيق (لا يُطلب
-// كلمة المرور القديمة، فقط تطابق البريد/الهاتف عبر /resolve-account أولًا).
-// هذه نقطة ضعف موروثة من التصميم الأصلي (أي شخص يعرف بريد العميل يمكنه
-// تغيير كلمة مروره)، لم أُدخلها أنا، ولم أُصلحها هنا لتفادي توسيع نطاق
-// هذا التغيير — أنصح بمناقشتها كخطوة منفصلة (مثل إرسال رابط تأكيد بالبريد).
+// ✅ إصلاح ثغرة كانت موجودة سابقًا: أي شخص يعرف بريد/هاتف عميل كان يمكنه
+// تغيير كلمة مروره الحالية بلا أي تحقق من الهوية. الآن: هذه النقطة تعمل
+// فقط للإعداد الأول الحقيقي (لا كلمة مرور موجودة بعد على الحساب). إن كانت
+// كلمة مرور موجودة بالفعل، تُرفَض العملية ويُطلب من العميل التواصل مع ANB،
+// حيث يستخدم الأدمن نقطة /admin/generate-temp-password (محمية بتوكن الأدمن)
+// بعد أن يتحقق من هوية العميل بطريقته الخاصة خارج التطبيق.
 async function handleSetPassword(request, env, cors) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
   if (isRateLimited(ip)) return json({ error: 'Too many attempts, slow down' }, 429, cors);
@@ -351,6 +353,14 @@ async function handleSetPassword(request, env, cors) {
   const list = listFor(cloud.payload, role);
   const idx = list.findIndex((a) => a && a.id === accountId);
   if (idx === -1) return json({ error: 'Account not found' }, 404, cors);
+  const existing = list[idx];
+
+  // ⚠️ الحارس الأمني الفعلي: يُمنع تمامًا لحسابات العملاء إن كان لديهم كلمة
+  // مرور بالفعل (هذا هو أصل الثغرة الأمنية). لا يُطبَّق على حساب الأدمن نفسه
+  // لتفادي قفله بلا أي وسيلة استرجاع أخرى - الأدمن طرف واحد موثوق أصلًا.
+  if (role === 'client' && existing.passwordHash) {
+    return json({ error: 'password_already_set', message: 'This account already has a password. Please contact ANB to reset it.' }, 403, cors);
+  }
 
   const rec = await makePasswordRecord(newPassword);
   const account = list[idx];
@@ -365,6 +375,48 @@ async function handleSetPassword(request, env, cors) {
   const exp = Date.now() + TOKEN_TTL_MS;
   const token = await signToken({ at: role, aid: account.id, exp }, env.R2_HMAC_SECRET);
   return json({ token, exp }, 200, cors);
+}
+
+/* ═══════════════════════ /admin/generate-temp-password ═══════════════════════ */
+// محمية بتوكن أدمن حقيقي (وليست عامة). الأدمن يتحقق من هوية العميل بطريقته
+// الخاصة خارج التطبيق (اتصال هاتفي، واتساب...) ثم يستخدم هذه النقطة لتوليد
+// كلمة مرور مؤقتة عشوائية للعميل، تُعرَض له مرة واحدة ليُسلِّمها للعميل يدويًا.
+async function handleGenerateTempPassword(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { clientAccountId } = body || {};
+  if (!clientAccountId) return json({ error: 'clientAccountId is required' }, 400, cors);
+
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
+
+  const list = listFor(cloud.payload, 'client');
+  const idx = list.findIndex((a) => a && a.id === clientAccountId);
+  if (idx === -1) return json({ error: 'Client not found' }, 404, cors);
+
+  const tempPassword = generateTempPassword();
+  const rec = await makePasswordRecord(tempPassword);
+  const account = list[idx];
+  account.passwordSalt = rec.passwordSalt;
+  account.passwordHash = rec.passwordHash;
+  delete account.password; delete account.pwCustom; delete account.pw;
+  account.pwSet = true;
+  clearFailedAttempts(account);
+  list[idx] = account;
+  await writeCloudPayload(env, cloud.payload);
+
+  return json({ tempPassword }, 200, cors);
+}
+function generateTempPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let out = '';
+  const bytes = crypto.getRandomValues(new Uint8Array(10));
+  for (let i = 0; i < 10; i++) out += chars[bytes[i] % chars.length];
+  return out;
 }
 
 /* ═══════════════════════ /refresh-token ═══════════════════════ */
