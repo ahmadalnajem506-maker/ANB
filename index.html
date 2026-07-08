@@ -68,9 +68,6 @@ body.rtl .lang-switch{right:auto;left:14px}
 }
 .login-logo{margin-bottom:24px}
 .login-logo svg{width:280px;height:100px}
-.login-title{font-family:var(--fd);font-size:22px;font-weight:600;color:var(--g1);margin-bottom:6px}
-.login-sub{font-size:12px;color:var(--t3);margin-bottom:28px}
-.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
 .role-card{
   padding:26px 20px;
   border:2px solid rgba(200,144,16,0.5);
@@ -141,10 +138,6 @@ body.rtl .lang-switch{right:auto;left:14px}
   background:linear-gradient(135deg,rgba(212,165,32,0.15) 0%,transparent 50%);
   pointer-events:none;
 }
-.role-card.sel .ri{
-  color:#C89010 !important;
-  filter:drop-shadow(0 0 8px rgba(200,144,16,0.4));
-}
 .role-card.sel .rl{
   color:#D4A520 !important;
   font-weight:700 !important;
@@ -153,23 +146,14 @@ body.rtl .lang-switch{right:auto;left:14px}
 .role-card.sel .rs{
   color:rgba(255,255,255,.9) !important;
 }
-.ri{font-size:28px;color:var(--g3);margin-bottom:8px;display:block}
 .rl{font-size:13px;font-weight:600;color:var(--t1);display:block}
 .rs{font-size:11px;color:var(--t3);margin-top:2px;display:block}
-.login-input-wrap{margin-bottom:14px;text-align:left}
-.login-input-wrap label{display:block;font-size:11px;font-weight:600;color:var(--t3);
-  text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
-.login-input-wrap input{width:100%;padding:10px 14px;border:1px solid var(--gr2);
-  border-radius:var(--rs);font-size:14px;color:var(--t1);outline:none}
-.login-input-wrap input:focus{border-color:var(--g1)}
 .login-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--g1),var(--g3));
   color:var(--gold3);border:none;border-radius:var(--r);font-size:14px;font-weight:600;
   cursor:pointer;font-family:var(--fb);letter-spacing:.3px}
 .login-btn:hover{filter:brightness(1.1)}
 .login-err{background:var(--red-bg);color:var(--red);padding:8px 12px;border-radius:var(--rs);
   font-size:12px;margin-bottom:12px;display:none}
-.login-hint{font-size:11px;color:var(--t3);margin-top:14px;line-height:1.6}
-.login-hint code{background:var(--gr1);padding:1px 5px;border-radius:3px;font-family:var(--fm)}
 
 /* ═══ MOBILE LOGIN OPTIMIZATION ═══ */
 @media (max-width: 540px) {
@@ -273,7 +257,6 @@ body.rtl .lang-switch{right:auto;left:14px}
     height: auto !important;
   }
   /* Bottom links */
-  .login-hint, 
   div[style*="display:inline-block;margin-bottom:20px"],
   div[onclick="goForgot()"] { 
     font-size: 9px !important; 
@@ -324,9 +307,6 @@ body.rtl .lang-switch{right:auto;left:14px}
 .cb.act{background:rgba(200,144,16,.18);color:var(--gold3)}
 .cb-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-size:9px;font-weight:600;flex-shrink:0}
-.cb-nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cb-tp{font-size:9px;opacity:.55;margin-top:1px}
-.cb-dot{width:5px;height:5px;border-radius:50%;background:var(--gold2);flex-shrink:0}
 .sb-foot{padding:8px;border-top:1px solid rgba(255,255,255,.08);position:relative;z-index:1}
 .nb{width:100%;text-align:left;padding:7px 8px;border:none;background:transparent;
   border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;gap:7px;
@@ -365,7 +345,6 @@ body.rtl .nb{text-align:right;flex-direction:row-reverse}
 .kcard{background:var(--white);border:1px solid var(--gr2);border-radius:var(--r);padding:14px;box-shadow:var(--sh)}
 .kl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
 .kv{font-size:20px;font-weight:500;color:var(--t1);font-family:var(--fd)}
-.ks{font-size:10px;color:var(--t3);margin-top:2px}
 .card{background:var(--white);border:1px solid var(--gr2);border-radius:var(--r);overflow:hidden;margin-bottom:12px;box-shadow:var(--sh)}
 .ch{padding:11px 14px;border-bottom:1px solid var(--gr1);display:flex;align-items:center;justify-content:space-between}
 .ct{font-size:13px;font-weight:500;color:var(--t1)}
@@ -378,11 +357,8 @@ tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--gr1)}
 .bdg{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
 .b-paid{background:var(--green-bg);color:var(--green)}
-.b-open{background:var(--orange-bg);color:var(--orange)}
 .b-draft{background:var(--gr1);color:var(--t3);border:1px solid var(--gr2)}
 .b-sent{background:var(--blue-bg);color:var(--blue)}
-.b-over{background:var(--red-bg);color:var(--red)}
-.b-partial{background:var(--orange-bg);color:var(--orange);border:1px dashed var(--orange)}
 .btn{padding:6px 12px;border-radius:var(--rs);font-size:12px;cursor:pointer;
   display:inline-flex;align-items:center;gap:4px;border:1px solid var(--gr2);
   background:var(--white);color:var(--t2);font-family:var(--fb);white-space:nowrap}
@@ -399,26 +375,8 @@ tr:hover td{background:var(--gr1)}
 .empty i{font-size:28px;display:block;margin-bottom:8px;opacity:.4}
 
 /* ═══ CLIENT PORTAL SPECIFIC ═══ */
-.client-welcome{background:linear-gradient(135deg,var(--g1),var(--g3));
-  border-radius:var(--r);padding:20px 24px;margin-bottom:16px;
-  display:flex;align-items:center;justify-content:space-between}
 .cw-text h2{font-family:var(--fd);font-size:22px;color:var(--gold3);font-weight:600;margin-bottom:4px}
 .cw-text p{font-size:12px;color:rgba(255,255,255,.6)}
-.cw-av{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:20px;font-weight:700;font-family:var(--fd)}
-.msg-thread{display:flex;flex-direction:column;gap:10px;padding:14px}
-.msg{max-width:80%;padding:10px 14px;border-radius:var(--r);font-size:13px;line-height:1.5}
-.msg-anb{background:var(--g1);color:rgba(255,255,255,.9);align-self:flex-start;
-  border-bottom-left-radius:3px}
-.msg-anb .msg-from{font-size:10px;color:var(--gold2);font-weight:600;margin-bottom:4px}
-.msg-client{background:var(--gold-light);color:var(--t1);align-self:flex-end;
-  border-bottom-right-radius:3px;border:1px solid rgba(200,144,16,.2)}
-.msg-client .msg-from{font-size:10px;color:var(--gold);font-weight:600;margin-bottom:4px;text-align:right}
-.msg-time{font-size:10px;opacity:.5;margin-top:4px}
-.msg-input-row{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--gr1)}
-.msg-input-row input{flex:1;padding:8px 12px;border:1px solid var(--gr2);
-  border-radius:var(--rs);font-size:13px;outline:none}
-.msg-input-row input:focus{border-color:var(--g1)}
 .doc-upload-zone{border:2px dashed var(--gr2);border-radius:var(--r);padding:24px;
   text-align:center;cursor:pointer;transition:all .15s;background:var(--gr1);margin-bottom:12px}
 .doc-upload-zone:hover{border-color:var(--g1);background:var(--green-bg)}
@@ -430,34 +388,6 @@ tr:hover td{background:var(--gr1)}
   display:flex;align-items:center;justify-content:center;color:var(--green);font-size:16px;flex-shrink:0}
 
 /* ═══ ADMIN SPECIFIC ═══ */
-.all-stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
-.stat-card{background:var(--white);border:1px solid var(--gr2);border-radius:var(--r);
-  padding:16px;box-shadow:var(--sh);position:relative;overflow:hidden;transition:all .3s ease}
-.stat-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.12);border-color:var(--gold)}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.stat-card.sc-gold::before{background:linear-gradient(90deg,var(--gold),var(--gold3))}
-.stat-card.sc-green::before{background:var(--green)}
-.stat-card.sc-red::before{background:var(--red)}
-.stat-card.sc-blue::before{background:var(--blue)}
-.stat-card.sc-orange::before{background:var(--orange)}
-.stat-card.sc-purple::before{background:#B8860B}
-.stat-card.sc-pink::before{background:#7A4A00}
-.sc-icon{font-size:22px;margin-bottom:8px;display:block}
-.sc-val{font-size:24px;font-weight:600;font-family:var(--fd);color:var(--t1);margin-bottom:2px}
-.sc-lbl{font-size:11px;color:var(--t3)}
-.client-row-card{background:var(--white);border:1px solid var(--gr2);border-radius:var(--r);
-  padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:8px;
-  cursor:pointer;transition:all .15s;box-shadow:var(--sh)}
-.client-row-card:hover{border-color:var(--gold);box-shadow:var(--shl);transform:translateX(2px)}
-.crc-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;font-family:var(--fd)}
-.crc-info{flex:1;min-width:0}
-.crc-name{font-size:14px;font-weight:500;color:var(--t1)}
-.crc-meta{font-size:11px;color:var(--t3);margin-top:2px}
-.crc-stats{display:flex;gap:14px;flex-shrink:0}
-.crc-stat{text-align:right}
-.crc-stat-val{font-size:13px;font-weight:600;font-family:var(--fd)}
-.crc-stat-lbl{font-size:10px;color:var(--t3)}
 
 /* ═══ MODAL ═══ */
 .overlay{position:fixed;inset:0;background:rgba(10,34,24,.5);display:flex;
@@ -507,27 +437,14 @@ tr:hover td{background:var(--gr1)}
   margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--gr1)}
 
 /* ═══ BTW ═══ */
-.btw-box{background:var(--gr1);border-radius:var(--rs);overflow:hidden;margin-bottom:10px}
-.btr{display:flex;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--gr2);font-size:13px}
-.btr:last-child{border-bottom:none;font-weight:600;font-size:15px;font-family:var(--fd)}
 
 /* ═══ PROGRESS ═══ */
-.prog-bar{height:4px;background:var(--gr2);border-radius:2px;overflow:hidden;margin-top:5px}
-.prog-fill{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--g3),var(--gold))}
 /* ── AUTH FLOW ── */
-.forgot-link{font-size:12px;color:var(--g3);cursor:pointer;text-decoration:underline;display:block;text-align:right;margin:-4px 0 12px}
-.forgot-link:hover{color:var(--gold)}
 .auth-step{display:none}
 .auth-step.active{display:block}
-.step-dots{display:flex;gap:5px;justify-content:center;margin-bottom:18px}
 .sd{width:7px;height:7px;border-radius:50%;background:var(--gr2);transition:all .2s}
 .sd.on{background:var(--g1);width:18px;border-radius:3px}
-.sbox-ok{background:var(--green-bg);border:1px solid rgba(27,94,53,.2);border-radius:var(--rs);padding:10px 14px;font-size:12px;color:var(--green);margin-bottom:12px;display:flex;gap:7px;align-items:center;line-height:1.5}
-.sbox-info{background:#EAF4ED;border:1px solid rgba(26,77,46,.15);border-radius:var(--rs);padding:10px 14px;font-size:12px;color:var(--blue);margin-bottom:12px;line-height:1.6}
-.pw-strength{height:4px;border-radius:2px;margin-top:4px;transition:all .3s}
 .pw-hint{font-size:10px;color:var(--t3);margin-top:3px}
-.back-link{font-size:12px;color:var(--t3);cursor:pointer;margin-bottom:14px;display:inline-flex;align-items:center;gap:4px}
-.back-link:hover{color:var(--t1)}
 
 /* ═══ HAMBURGER / MOBILE SIDEBAR ═══ */
 .hamburger-btn{display:none;width:34px;height:34px;border:none;background:transparent;
@@ -538,30 +455,8 @@ tr:hover td{background:var(--gr1)}
 .sidebar-backdrop.show{display:block}
 
 /* ═══ INSTALL BANNER ═══ */
-.install-banner{position:fixed;left:14px;right:14px;bottom:14px;display:none;align-items:center;
-  gap:12px;background:var(--white);border-radius:14px;padding:12px 14px;
-  box-shadow:0 12px 40px rgba(10,34,24,.35);border-left:4px solid var(--gold);z-index:300;
-  transform:translateY(30px);opacity:0;transition:all .3s}
-.install-banner.show{display:flex;transform:translateY(0);opacity:1}
-.install-banner-text{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
-.install-banner-text strong{font-size:13px;color:var(--t1)}
-.install-banner-text span{font-size:11px;color:var(--t3)}
-.install-btn{background:linear-gradient(135deg,var(--g1),var(--g3));color:var(--gold3);
-  border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;
-  cursor:pointer;white-space:nowrap;font-family:var(--fb)}
-.install-close{background:transparent;border:none;font-size:18px;color:var(--t3);
-  cursor:pointer;padding:0 2px;line-height:1}
 
 /* ═══ MOBILE BOTTOM NAV ═══ */
-.mobile-nav{display:none;position:fixed;left:0;right:0;bottom:0;background:var(--white);
-  border-top:1px solid var(--gr2);box-shadow:0 -4px 16px rgba(0,0,0,.08);z-index:150;
-  padding:4px 2px env(safe-area-inset-bottom,4px)}
-.mobile-nav.hidden{display:none !important}
-.mn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
-  background:transparent;border:none;padding:6px 2px;cursor:pointer;color:var(--t3)}
-.mn-item.act{color:var(--g1)}
-.mn-ico{font-size:17px;line-height:1}
-.mn-lbl{font-size:9.5px;font-weight:500;letter-spacing:.2px}
 
 /* ═══ RESPONSIVE: MOBILE LAYOUT ═══ */
 @media (max-width: 860px){
@@ -595,16 +490,13 @@ tr:hover td{background:var(--gr1)}
   .sidebar.open ~ .sidebar-backdrop{display:block}
   .main{width:100%}
   .content{padding-bottom:74px}
-  .mobile-nav{display:flex}
   .tab-row{display:none !important}
   .tab-row::-webkit-scrollbar{display:none}
   .topbar{padding:0 10px}
-  .all-stats-row{grid-template-columns:repeat(2,1fr)!important}
   .card{overflow-x:auto}
   .card table{min-width:640px}
 }
 @media (min-width: 861px){
-  .mobile-nav{display:none!important}
   .sidebar-backdrop{display:none!important}
 }
 
@@ -647,21 +539,12 @@ body.rtl table { direction: rtl; }
 body.rtl th, body.rtl td { text-align: right; }
 body.rtl .kgrid { direction: rtl; }
 body.rtl .kcard { text-align: right; }
-body.rtl .stat-card { text-align: right; }
 body.rtl .nb { flex-direction: row-reverse; }
 body.rtl .sb-role-badge { flex-direction: row-reverse; }
-body.rtl .all-stats-row { direction: rtl; }
-body.rtl .client-row-card { flex-direction: row-reverse; }
 body.rtl .doc-item { flex-direction: row-reverse; }
 body.rtl .fr2 { flex-direction: row-reverse; }
 body.rtl .modal { direction: rtl; text-align: right; }
 body.rtl .mh { flex-direction: row-reverse; }
-body.rtl .toast-container { left: auto; right: 20px; }
-body.rtl .mobile-nav { direction: rtl; }
-body.rtl .back-link::before { content: '→ '; }
-body.rtl .back-link { direction: rtl; }
-body.rtl .install-banner { flex-direction: row-reverse; }
-body.rtl .install-banner-text { text-align: right; }
 body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 /* fix sidebar margin on desktop RTL */
 @media (min-width: 861px) {
@@ -674,13 +557,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.16">
+<link rel="manifest" href="manifest.json?v=3.21">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.16').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.21').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -1519,7 +1402,7 @@ var I18N={
     deb_aging_summary:'Aging summary', deb_period:'Period', deb_invoices:'Invoices', deb_amount:'Amount',
     deb_days_overdue:'Days overdue',
     // Documents
-    doc_scan_prompt:'Tap to scan or upload an invoice',
+    doc_scan_prompt:'Tap to scan or upload a document',
     doc_scan_sub:'Photo, PDF, JPG, PNG — max 10MB',
     // Journal
     jnl_title:'Journal entries', jnl_new:'New booking', jnl_coa:'Chart of accounts',
@@ -1596,7 +1479,6 @@ var I18N={
     my_overview:'My Overview',
     must_agree_first:'You must accept all terms and conditions',
     confirmation:'Confirmation',
-    subscription_plan:'Subscription Plan',
     plan_includes:'Each plan includes:',
     plan_basic_features:'Essential bookkeeping + quarterly VAT reporting',
     plan_standard_features:'Basic + Advanced reporting + Monthly consultation',
@@ -1784,7 +1666,6 @@ var I18N={
     my_overview:'Mijn gegevens',
     must_agree_first:'U moet alle voorwaarden accepteren',
     confirmation:'Bevestiging',
-    subscription_plan:'Abonnement',
     plan_includes:'Elk pakket bevat:',
     plan_basic_features:'Basisboekhouding + driemaandelijkse BTW-aangifte',
     plan_standard_features:'Basic + Geavanceerde rapportage + Maandelijks overleg',
@@ -1900,7 +1781,7 @@ var I18N={
     deb_open_invoices:'الفواتير المفتوحة', deb_total_outstanding:'إجمالي المعلَّق', deb_overdue:'المتأخر',
     deb_aging_summary:'تحليل التقادم', deb_period:'الفترة', deb_invoices:'الفواتير', deb_amount:'المبلغ',
     deb_days_overdue:'أيام التأخير',
-    doc_scan_prompt:'اضغط لتصوير أو رفع فاتورة',
+    doc_scan_prompt:'اضغط لتصوير أو رفع مستند',
     doc_scan_sub:'صورة، PDF، JPG، PNG — الحد الأقصى 10 ميجابايت',
     jnl_title:'قيود اليومية', jnl_new:'قيد جديد', jnl_coa:'دليل الحسابات (Rekeningschema)',
     jnl_locked:'🔒 مقفَل (سنة مالية مُغلَقة)',
@@ -1973,7 +1854,6 @@ var I18N={
     my_overview:'نظرتي الخاصة',
     must_agree_first:'يجب أن تقبل جميع الشروط والأحكام',
     confirmation:'تأكيد',
-    subscription_plan:'خطة الاشتراك',
     plan_includes:'يتضمن كل خطة:',
     plan_basic_features:'محاسبة أساسية + تقارير ضريبة قيمة مضافة ربع سنوية',
     plan_standard_features:'الأساسي + تقارير متقدمة + استشارة شهرية',
@@ -2201,7 +2081,10 @@ async function syncNow(){
   updateSyncBadge();
   cloudSyncInFlight=false;
   // ✅ Only re-render if there were actual changes AND not viewing messages
-  if(S.role&&hadChanges&&S.tab!=='messages')renderApp();
+  // AND no modal currently open (لا نُفلت نموذجًا مفتوحًا من تحت يدي المستخدم
+  // أثناء تعبئته - مهم أكثر الآن بعد إضافة المزامنة الدورية كل 10 ثوانٍ)
+  const modalOpen=document.getElementById('mo')?.style.display==='flex';
+  if(S.role&&hadChanges&&S.tab!=='messages'&&!modalOpen)renderApp();
 }
 
 // إعادة محاولة تلقائية بتأخير متصاعد عند فشل المزامنة (بدل الانتظار الصامت للمزامنة التالية فقط)
@@ -2819,6 +2702,15 @@ async function goForgot(){
     if(!res.ok){goStep(1);showErr('login-err-1',role==='admin'?'Email or phone not found':'No account found');return;}
     const acc=await res.json();
 
+    // ⚠️ عميل لديه كلمة مرور بالفعل: هذا ليس "إعداد أول" بل طلب استرجاع فعلي -
+    // الخادم يرفض هذا الآن (إصلاح أمني)، فنوجّه العميل للتواصل مع ANB مباشرة
+    // بدل محاولة المتابعة لشاشة تُرفَض من الخادم على أي حال.
+    if(role==='client'&&!acc.isFirstTime){
+      goStep(1);
+      showErr('login-err-1','For your security, please contact ANB directly to reset your password.');
+      return;
+    }
+
     if(role==='admin'){
       authState={role:'admin',adminId:acc.accountId,identifier:id,clientId:null};
       const t=document.getElementById('step3-title');
@@ -2920,12 +2812,22 @@ function launchApp(){
   purgeOldTrash();
   renderApp();
   syncNow();
+
+  // ✅ مزامنة تلقائية دورية كل 10 ثوانٍ (بالإضافة إلى المزامنة الفورية عند أي
+  // تعديل محلي) - حتى يرى المستخدم تحديثات الطرف الآخر (رسائل، فواتير...)
+  // بلا حاجة لتحديث الصفحة يدويًا. syncNow() نفسها تتجاهل أي استدعاء متداخل
+  // (cloudSyncInFlight) فلا خطر من التكرار.
+  if(window._periodicSyncTicker)clearInterval(window._periodicSyncTicker);
+  window._periodicSyncTicker=setInterval(()=>{
+    if(S.role)syncNow();
+  },10000);
 }
 
 function doLogout(){
   S.role=null;S.currentClient=null;S.tab='dashboard';S.lang='en';
   authState={role:null,identifier:'',clientId:null};
   if(typeof setR2Token==='function')setR2Token(null); // يمسح التوكن من الذاكرة و localStorage معًا
+  if(window._periodicSyncTicker){clearInterval(window._periodicSyncTicker);window._periodicSyncTicker=null;}
   sv(); // Save cleared state
   document.getElementById('login-page').style.display='flex';
   document.getElementById('app').style.display='none';
@@ -3018,7 +2920,7 @@ function renderSidebar(){
     
     // القائمة الجانبية للعميل: دائمًا رسالة "استخدم الكروت" - التنقل عبر الكروت وزر العودة الملوّن داخل كل شاشة
     clients.innerHTML+=`<div style="padding:12px 8px;font-size:11px;color:rgba(255,255,255,.4);text-align:center;margin-top:12px;font-style:italic">${t('sidebar_use_cards')||'Use the cards to navigate'}</div>`;
-    foot.innerHTML=`${langBar}<button class="logout-btn" onclick="doLogout()">⬅ ${t('sign_out')}</button>`;
+    foot.innerHTML=`${langBar}<div id="sync-badge" style="font-size:10px;color:rgba(255,255,255,.55);padding:4px 10px 2px;cursor:pointer" onclick="syncNow()"></div><button class="logout-btn" onclick="doLogout()">⬅ ${t('sign_out')}</button>`;
     updateSyncBadge();
   }
 }
@@ -5439,8 +5341,8 @@ function rDocs(el,cid){
   </div>
   <div class="doc-upload-zone" onclick="document.getElementById('doc-file-input').click()">
     <span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬆</span>
-    <p style="font-size:13px;color:var(--t3);margin-bottom:4px">Tap to scan or upload an invoice</p>
-    <small style="font-size:11px;color:var(--t3)">Photo, PDF, JPG, PNG — max 10MB</small>
+    <p style="font-size:13px;color:var(--t3);margin-bottom:4px">${t('doc_scan_prompt')}</p>
+    <small style="font-size:11px;color:var(--t3)">${t('doc_scan_sub')}</small>
     <input type="file" id="doc-file-input" accept="image/*,application/pdf" capture="environment" multiple
       style="display:none" onchange="handleDocUpload(event,'${cid}')"/>
   </div>
@@ -7011,7 +6913,7 @@ function openPayslipHistoryModal(employeeId){
         const status=getPayslipStatus(p.month,p.year);
         const badge=status==='concept'
           ?`<span style="font-size:8px;font-weight:700;color:#B8860B;background:rgba(184,134,11,0.12);padding:1px 6px;border-radius:3px;margin-left:6px">CONCEPT</span>`
-          :`<span style="font-size:8px;font-weight:700;color:#2d7a4f;background:rgba(45,122,79,0.12);padding:1px 6px;border-radius:3px;margin-left:6px">CONFIRMED</span>`;
+          :`<span style="font-size:8px;font-weight:700;color:#2d7a4f;background:rgba(45,122,79,0.12);padding:1px 6px;border-radius:3px;margin-left:6px">${t('status_confirmed')}</span>`;
         return `
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid var(--gr2)">
           <div>
@@ -7100,8 +7002,8 @@ function renderDebtorsTable(cid,searchTerm){
         ${sortTh('Name','name','debtors',`renderDebtorsTable(${reArgs})`)}
         ${sortTh('Email','email','debtors',`renderDebtorsTable(${reArgs})`)}
         <th style="text-align:left;padding:8px">${isANBSelfBook?'Plan':'Account #'}</th>
-        <th style="text-align:right;padding:8px">Balance</th>
-        <th style="text-align:right;padding:8px">Actions</th></tr></thead>
+        <th style="text-align:right;padding:8px">${t('dash_balance')}</th>
+        <th style="text-align:right;padding:8px">${t('actions')}</th></tr></thead>
       <tbody>
       ${debtors.map(d=>{
         const invoices=(S.invoices||[]).filter(i=>i.billToId===d.id&&!i.deleted);
@@ -7159,8 +7061,8 @@ function renderCreditorsTable(cid,searchTerm){
         ${sortTh('Name','name','creditors',`renderCreditorsTable(${reArgs})`)}
         ${sortTh('Email','email','creditors',`renderCreditorsTable(${reArgs})`)}
         ${sortTh('Account #','accountNumber','creditors',`renderCreditorsTable(${reArgs})`)}
-        <th style="text-align:right;padding:8px">Balance</th>
-        <th style="text-align:right;padding:8px">Actions</th></tr></thead>
+        <th style="text-align:right;padding:8px">${t('dash_balance')}</th>
+        <th style="text-align:right;padding:8px">${t('actions')}</th></tr></thead>
       <tbody>
       ${creditors.map(cr=>{
         const expenses=(S.expenses||[]).filter(e=>e.payToId===cr.id&&!e.deleted);
@@ -7194,7 +7096,7 @@ function openContactModal(id, forceType){
       <div class="fg"><label>Email</label><input id="cm-email" value="${cont?.email||''}"/></div>
       <div class="fg"><label>Phone</label><input id="cm-phone" value="${cont?.phone||''}"/></div>
     </div>
-    <div class="fg"><label>Address</label><input id="cm-addr" value="${cont?.address||''}"/></div>
+    <div class="fg"><label>${t('set_address')}</label><input id="cm-addr" value="${cont?.address||''}"/></div>
     <div class="fr2">
       <div class="fg"><label>KvK</label><input id="cm-kvk" value="${cont?.kvk||''}"/></div>
       <div class="fg"><label>BTW</label><input id="cm-btw" value="${cont?.btw||''}"/></div>
@@ -7393,7 +7295,7 @@ function rSettings(el){
         <table style="width:100%;font-size:10px;min-width:350px">
           <thead><tr><th style="padding:6px 4px;font-weight:600">${t('tab_client')}</th><th style="padding:6px 4px;font-weight:600">Email</th><th style="padding:6px 4px;font-weight:600">Reset</th></tr></thead>
           <tbody>
-            ${S.clients.filter(c=>!c.deleted&&!c.isANBSelf).map(c=>'<tr style="border-top:1px solid var(--bd2)"><td style="padding:8px 4px;font-weight:500">'+c.name+'</td><td style="padding:8px 4px;color:var(--t3);font-size:9px;max-width:140px;overflow:hidden;text-overflow:ellipsis">'+(c.email||'')+'</td><td style="padding:8px 4px;text-align:center"><button class="btn btn-xs btn-danger" onclick="resetClientPw(\''+c.id+'\')">✕</button></td></tr>').join('')}
+            ${S.clients.filter(c=>!c.deleted&&!c.isANBSelf).map(c=>'<tr style="border-top:1px solid var(--bd2)"><td style="padding:8px 4px;font-weight:500">'+c.name+'</td><td style="padding:8px 4px;color:var(--t3);font-size:9px;max-width:140px;overflow:hidden;text-overflow:ellipsis">'+(c.email||'')+'</td><td style="padding:8px 4px;text-align:center;white-space:nowrap"><button class="btn btn-xs" onclick="generateClientTempPassword(\''+c.id+'\')" title="Generate a temporary password to hand to this client">🔑</button> <button class="btn btn-xs btn-danger" onclick="resetClientPw(\''+c.id+'\')">✕</button></td></tr>').join('')}
           </tbody>
         </table>
         </div>
@@ -7430,6 +7332,35 @@ async function saveAdminAuth(){
     }
   }
   sv();toast(t('btn_save_creds')+' ✓');renderContent();
+}
+
+// يُنشئ كلمة مرور مؤقتة فعلية للعميل عبر الخادم (بعد أن يتحقق الأدمن من
+// هويته بطريقته الخاصة خارج التطبيق) - بديل أسرع لـresetClientPw الذي يتطلب
+// من العميل إعادة "الإعداد الأول" بنفسه
+async function generateClientTempPassword(cid){
+  const client=S.clients.find(c=>c.id===cid);
+  if(!client)return;
+  showConfirmDialog('Generate Temporary Password','Have you verified this is really "'+client.name+'" (by phone/WhatsApp)? A temporary password will be generated for you to hand to them.',async()=>{
+    try{
+      const res=await fetch(R2_WORKER_URL+'/admin/generate-temp-password',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getValidR2Token()||'')},
+        body:JSON.stringify({clientAccountId:cid}),
+      });
+      if(!res.ok){toast('❌ Could not generate password — please try again');return;}
+      const data=await res.json();
+      logAudit('password_change','account','Generated a temporary password for client: '+client.name,cid);
+      closeModal();
+      showModal('🔑 Temporary Password',
+        '<div style="padding:4px">'+
+        '<div style="font-size:12px;color:var(--t3);margin-bottom:10px">Give this to <strong>'+escapeHtml(client.name)+'</strong> — it works immediately and they can change it afterwards from Security settings.</div>'+
+        '<div style="font-size:22px;font-weight:800;letter-spacing:2px;text-align:center;padding:16px;background:var(--bg1);border:2px dashed var(--gr2);border-radius:8px;font-family:monospace">'+escapeHtml(data.tempPassword)+'</div>'+
+        '</div>'
+      ,closeModal,'Done');
+    }catch(e){
+      toast('❌ Network error — please try again');
+    }
+  });
 }
 
 function resetClientPw(cid){
@@ -8631,7 +8562,7 @@ function openInvoiceModal(inv){
           <div class="fg"><label>Email</label><input id="bt-new-email" type="email"/></div>
           <div class="fg"><label>Phone</label><input id="bt-new-phone"/></div>
         </div>
-        <div class="fg"><label>Address</label><input id="bt-new-address"/></div>
+        <div class="fg"><label>${t('set_address')}</label><input id="bt-new-address"/></div>
         <div style="font-size:11px;color:var(--t3);margin-top:2px">➕ Will be added to your Debtors list with its own ledger</div>
       </div>
 
@@ -8641,7 +8572,7 @@ function openInvoiceModal(inv){
           <div class="fg"><label>Email</label><input id="bt-manual-email" type="email" value="${inv?.billToManual?.email||''}"/></div>
           <div class="fg"><label>Phone</label><input id="bt-manual-phone" value="${inv?.billToManual?.phone||''}"/></div>
         </div>
-        <div class="fg"><label>Address</label><input id="bt-manual-address" value="${inv?.billToManual?.address||''}"/></div>
+        <div class="fg"><label>${t('set_address')}</label><input id="bt-manual-address" value="${inv?.billToManual?.address||''}"/></div>
         <div style="font-size:11px;color:var(--t3);margin-top:2px">✍️ One-time invoice — not added to Debtors, booked to general income ledger</div>
       </div>
     </div>
@@ -8653,7 +8584,7 @@ function openInvoiceModal(inv){
     </div>
     <div class="fr2">
       <div class="fg"><label>Date</label><input type="date" id="if-d" value="${inv?.date||TODAY()}"/></div>
-      <div class="fg"><label>Due date</label><input type="date" id="if-dd" value="${inv?.due||new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"/></div>
+      <div class="fg"><label>${t('lbl_due')}</label><input type="date" id="if-dd" value="${inv?.due||new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"/></div>
     </div>
     ${isN?`<div class="fg" style="margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;font-size:12px;color:var(--t1)">
@@ -8662,7 +8593,7 @@ function openInvoiceModal(inv){
       </label>
     </div>`:''}
     <div id="if-single-wrap">
-      <div class="fg"><label>Description</label><input id="if-desc" value="${inv?.desc||''}" placeholder="e.g. Financial advisory services Q2"/></div>
+      <div class="fg"><label>${t('lbl_description')}</label><input id="if-desc" value="${inv?.desc||''}" placeholder="e.g. Financial advisory services Q2"/></div>
       <div class="fr2">
         <div class="fg"><label>Amount excl. BTW (€)</label><input type="number" id="if-a" value="${inv?.amount||''}" oninput="uIT()" step="0.01"/></div>
         <div class="fg"><label>${t('lbl_btw')}</label><select id="if-r" onchange="uIT()"><option value="21" ${inv?.btwRate===21?'selected':''}>21%</option><option value="9" ${inv?.btwRate===9?'selected':''}>9%</option><option value="0" ${inv?.btwRate===0?'selected':''}>0% KOR</option></select></div>
@@ -8910,7 +8841,7 @@ function openNewExpense(){
     <div id="ex-manual-form" style="display:block">
       <div class="fr2">
         <div class="fg"><label>Date</label><input type="date" id="ex-d" value="${TODAY()}"/></div>
-        <div class="fg"><label>Category</label><select id="ex-c">${['Software','Hardware','Kantoor','Marketing','Transport','Opleiding','Telecom','Overig'].map(c=>`<option>${c}</option>`).join('')}</select></div>
+        <div class="fg"><label>${t('lbl_category')}</label><select id="ex-c">${['Software','Hardware','Kantoor','Marketing','Transport','Opleiding','Telecom','Overig'].map(c=>`<option>${c}</option>`).join('')}</select></div>
       </div>
 
       <div class="fg"><label>Pay to (Supplier) *</label>
@@ -8939,7 +8870,7 @@ function openNewExpense(){
         </div>
       </div>
 
-      <div class="fg"><label>Description</label><input id="ex-desc"/></div>
+      <div class="fg"><label>${t('lbl_description')}</label><input id="ex-desc"/></div>
       <div class="fr2">
         <div class="fg"><label>Amount excl. BTW (€)</label><input type="number" id="ex-a" step="0.01"/></div>
         <div class="fg"><label>${t('lbl_btw')}</label><select id="ex-r"><option value="21">21%</option><option value="9">9%</option><option value="0">0%</option></select></div>
@@ -9169,7 +9100,7 @@ function openLogHours(){
   showModal(t('log_hours').replace('+ ',''),`
     <div class="fr2">
       <div class="fg"><label>Date</label><input type="date" id="hl-d" value="${TODAY()}"/></div>
-      <div class="fg"><label>Category</label><select id="hl-c"><option>Development</option><option>Consultancy</option><option>Accounting</option><option>Research</option><option>Admin</option><option>Meeting</option></select></div>
+      <div class="fg"><label>${t('lbl_category')}</label><select id="hl-c"><option>Development</option><option>Consultancy</option><option>Accounting</option><option>Research</option><option>Admin</option><option>Meeting</option></select></div>
     </div>
     <div class="fg"><label>Task description</label><input id="hl-t" placeholder="e.g. BTW aangifte preparation"/></div>
     <div class="fr2">
@@ -11169,7 +11100,7 @@ function openAddBankTx(){
       <div class="fg"><label>Date</label><input type="date" id="bt-d" value="${TODAY()}"/></div>
       <div class="fg"><label>Amount (€)</label><input type="number" id="bt-a" step="0.01" placeholder="-50.00 or +1200.00"/></div>
     </div>
-    <div class="fg"><label>Description</label><input id="bt-desc" placeholder="Bank statement description"/></div>
+    <div class="fg"><label>${t('lbl_description')}</label><input id="bt-desc" placeholder="Bank statement description"/></div>
   `,()=>{
     if(!S.bankTx)S.bankTx=[];
     S.bankTx.push({id:UID(),cid,date:document.getElementById('bt-d').value,
@@ -11504,7 +11435,7 @@ function createContractAgreement(client,contract){
     type:'agreement',category:'agreement',
     agreementId:agreement.id,contractId:contract?contract.id:null,
     date:TODAY(),from:'anb',size:'—',
-    deleted:false
+    isNew:true,deleted:false
   });
 
   return agreement;
