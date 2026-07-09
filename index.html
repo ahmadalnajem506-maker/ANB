@@ -557,13 +557,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.35">
+<link rel="manifest" href="manifest.json?v=3.36">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.35').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.36').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -7053,11 +7053,11 @@ async function exportPayslipPDF(payslip,emp){
   doc.setFillColor(253,248,236);doc.roundedRect(M,y,W-M*2,boxH,1.5,1.5,'F');
   doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(138,100,16);
   if(payslipStatus==='concept'){
-    doc.text('⚠ CONCEPT: this month has not ended yet — figures may still change before final confirmation.',M+4,y+6);
-    doc.text('⚠ Loonheffing estimated using official '+payslip.taxYear+' Box 1 tax brackets — verify before official use.',M+4,y+11);
+    doc.text('NOTE: this month has not ended yet - figures may still change before final confirmation.',M+4,y+6);
+    doc.text('NOTE: Loonheffing estimated using official '+payslip.taxYear+' Box 1 tax brackets - verify before official use.',M+4,y+11);
     doc.text('Generated via ANB Financial Services on '+new Date(payslip.generatedAt).toLocaleDateString(),M+4,y+16);
   }else{
-    doc.text('⚠ Loonheffing estimated using official '+payslip.taxYear+' Box 1 tax brackets — verify before official use.',M+4,y+6);
+    doc.text('NOTE: Loonheffing estimated using official '+payslip.taxYear+' Box 1 tax brackets - verify before official use.',M+4,y+6);
     doc.text('Generated via ANB Financial Services on '+new Date(payslip.generatedAt).toLocaleDateString(),M+4,y+11);
   }
 
@@ -10812,7 +10812,7 @@ async function exportReportPDF(type,cid){
     await ensureJsPDF();
     // ⚠️ إصلاح: كانت الحروف العربية تظهر كرموز غير مقروءة في PDF لأن خطوط
     // jsPDF الافتراضية (helvetica/times/courier) لا تدعم الأحرف العربية
-    // إطلاقًا - نحمِّل خط Amiri عربيًا حقيقيًا فقط عند الحاجة الفعلية
+    // إطلاقًا - نحمِّل خط Cairo عربيًا حقيقيًا فقط عند الحاجة الفعلية
     if((S.reportExportLang||S.lang)==='ar')await ensureArabicFont();
     _exportReportPDF(type,cid);
   }catch(err){
@@ -10821,28 +10821,42 @@ async function exportReportPDF(type,cid){
     hideLoading();
   }
 }
-// يحمِّل خط Amiri العربي (مُصغَّر خصيصًا لهذا الاستخدام) عند الطلب فقط،
-// ويُسجِّله داخل jsPDF نفسه (VFS + addFont) - مرة واحدة فقط لكل جلسة
-let _arabicFontRegistered=false;
+// يحمِّل خط Cairo العربي (مُصغَّر خصيصًا لهذا الاستخدام) عند الطلب فقط،
+// ويُسجِّله داخل jsPDF نفسه (VFS + addFont)
+// ⚠️ إصلاح خلل جوهري أول: كان تسجيل الخط يُتتبَّع بعلامة "true/false" واحدة
+// تبقى للجلسة كاملة - لكن تسجيل الخط في jsPDF مرتبط بكل *مستند* (instance)
+// على حدة، وكل عملية تصدير تُنشئ مستندًا جديدًا تمامًا! هذا كان يعني: أول
+// تصدير عربي في الجلسة يعمل بنجاح (يُسجَّل الخط فعليًا)، لكن أي تصدير عربي
+// *لاحق* يفشل بصمت (لا نص إطلاقًا) لأن الكود كان يظن أن الخط "مسجَّل بالفعل"
+// بينما هو غير مسجَّل على المستند *الجديد* تحديدًا. الحل: نتتبّع التسجيل لكل
+// مستند بمفرده عبر WeakSet بدل علامة عامة واحدة.
+// ⚠️ إصلاح خلل جوهري ثانٍ: خط Amiri الأصلي كان يفتقر تمامًا لحروف الأرقام
+// (0-9) في جدول الحروف الخاص به (مؤكَّد: غير موجودة حتى في الخط الأصلي غير
+// المُصغَّر) - ما كان يجعل كل مبلغ مالي (مثل €578.00) يختفي تمامًا من أي
+// تقرير عربي، بينما النصوص العربية البحتة كانت تظهر بشكل صحيح. استبدلناه
+// بخط Cairo (مُثبَّت على وزن Regular من نسخته المتغيّرة الأصلية ثم مُصغَّر)
+// الذي يدعم العربية والأرقام والعملات معًا في نفس الخط - تحقَّقنا بالفعل
+// أن جميع الحروف المطلوبة موجودة فيه.
+const _arabicFontRegisteredDocs=new WeakSet();
 async function ensureArabicFont(){
-  if(!window.AMIRI_FONT_BASE64){
-    await loadScript('./amiri-font.js');
+  if(!window.ARABIC_FONT_BASE64){
+    await loadScript('./arabic-font.js');
   }
-  return window.AMIRI_FONT_BASE64;
+  return window.ARABIC_FONT_BASE64;
 }
 // يختار الخط الصحيح تلقائيًا حسب لغة تصدير التقرير المطلوبة - يبقى
 // helvetica للإنجليزية/الهولندية (تدعمها الخطوط الافتراضية بلا مشاكل)،
-// ويتحوّل لـAmiri فقط عند اختيار العربية تحديدًا
+// ويتحوّل لخط Cairo العربي فقط عند اختيار العربية تحديدًا
 function setReportFont(doc,style){
   const exportLang=S.reportExportLang||S.lang||'en';
-  if(exportLang==='ar'&&window.AMIRI_FONT_BASE64){
-    if(!_arabicFontRegistered){
-      doc.addFileToVFS('Amiri-Regular.ttf',window.AMIRI_FONT_BASE64);
-      doc.addFont('Amiri-Regular.ttf','Amiri','normal');
-      doc.addFont('Amiri-Regular.ttf','Amiri','bold');
-      _arabicFontRegistered=true;
+  if(exportLang==='ar'&&window.ARABIC_FONT_BASE64){
+    if(!_arabicFontRegisteredDocs.has(doc)){
+      doc.addFileToVFS('Cairo-Regular.ttf',window.ARABIC_FONT_BASE64);
+      doc.addFont('Cairo-Regular.ttf','Cairo','normal');
+      doc.addFont('Cairo-Regular.ttf','Cairo','bold');
+      _arabicFontRegisteredDocs.add(doc);
     }
-    doc.setFont('Amiri',style==='bold'?'bold':'normal');
+    doc.setFont('Cairo',style==='bold'?'bold':'normal');
   }else{
     doc.setFont('helvetica',style==='bold'?'bold':'normal');
   }
@@ -10922,7 +10936,7 @@ function pdfDrawBarChart(doc,x,y,width,chartHeight,items,title){
   // عنوان الرسم البياني (مع أيقونة تدل عليه بوضوح كرسم مقارنة)
   if(title){
     setReportFont(doc,'bold');doc.setFontSize(9);doc.setTextColor(10,34,24);
-    doc.text('📊 '+title,x+sidePad,y+7);
+    doc.text(title,x+sidePad,y+7);
   }
 
   const chartX=x+sidePad,chartY=y+titleH+topPad,chartW=width-2*sidePad;
@@ -10963,7 +10977,7 @@ function pdfDrawBarChart(doc,x,y,width,chartHeight,items,title){
 function pdfDrawProportionBar(doc,x,y,width,barHeight,items,title){
   if(title){
     setReportFont(doc,'bold');doc.setFontSize(9);doc.setTextColor(10,34,24);
-    doc.text('📊 '+title,x,y);
+    doc.text(title,x,y);
     y+=6;
   }
   const total=items.reduce((s,it)=>s+it.value,0)||1;
@@ -11006,7 +11020,7 @@ function pdfInsightBox(doc,x,y,width,lines){
   doc.setLineWidth(0.4);
   doc.roundedRect?doc.roundedRect(x,y,width,boxHeight,2,2,'FD'):doc.rect(x,y,width,boxHeight,'FD');
   setReportFont(doc,'bold');doc.setFontSize(8.5);doc.setTextColor(10,34,24);
-  doc.text('💡 '+rt('insightsTitle'),x+padding,y+padding+2);
+  doc.text(rt('insightsTitle'),x+padding,y+padding+2);
   setReportFont(doc,'normal');doc.setFontSize(8);doc.setTextColor(60,60,60);
   lines.forEach((line,i)=>{
     doc.text('• '+line,x+padding,y+padding+2+lineHeight*(i+1));
@@ -11576,7 +11590,7 @@ function _exportReportPDF(type,cid){
       const netPct=pctChange(netflow,priorNetflow);
       if(netPct!==null)cfInsightLines.push(`${rt('netCashFlow')} ${netPct>=0?rt('increaseWord'):rt('decreaseWord')} ${formatPctChange(netPct)} ${rt('vsLastPeriod')}`);
     }
-    cfInsightLines.push(netflow>=0?`✓ €${netflow.toFixed(2)}`:`⚠ €${Math.abs(netflow).toFixed(2)}`);
+    cfInsightLines.push(netflow>=0?`+€${netflow.toFixed(2)}`:`-€${Math.abs(netflow).toFixed(2)}`);
     if(y>250){doc.addPage();y=M;}
     y=pdfInsightBox(doc,M,y,W-2*M,cfInsightLines);
   }
