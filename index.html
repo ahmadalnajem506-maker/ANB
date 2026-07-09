@@ -557,13 +557,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.33">
+<link rel="manifest" href="manifest.json?v=3.35">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.33').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.35').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -4578,6 +4578,34 @@ function rClientDash(el,cid){
     </div>
   </div>
 
+  ${(()=>{
+    const tmr=S.timer;
+    const todayHoursTotal=(S.hours||[]).filter(h=>h.cid===cid&&!h.deleted&&h.date===TODAY()).reduce((s,h)=>s+(h.hrs||0),0);
+    return `<div style="background:linear-gradient(135deg, #0A2218 0%, ${tmr.running?'#12331f':'#0F3025'} 100%);border:2px solid ${tmr.running?'#4da876':'#C89010'};border-radius:14px;padding:16px;margin-bottom:14px;color:#fff;transition:all .4s ease;box-shadow:${tmr.running?'0 0 0 3px rgba(77,168,118,0.15)':'none'}">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+      <button onclick="timerToggle()" style="flex-shrink:0;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:${tmr.running?'linear-gradient(135deg,#4da876,#3a8c62)':'linear-gradient(135deg,#FFD700,#C89010)'};display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.3);transition:all .25s" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+        <span style="font-size:22px;color:${tmr.running?'#fff':'#0A2218'};margin-left:${tmr.running?'0':'3px'}">${tmr.running?'⏸':'▶'}</span>
+      </button>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="font-family:var(--fm);font-size:30px;font-weight:700;letter-spacing:2px;line-height:1" id="timer-disp">${fmtT(tmr.seconds)}</div>
+          ${tmr.running?'<span style="width:8px;height:8px;border-radius:50%;background:#4da876;animation:timerPulse 1.4s ease-in-out infinite"></span>':''}
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px;text-transform:uppercase;letter-spacing:.6px">${tmr.running?(t('tracking')||'Tracking'):(t('timer_stopped')||'Timer stopped')} ${todayHoursTotal>0?'· '+todayHoursTotal.toFixed(1)+'h '+(t('logged_today')||'logged today'):''}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <select id="t-cat" style="flex:1;min-width:100px;padding:8px 10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:11px;cursor:pointer">
+        ${['Development','Consultancy','Accounting','Research','Admin','Meeting'].map(cat=>`<option style="color:#000">${cat}</option>`).join('')}
+      </select>
+      <input id="t-task" placeholder="${t('task_placeholder')||'Task...'}" style="flex:1.3;min-width:100px;padding:8px 10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:11px"/>
+      <button style="padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px" onclick="timerStop('${cid}')">⏹ ${t('stop_and_log')||'Stop & log'}</button>
+    </div>
+    <div style="font-size:9.5px;color:rgba(255,255,255,.4);margin-top:8px;display:flex;align-items:center;gap:4px">📊 ${t('timer_urencriterium_hint')||'Logged hours count toward the 1,225-hour urencriterium threshold'}</div>
+  </div>
+  <style>@keyframes timerPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}</style>`;
+  })()}
+
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
     <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
       <div style="font-size:15px;font-weight:800;color:#0A2218">${pending+overdue}</div>
@@ -4763,6 +4791,34 @@ function rANBOverview(el,cid){
     <div onclick="selectCard('edit_client')" style="background:rgba(200,144,16,0.15);border:1.5px solid #C89010;border-radius:8px;padding:9px;text-align:center;color:#FFD700;font-size:11.5px;font-weight:700;cursor:pointer">⚙️ ${t('company_settings')||'Company Settings'}</div>
   </div>
 
+  ${(()=>{
+    const tmr=S.timer;
+    const todayHoursTotal=(S.hours||[]).filter(h=>h.cid===cid&&!h.deleted&&h.date===TODAY()).reduce((s,h)=>s+(h.hrs||0),0);
+    return `<div style="background:linear-gradient(135deg, #0A2218 0%, ${tmr.running?'#12331f':'#0F3025'} 100%);border:2px solid ${tmr.running?'#4da876':'#C89010'};border-radius:14px;padding:16px;margin-bottom:14px;color:#fff;transition:all .4s ease;box-shadow:${tmr.running?'0 0 0 3px rgba(77,168,118,0.15)':'none'}">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+      <button onclick="timerToggle()" style="flex-shrink:0;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:${tmr.running?'linear-gradient(135deg,#4da876,#3a8c62)':'linear-gradient(135deg,#FFD700,#C89010)'};display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.3);transition:all .25s" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+        <span style="font-size:22px;color:${tmr.running?'#fff':'#0A2218'};margin-left:${tmr.running?'0':'3px'}">${tmr.running?'⏸':'▶'}</span>
+      </button>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="font-family:var(--fm);font-size:30px;font-weight:700;letter-spacing:2px;line-height:1" id="timer-disp">${fmtT(tmr.seconds)}</div>
+          ${tmr.running?'<span style="width:8px;height:8px;border-radius:50%;background:#4da876;animation:timerPulse 1.4s ease-in-out infinite"></span>':''}
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px;text-transform:uppercase;letter-spacing:.6px">${tmr.running?(t('tracking')||'Tracking'):(t('timer_stopped')||'Timer stopped')} ${todayHoursTotal>0?'· '+todayHoursTotal.toFixed(1)+'h '+(t('logged_today')||'logged today'):''}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <select id="t-cat" style="flex:1;min-width:100px;padding:8px 10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:11px;cursor:pointer">
+        ${['Development','Consultancy','Accounting','Research','Admin','Meeting'].map(cat=>`<option style="color:#000">${cat}</option>`).join('')}
+      </select>
+      <input id="t-task" placeholder="${t('task_placeholder')||'Task...'}" style="flex:1.3;min-width:100px;padding:8px 10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:11px"/>
+      <button style="padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px" onclick="timerStop('${cid}')">⏹ ${t('stop_and_log')||'Stop & log'}</button>
+    </div>
+    <div style="font-size:9.5px;color:rgba(255,255,255,.4);margin-top:8px;display:flex;align-items:center;gap:4px">📊 ${t('timer_urencriterium_hint')||'Logged hours count toward the 1,225-hour urencriterium threshold'}</div>
+  </div>
+  <style>@keyframes timerPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}</style>`;
+  })()}
+
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
     <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
       <div style="font-size:15px;font-weight:800;color:#0A2218">${activeClients}</div>
@@ -4839,34 +4895,7 @@ function rClientActionCards(el,cid){
   ];
   if(isAdmin())cards.splice(4,0,{icon:'👥',name:t('employees')||'Employees',value:activeEmployees,onclickAttr:"selectCard('employees')"});
 
-  const tmr=S.timer;
-  const todayHoursTotal=(S.hours||[]).filter(h=>h.cid===cid&&!h.deleted&&h.date===TODAY()).reduce((s,h)=>s+(h.hrs||0),0);
   renderQuickDashboard(el,[],cards);
-  // ⏱️ كرت العدّاد الفعلي - مصمَّم بعناية بصريًا: عرض دائري لزر التشغيل،
-  // نبضة حية عند التشغيل الفعلي، وتلوين خفيف يتغيّر حسب حالة العدّاد
-  el.innerHTML=`<div style="background:linear-gradient(135deg, #0A2218 0%, ${tmr.running?'#12331f':'#0F3025'} 100%);border:2px solid ${tmr.running?'#4da876':'#C89010'};border-radius:14px;padding:16px;margin-bottom:14px;color:#fff;transition:all .4s ease;box-shadow:${tmr.running?'0 0 0 3px rgba(77,168,118,0.15)':'none'}">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-      <button onclick="timerToggle()" style="flex-shrink:0;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:${tmr.running?'linear-gradient(135deg,#4da876,#3a8c62)':'linear-gradient(135deg,#FFD700,#C89010)'};display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.3);transition:all .25s" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
-        <span style="font-size:22px;color:${tmr.running?'#fff':'#0A2218'};margin-left:${tmr.running?'0':'3px'}">${tmr.running?'⏸':'▶'}</span>
-      </button>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px">
-          <div style="font-family:var(--fm);font-size:30px;font-weight:700;letter-spacing:2px;line-height:1" id="timer-disp">${fmtT(tmr.seconds)}</div>
-          ${tmr.running?'<span style="width:8px;height:8px;border-radius:50%;background:#4da876;animation:timerPulse 1.4s ease-in-out infinite"></span>':''}
-        </div>
-        <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px;text-transform:uppercase;letter-spacing:.6px">${tmr.running?(t('tracking')||'Tracking'):(t('timer_stopped')||'Timer stopped')} ${todayHoursTotal>0?'· '+todayHoursTotal.toFixed(1)+'h '+(t('logged_today')||'logged today'):''}</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <select id="t-cat" style="flex:1;min-width:100px;padding:8px 10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:11px;cursor:pointer">
-        ${['Development','Consultancy','Accounting','Research','Admin','Meeting'].map(cat=>`<option style="color:#000">${cat}</option>`).join('')}
-      </select>
-      <input id="t-task" placeholder="${t('task_placeholder')||'Task...'}" style="flex:1.3;min-width:100px;padding:8px 10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:11px"/>
-      <button style="padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px" onclick="timerStop('${cid}')">⏹ ${t('stop_and_log')||'Stop & log'}</button>
-    </div>
-    <div style="font-size:9.5px;color:rgba(255,255,255,.4);margin-top:8px;display:flex;align-items:center;gap:4px">📊 ${t('timer_urencriterium_hint')||'Logged hours count toward the 1,225-hour urencriterium threshold'}</div>
-  </div>
-  <style>@keyframes timerPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}</style>`+el.innerHTML;
 }
 
 /* ═══════════════════════════ SHARED VIEWS ═══════════════════════════ */
@@ -9967,17 +9996,16 @@ function isDateInReportPeriod(dateStr){
   if(end&&d>end)return false;
   return true;
 }
-
 // ══════════════════════════════════════════════════════════════════
-// الفترة السابقة المقابلة (بنفس طول ونوع الفترة الحالية) - تُستخدَم لحساب
-// نسبة التغيّر وتوضيح نقاط التباين في التقارير المُصدَّرة. لا معنى لهذا
-// عندما تكون الفترة الحالية "كل الوقت" (لا حدود لمقارنتها).
-// ══════════════════════════════════════════════════════════════════
+// "الفترة السابقة" المكافئة للفترة الحالية المختارة (بنفس المدة تمامًا) -
+// تُستخدَم لحساب نِسَب التغيّر التلقائية في صناديق التحليل (مثل: "الإيراد
+// ارتفع بنسبة 12% مقارنة بالفترة السابقة"). إن كانت الفترة الحالية "كل
+// الوقت" فلا توجد فترة سابقة ذات معنى - نُعيد null بوضوح في هذه الحالة.
 function getPriorPeriodRange(){
   const {start,end,period}=getReportPeriodRange();
   if(!start||!end||period==='all')return {start:null,end:null};
   const durationMs=end.getTime()-start.getTime();
-  const priorEnd=new Date(start.getTime()-1000); // ثانية واحدة قبل بداية الفترة الحالية
+  const priorEnd=new Date(start.getTime()-1);
   const priorStart=new Date(priorEnd.getTime()-durationMs);
   return {start:priorStart,end:priorEnd};
 }
@@ -9988,15 +10016,23 @@ function isDateInPriorPeriod(dateStr){
   const d=new Date(dateStr);
   return d>=start&&d<=end;
 }
-// نسبة التغيّر بين قيمتين، مع معالجة آمنة لحالة الصفر (تفادي القسمة على صفر)
+// نسبة التغيّر بين قيمتين - تُعيد null إن كانت القيمة السابقة صفرًا (لا معنى
+// لنسبة مئوية من الصفر) بدل عرض "Infinity%" مضلِّلة
 function pctChange(current,prior){
-  if(prior===0)return current===0?0:null; // null = تغيّر غير قابل للحساب كنسبة مئوية
+  if(!prior||prior===0)return null;
   return ((current-prior)/Math.abs(prior))*100;
 }
 function formatPctChange(pct){
-  if(pct===null)return 'N/A';
-  const sign=pct>0?'+':'';
-  return sign+pct.toFixed(1)+'%';
+  if(pct===null||pct===undefined||!isFinite(pct))return null;
+  return Math.abs(pct).toFixed(1)+'%';
+}
+// فواتير الفترة السابقة المكافئة (بنفس أساس الفاتورة/النقد الصحيح لكل عميل)
+function getReportableInvoicesForPriorPeriod(cid){
+  const basis=getClientVatBasis(cid);
+  if(basis==='cash'){
+    return S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInPriorPeriod(i.paidDate||i.date));
+  }
+  return S.invoices.filter(i=>i.cid===cid&&!i.deleted&&isDateInPriorPeriod(i.date));
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -10024,14 +10060,6 @@ function getReportableInvoices(cid){
   // أساس الفاتورة (الافتراضي والإلزامي لعملاء B2B): كل الفواتير الصادرة
   // ضمن الفترة، بغضّ النظر عن حالة الدفع - الضريبة مستحقة عند الإصدار
   return S.invoices.filter(i=>i.cid===cid&&!i.deleted&&isDateInReportPeriod(i.date));
-}
-// نظير الدالة أعلاه لكن للفترة السابقة المقابلة - لتحليل التباين/نسبة التغيّر
-function getReportableInvoicesForPriorPeriod(cid){
-  const basis=getClientVatBasis(cid);
-  if(basis==='cash'){
-    return S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInPriorPeriod(i.paidDate||i.date));
-  }
-  return S.invoices.filter(i=>i.cid===cid&&!i.deleted&&isDateInPriorPeriod(i.date));
 }
 function renderReportPeriodSelector(){
   const period=S.reportPeriodDraft!==undefined?S.reportPeriodDraft:(S.reportPeriod||'all');
@@ -10101,19 +10129,26 @@ function rReportsList(el,cid){
   html+='<span style="font-size:11px;color:var(--t3);font-weight:500">'+c?.name+' — '+new Date().getFullYear()+'</span>';
   html+='</div>';
   
-  // ⭐ إعادة تصميم: شبكة عمودين مضغوطة بدل قائمة عمودية طويلة - أسهل للمسح
-  // البصري السريع وأقل تمريرًا، مع الحفاظ على نفس ألوان كل تقرير وتأثير التحويم
-  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  // عرض البطاقات في صيغة قائمة
   reports.forEach(report=>{
-    const textRgb=report.text==='#ffffff'?'255,255,255':'10,34,24';
-    html+='<div style="padding:14px 12px;background:'+report.bg+';border:2px solid '+report.border+';border-radius:12px;cursor:pointer;transition:all .25s ease;box-shadow:0 2px 6px rgba(0,0,0,0.1);min-height:110px;display:flex;flex-direction:column" onclick="resetReportPeriodFilter();S.reportTab=\''+report.id+'\';renderApp()" onmouseover="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.18)\';this.style.borderColor=\''+report.accent+'\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 2px 6px rgba(0,0,0,0.1)\';this.style.borderColor=\''+report.border+'\'">';
-    html+='<div style="font-size:24px;margin-bottom:8px">'+report.icon+'</div>';
-    html+='<div style="font-size:12.5px;font-weight:700;color:'+report.text+';line-height:1.25;margin-bottom:4px">'+report.name+'</div>';
-    html+='<div style="font-size:9.5px;color:rgba('+textRgb+',0.7);line-height:1.3;flex:1">'+report.desc+'</div>';
-    html+='<div style="font-size:11px;color:rgba('+textRgb+',0.5);font-weight:600;margin-top:6px;align-self:flex-end">→</div>';
+    html+='<div style="margin-bottom:12px;padding:16px;background:'+report.bg+';border:2px solid '+report.border+';border-radius:10px;cursor:pointer;transition:all .3s ease;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;justify-content:space-between;align-items:center" onclick="S.reportTab=\''+report.id+'\';renderApp()" onmouseover="this.style.transform=\'translateX(6px)\';this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.15)\';this.style.borderColor=\''+report.accent+'\'" onmouseout="this.style.transform=\'translateX(0)\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\';this.style.borderColor=\''+report.border+'\'">';
+    
+    // الجزء الأيسر
+    html+='<div style="flex:1">';
+    html+='<div style="display:flex;align-items:center;gap:12px">';
+    html+='<div style="font-size:28px">'+report.icon+'</div>';
+    html+='<div>';
+    html+='<div style="font-size:14px;font-weight:600;color:'+report.text+'">'+report.name+'</div>';
+    html+='<div style="font-size:11px;color:rgba('+(report.text==='#ffffff'?'255,255,255':'10,34,24')+',0.7)">'+report.desc+'</div>';
+    html+='</div>';
+    html+='</div>';
+    html+='</div>';
+    
+    // الجزء الأيمن
+    html+='<div style="font-size:12px;color:rgba('+(report.text==='#ffffff'?'255,255,255':'10,34,24')+',0.5);font-weight:500;margin-left:12px">→</div>';
+    
     html+='</div>';
   });
-  html+='</div>';
   
   html+='</div>';
   el.innerHTML=html;
@@ -10334,7 +10369,7 @@ function rReportEmployeeStats(el,cid){
 function rReportCashFlow(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
-  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.paidDate||i.date));
+  const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   // ✅ إصلاح: التدفق النقدي يجب أن يعكس النقد الفعلي المتحرك عبر الحساب
   // البنكي - والعميل يدفع المبلغ الإجمالي شامل الضريبة (total)، وليس فقط
@@ -10775,6 +10810,10 @@ async function exportReportPDF(type,cid){
   showLoading(t('generating_pdf')||'Generating PDF…');
   try{
     await ensureJsPDF();
+    // ⚠️ إصلاح: كانت الحروف العربية تظهر كرموز غير مقروءة في PDF لأن خطوط
+    // jsPDF الافتراضية (helvetica/times/courier) لا تدعم الأحرف العربية
+    // إطلاقًا - نحمِّل خط Amiri عربيًا حقيقيًا فقط عند الحاجة الفعلية
+    if((S.reportExportLang||S.lang)==='ar')await ensureArabicFont();
     _exportReportPDF(type,cid);
   }catch(err){
     toast('❌ '+(err.message||'Could not load PDF library'));
@@ -10782,39 +10821,151 @@ async function exportReportPDF(type,cid){
     hideLoading();
   }
 }
+// يحمِّل خط Amiri العربي (مُصغَّر خصيصًا لهذا الاستخدام) عند الطلب فقط،
+// ويُسجِّله داخل jsPDF نفسه (VFS + addFont) - مرة واحدة فقط لكل جلسة
+let _arabicFontRegistered=false;
+async function ensureArabicFont(){
+  if(!window.AMIRI_FONT_BASE64){
+    await loadScript('./amiri-font.js');
+  }
+  return window.AMIRI_FONT_BASE64;
+}
+// يختار الخط الصحيح تلقائيًا حسب لغة تصدير التقرير المطلوبة - يبقى
+// helvetica للإنجليزية/الهولندية (تدعمها الخطوط الافتراضية بلا مشاكل)،
+// ويتحوّل لـAmiri فقط عند اختيار العربية تحديدًا
+function setReportFont(doc,style){
+  const exportLang=S.reportExportLang||S.lang||'en';
+  if(exportLang==='ar'&&window.AMIRI_FONT_BASE64){
+    if(!_arabicFontRegistered){
+      doc.addFileToVFS('Amiri-Regular.ttf',window.AMIRI_FONT_BASE64);
+      doc.addFont('Amiri-Regular.ttf','Amiri','normal');
+      doc.addFont('Amiri-Regular.ttf','Amiri','bold');
+      _arabicFontRegistered=true;
+    }
+    doc.setFont('Amiri',style==='bold'?'bold':'normal');
+  }else{
+    doc.setFont('helvetica',style==='bold'?'bold':'normal');
+  }
+}
+// ══════════════════════════════════════════════════════════════════
+// قاموس ترجمة مخصَّص لتصدير التقارير (PDF/Excel) - منفصل تمامًا عن لغة
+// النظام I18N، ويُختار بشكل مستقل عبر "Export Language" في شاشة التقرير.
+// ══════════════════════════════════════════════════════════════════
+const REPORT_I18N={
+  en:{
+    client:'Client',internalReport:'Internal Company Report',generated:'Generated',financialYear:'Financial Year',
+    revenue:'Revenue',expenses:'Expenses',operatingExpenses:'Operating Expenses',totalExpenses:'Total Expenses',
+    netProfit:'Net Profit',netProfitLoss:'Net Profit/Loss',depreciation:'Depreciation',taxableProfit:'Taxable Profit',
+    profitMargin:'Profit Margin',numberOfInvoices:'Number of Invoices',numberOfExpenses:'Number of Expenses',
+    financialOverview:'Financial Overview',confidential:'Confidential',insightsTitle:'Key Insights',vsLastPeriod:'vs. last period',increaseWord:'increased',decreaseWord:'decreased',
+    vatOutput:'VAT Output (Sales Tax)',vatInput:'VAT Input (Purchase Tax)',vatPayable:'Payable',vatRecoverable:'Recoverable',
+    cashInflow:'Cash Inflow',cashOutflow:'Cash Outflow',netCashFlow:'Net Cash Flow',
+    estimatedCorporateTax:'Estimated Corporate Tax (VPB)',estimatedPersonalTax:'Estimated Personal Income Tax',
+    totalOutstanding:'Total Outstanding',totalBox1Income:'Total Box 1 Income',
+    summaryTitle:'Financial Summary Report',plTitle:'Profit & Loss Statement',btwTitle:'VAT/BTW Tax Return',
+    debtorsTitle:'Debtors Aging Report',expensesTitle:'Expenses Report',cashflowTitle:'Cash Flow Analysis',
+    taxLiabilityTitle:'Tax Liability Report',
+  },
+  nl:{
+    client:'Klant',internalReport:'Interne Bedrijfsrapportage',generated:'Gegenereerd',financialYear:'Boekjaar',
+    revenue:'Omzet',expenses:'Kosten',operatingExpenses:'Bedrijfskosten',totalExpenses:'Totale Kosten',
+    netProfit:'Nettowinst',netProfitLoss:'Netto Winst/Verlies',depreciation:'Afschrijving',taxableProfit:'Belastbare Winst',
+    profitMargin:'Winstmarge',numberOfInvoices:'Aantal Facturen',numberOfExpenses:'Aantal Uitgaven',
+    financialOverview:'Financieel Overzicht',confidential:'Vertrouwelijk',insightsTitle:'Belangrijkste Inzichten',vsLastPeriod:'t.o.v. vorige periode',increaseWord:'gestegen',decreaseWord:'gedaald',
+    vatOutput:'Btw Uitgaande (Verkoop)',vatInput:'Btw Inkomende (Inkoop)',vatPayable:'Te Betalen',vatRecoverable:'Terug te Vorderen',
+    cashInflow:'Kasinstroom',cashOutflow:'Kasuitstroom',netCashFlow:'Netto Kasstroom',
+    estimatedCorporateTax:'Geschatte Vennootschapsbelasting (VPB)',estimatedPersonalTax:'Geschatte Inkomstenbelasting',
+    totalOutstanding:'Totaal Openstaand',totalBox1Income:'Totaal Box 1 Inkomen',
+    summaryTitle:'Financieel Samenvattingsrapport',plTitle:'Winst- en Verliesrekening',btwTitle:'Btw-aangifte',
+    debtorsTitle:'Debiteuren Ouderdomsrapport',expensesTitle:'Uitgavenrapport',cashflowTitle:'Kasstroomanalyse',
+    taxLiabilityTitle:'Belastingverplichtingrapport',
+  },
+  ar:{
+    client:'العميل',internalReport:'تقرير الشركة الداخلي',generated:'تاريخ الإصدار',financialYear:'السنة المالية',
+    revenue:'الإيراد',expenses:'المصاريف',operatingExpenses:'المصاريف التشغيلية',totalExpenses:'إجمالي المصاريف',
+    netProfit:'صافي الربح',netProfitLoss:'صافي الربح/الخسارة',depreciation:'الإهلاك',taxableProfit:'الربح الخاضع للضريبة',
+    profitMargin:'هامش الربح',numberOfInvoices:'عدد الفواتير',numberOfExpenses:'عدد المصاريف',
+    financialOverview:'النظرة المالية العامة',confidential:'سرّي',insightsTitle:'أبرز النقاط التحليلية',vsLastPeriod:'مقارنة بالفترة السابقة',increaseWord:'ارتفع',decreaseWord:'انخفض',
+    vatOutput:'ضريبة المخرجات (المبيعات)',vatInput:'ضريبة المدخلات (المشتريات)',vatPayable:'مستحقة الدفع',vatRecoverable:'قابلة للاسترداد',
+    cashInflow:'النقد الداخل',cashOutflow:'النقد الخارج',netCashFlow:'صافي التدفق النقدي',
+    estimatedCorporateTax:'تقدير ضريبة الشركات (VPB)',estimatedPersonalTax:'تقدير ضريبة الدخل الشخصي',
+    totalOutstanding:'إجمالي المستحق',totalBox1Income:'إجمالي دخل Box 1',
+    summaryTitle:'تقرير الملخص المالي',plTitle:'قائمة الأرباح والخسائر',btwTitle:'إقرار ضريبة القيمة المضافة',
+    debtorsTitle:'تقرير أعمار ديون المدينين',expensesTitle:'تقرير المصاريف',cashflowTitle:'تحليل التدفق النقدي',
+    taxLiabilityTitle:'تقرير الخصوم الضريبية',
+  },
+};
+function rt(key){
+  const lang=S.reportExportLang||S.lang||'en';
+  return (REPORT_I18N[lang]&&REPORT_I18N[lang][key])||REPORT_I18N.en[key]||key;
+}
 // ══════════════════════════════════════════════════════════════════
 // أدوات رسم بيانية مشتركة للتقارير المُصدَّرة PDF (jsPDF لا يملك رسمًا
 // بيانيًا جاهزًا، فبنيت رسمًا بالمستطيلات/الخطوط الأساسية بدقة كاملة)
 // ══════════════════════════════════════════════════════════════════
 
 // رسم بياني بالأعمدة العمودية لمقارنة عدة قيم (مثل: الإيراد/المصاريف/الربح)
-function pdfDrawBarChart(doc,x,y,width,height,items){
+// - أصبح الآن بإطار "كرت" واضح + عنوان مع أيقونة 📊 + خطوط إرشادية أفقية
+// خفيفة، حتى يكون واضحًا بصريًا أنه رسم بياني فعلي وليس مجرد مستطيلات ملوَّنة
+function pdfDrawBarChart(doc,x,y,width,chartHeight,items,title){
+  const titleH=title?9:0;
+  const topPad=6,bottomPad=12,sidePad=6;
+  const cardHeight=titleH+topPad+chartHeight+bottomPad;
+
+  // إطار الكرت المحيط بالرسم بالكامل
+  doc.setFillColor(250,249,246);
+  doc.setDrawColor(220,213,192);
+  doc.setLineWidth(0.4);
+  if(doc.roundedRect)doc.roundedRect(x,y,width,cardHeight,2,2,'FD');
+  else doc.rect(x,y,width,cardHeight,'FD');
+
+  // عنوان الرسم البياني (مع أيقونة تدل عليه بوضوح كرسم مقارنة)
+  if(title){
+    setReportFont(doc,'bold');doc.setFontSize(9);doc.setTextColor(10,34,24);
+    doc.text('📊 '+title,x+sidePad,y+7);
+  }
+
+  const chartX=x+sidePad,chartY=y+titleH+topPad,chartW=width-2*sidePad;
   const maxVal=Math.max(1,...items.map(it=>Math.abs(it.value)));
-  const barGap=4;
-  const barWidth=(width-barGap*(items.length-1))/items.length;
-  const baselineY=y+height;
+  const barGap=6;
+  const barWidth=(chartW-barGap*(items.length-1))/items.length;
+  const baselineY=chartY+chartHeight;
+
+  // خطوط إرشادية أفقية خفيفة (25%/50%/75%) لتسهيل قراءة النسب بصريًا
+  doc.setDrawColor(232,227,212);doc.setLineWidth(0.2);
+  [0.25,0.5,0.75].forEach(f=>{
+    const gy=baselineY-chartHeight*f;
+    doc.line(chartX,gy,chartX+chartW,gy);
+  });
 
   items.forEach((it,i)=>{
-    const barX=x+i*(barWidth+barGap);
-    const barH=Math.max(1,(Math.abs(it.value)/maxVal)*height);
+    const barX=chartX+i*(barWidth+barGap);
+    const barH=Math.max(1,(Math.abs(it.value)/maxVal)*chartHeight);
     const barY=baselineY-barH;
     const [r,g,b]=it.color||[77,168,118];
     doc.setFillColor(r,g,b);
     doc.rect(barX,barY,barWidth,barH,'F');
     // القيمة أعلى العمود
-    doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(40,40,40);
+    setReportFont(doc,'bold');doc.setFontSize(8);doc.setTextColor(40,40,40);
     doc.text(`€${Math.round(it.value).toLocaleString()}`,barX+barWidth/2,barY-2,{align:'center'});
     // التسمية أسفل العمود
-    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(90,90,90);
+    setReportFont(doc,'normal');doc.setFontSize(7.5);doc.setTextColor(90,90,90);
     doc.text(it.label,barX+barWidth/2,baselineY+5,{align:'center'});
   });
-  // خط الأساس
-  doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);
-  doc.line(x,baselineY,x+width,baselineY);
+  // خط الأساس (المحور)
+  doc.setDrawColor(160,160,160);doc.setLineWidth(0.4);
+  doc.line(chartX,baselineY,chartX+chartW,baselineY);
+
+  return y+cardHeight+8; // نُعيد الموضع y التالي المتاح بعد الرسم بالكامل
 }
 
 // شريط نسبي واحد (100% مُقسَّم) لعرض توزيع فئات المصاريف بصريًا + وسيلة إيضاح
-function pdfDrawProportionBar(doc,x,y,width,barHeight,items){
+function pdfDrawProportionBar(doc,x,y,width,barHeight,items,title){
+  if(title){
+    setReportFont(doc,'bold');doc.setFontSize(9);doc.setTextColor(10,34,24);
+    doc.text('📊 '+title,x,y);
+    y+=6;
+  }
   const total=items.reduce((s,it)=>s+it.value,0)||1;
   let curX=x;
   const palette=[[10,34,24],[200,144,16],[77,168,118],[184,134,11],[45,122,79],[168,168,168],[126,87,60]];
@@ -10828,7 +10979,7 @@ function pdfDrawProportionBar(doc,x,y,width,barHeight,items){
   // وسيلة الإيضاح (Legend) أسفل الشريط
   let legendY=y+barHeight+6;
   let legendX=x;
-  doc.setFontSize(7.5);
+  setReportFont(doc,'normal');doc.setFontSize(7.5);
   items.forEach((it,i)=>{
     const [r,g,b]=palette[i%palette.length];
     const pct=((it.value/total)*100).toFixed(0);
@@ -10836,7 +10987,7 @@ function pdfDrawProportionBar(doc,x,y,width,barHeight,items){
     const labelWidth=doc.getTextWidth(label)+8;
     if(legendX+labelWidth>x+width){legendX=x;legendY+=6;}
     doc.setFillColor(r,g,b);doc.rect(legendX,legendY-3,3,3,'F');
-    doc.setTextColor(60,60,60);doc.setFont('helvetica','normal');
+    doc.setTextColor(60,60,60);setReportFont(doc,'normal');
     doc.text(label,legendX+5,legendY);
     legendX+=labelWidth+4;
   });
@@ -10854,145 +11005,13 @@ function pdfInsightBox(doc,x,y,width,lines){
   doc.setDrawColor(200,144,16);
   doc.setLineWidth(0.4);
   doc.roundedRect?doc.roundedRect(x,y,width,boxHeight,2,2,'FD'):doc.rect(x,y,width,boxHeight,'FD');
-  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(10,34,24);
-  doc.text('💡 '+(typeof t==='function'?(t('insights_title')||'Key Insights'):'Key Insights'),x+padding,y+padding+2);
-  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(60,60,60);
+  setReportFont(doc,'bold');doc.setFontSize(8.5);doc.setTextColor(10,34,24);
+  doc.text('💡 '+rt('insightsTitle'),x+padding,y+padding+2);
+  setReportFont(doc,'normal');doc.setFontSize(8);doc.setTextColor(60,60,60);
   lines.forEach((line,i)=>{
     doc.text('• '+line,x+padding,y+padding+2+lineHeight*(i+1));
   });
   return y+boxHeight+8;
-}
-
-// ══════════════════════════════════════════════════════════════════
-// أدوات مساعدة لتحسين المظهر البصري للتقارير المُصدَّرة PDF: رسم بياني
-// شريطي بسيط، وصندوق "تحليل وملاحظات" يوضّح نقاط التباين لكل تقرير
-// ══════════════════════════════════════════════════════════════════
-function drawBarChartPDF(doc,x,y,width,height,bars){
-  // bars: [{label, value, color:[r,g,b]}]
-  const maxVal=Math.max(...bars.map(b=>Math.abs(b.value)),1);
-  const slotW=width/bars.length;
-  const barW=slotW*0.5;
-  const chartBottom=y+height-10; // نترك مساحة أسفل الرسم لتسميات الفئات
-
-  bars.forEach((bar,i)=>{
-    const barH=Math.max(0.5,(Math.abs(bar.value)/maxVal)*(height-22));
-    const barX=x+i*slotW+(slotW-barW)/2;
-    const barY=chartBottom-barH;
-
-    doc.setFillColor(bar.color[0],bar.color[1],bar.color[2]);
-    doc.roundedRect(barX,barY,barW,barH,1,1,'F');
-
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(8);
-    doc.setTextColor(40,40,40);
-    const valLabel='€'+Math.round(bar.value).toLocaleString('en-US');
-    const valW=doc.getTextWidth(valLabel);
-    doc.text(valLabel,barX+barW/2-valW/2,barY-2);
-
-    doc.setFont('helvetica','normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(90,90,90);
-    const lblW=doc.getTextWidth(bar.label);
-    doc.text(bar.label,barX+barW/2-lblW/2,chartBottom+6);
-  });
-
-  // خط الأساس (صفر)
-  doc.setDrawColor(200,200,200);
-  doc.setLineWidth(0.2);
-  doc.line(x,chartBottom,x+width,chartBottom);
-
-  return y+height+4;
-}
-// صندوق "تحليل وملاحظات" - يوضّح نقاط تباين حقيقية محسوبة من أرقام
-// التقرير نفسه، وليس نصًا عامًا ثابتًا
-// ══════════════════════════════════════════════════════════════════
-// قاموس ترجمة مخصَّص لتصدير التقارير (PDF/Excel) - منفصل تمامًا عن لغة
-// النظام I18N، ويُختار بشكل مستقل عبر "Export Language" في شاشة التقرير.
-// يغطي المصطلحات الأساسية المشتركة + التقارير الخمسة الأكثر استخدامًا
-// (الملخص، الأرباح والخسائر، BTW، التدفق النقدي، الخصوم الضريبية).
-// ══════════════════════════════════════════════════════════════════
-const REPORT_I18N={
-  en:{
-    client:'Client',internalReport:'Internal Company Report',generated:'Generated',financialYear:'Financial Year',
-    revenue:'Revenue',expenses:'Expenses',operatingExpenses:'Operating Expenses',totalExpenses:'Total Expenses',
-    netProfit:'Net Profit',netProfitLoss:'Net Profit/Loss',depreciation:'Depreciation',taxableProfit:'Taxable Profit',
-    profitMargin:'Profit Margin',numberOfInvoices:'Number of Invoices',numberOfExpenses:'Number of Expenses',
-    financialOverview:'Financial Overview',analysis:'ANALYSIS',trend:'Trend',profitMarginTrend:'Profit Margin & Trend',spendingBreakdown:'Spending Breakdown',
-    collectionRisk:'Collection Risk',cashPosition:'Cash Position & Trend',vatPosition:'VAT Position & Trend',
-    taxPosition:'Tax Position',category:'Category',date:'Date',amount:'Amount',status:'Status',description:'Description',
-    vatOutput:'VAT Output (Sales Tax)',vatInput:'VAT Input (Purchase Tax)',vatPayable:'Payable',vatRecoverable:'Recoverable',
-    cashInflow:'Cash Inflow',cashOutflow:'Cash Outflow',netCashFlow:'Net Cash Flow',
-    estimatedCorporateTax:'Estimated Corporate Tax (VPB)',estimatedPersonalTax:'Estimated Personal Income Tax',
-    totalOutstanding:'Total Outstanding',totalBox1Income:'Total Box 1 Income',confidential:'Confidential',
-    summaryTitle:'Financial Summary Report',plTitle:'Profit & Loss Statement',btwTitle:'VAT/BTW Tax Return',
-    debtorsTitle:'Debtors Aging Report',expensesTitle:'Expenses Report',cashflowTitle:'Cash Flow Analysis',
-    taxLiabilityTitle:'Tax Liability Report',
-  },
-  nl:{
-    client:'Klant',internalReport:'Interne Bedrijfsrapportage',generated:'Gegenereerd',financialYear:'Boekjaar',
-    revenue:'Omzet',expenses:'Kosten',operatingExpenses:'Bedrijfskosten',totalExpenses:'Totale Kosten',
-    netProfit:'Nettowinst',netProfitLoss:'Netto Winst/Verlies',depreciation:'Afschrijving',taxableProfit:'Belastbare Winst',
-    profitMargin:'Winstmarge',numberOfInvoices:'Aantal Facturen',numberOfExpenses:'Aantal Uitgaven',
-    financialOverview:'Financieel Overzicht',analysis:'ANALYSE',trend:'Trend',profitMarginTrend:'Winstmarge & Trend',spendingBreakdown:'Uitgavenoverzicht',
-    collectionRisk:'Incassorisico',cashPosition:'Kaspositie & Trend',vatPosition:'Btw-positie & Trend',
-    taxPosition:'Belastingpositie',category:'Categorie',date:'Datum',amount:'Bedrag',status:'Status',description:'Omschrijving',
-    vatOutput:'Btw Uitgaande (Verkoop)',vatInput:'Btw Inkomende (Inkoop)',vatPayable:'Te Betalen',vatRecoverable:'Terug te Vorderen',
-    cashInflow:'Kasinstroom',cashOutflow:'Kasuitstroom',netCashFlow:'Netto Kasstroom',
-    estimatedCorporateTax:'Geschatte Vennootschapsbelasting (VPB)',estimatedPersonalTax:'Geschatte Inkomstenbelasting',
-    totalOutstanding:'Totaal Openstaand',totalBox1Income:'Totaal Box 1 Inkomen',confidential:'Vertrouwelijk',
-    summaryTitle:'Financieel Samenvattingsrapport',plTitle:'Winst- en Verliesrekening',btwTitle:'Btw-aangifte',
-    debtorsTitle:'Debiteuren Ouderdomsrapport',expensesTitle:'Uitgavenrapport',cashflowTitle:'Kasstroomanalyse',
-    taxLiabilityTitle:'Belastingverplichtingrapport',
-  },
-  ar:{
-    client:'العميل',internalReport:'تقرير الشركة الداخلي',generated:'تاريخ الإصدار',financialYear:'السنة المالية',
-    revenue:'الإيراد',expenses:'المصاريف',operatingExpenses:'المصاريف التشغيلية',totalExpenses:'إجمالي المصاريف',
-    netProfit:'صافي الربح',netProfitLoss:'صافي الربح/الخسارة',depreciation:'الإهلاك',taxableProfit:'الربح الخاضع للضريبة',
-    profitMargin:'هامش الربح',numberOfInvoices:'عدد الفواتير',numberOfExpenses:'عدد المصاريف',
-    financialOverview:'النظرة المالية العامة',analysis:'تحليل',trend:'الاتجاه',profitMarginTrend:'هامش الربح والاتجاه',spendingBreakdown:'تفصيل الإنفاق',
-    collectionRisk:'مخاطر التحصيل',cashPosition:'الوضع النقدي والاتجاه',vatPosition:'وضع ضريبة القيمة المضافة والاتجاه',
-    taxPosition:'الوضع الضريبي',category:'الفئة',date:'التاريخ',amount:'المبلغ',status:'الحالة',description:'الوصف',
-    vatOutput:'ضريبة المخرجات (المبيعات)',vatInput:'ضريبة المدخلات (المشتريات)',vatPayable:'مستحقة الدفع',vatRecoverable:'قابلة للاسترداد',
-    cashInflow:'النقد الداخل',cashOutflow:'النقد الخارج',netCashFlow:'صافي التدفق النقدي',
-    estimatedCorporateTax:'تقدير ضريبة الشركات (VPB)',estimatedPersonalTax:'تقدير ضريبة الدخل الشخصي',
-    totalOutstanding:'إجمالي المستحق',totalBox1Income:'إجمالي دخل Box 1',confidential:'سرّي',
-    summaryTitle:'تقرير الملخص المالي',plTitle:'قائمة الأرباح والخسائر',btwTitle:'إقرار ضريبة القيمة المضافة',
-    debtorsTitle:'تقرير أعمار ديون المدينين',expensesTitle:'تقرير المصاريف',cashflowTitle:'تحليل التدفق النقدي',
-    taxLiabilityTitle:'تقرير الخصوم الضريبية',
-  },
-};
-// دالة ترجمة التقرير - تقرأ لغة التصدير المختارة (منفصلة عن لغة النظام)،
-// وتتراجع للإنجليزية تلقائيًا لأي مصطلح غير مُترجَم بعد
-function rt(key){
-  const lang=S.reportExportLang||S.lang||'en';
-  return (REPORT_I18N[lang]&&REPORT_I18N[lang][key])||REPORT_I18N.en[key]||key;
-}
-
-function drawInsightBoxPDF(doc,x,y,width,title,lines){
-  const padding=4;
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(8.5);
-  const wrapped=[];
-  lines.forEach(line=>{wrapped.push(...doc.splitTextToSize(line,width-2*padding));});
-  const boxHeight=9+wrapped.length*4.3+padding;
-
-  doc.setFillColor(250,247,238);
-  doc.setDrawColor(200,144,16);
-  doc.setLineWidth(0.35);
-  doc.roundedRect(x,y,width,boxHeight,2,2,'FD');
-
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(9);
-  doc.setTextColor(140,100,10);
-  doc.text(rt('analysis')+': '+title,x+padding,y+6.5);
-
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(8.3);
-  doc.setTextColor(70,70,70);
-  let ly=y+11.5;
-  wrapped.forEach(l=>{doc.text(l,x+padding,ly);ly+=4.3;});
-
-  return y+boxHeight+6;
 }
 
 function _exportReportPDF(type,cid){
@@ -11014,7 +11033,7 @@ function _exportReportPDF(type,cid){
   doc.rect(M,y,W-2*M,20,'F');
   
   // Title
-  doc.setFont('helvetica','bold');
+  setReportFont(doc,'bold');
   doc.setFontSize(18);
   doc.setTextColor(200,144,16); // Gold
   doc.text('ANB FINANCIAL SERVICES',M+5,y+8);
@@ -11040,14 +11059,14 @@ function _exportReportPDF(type,cid){
     'emp_stats':'Employee Statistics Report'
   };
   
-  doc.setFont('helvetica','bold');
+  setReportFont(doc,'bold');
   doc.setFontSize(14);
   doc.setTextColor(10,34,24);
   doc.text(titles[type]||'Report',M,y);
   y+=8;
   
   // Generated date
-  doc.setFont('helvetica','normal');
+  setReportFont(doc,'normal');
   doc.setFontSize(9);
   doc.setTextColor(100,100,100);
   doc.text(`${rt('generated')}: ${FD(new Date())} | ${rt('financialYear')}: ${new Date().getFullYear()}`,M,y);
@@ -11069,7 +11088,7 @@ function _exportReportPDF(type,cid){
     const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
     const profit=revenue-expenses;
     
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(12);
     doc.text(rt('financialOverview'),M,y);y+=12;
     
@@ -11080,10 +11099,10 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(10,34,24);
     doc.rect(M,y,boxW,boxH,'F');
     doc.setTextColor(255,255,255);
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(9);
     doc.text(rt('revenue'),M+3,y+6);
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(12);
     doc.text(`€${revenue.toFixed(2)}`,M+3,y+14);
     
@@ -11091,10 +11110,10 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(184,134,11);
     doc.rect(M+boxW+M,y,boxW,boxH,'F');
     doc.setTextColor(255,255,255);
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(9);
     doc.text(rt('totalExpenses'),M+boxW+M+3,y+6);
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(12);
     doc.text(`€${expenses.toFixed(2)}`,M+boxW+M+3,y+14);
     
@@ -11102,10 +11121,10 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(77,168,118);
     doc.rect(M+2*boxW+2*M,y,boxW,boxH,'F');
     doc.setTextColor(255,255,255);
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(9);
     doc.text(rt('netProfit'),M+2*boxW+2*M+3,y+6);
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(12);
     doc.text(`€${profit.toFixed(2)}`,M+2*boxW+2*M+3,y+14);
     
@@ -11117,39 +11136,38 @@ function _exportReportPDF(type,cid){
     doc.line(M,y,W-M,y);
     y+=8;
     
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(10);
     doc.setTextColor(0,0,0);
     doc.text(`${rt('numberOfInvoices')}: ${inv.length}`,M,y);y+=7;
     doc.text(`${rt('numberOfExpenses')}: ${exp.length}`,M,y);y+=7;
-    // ✅ إصلاح: كانت تُظهر "NaN%" عند عدم وجود إيراد إطلاقًا (قسمة على صفر بلا حماية)
-    doc.text(`${rt('profitMargin')}: ${revenue>0?((profit/revenue)*100).toFixed(1)+'%':'N/A (no revenue)'}`,M,y);
+    doc.text(`${rt('profitMargin')}: ${revenue>0?((profit/revenue)*100).toFixed(1)+'%':'N/A'}`,M,y);
     y+=14;
 
-    // رسم بياني مقارن + صندوق تحليل يشمل مقارنة فعلية بالفترة السابقة
-    if(y>225){doc.addPage();y=M;}
-    y=drawBarChartPDF(doc,M,y,W-2*M,45,[
+    // ⭐ رسم بياني مقارن (إيراد/مصاريف/ربح) + صندوق تحليل ديناميكي حسب
+    // الفترة الحالية المختارة فعليًا، مع مقارنة تلقائية بالفترة السابقة
+    if(y>210){doc.addPage();y=M;}
+    y=pdfDrawBarChart(doc,M,y,W-2*M,42,[
       {label:rt('revenue'),value:revenue,color:[10,34,24]},
-      {label:rt('expenses'),value:expenses,color:[184,134,11]},
+      {label:rt('totalExpenses'),value:expenses,color:[184,134,11]},
       {label:rt('netProfit'),value:profit,color:profit>=0?[77,168,118]:[168,77,77]},
-    ]);
-    const summaryInsightLines=[];
-    const {start:sumPriorStart}=getPriorPeriodRange();
-    if(sumPriorStart){
+    ],rt('financialOverview'));
+
+    const {start:priorStart}=getPriorPeriodRange();
+    const insightLines=[];
+    if(priorStart){
       const priorInv=getReportableInvoicesForPriorPeriod(cid);
       const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
       const priorRevenue=priorInv.reduce((s,i)=>s+(i.amount||0),0);
       const priorExpenses=priorExp.reduce((s,e)=>s+(e.amount||0),0);
-      const priorProfit=priorRevenue-priorExpenses;
       const revPct=pctChange(revenue,priorRevenue);
       const expPct=pctChange(expenses,priorExpenses);
-      if(revPct!==null)summaryInsightLines.push(`Revenue ${revPct>=0?'grew':'shrank'} by ${formatPctChange(Math.abs(revPct))} vs. the previous period.`);
-      if(expPct!==null)summaryInsightLines.push(`Expenses ${expPct>=0?'increased':'decreased'} by ${formatPctChange(Math.abs(expPct))} vs. the previous period.`);
-    }else{
-      summaryInsightLines.push('Select a specific period (month, quarter, or year) instead of "All Time" to see period-over-period trend comparisons here.');
+      if(revPct!==null)insightLines.push(`${rt('revenue')} ${revPct>=0?rt('increaseWord'):rt('decreaseWord')} ${formatPctChange(revPct)} ${rt('vsLastPeriod')}`);
+      if(expPct!==null)insightLines.push(`${rt('totalExpenses')} ${expPct>=0?rt('increaseWord'):rt('decreaseWord')} ${formatPctChange(expPct)} ${rt('vsLastPeriod')}`);
     }
+    if(insightLines.length===0)insightLines.push(revenue>0?`${rt('profitMargin')}: ${((profit/revenue)*100).toFixed(1)}%`:rt('financialOverview'));
     if(y>250){doc.addPage();y=M;}
-    y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('trend'),summaryInsightLines);
+    y=pdfInsightBox(doc,M,y,W-2*M,insightLines);
   }
   else if(type==='pl'){
     const inv=getReportableInvoices(cid);
@@ -11160,7 +11178,7 @@ function _exportReportPDF(type,cid){
     const profit=revenue-expenses;
     
     // Revenue section
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(11);
     doc.setFillColor(10,34,24);
     doc.setTextColor(255,255,255);
@@ -11168,16 +11186,16 @@ function _exportReportPDF(type,cid){
     doc.text(rt('revenue').toUpperCase(),M+3,y+5);
     y+=8;
     
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(10);
     doc.setTextColor(0,0,0);
     doc.text(rt('revenue'),M,y);
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.text(`€${revenue.toFixed(2)}`,W-M-30,y);
     y+=10;
     
     // Expenses section
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(11);
     doc.setFillColor(184,134,11);
     doc.setTextColor(255,255,255);
@@ -11185,7 +11203,7 @@ function _exportReportPDF(type,cid){
     doc.text(rt('expenses').toUpperCase(),M+3,y+5);
     y+=8;
     
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(10);
     doc.setTextColor(0,0,0);
     
@@ -11198,66 +11216,67 @@ function _exportReportPDF(type,cid){
     Object.entries(categories).forEach(([cat,amt])=>{
       if(y>270){doc.addPage();y=M;}
       doc.text(`${cat}`,M+5,y);
-      doc.setFont('helvetica','normal');
+      setReportFont(doc,'normal');
       doc.text(`€${amt.toFixed(2)}`,W-M-30,y);
       y+=7;
     });
     if(depreciation>0){
       if(y>270){doc.addPage();y=M;}
       doc.text(rt('depreciation'),M+5,y);
-      doc.setFont('helvetica','normal');
+      setReportFont(doc,'normal');
       doc.text(`€${depreciation.toFixed(2)}`,W-M-30,y);
       y+=7;
     }
     
     y+=5;
     doc.text(rt('totalExpenses'),M,y);
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.text(`€${expenses.toFixed(2)}`,W-M-30,y);
     y+=10;
     
     // Net Profit
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(11);
     doc.setFillColor(77,168,118);
     doc.setTextColor(255,255,255);
     doc.rect(M,y,W-2*M,8,'F');
     doc.text(`${rt('netProfitLoss').toUpperCase()}: €${profit.toFixed(2)}`,M+3,y+6);
-    y+=16;
+    y+=18;
 
-    // رسم بياني مقارن: الإيراد مقابل المصاريف مقابل الربح الصافي
-    if(y>230){doc.addPage();y=M;}
-    y=drawBarChartPDF(doc,M,y,W-2*M,45,[
-      {label:rt('revenue'),value:revenue,color:[10,34,24]},
-      {label:rt('expenses'),value:expenses,color:[184,134,11]},
-      {label:rt('netProfit'),value:profit,color:profit>=0?[77,168,118]:[168,77,77]},
-    ]);
-
-    // صندوق التحليل: هامش الربح، ونسبة المصاريف من الإيراد - أرقام محسوبة فعليًا من التقرير نفسه
-    const margin=revenue>0?(profit/revenue*100):0;
-    const expenseRatio=revenue>0?(expenses/revenue*100):0;
-    const insightLines=[
-      revenue>0
-        ?`Your net profit margin this period is ${margin.toFixed(1)}% (expenses consume ${expenseRatio.toFixed(1)}% of revenue).`
-        :'No revenue recorded in this period — expenses shown above are not yet offset by income.',
-    ];
-    if(depreciation>0)insightLines.push(`Depreciation of €${depreciation.toFixed(2)} is included as a non-cash expense, reducing taxable profit without affecting cash flow.`);
-    if(profit<0)insightLines.push('This period shows a net loss — expenses exceeded revenue.');
-    // ⭐ مقارنة فعلية بالفترة السابقة المقابلة - نقطة التباين الحقيقية المطلوبة
-    const {start:priorStart}=getPriorPeriodRange();
-    if(priorStart){
-      const priorInv=getReportableInvoicesForPriorPeriod(cid);
-      const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
-      const priorRevenue=priorInv.reduce((s,i)=>s+(i.amount||0),0);
-      const priorExpenses=priorExp.reduce((s,e)=>s+(e.amount||0),0);
-      const priorProfit=priorRevenue-priorExpenses;
-      const revPct=pctChange(revenue,priorRevenue);
-      const profPct=pctChange(profit,priorProfit);
-      if(revPct!==null)insightLines.push(`Revenue ${revPct>=0?'increased':'decreased'} by ${formatPctChange(Math.abs(revPct))} vs. the previous period (€${priorRevenue.toFixed(2)} → €${revenue.toFixed(2)}).`);
-      if(profPct!==null)insightLines.push(`Net profit ${profPct>=0?'improved':'declined'} by ${formatPctChange(Math.abs(profPct))} compared to the previous period (€${priorProfit.toFixed(2)} → €${profit.toFixed(2)}).`);
+    // ⭐ شريط نسبي لتفصيل فئات المصاريف + رسم مقارنة + صندوق تحليل ديناميكي
+    const catItems=Object.entries(categories).map(([cat,amt])=>({label:cat,value:amt}));
+    if(depreciation>0)catItems.push({label:rt('depreciation'),value:depreciation});
+    if(catItems.length>1){
+      if(y>230){doc.addPage();y=M;}
+      y=pdfDrawProportionBar(doc,M,y,W-2*M,10,catItems,rt('spendingBreakdown'));
+      y+=6;
     }
+    if(y>210){doc.addPage();y=M;}
+    y=pdfDrawBarChart(doc,M,y,W-2*M,42,[
+      {label:rt('revenue'),value:revenue,color:[10,34,24]},
+      {label:rt('totalExpenses'),value:expenses,color:[184,134,11]},
+      {label:rt('netProfit'),value:profit,color:profit>=0?[77,168,118]:[168,77,77]},
+    ],rt('profitMargin'));
+
+    const {start:plPriorStart}=getPriorPeriodRange();
+    const plInsightLines=[];
+    if(plPriorStart){
+      const priorInv=getReportableInvoicesForPriorPeriod(cid);
+      const priorExpAll=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
+      const priorRevenue=priorInv.reduce((s,i)=>s+(i.amount||0),0);
+      const priorExpTotal=priorExpAll.reduce((s,e)=>s+(e.amount||0),0);
+      const priorProfit=priorRevenue-priorExpTotal;
+      const profitPct=pctChange(profit,priorProfit);
+      if(profitPct!==null)plInsightLines.push(`${rt('netProfit')} ${profitPct>=0?rt('increaseWord'):rt('decreaseWord')} ${formatPctChange(profitPct)} ${rt('vsLastPeriod')}`);
+    }
+    if(catItems.length>0){
+      const topCat=[...catItems].sort((a,b)=>b.value-a.value)[0];
+      const topCatShare=expenses>0?(topCat.value/expenses*100):0;
+      plInsightLines.push(`"${topCat.label}" — ${topCatShare.toFixed(1)}% ${rt('totalExpenses')}`);
+    }
+    if(plInsightLines.length===0)plInsightLines.push(revenue>0?`${rt('profitMargin')}: ${((profit/revenue)*100).toFixed(1)}%`:rt('financialOverview'));
     if(y>250){doc.addPage();y=M;}
-    y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('profitMarginTrend'),insightLines);
+    y=pdfInsightBox(doc,M,y,W-2*M,plInsightLines);
   }
   else if(type==='btw'){
     const inv=getReportableInvoices(cid);
@@ -11272,10 +11291,10 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(10,34,24);
     doc.rect(M,y,boxW,boxH,'F');
     doc.setTextColor(255,255,255);
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(9);
     doc.text(rt('vatOutput'),M+3,y+5);
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(11);
     doc.text(`€${btwOut.toFixed(2)}`,M+3,y+12);
     
@@ -11283,10 +11302,10 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(200,144,16);
     doc.rect(M+boxW+M,y,boxW,boxH,'F');
     doc.setTextColor(0,0,0);
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(9);
     doc.text(rt('vatInput'),M+boxW+M+3,y+5);
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(11);
     doc.text(`€${btwIn.toFixed(2)}`,M+boxW+M+3,y+12);
     
@@ -11295,10 +11314,10 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(...btwColor);
     doc.rect(M+2*boxW+2*M,y,boxW,boxH,'F');
     doc.setTextColor(255,255,255);
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(9);
     doc.text(`${rt('vatPayable')}/${rt('vatRecoverable')}`,M+2*boxW+2*M+3,y+5);
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(11);
     doc.text(`€${btwPayable.toFixed(2)}`,M+2*boxW+2*M+3,y+12);
     
@@ -11309,53 +11328,47 @@ function _exportReportPDF(type,cid){
     doc.line(M,y,W-M,y);
     y+=8;
     
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(10);
     doc.setTextColor(0,0,0);
     doc.text(`${rt('numberOfInvoices')}: ${inv.length}`,M,y);y+=7;
     doc.text(`${rt('numberOfExpenses')}: ${exp.length}`,M,y);
     y+=14;
 
-    // رسم بياني مقارن: مخرجات الضريبة مقابل مدخلاتها مقابل الصافي
-    if(y>230){doc.addPage();y=M;}
-    y=drawBarChartPDF(doc,M,y,W-2*M,45,[
+    // ⭐ رسم مقارنة مخرجات/مدخلات الضريبة + صندوق تحليل ديناميكي
+    if(y>210){doc.addPage();y=M;}
+    y=pdfDrawBarChart(doc,M,y,W-2*M,42,[
       {label:rt('vatOutput'),value:btwOut,color:[10,34,24]},
       {label:rt('vatInput'),value:btwIn,color:[200,144,16]},
-      {label:'Net',value:btwPayable,color:btwPayable>0?[184,134,11]:[77,168,118]},
-    ]);
+      {label:btwPayable>0?rt('vatPayable'):rt('vatRecoverable'),value:btwPayable,color:btwPayable>0?[184,134,11]:[77,168,118]},
+    ],rt('btwTitle'));
 
-    // صندوق التحليل: توضيح ما يعنيه الرقم الصافي فعليًا
-    const btwInsightLines=btwPayable>0
-      ?[`You owe €${btwPayable.toFixed(2)} in VAT this period because your VAT collected on sales (€${btwOut.toFixed(2)}) exceeds VAT paid on purchases (€${btwIn.toFixed(2)}).`,
-        'This amount is due to the Belastingdienst by the filing deadline for this period.']
-      :[`You are entitled to reclaim €${Math.abs(btwPayable).toFixed(2)} this period because VAT paid on purchases (€${btwIn.toFixed(2)}) exceeds VAT collected on sales (€${btwOut.toFixed(2)}).`,
-        'This typically happens with large equipment purchases or a slow sales period.'];
-    // ⭐ مقارنة فعلية بالفترة السابقة المقابلة
     const {start:btwPriorStart}=getPriorPeriodRange();
+    const btwInsightLines=[];
     if(btwPriorStart){
       const priorInv=getReportableInvoicesForPriorPeriod(cid);
       const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
       const priorBtwOut=priorInv.reduce((s,i)=>s+(parseFloat(i.btw)||0),0);
-      const priorBtwIn=priorExp.reduce((s,e)=>s+(parseFloat(e.btw)||0),0);
-      const priorBtwPayable=priorBtwOut-priorBtwIn;
+      const priorBtwPayable=priorBtwOut-priorExp.reduce((s,e)=>s+(parseFloat(e.btw)||0),0);
       const btwPct=pctChange(btwPayable,priorBtwPayable);
-      if(btwPct!==null)btwInsightLines.push(`Net VAT position ${btwPayable>=priorBtwPayable?'increased':'decreased'} by ${formatPctChange(Math.abs(btwPct))} vs. the previous period (€${priorBtwPayable.toFixed(2)} → €${btwPayable.toFixed(2)}).`);
+      if(btwPct!==null)btwInsightLines.push(`${rt('vatPayable')} ${btwPct>=0?rt('increaseWord'):rt('decreaseWord')} ${formatPctChange(btwPct)} ${rt('vsLastPeriod')}`);
     }
+    btwInsightLines.push(btwPayable>0?`€${btwPayable.toFixed(2)} ${rt('vatPayable')}`:`€${Math.abs(btwPayable).toFixed(2)} ${rt('vatRecoverable')}`);
     if(y>250){doc.addPage();y=M;}
-    y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('vatPosition'),btwInsightLines);
+    y=pdfInsightBox(doc,M,y,W-2*M,btwInsightLines);
   }
   else if(type==='debtors'){
     const invoices=S.invoices.filter(i=>i.cid===cid&&['Openstaand','Verzonden','Verlopen'].includes(i.status));
     
     if(invoices.length===0){
-      doc.setFont('helvetica','normal');
+      setReportFont(doc,'normal');
       doc.setFontSize(12);
       doc.text('No outstanding invoices',M,y);
     }else{
       // Table header
       doc.setFillColor(10,34,24);
       doc.setTextColor(255,255,255);
-      doc.setFont('helvetica','bold');
+      setReportFont(doc,'bold');
       doc.setFontSize(9);
       
       const colW=[30,30,40,40,30];
@@ -11371,7 +11384,7 @@ function _exportReportPDF(type,cid){
       doc.text('Days',M+colW[0]+colW[1]+colW[2]+colW[3]+2,y+5);
       y+=7;
       
-      doc.setFont('helvetica','normal');
+      setReportFont(doc,'normal');
       doc.setFontSize(9);
       doc.setTextColor(0,0,0);
       
@@ -11404,40 +11417,39 @@ function _exportReportPDF(type,cid){
       y+=8;
       
       const total=invoices.reduce((s,i)=>s+(i.amount||0),0);
-      doc.setFont('helvetica','bold');
+      setReportFont(doc,'bold');
       doc.setFontSize(11);
       doc.setTextColor(184,134,11);
-      doc.text(`TOTAL OUTSTANDING: €${total.toFixed(2)}`,M,y);
-      y+=14;
+      doc.text(`${rt('totalOutstanding').toUpperCase()}: €${total.toFixed(2)}`,M,y);
+      y+=16;
 
-      // رسم بياني لتوزيع الاستحقاق (حديث / متأخر) + صندوق تحليل يوضّح مدى خطورة التأخر الفعلي
+      // ⭐ رسم بياني لتوزيع المتأخر/المعلَّق + صندوق تحليل مخاطر التحصيل
       const overdueTotal=invoices.filter(i=>i.status==='Verlopen').reduce((s,i)=>s+(i.amount||0),0);
       const pendingTotal=total-overdueTotal;
-      if(y>215){doc.addPage();y=M;}
-      y=drawBarChartPDF(doc,M,y,W-2*M,45,[
-        {label:'Pending (not yet due)',value:pendingTotal,color:[77,168,118]},
+      if(y>210){doc.addPage();y=M;}
+      y=pdfDrawBarChart(doc,M,y,W-2*M,38,[
+        {label:'Pending',value:pendingTotal,color:[77,168,118]},
         {label:'Overdue',value:overdueTotal,color:[184,74,74]},
-      ]);
+      ],rt('totalOutstanding'));
       const overdueShare=total>0?(overdueTotal/total*100):0;
-      const debtorsInsightLines=[`${FMT(overdueTotal)} (${overdueShare.toFixed(1)}% of outstanding balance) is currently overdue.`];
-      if(overdueShare>30)debtorsInsightLines.push('A significant share of receivables is overdue — consider following up with these clients to improve cash flow.');
-      else if(overdueTotal===0)debtorsInsightLines.push('No overdue amounts — all outstanding invoices are still within their payment terms.');
+      const debtorsInsightLines=[`€${overdueTotal.toFixed(2)} (${overdueShare.toFixed(1)}%) — Overdue`];
+      if(overdueShare>30)debtorsInsightLines.push('Significant overdue share — consider following up with clients');
       if(y>250){doc.addPage();y=M;}
-      y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('collectionRisk'),debtorsInsightLines);
+      y=pdfInsightBox(doc,M,y,W-2*M,debtorsInsightLines);
     }
   }
   else if(type==='expenses'){
     const expenses=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     
     if(expenses.length===0){
-      doc.setFont('helvetica','normal');
+      setReportFont(doc,'normal');
       doc.setFontSize(12);
       doc.text('No expenses recorded',M,y);
     }else{
       // Table header
       doc.setFillColor(184,134,11);
       doc.setTextColor(255,255,255);
-      doc.setFont('helvetica','bold');
+      setReportFont(doc,'bold');
       doc.setFontSize(9);
       
       const colW=[25,30,35,40,35];
@@ -11453,7 +11465,7 @@ function _exportReportPDF(type,cid){
       doc.text('Amount',M+colW[0]+colW[1]+colW[2]+colW[3]+2,y+5);
       y+=7;
       
-      doc.setFont('helvetica','normal');
+      setReportFont(doc,'normal');
       doc.setFontSize(8);
       doc.setTextColor(0,0,0);
       
@@ -11479,35 +11491,32 @@ function _exportReportPDF(type,cid){
       y+=8;
       
       const total=expenses.reduce((s,e)=>s+(e.amount||0),0);
-      doc.setFont('helvetica','bold');
+      setReportFont(doc,'bold');
       doc.setFontSize(11);
       doc.setTextColor(184,134,11);
-      doc.text(`TOTAL EXPENSES: €${total.toFixed(2)}`,M,y);
-      y+=14;
+      doc.text(`${rt('totalExpenses').toUpperCase()}: €${total.toFixed(2)}`,M,y);
+      y+=16;
 
-      // رسم بياني لأعلى 5 فئات مصاريف + صندوق تحليل يوضّح مدى التركّز في فئة واحدة
+      // ⭐ رسم بياني لأعلى فئات المصاريف + صندوق تحليل ديناميكي
       const catTotals={};
       expenses.forEach(e=>{const k=e.cat||'Other';catTotals[k]=(catTotals[k]||0)+(e.amount||0);});
-      const topCats=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,5);
+      const topCats=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,4);
       if(topCats.length>1){
         if(y>215){doc.addPage();y=M;}
-        const catColors=[[10,34,24],[184,134,11],[77,168,118],[157,212,191],[168,77,77]];
-        y=drawBarChartPDF(doc,M,y,W-2*M,45,topCats.map(([cat,amt],i)=>({label:cat.length>10?cat.slice(0,9)+'…':cat,value:amt,color:catColors[i%catColors.length]})));
+        const catColors=[[10,34,24],[184,134,11],[77,168,118],[168,77,77]];
+        y=pdfDrawBarChart(doc,M,y,W-2*M,38,topCats.map(([cat,amt],i)=>({label:cat.length>10?cat.slice(0,9)+'…':cat,value:amt,color:catColors[i%catColors.length]})),rt('spendingBreakdown'));
 
         const [topCatName,topCatAmt]=topCats[0];
         const topCatShare=total>0?(topCatAmt/total*100):0;
-        const expInsightLines=[`"${topCatName}" is the largest expense category at ${FMT(topCatAmt)} (${topCatShare.toFixed(1)}% of total expenses).`];
-        if(topCatShare>50)expInsightLines.push('This category represents more than half of all spending this period — worth reviewing for cost-optimization opportunities.');
+        const expInsightLines=[`"${topCatName}" — ${topCatShare.toFixed(1)}% ${rt('totalExpenses')}`];
+        if(topCatShare>50)expInsightLines.push('Concentrated spending — review for cost-optimization');
         if(y>250){doc.addPage();y=M;}
-        y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('spendingBreakdown'),expInsightLines);
+        y=pdfInsightBox(doc,M,y,W-2*M,expInsightLines);
       }
     }
   }
   else if(type==='cashflow'){
-    // ✅ إصلاح: التدفق النقدي يجب أن يعكس متى تحرَّك النقد فعليًا (تاريخ
-    // التحصيل)، وليس تاريخ إصدار الفاتورة - فاتورة صدرت الشهر الماضي
-    // ودُفعت هذا الشهر يجب أن تظهر في تدفق هذا الشهر، وليس الماضي
-    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.paidDate||i.date));
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     const inflow=inv.reduce((s,i)=>s+(i.total||0),0);
     const outflow=exp.reduce((s,e)=>s+(e.amount||0)+(e.btw||0),0);
@@ -11519,10 +11528,10 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(77,168,118);
     doc.rect(M,y,boxW+M/2,boxH,'F');
     doc.setTextColor(255,255,255);
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(10);
     doc.text(rt('cashInflow'),M+3,y+6);
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(13);
     doc.text(`€${inflow.toFixed(2)}`,M+3,y+15);
     
@@ -11530,10 +11539,10 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(184,134,11);
     doc.rect(M+boxW+M,y,boxW,boxH,'F');
     doc.setTextColor(255,255,255);
-    doc.setFont('helvetica','normal');
+    setReportFont(doc,'normal');
     doc.setFontSize(10);
     doc.text(rt('cashOutflow'),M+boxW+M+3,y+6);
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(13);
     doc.text(`€${outflow.toFixed(2)}`,M+boxW+M+3,y+15);
     
@@ -11543,35 +11552,33 @@ function _exportReportPDF(type,cid){
     doc.setFillColor(10,34,24);
     doc.rect(M,y,W-2*M,12,'F');
     doc.setTextColor(255,255,255);
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.setFontSize(12);
     doc.text(`${rt('netCashFlow').toUpperCase()}: €${netflow.toFixed(2)}`,M+3,y+8);
     y+=22;
 
-    // رسم بياني مقارن + صندوق تحليل يشمل مقارنة فعلية بالفترة السابقة
-    if(y>225){doc.addPage();y=M;}
-    y=drawBarChartPDF(doc,M,y,W-2*M,45,[
+    // ⭐ رسم بياني مقارن + صندوق تحليل ديناميكي حسب الفترة المختارة فعليًا
+    if(y>210){doc.addPage();y=M;}
+    y=pdfDrawBarChart(doc,M,y,W-2*M,42,[
       {label:rt('cashInflow'),value:inflow,color:[77,168,118]},
       {label:rt('cashOutflow'),value:outflow,color:[184,134,11]},
       {label:rt('netCashFlow'),value:netflow,color:netflow>=0?[10,34,24]:[168,77,77]},
-    ]);
-    const cfInsightLines=[
-      netflow>=0
-        ?`Cash position improved by €${netflow.toFixed(2)} this period — more cash came in than went out.`
-        :`Cash position declined by €${Math.abs(netflow).toFixed(2)} this period — outflow exceeded inflow.`,
-    ];
+    ],rt('cashflowTitle'));
+
     const {start:cfPriorStart}=getPriorPeriodRange();
+    const cfInsightLines=[];
     if(cfPriorStart){
-      const priorInv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInPriorPeriod(i.paidDate||i.date));
-      const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
-      const priorInflow=priorInv.reduce((s,i)=>s+(i.total||0),0);
-      const priorOutflow=priorExp.reduce((s,e)=>s+(e.amount||0)+(e.btw||0),0);
+      const priorInvCf=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInPriorPeriod(i.date));
+      const priorExpCf=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
+      const priorInflow=priorInvCf.reduce((s,i)=>s+(i.total||0),0);
+      const priorOutflow=priorExpCf.reduce((s,e)=>s+(e.amount||0)+(e.btw||0),0);
       const priorNetflow=priorInflow-priorOutflow;
       const netPct=pctChange(netflow,priorNetflow);
-      if(netPct!==null)cfInsightLines.push(`Net cash flow ${netflow>=priorNetflow?'improved':'declined'} by ${formatPctChange(Math.abs(netPct))} vs. the previous period (€${priorNetflow.toFixed(2)} → €${netflow.toFixed(2)}).`);
+      if(netPct!==null)cfInsightLines.push(`${rt('netCashFlow')} ${netPct>=0?rt('increaseWord'):rt('decreaseWord')} ${formatPctChange(netPct)} ${rt('vsLastPeriod')}`);
     }
+    cfInsightLines.push(netflow>=0?`✓ €${netflow.toFixed(2)}`:`⚠ €${Math.abs(netflow).toFixed(2)}`);
     if(y>250){doc.addPage();y=M;}
-    y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('cashPosition'),cfInsightLines);
+    y=pdfInsightBox(doc,M,y,W-2*M,cfInsightLines);
   }
   else if(type==='emp_financial'){
     const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
@@ -11587,43 +11594,43 @@ function _exportReportPDF(type,cid){
 
     const boxH=20, boxW=(W-4*M)/3;
     doc.setFillColor(10,34,24);doc.rect(M,y,boxW,boxH,'F');
-    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.setTextColor(255,255,255);setReportFont(doc,'normal');doc.setFontSize(9);
     doc.text('Active Employees',M+3,y+6);
-    doc.setFont('helvetica','bold');doc.setFontSize(13);
+    setReportFont(doc,'bold');doc.setFontSize(13);
     doc.text(String(active.length),M+3,y+15);
 
     doc.setFillColor(184,134,11);doc.rect(M+boxW+M,y,boxW,boxH,'F');
-    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.setTextColor(255,255,255);setReportFont(doc,'normal');doc.setFontSize(9);
     doc.text('Monthly Fixed Payroll',M+boxW+M+3,y+6);
-    doc.setFont('helvetica','bold');doc.setFontSize(12);
+    setReportFont(doc,'bold');doc.setFontSize(12);
     doc.text(`€${fixedMonthlyTotal.toFixed(2)}`,M+boxW+M+3,y+15);
 
     doc.setFillColor(77,168,118);doc.rect(M+2*boxW+2*M,y,boxW,boxH,'F');
-    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.setTextColor(255,255,255);setReportFont(doc,'normal');doc.setFontSize(9);
     doc.text('Net Paid YTD',M+2*boxW+2*M+3,y+6);
-    doc.setFont('helvetica','bold');doc.setFontSize(12);
+    setReportFont(doc,'bold');doc.setFontSize(12);
     doc.text(`€${ytdNetPaid.toFixed(2)}`,M+2*boxW+2*M+3,y+15);
     y+=30;
 
-    doc.setFont('helvetica','bold');doc.setFontSize(11);
+    setReportFont(doc,'bold');doc.setFontSize(11);
     doc.setFillColor(10,34,24);doc.setTextColor(255,255,255);
     doc.rect(M,y,W-2*M,6,'F');doc.text(curYear+' SUMMARY',M+3,y+5);y+=10;
-    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+    setReportFont(doc,'normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
     doc.text('Gross paid this year (taxable)',M,y);doc.text(`€${ytdGrossPaid.toFixed(2)}`,W-M-35,y);y+=7;
     doc.text('Loonheffing withheld',M,y);doc.text(`-€${ytdLoonheffing.toFixed(2)}`,W-M-35,y);y+=7;
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.text('Net paid this year',M,y);doc.text(`€${ytdNetPaid.toFixed(2)}`,W-M-35,y);y+=12;
 
-    doc.setFont('helvetica','bold');doc.setFontSize(11);
+    setReportFont(doc,'bold');doc.setFontSize(11);
     doc.setFillColor(184,134,11);doc.setTextColor(255,255,255);
     doc.rect(M,y,W-2*M,6,'F');doc.text('OUTSTANDING LIABILITIES (ACCRUED, UNPAID)',M+3,y+5);y+=10;
-    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+    setReportFont(doc,'normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
     doc.text('Accrued vacation allowance',M,y);doc.text(`€${accruedVacationTotal.toFixed(2)}`,W-M-35,y);y+=7;
     doc.text('Accrued 13th month',M,y);doc.text(`€${accrued13thTotal.toFixed(2)}`,W-M-35,y);y+=12;
 
-    doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(10,34,24);
+    setReportFont(doc,'bold');doc.setFontSize(11);doc.setTextColor(10,34,24);
     doc.text('PER-EMPLOYEE BREAKDOWN ('+curYear+')',M,y);y+=8;
-    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
+    setReportFont(doc,'normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
     allEmployees.forEach(e=>{
       if(y>270){doc.addPage();y=M;}
       const empSlips=(S.payslips||[]).filter(p=>p.employeeId===e.id&&p.year===curYear);
@@ -11647,35 +11654,35 @@ function _exportReportPDF(type,cid){
 
     const boxH=20, boxW=(W-4*M)/3;
     doc.setFillColor(10,34,24);doc.rect(M,y,boxW,boxH,'F');
-    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.setTextColor(255,255,255);setReportFont(doc,'normal');doc.setFontSize(9);
     doc.text('Total Ever Hired',M+3,y+6);
-    doc.setFont('helvetica','bold');doc.setFontSize(13);
+    setReportFont(doc,'bold');doc.setFontSize(13);
     doc.text(String(allEmployees.length),M+3,y+15);
 
     doc.setFillColor(184,134,11);doc.rect(M+boxW+M,y,boxW,boxH,'F');
-    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.setTextColor(255,255,255);setReportFont(doc,'normal');doc.setFontSize(9);
     doc.text('Active',M+boxW+M+3,y+6);
-    doc.setFont('helvetica','bold');doc.setFontSize(13);
+    setReportFont(doc,'bold');doc.setFontSize(13);
     doc.text(String(active.length),M+boxW+M+3,y+15);
 
     doc.setFillColor(77,168,118);doc.rect(M+2*boxW+2*M,y,boxW,boxH,'F');
-    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.setTextColor(255,255,255);setReportFont(doc,'normal');doc.setFontSize(9);
     doc.text('Avg. Tenure',M+2*boxW+2*M+3,y+6);
-    doc.setFont('helvetica','bold');doc.setFontSize(13);
+    setReportFont(doc,'bold');doc.setFontSize(13);
     doc.text(avgTenureMonths.toFixed(1)+' mo',M+2*boxW+2*M+3,y+15);
     y+=30;
 
-    doc.setFont('helvetica','bold');doc.setFontSize(11);
+    setReportFont(doc,'bold');doc.setFontSize(11);
     doc.setFillColor(10,34,24);doc.setTextColor(255,255,255);
     doc.rect(M,y,W-2*M,6,'F');doc.text('CONTRACT TYPE',M+3,y+5);y+=10;
-    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+    setReportFont(doc,'normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
     doc.text('Permanent (Onbepaalde tijd)',M,y);doc.text(String(permanent),W-M-15,y);y+=7;
     doc.text('Fixed-term (Bepaalde tijd)',M,y);doc.text(String(fixedTerm),W-M-15,y);y+=12;
 
-    doc.setFont('helvetica','bold');doc.setFontSize(11);
+    setReportFont(doc,'bold');doc.setFontSize(11);
     doc.setFillColor(184,134,11);doc.setTextColor(255,255,255);
     doc.rect(M,y,W-2*M,6,'F');doc.text('SALARY TYPE',M+3,y+5);y+=10;
-    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+    setReportFont(doc,'normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
     doc.text('Fixed monthly',M,y);doc.text(String(salaryFixed),W-M-15,y);y+=7;
     doc.text('Variable hourly',M,y);doc.text(String(salaryHourly),W-M-15,y);y+=12;
 
@@ -11683,9 +11690,9 @@ function _exportReportPDF(type,cid){
     active.forEach(e=>{const title=e.jobTitle||'—';titleCounts[title]=(titleCounts[title]||0)+1;});
     const topTitles=Object.entries(titleCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
     if(topTitles.length>0){
-      doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(10,34,24);
+      setReportFont(doc,'bold');doc.setFontSize(11);doc.setTextColor(10,34,24);
       doc.text('JOB TITLES',M,y);y+=8;
-      doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
+      setReportFont(doc,'normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
       topTitles.forEach(([title,count])=>{
         if(y>270){doc.addPage();y=M;}
         doc.text(title,M,y);doc.text(String(count),W-M-15,y);y+=6;
@@ -11702,11 +11709,11 @@ function _exportReportPDF(type,cid){
     const taxableProfit=Math.max(0,rawProfit);
     const isCorporate=c?.type==='BV'||c?.type==='NV';
 
-    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
+    setReportFont(doc,'normal');doc.setFontSize(10);doc.setTextColor(0,0,0);
     doc.text(rt('revenue'),M,y);doc.text(`€${revenue.toFixed(2)}`,W-M-35,y);y+=7;
     doc.text(rt('operatingExpenses'),M,y);doc.text(`-€${operatingExpenses.toFixed(2)}`,W-M-35,y);y+=7;
     doc.text(rt('depreciation'),M,y);doc.text(`-€${depreciation.toFixed(2)}`,W-M-35,y);y+=7;
-    doc.setFont('helvetica','bold');
+    setReportFont(doc,'bold');
     doc.text(rt('taxableProfit'),M,y);doc.text(`€${rawProfit.toFixed(2)}`,W-M-35,y);y+=10;
 
     if(isCorporate){
@@ -11718,49 +11725,49 @@ function _exportReportPDF(type,cid){
       doc.text(`${rt('estimatedCorporateTax')}: €${estimatedTax.toFixed(2)}`,M+3,y+6);
       y+=16;
 
-      if(y>210){doc.addPage();y=M;}
-      y=drawBarChartPDF(doc,M,y,W-2*M,45,[
+      if(y>200){doc.addPage();y=M;}
+      y=pdfDrawBarChart(doc,M,y,W-2*M,38,[
         {label:rt('revenue'),value:revenue,color:[10,34,24]},
-        {label:rt('expenses')+'+Dep.',value:operatingExpenses+depreciation,color:[184,134,11]},
+        {label:rt('totalExpenses'),value:operatingExpenses+depreciation,color:[184,134,11]},
         {label:rt('taxableProfit'),value:taxableProfit,color:[77,168,118]},
-        {label:'Est. Tax',value:estimatedTax,color:[168,77,77]},
-      ]);
+        {label:'Tax',value:estimatedTax,color:[168,77,77]},
+      ],rt('taxLiabilityTitle'));
       const effectiveRate=taxableProfit>0?(estimatedTax/taxableProfit*100):0;
-      const vpbInsightLines=[`Effective corporate tax rate: ${effectiveRate.toFixed(1)}% of taxable profit.`];
-      if(bracket2Amt>0)vpbInsightLines.push(`Profit exceeds the €200,000 first bracket — €${bracket2Amt.toFixed(0)} is taxed at the higher 25.8% rate.`);
-      else vpbInsightLines.push('Entire taxable profit falls within the lower 19% bracket (up to €200,000).');
+      const vpbLines=[`Effective rate: ${effectiveRate.toFixed(1)}%`];
+      if(bracket2Amt>0)vpbLines.push(`€${bracket2Amt.toFixed(0)} taxed at 25.8% (above €200,000)`);
+      else vpbLines.push('All profit within 19% bracket');
       if(y>250){doc.addPage();y=M;}
-      y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('taxPosition'),vpbInsightLines);
+      y=pdfInsightBox(doc,M,y,W-2*M,vpbLines);
     }else{
       const ptInputs=(S.personalTaxInputs||{})[cid];
       if(ptInputs){
         const pt=calculatePersonalIncomeTax(rawProfit,ptInputs.meetsHourCriterion,ptInputs.isStarter,ptInputs.otherIncome,ptInputs.otherDeductions);
-        doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
+        setReportFont(doc,'normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
         if(pt.zelfstandigenaftrek>0){doc.text('- Zelfstandigenaftrek',M,y);doc.text(`-€${pt.zelfstandigenaftrek.toFixed(2)}`,W-M-35,y);y+=6;}
         if(pt.startersaftrek>0){doc.text('- Startersaftrek',M,y);doc.text(`-€${pt.startersaftrek.toFixed(2)}`,W-M-35,y);y+=6;}
         doc.text('- MKB-winstvrijstelling (12.7%)',M,y);doc.text(`-€${pt.mkbVrijstelling.toFixed(2)}`,W-M-35,y);y+=6;
         if(ptInputs.otherIncome>0){doc.text('+ Other Personal Income',M,y);doc.text(`€${ptInputs.otherIncome.toFixed(2)}`,W-M-35,y);y+=6;}
         if(ptInputs.otherDeductions>0){doc.text('- Other Personal Deductions',M,y);doc.text(`-€${ptInputs.otherDeductions.toFixed(2)}`,W-M-35,y);y+=6;}
-        doc.setFont('helvetica','bold');
+        setReportFont(doc,'bold');
         doc.text(rt('totalBox1Income'),M,y);doc.text(`€${pt.totalBox1Income.toFixed(2)}`,W-M-35,y);y+=8;
         doc.setFillColor(184,134,11);doc.setTextColor(255,255,255);
         doc.rect(M,y,W-2*M,8,'F');
         doc.text(`${rt('estimatedPersonalTax')}: €${pt.totalTax.toFixed(2)}`,M+3,y+6);
         y+=16;
 
-        if(y>210){doc.addPage();y=M;}
-        y=drawBarChartPDF(doc,M,y,W-2*M,45,[
-          {label:'Business Profit',value:rawProfit,color:[10,34,24]},
+        if(y>200){doc.addPage();y=M;}
+        y=pdfDrawBarChart(doc,M,y,W-2*M,38,[
+          {label:'Profit',value:rawProfit,color:[10,34,24]},
           {label:'Deductions',value:pt.ondernemersaftrek+pt.mkbVrijstelling,color:[184,134,11]},
           {label:rt('totalBox1Income'),value:pt.totalBox1Income,color:[77,168,118]},
-          {label:'Est. Tax',value:pt.totalTax,color:[168,77,77]},
-        ]);
+          {label:'Tax',value:pt.totalTax,color:[168,77,77]},
+        ],rt('taxLiabilityTitle'));
         const effRate=rawProfit>0?(pt.totalTax/rawProfit*100):0;
-        const ibInsightLines=[`Estimated overall tax burden: ${effRate.toFixed(1)}% of business profit.`,'This is an estimate before general tax credits (heffingskortingen) — consult a tax advisor for the exact final amount.'];
+        const ibLines=[`Overall tax burden: ${effRate.toFixed(1)}%`,'Estimate before general tax credits (heffingskortingen)'];
         if(y>250){doc.addPage();y=M;}
-        y=drawInsightBoxPDF(doc,M,y,W-2*M,rt('taxPosition'),ibInsightLines);
+        y=pdfInsightBox(doc,M,y,W-2*M,ibLines);
       }else{
-        doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
+        setReportFont(doc,'normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
         const note=doc.splitTextToSize('This legal form is subject to personal income tax, which depends on total personal income and deductions. Consult a tax advisor for the exact amount.',W-2*M);
         doc.text(note,M,y);
         y+=note.length*5+5;
@@ -11773,7 +11780,7 @@ function _exportReportPDF(type,cid){
   doc.line(M,y,W-M,y);
   y+=5;
   
-  doc.setFont('helvetica','normal');
+  setReportFont(doc,'normal');
   doc.setFontSize(8);
   doc.setTextColor(100,100,100);
   doc.text(`ANB Financial Services | www.anbfinancial.nl | ${rt('confidential')}`,M,y);
@@ -11812,37 +11819,22 @@ function _exportReportExcel(type,cid){
     const margin=(profit/revenue)*100||0;
     
     data=[
-      ['📊 '+rt('summaryTitle').toUpperCase()],
-      isANBSelfReport?['Report Type',rt('internalReport')]:[rt('client'),c?.name],
+      ['📊 FINANCIAL SUMMARY REPORT'],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       ['Report Date',FD(new Date())],
       ['Fiscal Year',new Date().getFullYear()],
       [],
       ['Key Metrics','Amount','Percentage'],
-      [rt('revenue'),revenue,'100%'],
-      [rt('totalExpenses'),expenses,((expenses/revenue)*100).toFixed(1)+'%'],
-      [rt('netProfit'),profit,margin.toFixed(1)+'%'],
+      ['Total Revenue',revenue,'100%'],
+      ['Total Expenses',expenses,((expenses/revenue)*100).toFixed(1)+'%'],
+      ['Net Profit',profit,margin.toFixed(1)+'%'],
       [],
       ['Additional Information','Value'],
-      [rt('numberOfInvoices'),inv.length],
-      [rt('numberOfExpenses'),exp.length],
+      ['Number of Invoices',inv.length],
+      ['Number of Expenses',exp.length],
       ['Average Invoice',revenue/inv.length||0],
-      ['Average Expense',expenses/exp.length||0],
-      [],
-      ['📈 Analysis Notes']
+      ['Average Expense',expenses/exp.length||0]
     ];
-    const {start:xlsSumPriorStart}=getPriorPeriodRange();
-    if(xlsSumPriorStart){
-      const priorInv=getReportableInvoicesForPriorPeriod(cid);
-      const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
-      const priorRevenue=priorInv.reduce((s,i)=>s+(i.amount||0),0);
-      const priorExpenses=priorExp.reduce((s,e)=>s+(e.amount||0),0);
-      const revPct=pctChange(revenue,priorRevenue);
-      const expPct=pctChange(expenses,priorExpenses);
-      if(revPct!==null)data.push([`Revenue ${revPct>=0?'grew':'shrank'} by ${formatPctChange(Math.abs(revPct))} vs. the previous period`]);
-      if(expPct!==null)data.push([`Expenses ${expPct>=0?'increased':'decreased'} by ${formatPctChange(Math.abs(expPct))} vs. the previous period`]);
-    }else{
-      data.push(['Select a specific period instead of "All Time" to see period-over-period trends']);
-    }
     sheets['Summary']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='pl'){
     const inv=getReportableInvoices(cid);
@@ -11853,13 +11845,13 @@ function _exportReportExcel(type,cid){
     const profit=revenue-expenses;
     
     data=[
-      ['📈 '+rt('plTitle').toUpperCase()],
-      isANBSelfReport?['Report Type',rt('internalReport')]:[rt('client'),c?.name],
+      ['📈 PROFIT & LOSS STATEMENT'],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       [],
-      [rt('revenue').toUpperCase(),'Amount'],
-      [rt('revenue'),revenue],
+      ['REVENUE','Amount'],
+      ['Invoiced Revenue',revenue],
       [],
-      [rt('expenses').toUpperCase(),'Amount']
+      ['EXPENSES','Amount']
     ];
     
     const categories={};
@@ -11871,25 +11863,12 @@ function _exportReportExcel(type,cid){
     Object.entries(categories).forEach(([cat,amt])=>{
       data.push([cat,amt]);
     });
-    if(depreciation>0)data.push([rt('depreciation'),depreciation]);
+    if(depreciation>0)data.push(['Depreciation',depreciation]);
     
     data.push([]);
-    data.push([rt('totalExpenses'),expenses]);
+    data.push(['Total Expenses',expenses]);
     data.push([]);
-    data.push([rt('netProfitLoss').toUpperCase(),profit]);
-    data.push([]);
-    data.push(['📈 Analysis Notes']);
-    const margin=revenue>0?(profit/revenue*100):null;
-    if(margin!==null)data.push([`Profit margin: ${margin.toFixed(1)}% of revenue`]);
-    const {start:xlsPlPriorStart}=getPriorPeriodRange();
-    if(xlsPlPriorStart){
-      const priorInv=getReportableInvoicesForPriorPeriod(cid);
-      const priorExp=S.expenses.filter(e=>e.cid===cid&&isDateInPriorPeriod(e.date));
-      const priorRevenue=priorInv.reduce((s,i)=>s+(i.amount||0),0);
-      const priorExpTotal=priorExp.reduce((s,e)=>s+(e.amount||0),0);
-      const profitPct=pctChange(profit,priorRevenue-priorExpTotal);
-      if(profitPct!==null)data.push([`Net profit ${profitPct>=0?'improved':'declined'} by ${formatPctChange(Math.abs(profitPct))} vs. the previous period`]);
-    }
+    data.push(['NET PROFIT/LOSS',profit]);
     
     sheets['P&L']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='btw'){
@@ -11900,26 +11879,21 @@ function _exportReportExcel(type,cid){
     const btwPayable=btwOut-btwIn;
     
     data=[
-      ['💰 '+rt('btwTitle').toUpperCase()],
-      isANBSelfReport?['Report Type',rt('internalReport')]:[rt('client'),c?.name],
+      ['💰 VAT/BTW TAX RETURN'],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       ['Report Period',new Date().getFullYear()],
       [],
       ['VAT Item','Amount','EUR'],
-      [rt('vatOutput'),btwOut,'€'+btwOut.toFixed(2)],
-      [rt('vatInput'),btwIn,'€'+btwIn.toFixed(2)],
+      ['VAT Output (Sales Tax)',btwOut,'€'+btwOut.toFixed(2)],
+      ['VAT Input (Purchase Tax)',btwIn,'€'+btwIn.toFixed(2)],
       [],
-      ['VAT Status',btwPayable>0?rt('vatPayable'):rt('vatRecoverable'),''],
-      [`${rt('vatPayable')}/${rt('vatRecoverable')}`,btwPayable,'€'+Math.abs(btwPayable).toFixed(2)],
+      ['VAT Status',btwPayable>0?'Payable':'Recoverable',''],
+      ['VAT Payable/Recoverable',btwPayable,'€'+Math.abs(btwPayable).toFixed(2)],
       [],
       ['Supporting Information',''],
-      [rt('numberOfInvoices'),inv.length],
-      [rt('numberOfExpenses'),exp.length],
-      [],
-      ['📈 Analysis Notes']
+      ['Invoices with VAT',inv.length],
+      ['Expenses with VAT',exp.length]
     ];
-    data.push([btwPayable>0?`€${btwPayable.toFixed(2)} is payable to the tax authority this period`:`€${Math.abs(btwPayable).toFixed(2)} is recoverable this period (input tax exceeds output tax)`]);
-    const vatBasisNote=getClientVatBasis(cid)==='cash'?'This client is on the cash basis (Kasstelsel) — VAT is calculated on collected payments, not invoice dates':'This client is on the invoice basis (Factuurstelsel) — VAT is calculated on invoice dates regardless of payment status';
-    data.push([vatBasisNote]);
     sheets['BTW']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='expenses'){
     const expenses=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
@@ -11947,15 +11921,6 @@ function _exportReportExcel(type,cid){
     Object.entries(categoryTotal).forEach(([cat,amt])=>{
       data.push([cat,amt]);
     });
-    data.push([]);
-    data.push(['📈 Analysis Notes']);
-    const topCatEntries=Object.entries(categoryTotal).sort((a,b)=>b[1]-a[1]);
-    if(topCatEntries.length>0){
-      const [topCatName,topCatAmt]=topCatEntries[0];
-      const topCatShare=total>0?(topCatAmt/total*100):0;
-      data.push([`"${topCatName}" is the largest expense category at €${topCatAmt.toFixed(2)} (${topCatShare.toFixed(1)}% of total)`]);
-      if(topCatShare>50)data.push(['This category represents more than half of all spending — worth reviewing for cost-optimization']);
-    }
     
     sheets['Expenses']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='debtors'){
@@ -11981,43 +11946,32 @@ function _exportReportExcel(type,cid){
     data.push(['Summary','Count','Total Amount']);
     data.push(['Current',invoices.filter(i=>i.status==='Openstaand').length,invoices.filter(i=>i.status==='Openstaand').reduce((s,i)=>s+(i.amount||0),0)]);
     data.push(['Overdue',invoices.filter(i=>i.status==='Verlopen').length,invoices.filter(i=>i.status==='Verlopen').reduce((s,i)=>s+(i.amount||0),0)]);
-    data.push([]);
-    data.push(['📈 Analysis Notes']);
-    const debtorsOverdueTotal=invoices.filter(i=>i.status==='Verlopen').reduce((s,i)=>s+(i.amount||0),0);
-    const debtorsOverdueShare=total>0?(debtorsOverdueTotal/total*100):0;
-    data.push([`€${debtorsOverdueTotal.toFixed(2)} (${debtorsOverdueShare.toFixed(1)}% of outstanding balance) is currently overdue`]);
-    if(debtorsOverdueShare>30)data.push(['A significant share of receivables is overdue — consider following up to improve cash flow']);
-    else if(debtorsOverdueTotal===0)data.push(['No overdue amounts — all outstanding invoices are within their payment terms']);
     
     sheets['Debtors']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='cashflow'){
-    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.paidDate||i.date));
+    const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     const inflow=inv.reduce((s,i)=>s+(i.total||0),0);
     const outflow=exp.reduce((s,e)=>s+(e.amount||0)+(e.btw||0),0);
     const netflow=inflow-outflow;
     
     data=[
-      ['💵 '+rt('cashflowTitle').toUpperCase()],
-      isANBSelfReport?['Report Type',rt('internalReport')]:[rt('client'),c?.name],
+      ['💵 CASH FLOW ANALYSIS'],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       ['Report Date',FD(new Date())],
       [],
       ['Cash Flow Item','Amount','EUR','Percentage'],
-      [rt('cashInflow'),inflow,'€'+inflow.toFixed(2),'100%'],
-      [rt('cashOutflow'),outflow,'€'+outflow.toFixed(2),((outflow/inflow)*100).toFixed(1)+'%'],
+      ['Cash Inflow (Paid Invoices)',inflow,'€'+inflow.toFixed(2),'100%'],
+      ['Cash Outflow (Expenses)',outflow,'€'+outflow.toFixed(2),((outflow/inflow)*100).toFixed(1)+'%'],
       [],
-      [rt('netCashFlow').toUpperCase(),netflow,'€'+netflow.toFixed(2),((netflow/inflow)*100).toFixed(1)+'%'],
+      ['NET CASH FLOW',netflow,'€'+netflow.toFixed(2),((netflow/inflow)*100).toFixed(1)+'%'],
       [],
       ['Metrics','Value'],
       ['Average Inflow per Transaction',inflow/inv.length||0],
       ['Average Outflow per Transaction',outflow/exp.length||0],
       ['Cash Position Strength',netflow>0?'Positive':'Negative'],
-      ['Liquidity Ratio',((inflow/outflow)*100).toFixed(1)+'%'],
-      [],
-      ['📈 Analysis Notes']
+      ['Liquidity Ratio',((inflow/outflow)*100).toFixed(1)+'%']
     ];
-    if(netflow>=0)data.push([`Positive net cash flow of €${netflow.toFixed(2)} — more cash came in than went out this period`]);
-    else data.push([`Negative net cash flow of €${Math.abs(netflow).toFixed(2)} — outflow exceeded inflow this period`]);
     
     sheets['Cash Flow']=XLSX.utils.aoa_to_sheet(data);
   }
@@ -12115,13 +12069,13 @@ function _exportReportExcel(type,cid){
     const isCorporate=c?.type==='BV'||c?.type==='NV';
 
     data=[
-      ['🏛️ '+rt('taxLiabilityTitle').toUpperCase()],
-      isANBSelfReport?['Report Type',rt('internalReport')]:[rt('client'),c?.name],
+      ['🏛️ TAX LIABILITY REPORT'],
+      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       [],
-      [rt('revenue'),revenue],
-      [rt('operatingExpenses'),-operatingExpenses],
-      [rt('depreciation'),-depreciation],
-      [rt('taxableProfit'),rawProfit],
+      ['Revenue',revenue],
+      ['Operating Expenses',-operatingExpenses],
+      ['Depreciation',-depreciation],
+      ['Taxable Profit',rawProfit],
       []
     ];
     if(isCorporate){
@@ -12132,11 +12086,6 @@ function _exportReportExcel(type,cid){
       data.push(['Corporate Tax (VPB) — 19% bracket',tax1]);
       if(bracket2Amt>0)data.push(['Corporate Tax (VPB) — 25.8% bracket',tax2]);
       data.push(['Estimated Total Corporate Tax',tax1+tax2]);
-      data.push([]);
-      data.push(['📈 Analysis Notes']);
-      const vpbEffRate=taxableProfit>0?((tax1+tax2)/taxableProfit*100):0;
-      data.push([`Effective corporate tax rate: ${vpbEffRate.toFixed(1)}% of taxable profit`]);
-      if(bracket2Amt>0)data.push([`Profit exceeds the €200,000 first bracket — €${bracket2Amt.toFixed(0)} is taxed at the higher 25.8% rate`]);
     }else{
       const ptInputs=(S.personalTaxInputs||{})[cid];
       if(ptInputs){
@@ -12146,13 +12095,8 @@ function _exportReportExcel(type,cid){
         data.push(['MKB-winstvrijstelling (12.7%)',-pt.mkbVrijstelling]);
         if(ptInputs.otherIncome>0)data.push(['Other Personal Income',ptInputs.otherIncome]);
         if(ptInputs.otherDeductions>0)data.push(['Other Personal Deductions',-ptInputs.otherDeductions]);
-        data.push([rt('totalBox1Income'),pt.totalBox1Income]);
-        data.push([rt('estimatedPersonalTax'),pt.totalTax]);
-        data.push([]);
-        data.push(['📈 Analysis Notes']);
-        const ibEffRate=rawProfit>0?(pt.totalTax/rawProfit*100):0;
-        data.push([`Estimated overall tax burden: ${ibEffRate.toFixed(1)}% of business profit`]);
-        data.push(['This is an estimate before general tax credits (heffingskortingen) — consult a tax advisor for the exact final amount']);
+        data.push(['Total Box 1 Income',pt.totalBox1Income]);
+        data.push(['Estimated Personal Income Tax',pt.totalTax]);
       }else{
         data.push(['Note','Subject to personal income tax - depends on total personal income and deductions. Consult a tax advisor for the exact amount.']);
       }
