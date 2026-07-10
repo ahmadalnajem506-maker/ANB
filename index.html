@@ -557,13 +557,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.46">
+<link rel="manifest" href="manifest.json?v=3.47">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.46').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.47').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -2322,7 +2322,7 @@ function renderGlobalSearchResults(results){
     <div style="padding:6px 14px 2px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">${sec.icon} ${sec.label}</div>
     ${sec.items.map(item=>{
       const r=sec.render(item);
-      return `<div onclick="${r.onclick}" style="display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;transition:background .12s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='transparent'">
+      return `<div onclick="${r.onclick}" style="display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;transition:background .12s" onmouseover="this.style.background='var(--gr1)'" onmouseout="this.style.background='transparent'">
         <div style="flex:1;min-width:0">
           <div style="font-size:12.5px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(String(r.title||''))}</div>
           ${r.sub?`<div style="font-size:10.5px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(String(r.sub))}</div>`:''}
@@ -2339,13 +2339,13 @@ function openGlobalSearch(){
     overlay.id='global-search-overlay';
     overlay.style.cssText='position:fixed;inset:0;background:rgba(10,34,24,.55);z-index:99998;display:flex;align-items:flex-start;justify-content:center;padding-top:12vh';
     overlay.onclick=(e)=>{if(e.target===overlay)closeGlobalSearch();};
-    overlay.innerHTML=`<div style="background:var(--bg1);border-radius:12px;width:min(480px,92vw);max-height:70vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);display:flex;flex-direction:column" onclick="event.stopPropagation()">
-      <div style="padding:12px 14px;border-bottom:1px solid var(--gr2);display:flex;align-items:center;gap:8px">
+    overlay.innerHTML=`<div style="background:var(--white);border-radius:12px;width:min(480px,92vw);max-height:70vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);display:flex;flex-direction:column;border:1px solid var(--gr2)" onclick="event.stopPropagation()">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--gr2);display:flex;align-items:center;gap:8px;background:var(--white)">
         <span style="font-size:15px">🔍</span>
         <input type="text" id="global-search-input" placeholder="${t('search_placeholder')||'Search clients, invoices, expenses, documents...'}" style="flex:1;border:none;outline:none;background:transparent;font-size:14px;color:var(--t1)"/>
         <span style="font-size:10px;color:var(--t3);border:1px solid var(--gr2);border-radius:4px;padding:2px 6px">ESC</span>
       </div>
-      <div id="global-search-results" style="overflow-y:auto;flex:1;padding:6px 0"></div>
+      <div id="global-search-results" style="overflow-y:auto;flex:1;padding:6px 0;background:var(--white)"></div>
     </div>`;
     document.body.appendChild(overlay);
     const input=document.getElementById('global-search-input');
