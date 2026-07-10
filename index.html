@@ -397,7 +397,7 @@ tr:hover td{background:var(--gr1)}
 .mh{padding:14px 18px;border-bottom:1px solid var(--gr1);display:flex;align-items:center;justify-content:space-between}
 .mt{font-family:var(--fd);font-size:18px;font-weight:600;color:var(--g1)}
 .mb{padding:16px 18px}
-.mf{padding:10px 18px;border-top:1px solid var(--gr1);display:flex;gap:8px;justify-content:flex-end;background:var(--gr1)}
+.mf{padding:10px 18px;border-top:1px solid var(--gr1);display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;background:var(--gr1);position:sticky;bottom:0;z-index:2}
 .fg{margin-bottom:10px}
 .fg label{display:block;font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px;
   text-transform:uppercase;letter-spacing:.5px}
@@ -557,13 +557,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.48">
+<link rel="manifest" href="manifest.json?v=3.49">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.48').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.49').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -8665,6 +8665,16 @@ function importBackup(ev){
 
 
 function showModal(title,body,onSave,saveLabel='Save'){
+  // ⚠️ إصلاح خلل حقيقي: بعض الشاشات (كمراجعة اتفاقية العميل) تُخصِّص تذييل
+  // النافذة بأزرار إضافية (توقيع/رفض/طلب تعديلات) عبر التلاعب المباشر بـ
+  // innerHTML الخاص بـmo-f، مما كان يحذف عنصر mo-s نفسه - فتفشل أي نافذة
+  // لاحقة تُستدعى عبر showModal() بخطأ صامت (null reference) لأنها تفترض
+  // بقاء ذلك العنصر. الحل: نُعيد ضبط التذييل لحالته الافتراضية دائمًا هنا،
+  // في نقطة الدخول المركزية الوحيدة، قبل أي تخصيص لاحق قد يحدث بعدها.
+  document.getElementById('mo-f').innerHTML=`
+    <button class="btn btn-xs" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-p btn-xs" id="mo-s" onclick="modalSave()">Save</button>
+  `;
   document.getElementById('mo-t').textContent=title;
   document.getElementById('mo-b').innerHTML=body;
   document.getElementById('mo').style.display='flex';
@@ -13562,28 +13572,36 @@ function reviewAgreementDoc(docId){
 
   const statusLabels={pending_review:'Pending Review',client_signed:'Signed — Awaiting Approval',changes_requested:'Changes Requested',active:'✓ Signed & Active',client_rejected:'Rejected by Client',rejected:'Rejected'};
 
-  let actionButtons='';
-  if(agreement.status==='pending_review'&&!isAdmin()){
-    actionButtons=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px">
-      <button class="btn btn-success btn-xs" onclick="signAgreementInApp('${agreement.id}')">✓ Sign</button>
-      <button class="btn btn-p btn-xs" onclick="requestChangesInApp('${agreement.id}')">✎ Request Changes</button>
-      <button class="btn btn-danger btn-xs" onclick="rejectAgreementInApp('${agreement.id}')">✕ Reject</button>
-    </div>`;
-  }else if(isAdmin()&&agreement.status==='client_signed'){
-    actionButtons=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px">
-      <button class="btn btn-success btn-xs" onclick="approveAgreementInApp('${agreement.id}')">✓ Approve & Finalize</button>
-      <button class="btn btn-danger btn-xs" onclick="rejectAgreementInApp('${agreement.id}')">✕ Reject</button>
-    </div>`;
-  }
-
   showModal('📄 '+(doc.name||'Service Agreement'),`
-    <div style="max-height:420px;overflow-y:auto">${contractHTML}</div>
+    <div style="max-height:340px;overflow-y:auto">${contractHTML}</div>
     <div style="margin-top:14px;padding:10px;background:var(--bg1);border-radius:6px;font-size:11px">
       <strong>Status:</strong> ${statusLabels[agreement.status]||agreement.status}
       ${agreement.clientNotes?'<br/><strong>Requested changes:</strong> '+escapeHtml(agreement.clientNotes):''}
     </div>
-    ${actionButtons}
   `,closeModal,'Close');
+
+  // ⚠️ إصلاح خلل حقيقي: كانت أزرار "توقيع/طلب تعديلات/رفض" مُضمَّنة داخل
+  // محتوى النافذة القابل للتمرير (بعد نص العقد الكامل، وهو طويل عادة) - إن
+  // كان العقد طويلًا بما يكفي مع ارتفاع شاشة لابتوب متوسط، تصبح هذه الأزرار
+  // غير مرئية أسفل المحتوى دون تمرير داخل النافذة، بينما زر "Cancel" وحده
+  // يبقى ظاهرًا دائمًا في التذييل الثابت - فيبدو للمستخدم أنه لا خيار سوى
+  // الإلغاء. الحل: نضع الأزرار الفعلية في التذييل الثابت نفسه (لا تحتاج تمريرًا
+  // إطلاقًا)، بدل تضمينها داخل المحتوى القابل للتمرير.
+  const footer=document.getElementById('mo-f');
+  if(agreement.status==='pending_review'&&!isAdmin()){
+    footer.innerHTML=`
+      <button class="btn btn-xs" onclick="closeModal()">${t('close')||'Close'}</button>
+      <button class="btn btn-danger btn-xs" onclick="rejectAgreementInApp('${agreement.id}')">✕ Reject</button>
+      <button class="btn btn-p btn-xs" onclick="requestChangesInApp('${agreement.id}')">✎ Request Changes</button>
+      <button class="btn btn-success btn-xs" onclick="signAgreementInApp('${agreement.id}')">✓ Sign</button>
+    `;
+  }else if(isAdmin()&&agreement.status==='client_signed'){
+    footer.innerHTML=`
+      <button class="btn btn-xs" onclick="closeModal()">${t('close')||'Close'}</button>
+      <button class="btn btn-danger btn-xs" onclick="rejectAgreementInApp('${agreement.id}')">✕ Reject</button>
+      <button class="btn btn-success btn-xs" onclick="approveAgreementInApp('${agreement.id}')">✓ Approve & Finalize</button>
+    `;
+  }
 }
 
 function signAgreementInApp(agreementId){
