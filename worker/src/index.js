@@ -94,6 +94,52 @@ function listFor(payload, role) {
   return role === 'admin' ? (payload.admins || []) : (payload.clients || []);
 }
 
+/* ═══════════════════════ ⚠️ فلترة المزامنة حسب الدور (إصلاح ثغرة خصوصية حقيقية) ═══════════════════════
+ * اكتُشف أن GET /sync كانت تُرجع قاعدة البيانات كاملة لأي مستخدم مُصادَق عليه
+ * - حتى العملاء العاديين - بما يشمل بيانات كل العملاء الآخرين المالية
+ * (فواتير، مصاريف، رسائل...) بل وكلمات المرور المشفَّرة وأسرار TOTP لكل
+ * حساب! الإصلاح: تجريد الحقول الحسّاسة دائمًا من كل استجابة بغضّ النظر عن
+ * الدور (فالتحقق يتم في الخادم فقط أصلًا)، وفلترة نطاق البيانات التجارية
+ * ليرى كل عميل بيانات حسابه فقط عند الدور 'client'.
+ */
+const SENSITIVE_ACCOUNT_FIELDS = ['passwordHash', 'passwordSalt', 'totpSecret'];
+// المصفوفات المرتبطة بعميل واحد عبر حقل cid (غير clients/admins، اللذين
+// يُصفَّيان بقاعدة مختلفة تعتمد على id مباشرة بدل cid)
+const CLIENT_SCOPED_ARRAY_KEYS = ['invoices', 'expenses', 'hours', 'docs', 'messages', 'journal', 'bankTx', 'recurring', 'yearClosings', 'contracts', 'assets', 'serviceAgreements', 'importBatches', 'employees', 'contacts'];
+
+function stripSensitiveFields(account) {
+  if (!account || typeof account !== 'object') return account;
+  const clean = { ...account };
+  SENSITIVE_ACCOUNT_FIELDS.forEach((f) => { delete clean[f]; });
+  return clean;
+}
+
+function filterPayloadForSync(payload, role, aid) {
+  const filtered = { ...payload };
+  // تجريد الحقول الحسّاسة دائمًا - لا يحتاجها المتصفح إطلاقًا بعد إعادة
+  // تصميم تسجيل الدخول/2FA ليتم بالكامل في الخادم
+  filtered.clients = (payload.clients || []).map(stripSensitiveFields);
+  filtered.admins = (payload.admins || []).map(stripSensitiveFields);
+
+  if (role === 'admin') return filtered; // الأدمن يرى كل البيانات التجارية، فقط بلا الحقول الحسّاسة
+
+  // دور العميل: يرى سجله الخاص فقط من clients، ولا يرى admins إطلاقًا
+  filtered.clients = filtered.clients.filter((c) => c && c.id === aid);
+  filtered.admins = [];
+  CLIENT_SCOPED_ARRAY_KEYS.forEach((key) => {
+    filtered[key] = (payload[key] || []).filter((item) => item && item.cid === aid);
+  });
+  return filtered;
+}
+
+// دمج آمن عند الكتابة: يستبدل فقط سجلات هذا العميل تحديدًا ضمن مصفوفة
+// مرتبطة بـcid، ويُبقي كل سجلات بقية العملاء كما هي في قاعدة البيانات تمامًا
+function mergeClientScopedArray(existingArray, incomingArray, aid) {
+  const others = (existingArray || []).filter((item) => !item || item.cid !== aid);
+  const ownIncoming = (Array.isArray(incomingArray) ? incomingArray : []).filter((item) => item && item.cid === aid);
+  return [...others, ...ownIncoming];
+}
+
 /* ═══════════════════════ /resolve-account ═══════════════════════ */
 // لا يُعيد أي شيء حساس - فقط ما تحتاجه شاشة "الخطوة ٢" لعرض اسم الحساب
 
@@ -436,16 +482,69 @@ async function handleSyncGet(request, env, cors) {
   if (!auth.ok) return json({ error: auth.error }, 401, cors);
   const cloud = await fetchCloudPayload(env);
   if (!cloud) return json({ error: 'No data yet' }, 404, cors);
-  return json({ payload: cloud.payload, updated_at: new Date(cloud.updated_at).toISOString() }, 200, cors);
+  const filteredPayload = filterPayloadForSync(cloud.payload, auth.payload.at, auth.payload.aid);
+  return json({ payload: filteredPayload, updated_at: new Date(cloud.updated_at).toISOString() }, 200, cors);
 }
 async function handleSyncPost(request, env, cors) {
   const auth = await requireValidToken(request, env);
   if (!auth.ok) return json({ error: auth.error }, 401, cors);
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
-  const { payload } = body || {};
-  if (!payload || typeof payload !== 'object') return json({ error: 'payload object is required' }, 400, cors);
-  const savedAt = await writeCloudPayload(env, payload);
+  const { payload: incomingPayload } = body || {};
+  if (!incomingPayload || typeof incomingPayload !== 'object') return json({ error: 'payload object is required' }, 400, cors);
+
+  const cloud = await fetchCloudPayload(env);
+  const existingPayload = (cloud && cloud.payload) || {};
+  const merged = { ...existingPayload };
+  const role = auth.payload.at;
+  const aid = auth.payload.aid;
+
+  // دالة مشتركة: تدمج حساب واردًا مع الحساب المُخزَّن فعليًا، لكن تُبقي دائمًا
+  // الحقول الحسّاسة (كلمة المرور المشفَّرة) كما هي في قاعدة البيانات - لا
+  // تتغيَّر إلا عبر /set-password أو /admin/generate-temp-password تحديدًا.
+  // نسمح فقط بتحديث totpSecret/totpEnabled (تفعيل 2FA الذاتي يعتمد على هذا
+  // المسار حاليًا، وهو غير خطير هنا لأن نطاق من يمكنه إرسال تغيير لحساب
+  // مُعيَّن مقيَّد أصلًا بالتحقق أدناه - عميل لا يستطيع التأثير إلا على حسابه هو).
+  function mergeAccount(existingAccount, incomingAccount) {
+    if (!existingAccount) return incomingAccount; // حساب جديد تمامًا (مثلًا عميل جديد أضافه الأدمن)
+    return {
+      ...incomingAccount,
+      passwordHash: existingAccount.passwordHash,
+      passwordSalt: existingAccount.passwordSalt,
+    };
+  }
+
+  if (role === 'admin') {
+    // الأدمن موثوق بنطاق أوسع (يدير كل العملاء)، لكن الحقول الحسّاسة تبقى محميَّة دائمًا
+    Object.keys(incomingPayload).forEach((key) => {
+      if (key === 'clients' || key === 'admins') {
+        const existingList = existingPayload[key] || [];
+        merged[key] = (incomingPayload[key] || []).map((incomingAccount) => {
+          const existingAccount = existingList.find((a) => a && a.id === incomingAccount.id);
+          return mergeAccount(existingAccount, incomingAccount);
+        });
+      } else {
+        merged[key] = incomingPayload[key];
+      }
+    });
+  } else {
+    // دور العميل: يؤثر فقط على نطاقه الخاص (aid) - لا قدرة إطلاقًا على
+    // التأثير على أي عميل آخر أو حسابات الأدمن عبر هذه النقطة
+    const existingClients = existingPayload.clients || [];
+    const incomingOwnClient = (incomingPayload.clients || []).find((c) => c && c.id === aid);
+    if (incomingOwnClient) {
+      const existingOwnClient = existingClients.find((c) => c && c.id === aid);
+      const mergedOwnClient = mergeAccount(existingOwnClient, incomingOwnClient);
+      merged.clients = existingClients.map((c) => (c && c.id === aid ? mergedOwnClient : c));
+    }
+    // admins تبقى كما هي في قاعدة البيانات تمامًا - العميل لا يملك أي تأثير عليها
+    merged.admins = existingPayload.admins || [];
+    CLIENT_SCOPED_ARRAY_KEYS.forEach((key) => {
+      merged[key] = mergeClientScopedArray(existingPayload[key], incomingPayload[key], aid);
+    });
+  }
+
+  const savedAt = await writeCloudPayload(env, merged);
   return json({ ok: true, updated_at: new Date(savedAt).toISOString() }, 200, cors);
 }
 
@@ -464,6 +563,20 @@ async function handleUpload(request, env, cors) {
   return json({ key, url: `${workerOrigin}/file/${key}` }, 200, cors);
 }
 async function handleGetFile(request, env, cors, url) {
+  // ⚠️ إصلاح ثغرة حقيقية: كانت هذه النقطة عامة بلا أي تحقق من الهوية إطلاقًا -
+  // أي شخص يعرف/يخمّن رابط ملف (عقد، مستند) كان يستطيع تنزيله مباشرة بلا
+  // تسجيل دخول على الإطلاق. الآن تتطلب توكن دخول صالحًا كحدٍّ أدنى إلزامي.
+  // نقبل التوكن عبر رأس Authorization (المفضَّل) أو معامل رابط ?token= بديلًا
+  // - ضروري لأن وسم <img src> لا يستطيع إرسال رؤوس HTTP مخصَّصة إطلاقًا.
+  let auth = await requireValidToken(request, env);
+  if (!auth.ok) {
+    const queryToken = url.searchParams.get('token');
+    if (queryToken) {
+      const fakeRequest = new Request(request.url, { headers: { Authorization: `Bearer ${queryToken}` } });
+      auth = await requireValidToken(fakeRequest, env);
+    }
+  }
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
   const key = decodeURIComponent(url.pathname.replace('/file/', ''));
   if (!key) return json({ error: 'Missing key' }, 400, cors);
   const object = await env.ANB_FILES.get(key);
@@ -471,7 +584,7 @@ async function handleGetFile(request, env, cors, url) {
   const headers = new Headers(cors);
   object.writeHttpMetadata(headers);
   headers.set('etag', object.httpEtag);
-  headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  headers.set('Cache-Control', 'private, max-age=31536000, immutable');
   return new Response(object.body, { headers });
 }
 async function handleDeleteFile(request, env, cors, url) {
