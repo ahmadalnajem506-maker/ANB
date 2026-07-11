@@ -557,13 +557,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.63">
+<link rel="manifest" href="manifest.json?v=3.65">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.63').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.65').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -1991,7 +1991,7 @@ const CLOUD_ROW_ID='anb-main';
 // يعني: أي جلسة/جهاز مختلف (أو حتى نفس الجهاز بعد تحديث Service Worker
 // يُعيد التحميل من السحابة) يفقد كل الاتفاقيات الموقَّعة تمامًا - وهذا بالضبط
 // سبب ظهور "Agreement not found" عند محاولة مراجعة عقد مُوقَّع سابقًا.
-const CLOUD_SYNC_ARRAY_KEYS=['clients','admins','invoices','expenses','hours','docs','messages','journal','bankTx','recurring','yearClosings','contracts','assets','serviceAgreements','importBatches'];
+const CLOUD_SYNC_ARRAY_KEYS=['clients','admins','invoices','expenses','hours','docs','messages','journal','bankTx','recurring','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','contacts'];
 let cloudSyncTimer=null;
 let cloudSyncStatus='idle'; // idle | syncing | synced | error | offline
 let cloudSyncInFlight=false;
@@ -2028,11 +2028,28 @@ function mergeArraysById(localArr,cloudArr){
   return Array.from(map.values());
 }
 
+// المصفوفات المرتبطة بعميل واحد عبر cid - تُطابق تمامًا القائمة نفسها في
+// الـWorker (CLIENT_SCOPED_ARRAY_KEYS) للفلترة الآمنة على مستوى العميل
+const CLIENT_SCOPED_ARRAY_KEYS=['invoices','expenses','hours','docs','messages','journal','bankTx','recurring','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','contacts'];
+// ⚠️ تنقية دفاعية إضافية: حتى بعد إصلاح الخادم ليُرسل فقط بيانات هذا العميل،
+// قد يحتفظ المتصفح المحلي ببيانات عملاء آخرين مخبَّأة من قبل هذا الإصلاح
+// (بما أن الدمج المحلي اتحادي وليس استبدالًا). نُنقِّي الحالة المحلية هنا
+// قبل أي دمج، لضمان عدم بقاء أي تسرّب سابق محليًا مهما حدث خادميًا.
+function pruneLocalStateToOwnScope(){
+  if(S.role!=='client'||!S.currentClient)return;
+  const aid=S.currentClient;
+  S.clients=(S.clients||[]).filter(c=>c&&c.id===aid);
+  S.admins=[];
+  CLIENT_SCOPED_ARRAY_KEYS.forEach(k=>{
+    S[k]=(S[k]||[]).filter(item=>item&&item.cid===aid);
+  });
+}
 async function syncNow(){
   if(cloudSyncInFlight)return; // avoid overlapping syncs
   cloudSyncInFlight=true;
   cloudSyncStatus='syncing';updateSyncBadge();
   lastSyncError=null;
+  pruneLocalStateToOwnScope();
   const cloud=await cloudPull();
   if(cloud===null){
     cloudSyncStatus=(lastSyncError==='offline')?'offline':'error';
@@ -2045,6 +2062,7 @@ async function syncNow(){
   CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{merged[k]=mergeArraysById(S[k],cloudPayload[k]);});
   const hadChanges=CLOUD_SYNC_ARRAY_KEYS.some(k=>merged[k].length!==S[k].length);
   CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{S[k]=merged[k];});
+  pruneLocalStateToOwnScope();
   if(!S.settings)S.settings=cloudPayload.settings||{};
   try{
     const token=getValidR2Token();
@@ -6191,7 +6209,7 @@ function renderDocsList(cid,searchTerm,sortValue){
         </div>`;
       }
       return `<div class="doc-item">
-      <div class="doc-icon">${d.type&&d.type.startsWith('image')?`<img src="${d.url||d.data}" style="width:32px;height:32px;object-fit:cover;border-radius:6px"/>`:'<span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📄</span>'}</div>
+      <div class="doc-icon">${d.type&&d.type.startsWith('image')?`<img src="${authenticatedFileUrl(d.url)||d.data}" style="width:32px;height:32px;object-fit:cover;border-radius:6px"/>`:'<span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📄</span>'}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.name)}</div>
         <div style="font-size:11px;color:var(--t3)">${FD(d.date)} · ${d.size} · from ${d.from==='anb'?'ANB':'you'}</div>
@@ -6240,6 +6258,16 @@ function loadR2TokenFromStorage(){
       localStorage.removeItem(R2_TOKEN_STORAGE_KEY);
     }
   }catch(e){}
+}
+// ⚠️ يُرفق التوكن الحالي الصالح كمعامل رابط لأي رابط ملف من الـWorker - ضروري
+// لأن وسوم <img>/<a> لا تستطيع إرسال رأس Authorization، وقد أصبحت نقطة تنزيل
+// الملفات تتطلب توثيقًا إلزاميًا الآن (إصلاح ثغرة كانت تسمح بالوصول العام)
+function authenticatedFileUrl(url){
+  if(!url||!url.includes('/file/'))return url; // ليس رابط ملف من الـWorker (مثلًا data URI قديم)
+  const token=getValidR2Token();
+  if(!token)return url;
+  const separator=url.includes('?')?'&':'?';
+  return url+separator+'token='+encodeURIComponent(token);
 }
 function getValidR2Token(){
   if(r2Token&&r2Token.token&&r2Token.exp&&Date.now()<r2Token.exp-10000)return r2Token.token;
@@ -6718,7 +6746,7 @@ async function handleDocUpload(ev,cid){
 
 function viewDoc(id){
   const d=S.docs.find(d=>d.id===id);
-  const src=d&&(d.url||d.data);
+  const src=d&&(authenticatedFileUrl(d.url)||d.data);
   if(!d||!src){toast('File data not available','ti-alert-circle');return;}
   if(d.type&&d.type.startsWith('image')){
     showModal(d.name,`<div style="text-align:center"><img src="${src}" style="max-width:100%;border-radius:8px"/></div>`,
