@@ -557,13 +557,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.67">
+<link rel="manifest" href="manifest.json?v=3.68">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.67').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.68').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -3259,7 +3259,7 @@ function renderTopbar(){
     tabs.innerHTML='';
     // العميل لا يرى أزرار في dashboard - فقط في التبويبات الأخرى
     const cacts={
-      invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_request')}</button>`,
+      invoices:`<button class="btn btn-p btn-xs" onclick="openNewInvoice()">${t('new_request')}</button> <button class="btn btn-xs" onclick="openDailyRevenueEntry()" title="Quick entry for a single day's total takings">📊 Daily Total</button>`,
       expenses:`<button class="btn btn-p btn-xs" onclick="openNewExpense()">${t('add_expense')}</button>`,
       hours:`<button class="btn btn-p btn-xs" onclick="openLogHours()">${t('log_hours')}</button>`,
       // dashboard: لا أزرار
