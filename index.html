@@ -557,13 +557,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.72">
+<link rel="manifest" href="manifest.json?v=3.73">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.72').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.73').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -5752,7 +5752,10 @@ function getUpcomingReminders(){
   if(dayOfYear>60&&actualHours<expectedPace*0.7){ // تأخُّر واضح (أقل من 70% من الوتيرة المتوقَّعة) بعد أول شهرين لإعطاء هامش طبيعي
     reminders.push({
       type:'urencriterium_pace',icon:'🕐',
-      title:(t('reminder_hours_title')||'Behind on urencriterium pace'),
+      // ⚠️ إضافة إشارة صريحة "ANB" في العنوان - هذا التنبيه خاص حصريًا بساعات
+      // ANB نفسها (حساب أحمد الشخصي)، وليس بأي عميل، فيجب أن يكون هذا واضحًا
+      // فورًا من نص التنبيه نفسه، لا فقط من الضغط عليه ومعرفة الوجهة
+      title:'ANB — '+(t('reminder_hours_title')||'Behind on urencriterium pace'),
       detail:actualHours.toFixed(0)+' / '+expectedPace.toFixed(0)+' '+(t('expected_hours_by_now')||'hours expected by now')+' (1,225 '+(t('target_for_year')||'target for the year')+')',
       urgency:'medium',
       onclickAttr:`selClient('${ANB_SELF_ID}');renderApp()`,
