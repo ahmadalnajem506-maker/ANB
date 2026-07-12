@@ -557,13 +557,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.71">
+<link rel="manifest" href="manifest.json?v=3.72">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.71').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.72').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -4656,8 +4656,6 @@ function filterClients(term){
 // إن لم تكن هناك أي تنبيهات فعلية.
 // ══════════════════════════════════════════════════════════════════
 function renderQuickDashboard(el,quickActions,cards,styleOpts){
-  const attention=cards.filter(c=>c.alertText);
-  const calm=cards.filter(c=>!c.alertText);
   let html='';
 
   if(quickActions&&quickActions.length){
@@ -4670,6 +4668,26 @@ function renderQuickDashboard(el,quickActions,cards,styleOpts){
     });
     html+='</div>';
   }
+
+  // ⭐ الوضع المميَّز (styled): ⚠️ إصلاح خلل حقيقي - كان تقسيم الكروت إلى
+  // "تنبيهات" و"عادية" في قسمين منفصلين يعني أن أي كرت يكتسب تنبيهًا (مثل
+  // فاتورة متأخرة) "يقفز" فجأة لأعلى القائمة ويختفي من مكانه الثابت في
+  // الشبكة، فيبدو الأمر وكأن القائمة تعطَّلت أو نقص منها عنصر. الحل: عرض كل
+  // الكروت معًا في شبكة واحدة موحَّدة بترتيبها الثابت دائمًا، مع إظهار مؤشر
+  // التنبيه (نص + نقطة) داخل الكرت نفسه في مكانه، بلا أي نقل أو إخفاء إطلاقًا.
+  if(styleOpts&&styleOpts.styled){
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">';
+    cards.forEach(c=>{
+      html+=renderStyledCard({id:c.id,icon:c.icon,name:c.name,val:c.value,alertText:c.alertText,onclickAttr:c.onclickAttr},{isANB:!!styleOpts.isANB});
+    });
+    html+='</div>';
+    el.innerHTML=html;
+    return;
+  }
+
+  // الوضع الافتراضي القديم (بلا تغيير - يبقى كما هو لِـ rAdminDash تحديدًا)
+  const attention=cards.filter(c=>c.alertText);
+  const calm=cards.filter(c=>!c.alertText);
 
   if(attention.length){
     html+='<div style="font-size:10px;font-weight:800;letter-spacing:.5px;color:#8a6410;text-transform:uppercase;margin:14px 0 8px">🔔 '+(t('needs_attention')||'Needs Attention')+'</div>';
@@ -4687,17 +4705,10 @@ function renderQuickDashboard(el,quickActions,cards,styleOpts){
     html+='<div style="font-size:10px;font-weight:800;color:#2A6040;text-transform:uppercase;margin:14px 0 8px">'+(t('for_reference')||'For Reference')+'</div>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
     calm.forEach(c=>{
-      // ⭐ الكروت المميَّزة الجديدة (شريط لوني وظيفي + أرقام أحادية المسافة +
-      // طابع ANB الذهبي) - تُفعَّل فقط عند تمرير styleOpts.styled صراحة، حتى
-      // لا يتأثر rAdminDash (خارج نطاق هذا التعديل) بأي تغيير غير مقصود
-      if(styleOpts&&styleOpts.styled){
-        html+=renderStyledCard({id:c.id,icon:c.icon,name:c.name,val:c.value,onclickAttr:c.onclickAttr},{isANB:!!styleOpts.isANB});
-      }else{
-        html+='<div onclick="'+c.onclickAttr+'" style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:9px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden">';
-        html+='<div style="font-size:17px;flex-shrink:0">'+c.icon+'</div>';
-        html+='<div style="min-width:0;overflow:hidden"><div style="font-size:10.5px;font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:13px;font-weight:800;color:#0A2218">'+c.value+'</div></div>';
-        html+='</div>';
-      }
+      html+='<div onclick="'+c.onclickAttr+'" style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:9px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden">';
+      html+='<div style="font-size:17px;flex-shrink:0">'+c.icon+'</div>';
+      html+='<div style="min-width:0;overflow:hidden"><div style="font-size:10.5px;font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:13px;font-weight:800;color:#0A2218">'+c.value+'</div></div>';
+      html+='</div>';
     });
     html+='</div>';
   }
@@ -4849,9 +4860,14 @@ function renderStyledCard(cd,opts){
   const group=opts.group||CARD_GROUP_MAP[cd.id]||'meta';
   const accentColor=CARD_GROUP_COLORS[group];
   const isANB=!!opts.isANB;
-  return `<div onclick="${cd.onclickAttr}" style="position:relative;background:#FBF8F1;border:${isANB?'1.5px solid #C89010':'1.5px solid '+(cd.alertText?'#B8860B':'#e8e1cd')};border-radius:10px;padding:10px 10px 10px 13px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden;box-shadow:0 1px 3px rgba(10,34,24,0.07)">
+  // ⭐ طابع ANB المُعاد تصميمه: بدل شريط نصي "ANB" (بدا فجًّا بصريًا)، خلفية
+  // متدرجة ذهبية دافئة + إطار مزدوج رقيق (حلقة ذهبية مزدوجة عبر تكديس ظلال) -
+  // تمييز أرقى عبر جودة المادة نفسها (دفء اللون + رقة الحافة)، بلا أي نص
+  const anbBg='linear-gradient(135deg,#FBF3DE 0%,#F5E8C8 100%)';
+  const anbShadow='0 0 0 1px #C89010, 0 0 0 3px rgba(200,144,16,0.15), 0 2px 5px rgba(10,34,24,0.10)';
+  const plainShadow=cd.alertText?'0 0 0 1.5px #B8860B, 0 1px 3px rgba(10,34,24,0.07)':'0 1px 3px rgba(10,34,24,0.07)';
+  return `<div onclick="${cd.onclickAttr}" style="position:relative;background:${isANB?anbBg:'#FBF8F1'};border-radius:10px;padding:10px 10px 10px 13px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden;box-shadow:${isANB?anbShadow:plainShadow}">
     <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${accentColor}"></div>
-    ${isANB?`<div style="position:absolute;top:0;right:0;background:#0A2218;color:#FFD700;font-size:7px;font-weight:800;padding:2px 7px 2px 9px;border-bottom-left-radius:8px;letter-spacing:.5px">ANB</div>`:''}
     <div style="font-size:18px;flex-shrink:0">${cd.icon}</div>
     <div style="min-width:0;overflow:hidden;flex:1">
       <div style="font-size:10.5px;font-weight:700;color:#5a5346;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cd.name}</div>
