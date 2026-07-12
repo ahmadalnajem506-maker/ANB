@@ -25,13 +25,27 @@
  *
  * أُزيلت نقطة /admin/migrate (كانت لمرة واحدة فقط، ولم تعد مطلوبة بعد نجاح الترحيل).
  *
+ * ⚠️ فحص أمني شامل إضافي (pentest) - إصلاحات هذه الجولة:
+ *   ١. حرج جدًا: /set-password كان يسمح بالاستيلاء الكامل على حساب الأدمن
+ *      بلا أي مصادقة (الحارس كان يتجاهل role==='admin' تمامًا) - أُصلح.
+ *   ٢. GET/DELETE /file لم يكونا يتحقَّقان من ملكية الملف - أي مستخدم مُصادَق
+ *      عليه كان يصل لملفات أي عميل آخر - أُصلح (canAccessFileKey).
+ *   ٣. مقارنة كلمة المرور/رمز TOTP لم تكن آمنة زمنيًا (===) - أُصلحت لتطابق
+ *      نفس آلية التحقق من توقيع التوكن (timingSafeEqual).
+ *   ٤. لا حدّ لحجم الملفات المرفوعة - أُضيف حدّ ٢٥ ميجابايت.
+ *   ٥. الحدّ من المحاولات (rate limiting) كان في ذاكرة محلية لكل نسخة Worker
+ *      منفردة (غير موثوق عبر نُسخ متعددة) - أُعيد بناؤه عبر Cloudflare KV.
+ *
  * الأسرار المطلوبة (بلا تغيير عن v3):
  *   - R2_HMAC_SECRET
  * المتغيرات:
  *   - ALLOWED_ORIGIN
  * الربط:
- *   - DB          (D1، كما هو)
- *   - ANB_FILES   (R2، كما هو)
+ *   - DB              (D1، كما هو)
+ *   - ANB_FILES       (R2، كما هو)
+ *   - RATE_LIMIT_KV   (⚠️ جديد - KV Namespace، أنشئه واربطه بهذا الاسم تحديدًا
+ *                       لتفعيل الحدّ الموثوق للمحاولات؛ الكود يعمل بلا توقف
+ *                       حتى قبل إضافته، لكن بحماية أضعف مؤقَّتًا)
  */
 
 const CLOUD_ROW_ID = 'anb-main';
@@ -105,7 +119,7 @@ function listFor(payload, role) {
 const SENSITIVE_ACCOUNT_FIELDS = ['passwordHash', 'passwordSalt', 'totpSecret'];
 // المصفوفات المرتبطة بعميل واحد عبر حقل cid (غير clients/admins، اللذين
 // يُصفَّيان بقاعدة مختلفة تعتمد على id مباشرة بدل cid)
-const CLIENT_SCOPED_ARRAY_KEYS = ['invoices', 'expenses', 'hours', 'docs', 'messages', 'journal', 'bankTx', 'recurring', 'yearClosings', 'contracts', 'assets', 'serviceAgreements', 'importBatches', 'employees', 'contacts'];
+const CLIENT_SCOPED_ARRAY_KEYS = ['invoices', 'expenses', 'hours', 'docs', 'messages', 'journal', 'bankTx', 'recurring', 'yearClosings', 'contracts', 'assets', 'serviceAgreements', 'importBatches', 'employees', 'contacts', 'cashPayments', 'cashierLog', 'cashierDayExceptions'];
 
 function stripSensitiveFields(account) {
   if (!account || typeof account !== 'object') return account;
@@ -145,8 +159,9 @@ function mergeClientScopedArray(existingArray, incomingArray, aid) {
 
 async function handleResolveAccount(request, env, cors) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  if (isRateLimited(ip)) return json({ error: 'Too many attempts, slow down' }, 429, cors);
-  registerAttempt(ip);
+  const bucketKey = `resolve-account:${ip}`;
+  if (await isRateLimited(env, bucketKey)) return json({ error: 'Too many attempts, slow down' }, 429, cors);
+  await registerAttempt(env, bucketKey);
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
@@ -196,8 +211,9 @@ async function handleResolveAccount(request, env, cors) {
 
 async function handleLogin(request, env, cors) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  if (isRateLimited(ip)) return json({ error: 'Too many attempts, slow down' }, 429, cors);
-  registerAttempt(ip);
+  const bucketKey = `login:${ip}`;
+  if (await isRateLimited(env, bucketKey)) return json({ error: 'Too many attempts, slow down' }, 429, cors);
+  await registerAttempt(env, bucketKey);
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
@@ -251,8 +267,9 @@ async function handleLogin(request, env, cors) {
 
 async function handleVerify2FA(request, env, cors) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  if (isRateLimited(ip)) return json({ error: 'Too many attempts, slow down' }, 429, cors);
-  registerAttempt(ip);
+  const bucketKey = `verify-2fa:${ip}`;
+  if (await isRateLimited(env, bucketKey)) return json({ error: 'Too many attempts, slow down' }, 429, cors);
+  await registerAttempt(env, bucketKey);
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
@@ -295,7 +312,10 @@ async function handleVerify2FA(request, env, cors) {
 async function verifyPasswordServerSide(plainPassword, record) {
   if (record.passwordHash && record.passwordSalt) {
     const hash = await hashPasswordPBKDF2(plainPassword, record.passwordSalt);
-    return { ok: hash === record.passwordHash, needsUpgrade: false };
+    // ⚠️ مقارنة آمنة زمنيًا (كتلك المُستخدَمة أصلًا للتحقق من توقيع التوكن) -
+    // بدل === العادية التي قد تُنهي المقارنة عند أول حرف مختلف، فتُسرِّب معلومة
+    // زمنية دقيقة (نظريًا) عن مدى تطابق التخمين مع الهاش الصحيح
+    return { ok: timingSafeEqual(hash, record.passwordHash), needsUpgrade: false };
   }
   const legacyPlain = record.password || record.pwCustom || record.pw;
   if (legacyPlain !== undefined && legacyPlain === plainPassword) {
@@ -370,7 +390,7 @@ async function verifyTotpCode(secret, userCode) {
   const now = Date.now();
   for (const drift of [0, -1, 1]) {
     const code = await generateTotpCode(secret, now + drift * TOTP_STEP_SECONDS * 1000);
-    if (code === clean) return true;
+    if (timingSafeEqual(code, clean)) return true;
   }
   return false;
 }
@@ -384,8 +404,9 @@ async function verifyTotpCode(secret, userCode) {
 // بعد أن يتحقق من هوية العميل بطريقته الخاصة خارج التطبيق.
 async function handleSetPassword(request, env, cors) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  if (isRateLimited(ip)) return json({ error: 'Too many attempts, slow down' }, 429, cors);
-  registerAttempt(ip);
+  const bucketKey = `set-password:${ip}`;
+  if (await isRateLimited(env, bucketKey)) return json({ error: 'Too many attempts, slow down' }, 429, cors);
+  await registerAttempt(env, bucketKey);
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
@@ -401,10 +422,13 @@ async function handleSetPassword(request, env, cors) {
   if (idx === -1) return json({ error: 'Account not found' }, 404, cors);
   const existing = list[idx];
 
-  // ⚠️ الحارس الأمني الفعلي: يُمنع تمامًا لحسابات العملاء إن كان لديهم كلمة
-  // مرور بالفعل (هذا هو أصل الثغرة الأمنية). لا يُطبَّق على حساب الأدمن نفسه
-  // لتفادي قفله بلا أي وسيلة استرجاع أخرى - الأدمن طرف واحد موثوق أصلًا.
-  if (role === 'client' && existing.passwordHash) {
+  // ⚠️⚠️ إصلاح ثغرة حرجة جدًا: كان هذا الشرط ينطبق على العملاء فقط (role
+  // === 'client')، بينما حساب الأدمن مُستثنى تمامًا! هذا يعني: أي شخص يعرف
+  // بريد/هاتف الأدمن (عبر /resolve-account العامة، التي تكشف accountId) كان
+  // يستطيع استدعاء هذه النقطة مباشرة ويُعيّن كلمة مرور من اختياره لحساب
+  // الأدمن بالكامل - استيلاء تام على الحساب بلا أي معرفة بكلمة المرور
+  // القديمة أو أي تحقق آخر. الحل: تطبيق نفس الحارس على كل الأدوار بلا استثناء.
+  if (existing.passwordHash) {
     return json({ error: 'password_already_set', message: 'This account already has a password. Please contact ANB to reset it.' }, 403, cors);
   }
 
@@ -556,11 +580,38 @@ async function handleUpload(request, env, cors) {
   const contentType = request.headers.get('Content-Type') || 'application/octet-stream';
   const rawName = request.headers.get('X-File-Name') || 'file';
   const safeName = sanitizeFileName(rawName);
-  const key = `${auth.payload.at}/${auth.payload.aid}/${Date.now()}-${safeName}`;
+  // ⚠️ إصلاح: نستخدم هوية العميل الفعلي الذي يخصه الملف (وليس فقط من رفعه)
+  // كبادئة تخزين، لأن الأدمن غالبًا يرفع مستندات نيابة عن عميل معيَّن - الملف
+  // يخص ذلك العميل منطقيًا، لا حساب الأدمن. عميل عادي لا يستطيع ادّعاء هوية
+  // عميل آخر (يُقيَّد دائمًا بهويته الخاصة فقط).
+  const requestedTargetCid = request.headers.get('X-Target-Client-Id');
+  let ownerSegment = `${auth.payload.at}/${auth.payload.aid}`;
+  if (requestedTargetCid) {
+    if (auth.payload.at === 'admin') {
+      ownerSegment = `client/${requestedTargetCid}`;
+    } else if (requestedTargetCid === auth.payload.aid) {
+      ownerSegment = `client/${auth.payload.aid}`;
+    }
+    // غير ذلك (عميل يحاول ادّعاء هوية عميل آخر): يُتجاهَل الطلب، ويُستخدَم
+    // نطاقه الخاص كما هو افتراضيًا (لا خطأ صريح، فقط تجاهل آمن للقيمة المشبوهة)
+  }
+  const key = `${ownerSegment}/${Date.now()}-${safeName}`;
+  const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // ٢٥ ميجابايت - حدّ معقول يمنع إساءة استخدام التخزين
   const body = await request.arrayBuffer();
+  if (body.byteLength > MAX_UPLOAD_BYTES) return json({ error: 'File too large (max 25MB)' }, 413, cors);
   await env.ANB_FILES.put(key, body, { httpMetadata: { contentType } });
   const workerOrigin = new URL(request.url).origin;
   return json({ key, url: `${workerOrigin}/file/${key}` }, 200, cors);
+}
+// ⚠️ يتحقق أن هذا المستخدم مسموح له بالوصول لهذا الملف تحديدًا - إما أدمن
+// (صلاحية كاملة لإدارة كل الملفات)، أو أن المفتاح يبدأ بنفس بادئة هويته
+// الخاصة (الملفات التي رفعها هو بنفسه، عبر /upload التي تُخزِّن دائمًا تحت
+// {at}/{aid}/...). قبل هذا الإصلاح، أي مستخدم مُصادَق عليه (حتى عميل عادي)
+// كان يستطيع الوصول لأي ملف لأي عميل آخر لو عرف/خمَّن مفتاحه فقط.
+function canAccessFileKey(key, auth) {
+  if (auth.payload.at === 'admin') return true;
+  const ownPrefix = `${auth.payload.at}/${auth.payload.aid}/`;
+  return key.startsWith(ownPrefix);
 }
 async function handleGetFile(request, env, cors, url) {
   // ⚠️ إصلاح ثغرة حقيقية: كانت هذه النقطة عامة بلا أي تحقق من الهوية إطلاقًا -
@@ -579,6 +630,8 @@ async function handleGetFile(request, env, cors, url) {
   if (!auth.ok) return json({ error: auth.error }, 401, cors);
   const key = decodeURIComponent(url.pathname.replace('/file/', ''));
   if (!key) return json({ error: 'Missing key' }, 400, cors);
+  // ⚠️ إصلاح إضافي: التحقق من ملكية الملف، وليس فقط وجود توثيق عام صالح
+  if (!canAccessFileKey(key, auth)) return json({ error: 'Forbidden' }, 403, cors);
   const object = await env.ANB_FILES.get(key);
   if (!object) return json({ error: 'Not found' }, 404, cors);
   const headers = new Headers(cors);
@@ -592,6 +645,9 @@ async function handleDeleteFile(request, env, cors, url) {
   if (!auth.ok) return json({ error: auth.error }, 401, cors);
   const key = decodeURIComponent(url.pathname.replace('/file/', ''));
   if (!key) return json({ error: 'Missing key' }, 400, cors);
+  // ⚠️ إصلاح ثغرة حقيقية: كان أي مستخدم مُصادَق عليه (حتى عميل عادي) يستطيع
+  // حذف ملف أي عميل آخر لو عرف/خمَّن مفتاحه، بلا أي تحقق من الملكية إطلاقًا
+  if (!canAccessFileKey(key, auth)) return json({ error: 'Forbidden' }, 403, cors);
   await env.ANB_FILES.delete(key);
   return json({ ok: true }, 200, cors);
 }
@@ -638,7 +694,35 @@ function b64urlEncode(str) { return btoa(unescape(encodeURIComponent(str))).repl
 function b64urlDecode(str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; return decodeURIComponent(escape(atob(str))); }
 function sanitizeFileName(name) { return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120); }
 
-function isRateLimited(ip) {
+// ⚠️ إصلاح: كان الحدّ السابق (attemptLog) خريطة في الذاكرة (Map) محليّة لكل
+// نسخة Worker منفردة - نُسخ Cloudflare Workers متعددة ومؤقَّتة بطبيعتها (قد
+// تُنشأ نسخة جديدة تمامًا لكل طلب أحيانًا، أو حسب المنطقة الجغرافية)، فهذا
+// الحدّ كان يُعاد ضبطه من الصفر بلا أي إنذار عمليًا، ويسهل تجاوزه تمامًا.
+// الحل: تخزين المحاولات في Cloudflare KV (ثابت عبر كل النسخ)، مع تراجع آمن
+// للسلوك القديم إن لم يُضَف ربط KV بعد (لضمان استمرار عمل الخدمة، وليس تعطيلها).
+async function isRateLimited(env, bucketKey) {
+  if (!env.RATE_LIMIT_KV) return isRateLimitedLegacy(bucketKey); // تراجع مؤقَّت قبل إضافة ربط KV
+  const raw = await env.RATE_LIMIT_KV.get(bucketKey);
+  if (!raw) return false;
+  let data;
+  try { data = JSON.parse(raw); } catch { return false; }
+  const now = Date.now();
+  const recent = (data.timestamps || []).filter((t) => now - t < MAX_ATTEMPTS_WINDOW_MS);
+  return recent.length >= MAX_ATTEMPTS_PER_WINDOW;
+}
+async function registerAttempt(env, bucketKey) {
+  if (!env.RATE_LIMIT_KV) { registerAttemptLegacy(bucketKey); return; }
+  const raw = await env.RATE_LIMIT_KV.get(bucketKey);
+  let data = { timestamps: [] };
+  if (raw) { try { data = JSON.parse(raw); } catch { /* تجاهل بيانات فاسدة، نبدأ من جديد */ } }
+  const now = Date.now();
+  data.timestamps = (data.timestamps || []).filter((t) => now - t < MAX_ATTEMPTS_WINDOW_MS);
+  data.timestamps.push(now);
+  const ttlSeconds = Math.ceil(MAX_ATTEMPTS_WINDOW_MS / 1000) + 60;
+  await env.RATE_LIMIT_KV.put(bucketKey, JSON.stringify(data), { expirationTtl: ttlSeconds });
+}
+// السلوك القديم (ذاكرة محلية) - يبقى فقط كتراجع احتياطي مؤقَّت
+function isRateLimitedLegacy(ip) {
   const now = Date.now();
   const entry = attemptLog.get(ip);
   if (!entry) return false;
@@ -646,7 +730,7 @@ function isRateLimited(ip) {
   attemptLog.set(ip, recent);
   return recent.length >= MAX_ATTEMPTS_PER_WINDOW;
 }
-function registerAttempt(ip) {
+function registerAttemptLegacy(ip) {
   const now = Date.now();
   const entry = attemptLog.get(ip) || [];
   entry.push(now);
