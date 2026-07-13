@@ -559,13 +559,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.92">
+<link rel="manifest" href="manifest.json?v=3.93">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.92').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.93').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -6667,6 +6667,43 @@ async function getExifOrientation(dataUrl){
   return 1;
 }
 
+// ⚠️ إصلاح خلل حقيقي مؤثر: كانت هذه الدالة (معالجة قوية مصمَّمة خصيصًا لسد
+// ضعف Tesseract) تُطبَّق على أي صورة قبل إرسالها لأي محرك، بما فيه Google
+// Vision! لكن التحويل لأبيض/أسود صرف (Otsu) يُضعف أداء محركات الذكاء
+// الاصطناعي الحديثة كـVision، التي صُمِّمت للعمل بأفضل شكل مع الصور الطبيعية
+// غير المُعالَجة (توثيق جوجل نفسه ينص على عدم الحاجة لأي معالجة مسبقة).
+// الحل: مساران منفصلان - معالجة خفيفة لـVision (تصحيح الدوران فقط، تبقى
+// الألوان والتفاصيل كاملة)، والمعالجة القوية الكاملة تبقى محصورة بـTesseract
+// فقط كما كانت تخدمه أصلًا
+async function preprocessImageForVision(dataUrl){
+  let orientation=1;
+  try{orientation=await getExifOrientation(dataUrl);}catch(e){}
+  if(orientation===1)return dataUrl; // لا حاجة لأي معالجة - الاتجاه صحيح أصلًا
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const swapDims=orientation>=5&&orientation<=8;
+      const canvas=document.createElement('canvas');
+      canvas.width=swapDims?img.height:img.width;
+      canvas.height=swapDims?img.width:img.height;
+      const ctx=canvas.getContext('2d');
+      switch(orientation){
+        case 2: ctx.transform(-1,0,0,1,canvas.width,0); break;
+        case 3: ctx.transform(-1,0,0,-1,canvas.width,canvas.height); break;
+        case 4: ctx.transform(1,0,0,-1,0,canvas.height); break;
+        case 5: ctx.transform(0,1,1,0,0,0); break;
+        case 6: ctx.transform(0,1,-1,0,canvas.width,0); break;
+        case 7: ctx.transform(0,-1,-1,0,canvas.width,canvas.height); break;
+        case 8: ctx.transform(0,-1,1,0,0,canvas.height); break;
+      }
+      ctx.drawImage(img,0,0);
+      resolve(canvas.toDataURL('image/jpeg',0.95)); // JPEG بجودة عالية أخف حجمًا من PNG بلا فقدان ملحوظ
+    };
+    img.onerror=reject;
+    img.src=dataUrl;
+  });
+}
+// المعالجة القوية الأصلية - تبقى محصورة بمسار Tesseract الاحتياطي فقط من الآن فصاعدًا
 function preprocessImageForOCR(dataUrl){
   return new Promise(async(resolve,reject)=>{
     let orientation=1;
@@ -6771,17 +6808,18 @@ async function getTesseractWorker(){
 // الوصول لـVision لأي سبب (لم يُهيَّأ المفتاح بعد، مشكلة شبكة، تجاوز حدّ
 // الطلبات) - هذا يضمن بقاء الميزة تعمل دائمًا طوال فترة الانتقال وبعدها
 async function ocrReceiptImage(dataUrl){
-  let processedUrl=dataUrl;
   try{
-    processedUrl=await preprocessImageForOCR(dataUrl);
-  }catch(e){
-    // فشلت المعالجة المسبقة (نادر) - نكمل بالصورة الأصلية بدل التوقف كليًا
-  }
-  try{
-    return await ocrViaGoogleVision(processedUrl);
+    const visionReadyUrl=await preprocessImageForVision(dataUrl).catch(()=>dataUrl);
+    return await ocrViaGoogleVision(visionReadyUrl);
   }catch(visionError){
     console.warn('Google Vision OCR failed, falling back to Tesseract:',visionError?.message||visionError);
-    return await ocrViaTesseract(processedUrl);
+    let tesseractReadyUrl=dataUrl;
+    try{
+      tesseractReadyUrl=await preprocessImageForOCR(dataUrl);
+    }catch(e){
+      // فشلت المعالجة المسبقة (نادر) - نكمل بالصورة الأصلية بدل التوقف كليًا
+    }
+    return await ocrViaTesseract(tesseractReadyUrl);
   }
 }
 // المسار الأساسي الجديد - عبر Worker يستدعي Google Cloud Vision بأمان
@@ -6800,7 +6838,9 @@ async function ocrViaGoogleVision(processedUrl){
   }
   const {text,confidence}=await res.json();
   if(!text||!text.trim())throw new Error('Vision API returned no text');
-  return parseReceiptText(text,confidence);
+  const result=parseReceiptText(text,confidence);
+  result.ocrEngine='vision'; // ⚠️ لتشخيص واضح لأي التراجع فعليًا حدث لآخر عملية مسح
+  return result;
 }
 // المسار الاحتياطي القديم - يبقى كما كان بالضبط، بلا أي تغيير في سلوكه
 async function ocrViaTesseract(processedUrl){
@@ -6810,7 +6850,9 @@ async function ocrViaTesseract(processedUrl){
   }
   const worker=await getTesseractWorker();
   const {data}=await worker.recognize(processedUrl);
-  return parseReceiptText(data.text,data.confidence);
+  const result=parseReceiptText(data.text,data.confidence);
+  result.ocrEngine='tesseract';
+  return result;
 }
 
 // يملأ نموذج المصروف بنتائج القراءة الآلية، مع مؤشر ثقة بصري لكل حقل (حدّ جانبي ملوّن)
@@ -6836,10 +6878,14 @@ function applyOcrFieldsToExpenseForm(extracted){
   }
   // رسالة تعكس جودة القراءة الفعلية بدل رسالة عامة ثابتة دائمًا
   const oc=extracted.overallConfidence;
+  // ⚠️ نُظهر صراحة أي محرك OCR أنتج هذه النتيجة - ضروري للتأكد أن Vision API
+  // يعمل فعليًا، وليس تراجعًا صامتًا لـTesseract دون أن يلاحظ أحد
+  const engineLabel=extracted.ocrEngine==='vision'?'Google Vision':extracted.ocrEngine==='tesseract'?'Tesseract (fallback)':'';
+  const engineSuffix=engineLabel?' — '+engineLabel:'';
   if(oc!==null&&oc<60){
-    toast('⚠️ '+(t('ocr_low_quality')||'Reading quality was low — please double-check every field carefully'));
+    toast('⚠️ '+(t('ocr_low_quality')||'Reading quality was low — please double-check every field carefully')+engineSuffix);
   }else{
-    toast('🔍 '+(t('ocr_extracted')||'Data extracted automatically — colored fields show confidence, please review'));
+    toast('🔍 '+(t('ocr_extracted')||'Data extracted automatically — colored fields show confidence, please review')+engineSuffix);
   }
 }
 
