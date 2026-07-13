@@ -80,6 +80,7 @@ export default {
       if (url.pathname === '/upload' && request.method === 'POST') return await handleUpload(request, env, cors);
       if (url.pathname.startsWith('/file/') && request.method === 'GET') return await handleGetFile(request, env, cors, url);
       if (url.pathname.startsWith('/file/') && request.method === 'DELETE') return await handleDeleteFile(request, env, cors, url);
+      if (url.pathname === '/ocr-vision' && request.method === 'POST') return await handleOcrVision(request, env, cors);
       return json({ error: 'Not found' }, 404, cors);
     } catch (err) {
       return json({ error: 'Internal error', detail: String(err && err.message || err) }, 500, cors);
@@ -573,6 +574,77 @@ async function handleSyncPost(request, env, cors) {
 }
 
 /* ═══════════════════════ R2 (بلا تغيير) ═══════════════════════ */
+
+// ⭐ وسيط آمن لـGoogle Cloud Vision API - مفتاح الـAPI يبقى سريًا على الخادم
+// فقط (لا يمكن كشفه في كود العميل إطلاقًا)، والطلب يتطلب مصادقة صحيحة وتحديد
+// معدَّل صارم نظرًا لكون هذه خدمة مدفوعة فعليًا (بخلاف Tesseract.js المجاني
+// الذي كان يعمل بالكامل داخل المتصفح بلا أي استدعاء للخادم على الإطلاق)
+async function handleOcrVision(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+
+  // ⚠️ تحديد معدَّل مخصَّص لهذه النقطة تحديدًا (منفصل عن حدّ تسجيل الدخول) -
+  // خدمة مدفوعة فعليًا، فيجب منع أي استخدام مفرط عرضي أو متعمَّد
+  const bucketKey = `ocr-vision:${auth.payload.aid || auth.payload.at}`;
+  if (await isRateLimited(env, bucketKey)) {
+    return json({ error: 'Too many OCR requests, please wait a moment' }, 429, cors);
+  }
+  await registerAttempt(env, bucketKey);
+
+  if (!env.GOOGLE_VISION_API_KEY) {
+    return json({ error: 'OCR service not configured' }, 503, cors);
+  }
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid request body' }, 400, cors); }
+  const base64Image = (body.image || '').replace(/^data:image\/\w+;base64,/, '');
+  if (!base64Image) return json({ error: 'No image provided' }, 400, cors);
+  // ⚠️ حماية إضافية: حدّ حجم معقول (خام base64 بحدود ~15 ميجابايت) لمنع طلبات ضخمة غير متوقَّعة
+  if (base64Image.length > 20_000_000) return json({ error: 'Image too large' }, 413, cors);
+
+  const visionRequestBody = {
+    requests: [{
+      image: { content: base64Image },
+      features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
+      imageContext: { languageHints: ['en', 'nl'] },
+    }],
+  };
+
+  let visionResponse;
+  try {
+    visionResponse = await fetch(
+      `https://vision.googleapis.com/v1/images:annotate?key=${env.GOOGLE_VISION_API_KEY}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(visionRequestBody) }
+    );
+  } catch (err) {
+    return json({ error: 'Could not reach OCR service' }, 502, cors);
+  }
+  if (!visionResponse.ok) {
+    return json({ error: 'OCR service error' }, 502, cors);
+  }
+  const visionData = await visionResponse.json();
+  const result = (visionData.responses || [])[0] || {};
+  if (result.error) {
+    return json({ error: result.error.message || 'OCR processing failed' }, 502, cors);
+  }
+  const fullText = result.fullTextAnnotation?.text || '';
+  // ⚠️ Google Vision لا يُعيد رقم ثقة إجمالي واحد مباشرة كما كان Tesseract -
+  // نحسبه بأنفسنا كمتوسط ثقة كل الكلمات المكتشَفة، لإبقاء نفس آلية عرض الثقة
+  // الملوَّنة الموجودة أصلًا في التطبيق (خضراء/ذهبية) بلا أي تغيير هناك
+  let confidenceSum = 0, confidenceCount = 0;
+  (result.fullTextAnnotation?.pages || []).forEach(page => {
+    (page.blocks || []).forEach(block => {
+      (block.paragraphs || []).forEach(para => {
+        (para.words || []).forEach(word => {
+          if (typeof word.confidence === 'number') { confidenceSum += word.confidence; confidenceCount++; }
+        });
+      });
+    });
+  });
+  const avgConfidence = confidenceCount > 0 ? (confidenceSum / confidenceCount) * 100 : 75; // احتياطي معقول إن غاب الرقم
+
+  return json({ text: fullText, confidence: avgConfidence }, 200, cors);
+}
 
 async function handleUpload(request, env, cors) {
   const auth = await requireValidToken(request, env);
