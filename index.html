@@ -559,13 +559,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.88">
+<link rel="manifest" href="manifest.json?v=3.89">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.88').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.89').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -5885,14 +5885,19 @@ function getClientHourCriterionAlert(cid){
 // أعلى شاشة الأدمن عند إدارة عميل معيَّن، بلمحة سريعة بلا حاجة لفتح "تعديل"
 function renderClientInfoCard(c){
   if(!c)return '';
-  return `<div style="background:#FBF8F1;border:1.5px solid #e8e1cd;border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px">
-    <div style="font-size:14px;font-weight:800;color:#0A2218;display:flex;align-items:center;gap:6px">🏢 ${escapeHtml(c.name||'—')}</div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2)">
-        <span style="opacity:.7">📞</span>${c.phone?escapeHtml(c.phone):`<span style="color:var(--t3);font-style:italic">${t('not_set')||'Not set'}</span>`}
+  const notSet=`<span style="color:rgba(255,255,255,0.4);font-style:italic">${t('not_set')||'Not set'}</span>`;
+  return `<div style="position:relative;background:linear-gradient(135deg,#0A2218 0%,#0F3025 100%);border-radius:14px;padding:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 4px 14px rgba(10,34,24,0.25)">
+    <div style="position:absolute;top:-30%;right:-10%;width:140px;height:140px;background:radial-gradient(circle,rgba(255,215,0,0.12) 0%,transparent 70%);pointer-events:none"></div>
+    <div style="display:flex;align-items:center;gap:12px;position:relative;z-index:1">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#C89010,#FFD700);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#0A2218;flex-shrink:0">${INI(c.name)}</div>
+      <div style="font-size:16px;font-weight:800;color:#fff;letter-spacing:.2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.name||'—')}</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;position:relative;z-index:1">
+      <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:7px 10px;font-size:11.5px;color:#e8e6df">
+        <span style="font-size:13px;opacity:.85">📞</span>${c.phone?escapeHtml(c.phone):notSet}
       </div>
-      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);font-family:var(--fm)">
-        <span style="opacity:.7">🏦</span>${c.iban?escapeHtml(c.iban):`<span style="color:var(--t3);font-style:italic;font-family:inherit">${t('not_set')||'Not set'}</span>`}
+      <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:7px 10px;font-size:11.5px;color:#e8e6df">
+        <span style="font-size:13px;opacity:.85">🏦</span>${c.iban?`<b style="font-family:var(--fm);font-weight:600;color:#fff">${escapeHtml(c.iban)}</b>`:notSet}
       </div>
     </div>
   </div>`;
