@@ -559,13 +559,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.93">
+<link rel="manifest" href="manifest.json?v=3.94">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.93').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.94').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -6530,30 +6530,18 @@ function parseReceiptText(text,ocrConfidence){
     }
   }
 
-  // المبلغ: نبحث عن كلمات مفتاحية (Totaal/Total/Bedrag...) وإلا نأخذ أكبر رقم مالي بالفاتورة
-  const numRe=/(\d{1,4}(?:[.,]\d{2}))(?!\d)/g;
-  const kwRe=/(totaal|total|te betalen|amount due|bedrag|grand ?total|eindtotaal|som|subtotal|verschuldigd|totaalbedrag|te voldoen)/i;
-  let best=null,bestKw=false;
-  for(const line of lines){
-    const isKw=kwRe.test(line);
-    let m;
-    numRe.lastIndex=0;
-    while((m=numRe.exec(line))){
-      const val=parseFloat(m[1].replace(',','.'));
-      if(isNaN(val))continue;
-      if(best===null||(isKw&&!bestKw)||(isKw===bestKw&&val>best)){
-        best=val;bestKw=isKw;
-      }
-    }
-  }
-  out.amount=best;
-  // ثقة عالية فقط إن وُجد المبلغ فعليًا بجانب كلمة مفتاحية واضحة (وليس مجرد تخمين "أكبر رقم بالصفحة")
-  out.confidence.amount=bestKw?'high':(best!==null?'low':'low');
-
-  // نسبة الضريبة الهولندية الشائعة (21%/9%/0%) - غالبًا مكتوبة صراحة كـ"BTW 21%" أو "21% BTW"
+  // ⚠️⚠️ إصلاح خلل حقيقي مؤثر: كان الكود يلتقط "الإجمالي الشامل للضريبة"
+  // (المرتبط بكلمات مثل Totaal/Total/Te betalen) ويضعه مباشرة في حقل "المبلغ
+  // بدون ضريبة" في نموذج المصروف! هذا يُضاعف الضريبة فعليًا عند الحفظ (لأن
+  // النموذج يحسب BTW = المبلغ المُدخَل × النسبة، فيُصبح الإجمالي المعروض أعلى
+  // من الإجمالي الحقيقي على الفاتورة). الحل: نحسب نسبة الضريبة أولًا، ثم نبحث
+  // تحديدًا عن سطر "المبلغ بدون ضريبة" الصريح (Subtotaal/Excl. BTW/Netto)،
+  // وإن لم نجده، نحسبه رياضيًا من الإجمالي الشامل ÷ (1 + النسبة٪) بدل افتراض
+  // تطابقهما خطأً
   const vatRe=/\b(21|9|0)\s?%/;
+  const vatExplicitLineRe=/btw|vat/i;
   for(const line of lines){
-    if(/btw|vat/i.test(line)){
+    if(vatExplicitLineRe.test(line)){
       const m=line.match(vatRe);
       if(m){out.vatRate=parseInt(m[1]);out.confidence.vatRate='high';break;}
     }
@@ -6564,6 +6552,47 @@ function parseReceiptText(text,ocrConfidence){
       const m=line.match(vatRe);
       if(m&&[0,9,21].includes(parseInt(m[1]))){out.vatRate=parseInt(m[1]);out.confidence.vatRate='medium';break;}
     }
+  }
+
+  const numRe=/(\d{1,4}(?:[.,]\d{2}))(?!\d)/g;
+  // كلمات المبلغ "بدون ضريبة" صراحة - الأولوية القصوى، لأنها الأدق تمامًا
+  const netKwRe=/(subtotaal|sub-?total|excl\.?\s*btw|exclusief|netto\s*bedrag|net\s*amount|bedrag\s*excl)/i;
+  // كلمات "الإجمالي الشامل للضريبة" - هذا ليس ما يحتاجه الحقل مباشرة، يحتاج حسابًا
+  const grossKwRe=/(totaal|total|te betalen|amount due|bedrag|grand ?total|eindtotaal|som|verschuldigd|totaalbedrag|te voldoen)/i;
+
+  let netBest=null; // مبلغ بدون ضريبة صريح ومباشر من الفاتورة نفسها
+  let grossBest=null,grossBestKw=false; // الإجمالي الشامل (نحتاج تحويله لاحقًا)
+  for(const line of lines){
+    const isNetKw=netKwRe.test(line);
+    const isGrossKw=grossKwRe.test(line);
+    let m;
+    numRe.lastIndex=0;
+    while((m=numRe.exec(line))){
+      const val=parseFloat(m[1].replace(',','.'));
+      if(isNaN(val))continue;
+      if(isNetKw&&(netBest===null||val>netBest)){netBest=val;}
+      if(grossBest===null||(isGrossKw&&!grossBestKw)||(isGrossKw===grossBestKw&&val>grossBest)){
+        grossBest=val;grossBestKw=isGrossKw;
+      }
+    }
+  }
+
+  if(netBest!==null){
+    // أفضل حالة: الفاتورة نفسها تذكر "بدون ضريبة" صراحة - نستخدمه مباشرة بلا أي حساب
+    out.amount=netBest;
+    out.confidence.amount='high';
+  }else if(grossBest!==null&&out.vatRate!==null&&out.vatRate>0){
+    // لا يوجد سطر صريح "بدون ضريبة"، لكن وجدنا الإجمالي ونسبة الضريبة معًا -
+    // نحسب المبلغ الصافي رياضيًا بدل افتراض تطابقه مع الإجمالي خطأً
+    out.amount=Math.round((grossBest/(1+out.vatRate/100))*100)/100;
+    out.confidence.amount=grossBestKw?'medium':'low'; // محسوب وليس مقروءًا مباشرة، فالثقة أقل من "عالية"
+  }else if(grossBest!==null){
+    // لا نسبة ضريبة معروفة إطلاقًا - أفضل تقدير متاح هو الإجمالي نفسه، لكن بثقة منخفضة صراحة لتنبيه المستخدم للمراجعة
+    out.amount=grossBest;
+    out.confidence.amount='low';
+  }else{
+    out.amount=null;
+    out.confidence.amount='low';
   }
 
   // التاريخ: yyyy-mm-dd أو dd-mm-yyyy أو dd/mm/yyyy - مع رفض أي تاريخ غير معقول (قبل 2000 أو بعد سنة من اليوم)
