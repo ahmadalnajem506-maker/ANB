@@ -559,13 +559,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.94">
+<link rel="manifest" href="manifest.json?v=3.95">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.94').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.95').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -6555,16 +6555,43 @@ function parseReceiptText(text,ocrConfidence){
   }
 
   const numRe=/(\d{1,4}(?:[.,]\d{2}))(?!\d)/g;
-  // كلمات المبلغ "بدون ضريبة" صراحة - الأولوية القصوى، لأنها الأدق تمامًا
+  // ⚠️ أولوية قصوى: "Totaal (excl. btw)" تحديدًا - هذا هو الرقم الصافي
+  // النهائي الصحيح فعليًا (يشمل كل الرسوم كالشحن، وليس فقط مجموع الأصناف كما
+  // قد تكون "Subtotaal" وحدها بمعزل عن أي رسوم إضافية لاحقة)
+  const netTotalKwRe=/(totaal|total).{0,3}(excl|ex\.)/i;
+  // كلمات المبلغ "بدون ضريبة" العامة - أولوية ثانية إن لم نجد "Totaal excl. btw" تحديدًا
   const netKwRe=/(subtotaal|sub-?total|excl\.?\s*btw|exclusief|netto\s*bedrag|net\s*amount|bedrag\s*excl)/i;
   // كلمات "الإجمالي الشامل للضريبة" - هذا ليس ما يحتاجه الحقل مباشرة، يحتاج حسابًا
   const grossKwRe=/(totaal|total|te betalen|amount due|bedrag|grand ?total|eindtotaal|som|verschuldigd|totaalbedrag|te voldoen)/i;
 
-  let netBest=null; // مبلغ بدون ضريبة صريح ومباشر من الفاتورة نفسها
+  // ⚠️ يبحث عن أول رقم مالي في السطر نفسه، أو في السطر التالي مباشرة إن كان
+  // السطر الحالي بلا رقم إطلاقًا - يُعالج حالة شائعة جدًا في جداول عريضة حيث
+  // قد تُخرِج آلية OCR التسمية والقيمة على سطرين منفصلين بسبب المسافة الواسعة
+  // بينهما في التصميم الأصلي للفاتورة
+  function findNumberNear(lineIndex){
+    numRe.lastIndex=0;
+    let m=numRe.exec(lines[lineIndex]);
+    if(m)return parseFloat(m[1].replace(',','.'));
+    if(lineIndex+1<lines.length){
+      numRe.lastIndex=0;
+      m=numRe.exec(lines[lineIndex+1]);
+      if(m)return parseFloat(m[1].replace(',','.'));
+    }
+    return null;
+  }
+
+  let netTotalBest=null; // "Totaal excl. btw" تحديدًا - الأولوية القصوى
+  let netBest=null; // كلمات "بدون ضريبة" عامة أخرى
   let grossBest=null,grossBestKw=false; // الإجمالي الشامل (نحتاج تحويله لاحقًا)
-  for(const line of lines){
+  for(let li=0;li<lines.length;li++){
+    const line=lines[li];
+    const isNetTotalKw=netTotalKwRe.test(line);
     const isNetKw=netKwRe.test(line);
     const isGrossKw=grossKwRe.test(line);
+    if(isNetTotalKw){
+      const val=findNumberNear(li);
+      if(val!==null&&!isNaN(val))netTotalBest=val;
+    }
     let m;
     numRe.lastIndex=0;
     while((m=numRe.exec(line))){
@@ -6577,7 +6604,11 @@ function parseReceiptText(text,ocrConfidence){
     }
   }
 
-  if(netBest!==null){
+  if(netTotalBest!==null){
+    // أفضل حالة على الإطلاق: الفاتورة تذكر "Totaal (excl. btw)" تحديدًا - الرقم النهائي الصحيح شاملًا كل الرسوم
+    out.amount=netTotalBest;
+    out.confidence.amount='high';
+  }else if(netBest!==null){
     // أفضل حالة: الفاتورة نفسها تذكر "بدون ضريبة" صراحة - نستخدمه مباشرة بلا أي حساب
     out.amount=netBest;
     out.confidence.amount='high';
