@@ -559,13 +559,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.95">
+<link rel="manifest" href="manifest.json?v=3.96">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.95').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.96').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -6521,9 +6521,15 @@ function parseReceiptText(text,ocrConfidence){
     overallConfidence:typeof ocrConfidence==='number'?Math.round(ocrConfidence):null};
 
   // المورد: أول سطر يحتوي أحرفًا فعلية (غالبًا اسم المتجر أعلى الفاتورة)، نتجاهل أسطرًا أقرب لعنوان/هاتف
+  // ⚠️ إصلاح خلل حقيقي: كلمات عامة تصف نوع المستند نفسه (مثل "Factuur" =
+  // فاتورة، "Bon"/"Kassabon" = إيصال، "Kwitantie"/"Nota" = وصل) كانت تُلتقَط
+  // كاسم المورد لو ظهرت كعنوان أعلى الصفحة - هذه ليست اسم شركة إطلاقًا، بل
+  // وصف لنوع الورقة نفسها، فيجب تجاوزها للبحث عن الاسم الحقيقي بعدها
+  const genericDocWordRe=/^(factuur|invoice|receipt|bon|kassabon|kwitantie|nota|rekening|ontvangstbewijs|bill|ticket)$/i;
   const addressLikeRe=/^\d|straat|street|weg|laan|plein|tel[:.]|phone|www\.|@/i;
   for(const line of lines){
-    if(/[A-Za-z\u0600-\u06FF]{3,}/.test(line)&&!addressLikeRe.test(line)){
+    const cleanedLine=line.replace(/[^A-Za-z\u0600-\u06FF]/g,'').trim();
+    if(/[A-Za-z\u0600-\u06FF]{3,}/.test(line)&&!addressLikeRe.test(line)&&!genericDocWordRe.test(cleanedLine)){
       out.supplier=line.slice(0,60);
       out.confidence.supplier='medium'; // موقعه بأعلى الفاتورة مؤشر جيد لكن غير مؤكد 100%
       break;
@@ -6538,7 +6544,11 @@ function parseReceiptText(text,ocrConfidence){
   // تحديدًا عن سطر "المبلغ بدون ضريبة" الصريح (Subtotaal/Excl. BTW/Netto)،
   // وإن لم نجده، نحسبه رياضيًا من الإجمالي الشامل ÷ (1 + النسبة٪) بدل افتراض
   // تطابقهما خطأً
-  const vatRe=/\b(21|9|0)\s?%/;
+  // ⚠️ إصلاح خلل حقيقي: كانت الصيغة تتطابق فقط مع "21%" المباشرة، لكن فواتير
+  // حقيقية كثيرة تكتبها بصيغة عشرية "21.00%" أو "21,00%" - ما كان يمنع اكتشاف
+  // نسبة الضريبة إطلاقًا في هذه الحالة الشائعة جدًا، فيسقط الحساب للاعتماد
+  // على الإجمالي الشامل مباشرة بدل حساب الصافي الصحيح
+  const vatRe=/\b(21|9|0)(?:[.,]0+)?\s?%/;
   const vatExplicitLineRe=/btw|vat/i;
   for(const line of lines){
     if(vatExplicitLineRe.test(line)){
@@ -6554,7 +6564,11 @@ function parseReceiptText(text,ocrConfidence){
     }
   }
 
-  const numRe=/(\d{1,4}(?:[.,]\d{2}))(?!\d)/g;
+  // ⚠️ إصلاح خلل حقيقي: "21.00%" كانت تُطابَق كمبلغ مالي صحيح (21.00) لأن
+  // الشرط السابق فقط استبعد وجود رقم آخر مباشرة بعده، لكن لم يستبعد علامة "%"
+  // - ما يعني أن نسبة الضريبة نفسها قد تُلتقَط خطأً كأنها مبلغ الفاتورة! الآن
+  // نستبعد صراحة أي رقم يليه "%" (بمسافة اختيارية بينهما)
+  const numRe=/(\d{1,4}(?:[.,]\d{2}))(?!\d)(?!\s*%)/g;
   // ⚠️ أولوية قصوى: "Totaal (excl. btw)" تحديدًا - هذا هو الرقم الصافي
   // النهائي الصحيح فعليًا (يشمل كل الرسوم كالشحن، وليس فقط مجموع الأصناف كما
   // قد تكون "Subtotaal" وحدها بمعزل عن أي رسوم إضافية لاحقة)
