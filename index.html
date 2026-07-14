@@ -559,13 +559,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.97">
+<link rel="manifest" href="manifest.json?v=3.98">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.97').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.98').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -6529,12 +6529,26 @@ function parseReceiptText(text,ocrConfidence){
   // كاسم مورد أيضًا! الاستبعاد الآن يشمل أي كلمة تنتهي بـ"nummer"/"number"
   // (رقم الطلب، رقم العميل، الرقم المرجعي، إلخ بغضّ النظر عن البادئة) - هذه
   // دائمًا تسميات حقول، وليست أسماء شركات إطلاقًا
-  const genericStandaloneWordRe=/^(factuur|invoice|receipt|bon|kassabon|kwitantie|nota|rekening|ontvangstbewijs|bill|ticket)$/i;
+  const genericStandaloneWordRe=/^(factuur|invoice|receipt|bon|kassabon|kwitantie|nota|rekening|ontvangstbewijs|bill|ticket|datum|date|betalingsreferentie|betalingsmethode|payment|reference|ideal)$/i;
   const genericNumberLabelRe=/(nummer|number)$/i;
   const genericDocWordRe=(s)=>genericStandaloneWordRe.test(s)||genericNumberLabelRe.test(s);
+  // ⚠️ إصلاح خلل حقيقي إضافي وأهم: سطر "Klant"/"Customer" يُشير إلى اسم
+  // العميل نفسه (أحمد نفسه في هذا التطبيق)، وليس المورد إطلاقًا - عكس المعنى
+  // تمامًا! يجب تجاوز هذا السطر **والسطر الذي يليه مباشرة** أيضًا (القيمة
+  // الفعلية لاسم العميل)، وإلا قد يُلتقَط اسم العميل نفسه خطأً كاسم مورد
+  // ⚠️ نفس المنطق يشمل أيضًا تسميات "مرجع/طريقة الدفع" - قيمتها (رمز عشوائي،
+  // أو اسم مزوّد دفع كـiDEAL) ليست اسم مورد إطلاقًا أيضًا
+  const skipNextValueLabelRe=/^(klant|customer|client|betalingsreferentie|betalingsmethode|payment\s*(reference|method))$/i;
   const addressLikeRe=/^\d|straat|street|weg|laan|plein|tel[:.]|phone|www\.|@/i;
-  for(const line of lines){
+  let skipNextLine=false;
+  for(let li=0;li<lines.length;li++){
+    const line=lines[li];
+    if(skipNextLine){skipNextLine=false;continue;}
     const cleanedLine=line.replace(/[^A-Za-z\u0600-\u06FF]/g,'').trim();
+    if(skipNextValueLabelRe.test(cleanedLine)){
+      skipNextLine=true; // السطر التالي هو اسم العميل نفسه - يجب تجاوزه أيضًا، وليس فقط سطر التسمية
+      continue;
+    }
     if(/[A-Za-z\u0600-\u06FF]{3,}/.test(line)&&!addressLikeRe.test(line)&&!genericDocWordRe(cleanedLine)){
       out.supplier=line.slice(0,60);
       out.confidence.supplier='medium'; // موقعه بأعلى الفاتورة مؤشر جيد لكن غير مؤكد 100%
