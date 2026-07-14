@@ -559,13 +559,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.98">
+<link rel="manifest" href="manifest.json?v=3.99">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.98').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=3.99').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -6514,6 +6514,18 @@ function readAsDataURL(file){
 }
 
 /* ── OCR: قراءة بيانات الفاتورة تلقائيًا من الصورة ── */
+// ⚠️ يُحوِّل رقمًا بصيغة أوروبية/هولندية (قد يحتوي فواصل آلاف) إلى رقم عشري
+// صحيح - الفاصل الأخير في السلسلة هو دائمًا الفاصل العشري الحقيقي (بغضّ
+// النظر إن كان نقطة أو فاصلة)، وأي فواصل أخرى قبله هي فواصل آلاف يجب حذفها
+// فقط، وليس تحويلها لفاصلة عشرية إضافية (وإلا فشل parseFloat على أرقام مثل
+// "3.987,72" التي تحتوي فاصلًا للآلاف وفاصلة عشرية معًا)
+function parseDutchAmount(matchedStr){
+  const lastSeparatorIdx=Math.max(matchedStr.lastIndexOf('.'),matchedStr.lastIndexOf(','));
+  if(lastSeparatorIdx===-1)return parseFloat(matchedStr);
+  const integerPart=matchedStr.slice(0,lastSeparatorIdx).replace(/[.,]/g,'');
+  const decimalPart=matchedStr.slice(lastSeparatorIdx+1);
+  return parseFloat(integerPart+'.'+decimalPart);
+}
 function parseReceiptText(text,ocrConfidence){
   const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
   const out={amount:null,date:null,supplier:null,invoiceNumber:null,iban:null,kvk:null,btwNumber:null,vatRate:null,
@@ -6588,7 +6600,12 @@ function parseReceiptText(text,ocrConfidence){
   // الشرط السابق فقط استبعد وجود رقم آخر مباشرة بعده، لكن لم يستبعد علامة "%"
   // - ما يعني أن نسبة الضريبة نفسها قد تُلتقَط خطأً كأنها مبلغ الفاتورة! الآن
   // نستبعد صراحة أي رقم يليه "%" (بمسافة اختيارية بينهما)
-  const numRe=/(\d{1,4}(?:[.,]\d{2}))(?!\d)(?!\s*%)/g;
+  // ⚠️⚠️ إصلاح خلل خطير: الأرقام الهولندية الكبيرة تستخدم النقطة كفاصل آلاف
+  // (مثل "3.987,72" = ٣٩٨٧ يورو و٧٢ سنتًا) - الصيغة القديمة كانت تلتقط فقط
+  // "987,72" (تتجاهل فاصل الآلاف والرقم الذي يسبقه بالخطأ)، فتُصغِّر أي مبلغ
+  // يتجاوز 1000 بشكل خاطئ تمامًا! الصيغة الجديدة تتعرَّف على مجموعات الآلاف
+  // الكاملة (كل مجموعة 3 أرقام بالضبط) قبل الجزء العشري النهائي
+  const numRe=/(\d{1,3}(?:[.,]\d{3})*[.,]\d{2})(?!\d)(?!\s*%)/g;
   // ⚠️ أولوية قصوى: "Totaal (excl. btw)" تحديدًا - هذا هو الرقم الصافي
   // النهائي الصحيح فعليًا (يشمل كل الرسوم كالشحن، وليس فقط مجموع الأصناف كما
   // قد تكون "Subtotaal" وحدها بمعزل عن أي رسوم إضافية لاحقة)
@@ -6605,11 +6622,11 @@ function parseReceiptText(text,ocrConfidence){
   function findNumberNear(lineIndex){
     numRe.lastIndex=0;
     let m=numRe.exec(lines[lineIndex]);
-    if(m)return parseFloat(m[1].replace(',','.'));
+    if(m)return parseDutchAmount(m[1]);
     if(lineIndex+1<lines.length){
       numRe.lastIndex=0;
       m=numRe.exec(lines[lineIndex+1]);
-      if(m)return parseFloat(m[1].replace(',','.'));
+      if(m)return parseDutchAmount(m[1]);
     }
     return null;
   }
@@ -6626,14 +6643,23 @@ function parseReceiptText(text,ocrConfidence){
       const val=findNumberNear(li);
       if(val!==null&&!isNaN(val))netTotalBest=val;
     }
+    // ⚠️ إصلاح خلل حقيقي: جداول الفواتير الهولندية غالبًا تضع عدة أرقام على
+    // نفس سطر "Totaal" (بدون ضريبة، الضريبة، شامل الضريبة معًا بنفس الترتيب
+    // الثابت دائمًا) - كان الكود يختار "أكبر رقم" بينها (فيلتقط "شامل
+    // الضريبة" خطأً)، بدل "أول رقم" (وهو دائمًا "بدون ضريبة" في هذا الترتيب
+    // الجدولي الثابت). الآن نأخذ فقط أول رقم صالح بكل سطر كمرشَّح لذلك السطر
     let m;
     numRe.lastIndex=0;
+    let firstNumOnLine=null;
     while((m=numRe.exec(line))){
-      const val=parseFloat(m[1].replace(',','.'));
+      const val=parseDutchAmount(m[1]);
       if(isNaN(val))continue;
+      if(firstNumOnLine===null)firstNumOnLine=val;
       if(isNetKw&&(netBest===null||val>netBest)){netBest=val;}
-      if(grossBest===null||(isGrossKw&&!grossBestKw)||(isGrossKw===grossBestKw&&val>grossBest)){
-        grossBest=val;grossBestKw=isGrossKw;
+    }
+    if(firstNumOnLine!==null){
+      if(grossBest===null||(isGrossKw&&!grossBestKw)||isGrossKw){
+        grossBest=firstNumOnLine;grossBestKw=isGrossKw;
       }
     }
   }
