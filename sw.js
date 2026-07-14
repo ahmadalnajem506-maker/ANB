@@ -1,8 +1,8 @@
-// ANB FinAdmin Pro - Service Worker v4.05
+// ANB FinAdmin Pro - Service Worker v4.07
 // تاريخ الإنشاء: 26 يونيو 2026 (محدّث 04 يوليو 2026 - إزالة سرّ R2 المسرَّب من الكود)
 // الغرض: تفعيل PWA والعمل بدون إنترنت
 
-const CACHE_NAME = 'anb-finadmin-v4.05';
+const CACHE_NAME = 'anb-finadmin-v4.07';
 const urlsToCache = [
   './',
   './index.html',
@@ -11,10 +11,10 @@ const urlsToCache = [
 
 // تثبيت Service Worker
 self.addEventListener('install', event => {
-  console.log('🔧 Service Worker installing v4.05...');
+  console.log('🔧 Service Worker installing v4.07...');
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log('✅ Cache opened v4.05');
+      console.log('✅ Cache opened v4.07');
       return cache.addAll(urlsToCache).catch(err => {
         console.log('⚠️ Some URLs failed to cache (offline-first strategy applied)');
       });
@@ -25,7 +25,7 @@ self.addEventListener('install', event => {
 
 // تفعيل Service Worker
 self.addEventListener('activate', event => {
-  console.log('🚀 Service Worker activating v4.05...');
+  console.log('🚀 Service Worker activating v4.07...');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -82,4 +82,4 @@ self.addEventListener('message', event => {
   }
 });
 
-console.log('✨ ANB FinAdmin Service Worker Loaded v4.05 - Cache Updated!');
+console.log('✨ ANB FinAdmin Service Worker Loaded v4.07 - Cache Updated!');
