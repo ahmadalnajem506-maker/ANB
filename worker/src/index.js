@@ -632,18 +632,33 @@ async function handleOcrVision(request, env, cors) {
   // نحسبه بأنفسنا كمتوسط ثقة كل الكلمات المكتشَفة، لإبقاء نفس آلية عرض الثقة
   // الملوَّنة الموجودة أصلًا في التطبيق (خضراء/ذهبية) بلا أي تغيير هناك
   let confidenceSum = 0, confidenceCount = 0;
+  // ⭐ نهج مكاني أعمق: نستخرج أيضًا إحداثيات كل كلمة (وليس فقط النص المسطَّح)
+  // - هذا يُمكِّن العميل من إعادة بناء بنية الجدول الفعلية (أي عمود تنتمي إليه
+  // كل قيمة)، بدل الاعتماد على تخمين نصي بترتيب الظهور فقط، ما يُقلِّل جذريًا
+  // الأخطاء مع فواتير جدولية معقَّدة (كفاتورة إيجار بعدة أعمدة أرقام متجاورة)
+  const words = [];
   (result.fullTextAnnotation?.pages || []).forEach(page => {
     (page.blocks || []).forEach(block => {
       (block.paragraphs || []).forEach(para => {
         (para.words || []).forEach(word => {
           if (typeof word.confidence === 'number') { confidenceSum += word.confidence; confidenceCount++; }
+          const text = (word.symbols || []).map(s => s.text).join('');
+          const vertices = word.boundingBox?.vertices || [];
+          if (text && vertices.length === 4) {
+            const xs = vertices.map(v => v.x || 0), ys = vertices.map(v => v.y || 0);
+            words.push({
+              t: text,
+              x: Math.min(...xs), y: Math.min(...ys),
+              w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys),
+            });
+          }
         });
       });
     });
   });
   const avgConfidence = confidenceCount > 0 ? (confidenceSum / confidenceCount) * 100 : 75; // احتياطي معقول إن غاب الرقم
 
-  return json({ text: fullText, confidence: avgConfidence }, 200, cors);
+  return json({ text: fullText, confidence: avgConfidence, words }, 200, cors);
 }
 
 async function handleUpload(request, env, cors) {
