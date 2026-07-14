@@ -120,7 +120,7 @@ function listFor(payload, role) {
 const SENSITIVE_ACCOUNT_FIELDS = ['passwordHash', 'passwordSalt', 'totpSecret'];
 // المصفوفات المرتبطة بعميل واحد عبر حقل cid (غير clients/admins، اللذين
 // يُصفَّيان بقاعدة مختلفة تعتمد على id مباشرة بدل cid)
-const CLIENT_SCOPED_ARRAY_KEYS = ['invoices', 'expenses', 'hours', 'docs', 'messages', 'journal', 'bankTx', 'recurring', 'yearClosings', 'contracts', 'assets', 'serviceAgreements', 'importBatches', 'employees', 'contacts', 'cashPayments', 'cashierLog', 'cashierDayExceptions'];
+const CLIENT_SCOPED_ARRAY_KEYS = ['invoices', 'expenses', 'hours', 'docs', 'messages', 'journal', 'bankTx', 'recurring', 'yearClosings', 'contracts', 'assets', 'serviceAgreements', 'importBatches', 'employees', 'contacts', 'cashPayments', 'cashierLog', 'cashierDayExceptions', 'supplierOcrProfiles'];
 
 function stripSensitiveFields(account) {
   if (!account || typeof account !== 'object') return account;
