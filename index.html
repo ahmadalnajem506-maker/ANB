@@ -559,13 +559,13 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
-<link rel="manifest" href="manifest.json?v=3.99">
+<link rel="manifest" href="manifest.json?v=4.01">
 <script>
 // Register service worker for offline support + installability.
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=3.99').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=4.01').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -6519,6 +6519,80 @@ function readAsDataURL(file){
 // النظر إن كان نقطة أو فاصلة)، وأي فواصل أخرى قبله هي فواصل آلاف يجب حذفها
 // فقط، وليس تحويلها لفاصلة عشرية إضافية (وإلا فشل parseFloat على أرقام مثل
 // "3.987,72" التي تحتوي فاصلًا للآلاف وفاصلة عشرية معًا)
+// ══════════════════════════════════════════════════════════════════
+// ⭐ النهج المكاني (Spatial Parsing) - بدل الاعتماد فقط على ترتيب ظهور النص
+// المسطَّح (عُرضة لأخطاء كثيرة مع فواتير جدولية معقَّدة كما رأينا)، نستخدم
+// إحداثيات كل كلمة التي يُعيدها Google Vision لإعادة بناء بنية الجدول
+// الفعلية: أي عمود تنتمي إليه كل قيمة، بدقة مكانية حقيقية وليس تخمينًا نصيًا
+// ══════════════════════════════════════════════════════════════════
+
+// يُجمِّع كلمات مبعثرة (بإحداثياتها) إلى "صفوف" مرئية حسب تقارب الإحداثي
+// الرأسي (Y) - كل كلمات نفس الصف الجدولي تتشارك تقريبًا نفس ارتفاع Y
+function groupWordsIntoRows(words){
+  const sorted=[...words].sort((a,b)=>a.y-b.y);
+  const rows=[];
+  for(const word of sorted){
+    const wordMidY=word.y+word.h/2;
+    let row=rows.find(r=>{
+      const rowMidY=r.y+r.h/2;
+      return Math.abs(wordMidY-rowMidY)<Math.max(word.h,r.h)*0.6;
+    });
+    if(!row){
+      row={y:word.y,h:word.h,words:[]};
+      rows.push(row);
+    }
+    row.words.push(word);
+    const newTop=Math.min(row.y,word.y);
+    const newBottom=Math.max(row.y+row.h,word.y+word.h);
+    row.y=newTop;row.h=newBottom-newTop;
+  }
+  rows.forEach(r=>r.words.sort((a,b)=>a.x-b.x)); // كل صف: يسار لليمين
+  return rows.sort((a,b)=>a.y-b.y); // الصفوف: أعلى لأسفل
+}
+
+// يبحث عن أول صف يحتوي كلمة تطابق نمطًا معيَّنًا (كعنوان عمود "excl") ويُعيد
+// موضعها الأفقي (X) - هذا يُحدِّد "حدود العمود" تقريبيًا لاستخدامه لاحقًا في
+// مطابقة القيم بنفس العمود عبر صفوف مختلفة
+function findHeaderColumnX(rows,keywordRe){
+  for(const row of rows){
+    for(const word of row.words){
+      if(keywordRe.test(word.t))return word.x;
+    }
+  }
+  return null;
+}
+
+// يُحاول استخراج المبلغ الصحيح "بدون ضريبة" من صف "Totaal" اعتمادًا على
+// الموضع المكاني الفعلي للعمود، وليس تخمينًا نصيًا - يُعيد null إن لم توجد
+// بنية جدول واضحة بثقة كافية (فيتراجع النظام حينها لمسار النص المسطَّح كما كان)
+function parseReceiptSpatial(words){
+  if(!words||words.length<8)return null; // بيانات قليلة جدًا لبناء جدول موثوق
+  const rows=groupWordsIntoRows(words);
+  const exclColumnX=findHeaderColumnX(rows,/^excl/i);
+  if(exclColumnX===null)return null; // لا عمود "Bedrag excl." واضح - نتراجع للنص المسطَّح
+
+  // نبحث عن آخر صف يحتوي كلمة "Totaal"/"Total" (الإجمالي النهائي عادة آخر
+  // صف بهذه الكلمة في الفاتورة، وليس أول ظهور عرضي لها ضمن جملة نثرية لاحقة)
+  let totaalRow=null;
+  for(let i=rows.length-1;i>=0;i--){
+    if(rows[i].words.some(w=>/^totaal$|^total$/i.test(w.t))){totaalRow=rows[i];break;}
+  }
+  if(!totaalRow)return null;
+
+  // ضمن صف الإجمالي، نختار الرقم الأقرب أفقيًا لعمود "Bedrag excl." المُكتشَف
+  const numWordRe=/^\d{1,3}(?:[.,]\d{3})*[.,]\d{2}$/;
+  let best=null,bestDist=Infinity;
+  for(const w of totaalRow.words){
+    if(!numWordRe.test(w.t))continue;
+    const dist=Math.abs(w.x-exclColumnX);
+    if(dist<bestDist){bestDist=dist;best=w;}
+  }
+  // هامش تسامح معقول (نصف عرض عمود تقريبي) - إن كان أقرب رقم بعيدًا جدًا عن
+  // عمود "بدون ضريبة" المُتوقَّع، لا نثق بالنتيجة ونتراجع للنص المسطَّح بدل تخمين خاطئ
+  if(!best||bestDist>250)return null;
+
+  return {amount:parseDutchAmount(best.t),method:'spatial'};
+}
 function parseDutchAmount(matchedStr){
   const lastSeparatorIdx=Math.max(matchedStr.lastIndexOf('.'),matchedStr.lastIndexOf(','));
   if(lastSeparatorIdx===-1)return parseFloat(matchedStr);
@@ -6605,7 +6679,12 @@ function parseReceiptText(text,ocrConfidence){
   // "987,72" (تتجاهل فاصل الآلاف والرقم الذي يسبقه بالخطأ)، فتُصغِّر أي مبلغ
   // يتجاوز 1000 بشكل خاطئ تمامًا! الصيغة الجديدة تتعرَّف على مجموعات الآلاف
   // الكاملة (كل مجموعة 3 أرقام بالضبط) قبل الجزء العشري النهائي
-  const numRe=/(\d{1,3}(?:[.,]\d{3})*[.,]\d{2})(?!\d)(?!\s*%)/g;
+  // ⚠️ إصلاح خلل حقيقي: أرقام مرجعية/فواتير بصيغة متعددة الأجزاء بفواصل (مثل
+  // "26.70.000238") كانت تُطابَق جزئيًا كمبلغ مالي صالح ("26.70")! المبلغ
+  // المالي الحقيقي لا يحتوي أبدًا جزءًا ثالثًا بعد الفاصلة العشرية، فنستبعد
+  // صراحة أي تطابق يليه مباشرة فاصل آخر ثم رقم (يدل على استمرارية رقم مرجعي
+  // متعدد الأجزاء، وليس نهاية مبلغ مالي فعلي)
+  const numRe=/(\d{1,3}(?:[.,]\d{3})*[.,]\d{2})(?!\d)(?!\s*%)(?![.,]\d)/g;
   // ⚠️ أولوية قصوى: "Totaal (excl. btw)" تحديدًا - هذا هو الرقم الصافي
   // النهائي الصحيح فعليًا (يشمل كل الرسوم كالشحن، وليس فقط مجموع الأصناف كما
   // قد تكون "Subtotaal" وحدها بمعزل عن أي رسوم إضافية لاحقة)
@@ -6956,9 +7035,23 @@ async function ocrViaGoogleVision(processedUrl){
     const errBody=await res.json().catch(()=>({}));
     throw new Error(errBody.error||'Vision API request failed ('+res.status+')');
   }
-  const {text,confidence}=await res.json();
+  const {text,confidence,words}=await res.json();
   if(!text||!text.trim())throw new Error('Vision API returned no text');
   const result=parseReceiptText(text,confidence);
+  // ⭐ النهج المكاني: إن توفَّرت إحداثيات الكلمات وكانت بنية جدول واضحة
+  // بثقة كافية، نُفضِّل المبلغ المُستخرَج مكانيًا (أدق بكثير لفواتير جدولية
+  // معقَّدة) على التخمين النصي المسطَّح - مع إبقاء بقية الحقول (المورد،
+  // التاريخ) من المسار النصي كما هي، فهي لا تزال تعمل بشكل جيد
+  try{
+    const spatial=parseReceiptSpatial(words);
+    if(spatial){
+      result.amount=spatial.amount;
+      result.confidence.amount='high'; // مستخرَج بدقة مكانية مباشرة من العمود الصحيح
+      result.amountMethod='spatial';
+    }
+  }catch(e){
+    // فشل التحليل المكاني (نادر) - نكمل بنتيجة النص المسطَّح بلا انقطاع
+  }
   result.ocrEngine='vision'; // ⚠️ لتشخيص واضح لأي التراجع فعليًا حدث لآخر عملية مسح
   return result;
 }
@@ -6988,7 +7081,7 @@ function applyOcrFieldsToExpenseForm(extracted){
   };
   if(extracted.date){document.getElementById('ex-d').value=extracted.date;markField('ex-d',extracted.confidence?.date);}
   if(extracted.supplier){document.getElementById('ex-s').value=extracted.supplier;markField('ex-s',extracted.confidence?.supplier);}
-  if(extracted.amount!=null){document.getElementById('ex-a').value=extracted.amount;markField('ex-a',extracted.confidence?.amount);}
+  if(extracted.amount!=null){document.getElementById('ex-a').value=extracted.amount.toFixed(2);markField('ex-a',extracted.confidence?.amount);}
   if(extracted.vatRate!=null){
     const rateEl=document.getElementById('ex-r');
     if(rateEl){rateEl.value=String(extracted.vatRate);markField('ex-r',extracted.confidence?.vatRate);}
