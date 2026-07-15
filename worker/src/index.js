@@ -120,7 +120,7 @@ function listFor(payload, role) {
 const SENSITIVE_ACCOUNT_FIELDS = ['passwordHash', 'passwordSalt', 'totpSecret'];
 // المصفوفات المرتبطة بعميل واحد عبر حقل cid (غير clients/admins، اللذين
 // يُصفَّيان بقاعدة مختلفة تعتمد على id مباشرة بدل cid)
-const CLIENT_SCOPED_ARRAY_KEYS = ['invoices', 'expenses', 'hours', 'docs', 'messages', 'journal', 'bankTx', 'recurring', 'yearClosings', 'contracts', 'assets', 'serviceAgreements', 'importBatches', 'employees', 'contacts', 'cashPayments', 'cashierLog', 'cashierDayExceptions', 'supplierOcrProfiles'];
+const CLIENT_SCOPED_ARRAY_KEYS = ['invoices', 'expenses', 'hours', 'docs', 'messages', 'journal', 'bankTx', 'recurring', 'yearClosings', 'contracts', 'assets', 'serviceAgreements', 'importBatches', 'employees', 'contacts', 'cashPayments', 'cashierLog', 'cashierDayExceptions', 'supplierOcrProfiles', 'auditLog'];
 
 function stripSensitiveFields(account) {
   if (!account || typeof account !== 'object') return account;
@@ -153,6 +153,77 @@ function mergeClientScopedArray(existingArray, incomingArray, aid) {
   const others = (existingArray || []).filter((item) => !item || item.cid !== aid);
   const ownIncoming = (Array.isArray(incomingArray) ? incomingArray : []).filter((item) => item && item.cid === aid);
   return [...others, ...ownIncoming];
+}
+
+/* ═══════════════════════ ⚠️ حماية الفترات المُقفَلة - تطبيقها في الخادم أيضًا ═══════════════════════
+ * كانت ميزة "إغلاق السنة/الربع" (checkPeriodLockAndProceed في index.html) تُطبَّق
+ * فقط في واجهة المتصفح. أي شخص يملك توكن دخول عميل صالح كان يستطيع تجاوزها
+ * بالكامل عبر إرسال طلب POST /sync مباشر (بلا مرور بواجهة التطبيق إطلاقًا)،
+ * فيُعدِّل أو يحذف فواتير/مصاريف ضمن فترة أُقفلت وأُبلغت رسميًا لمصلحة الضرائب -
+ * ما يُبطل الغرض الكامل من الميزة (منع التعديل الصامت + سجل تدقيق موثوق).
+ * الإصلاح: نفس منطق getClosingForDate من العميل، لكن كبوابة إلزامية هنا في
+ * الخادم لا يمكن لأي طلب HTTP تجاوزها - فقط دور 'admin' يمكنه الكتابة على
+ * فترة مُقفَلة (يطابق سلوك الواجهة التي تسمح للأدمن بتأكيد صريح فقط).
+ */
+const PERIOD_LOCKED_ARRAY_KEYS = ['invoices', 'expenses'];
+
+function getClosingForDate(yearClosings, cid, dateStr) {
+  if (!dateStr) return null;
+  const closings = (yearClosings || []).filter((c) => c && c.cid === cid && !c.deleted);
+  if (closings.length === 0) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+  const year = date.getFullYear();
+  const quarter = Math.floor(date.getMonth() / 3) + 1;
+  return (
+    closings.find((c) => c.periodType === 'year' && c.year === year) ||
+    closings.find((c) => c.periodType === 'quarter' && c.year === year && c.quarter === quarter) ||
+    null
+  );
+}
+
+// يُصفِّي من incomingArray أي سجل (جديد، أو تعديل/حذف لسجل موجود) يقع تاريخه
+// (الجديد أو القديم المخزَّن فعليًا) ضمن فترة مُقفَلة لهذا العميل - السجلات
+// المرفوضة تبقى كما هي في قاعدة البيانات دون أي تأثير من الطلب الوارد
+function enforcePeriodLockOnClientArray(key, existingArray, incomingArray, aid, yearClosings) {
+  if (!PERIOD_LOCKED_ARRAY_KEYS.includes(key)) return { allowed: incomingArray, blocked: [] };
+  const existingById = new Map((existingArray || []).filter((x) => x).map((x) => [x.id, x]));
+  const allowed = [];
+  const blocked = [];
+  (Array.isArray(incomingArray) ? incomingArray : []).forEach((item) => {
+    if (!item || item.cid !== aid) return; // نطاق آخر، لا علاقة لبوابة القفل به هنا
+    const existingItem = existingById.get(item.id);
+    const datesToCheck = [item.date, existingItem && existingItem.date].filter(Boolean);
+    const isLocked = datesToCheck.some((d) => !!getClosingForDate(yearClosings, aid, d));
+    if (isLocked) blocked.push(item); else allowed.push(item);
+  });
+  return { allowed, blocked };
+}
+
+/* ═══════════════════════ ⚠️ سجل التدقيق (auditLog) - يجب أن يكون "إضافة فقط" ═══════════════════════
+ * كان auditLog محليًا فقط في المتصفح (لم يكن أصلًا ضمن مفاتيح المزامنة السحابية)
+ * - يُفقَد تمامًا عند تغيير الجهاز/مسح بيانات المتصفح، ولا يراه الأدمن إطلاقًا
+ * إن حدث الإجراء من متصفح آخر. بعد إضافته لمفاتيح المزامنة، يجب حمايته من
+ * إعادة الكتابة الكاملة (mergeClientScopedArray العادي يستبدل نطاق العميل
+ * بالكامل بما يُرسله - ما يسمح بمحو تاريخه السابق بسهولة). الإصلاح: دمج
+ * "إضافة فقط" - أي سجل تدقيق موجود فعليًا بمعرّفه (id) يبقى كما هو دائمًا،
+ * ولا يُقبَل إلا سجلات جديدة بمعرّفات لم تكن موجودة من قبل. يُطبَّق هذا حتى
+ * على دور الأدمن، فلا يمكن لأي طلب (حتى لو أُسيء استخدام توكن أدمن) محو
+ * التاريخ الفعلي للأحداث.
+ */
+const APPEND_ONLY_ARRAY_KEYS = ['auditLog'];
+
+function mergeAppendOnlyArray(existingArray, incomingArray, aidFilter) {
+  const existingIds = new Set((existingArray || []).filter((x) => x && x.id).map((x) => x.id));
+  const merged = [...(existingArray || [])];
+  (Array.isArray(incomingArray) ? incomingArray : []).forEach((item) => {
+    if (!item || !item.id) return;
+    if (aidFilter && item.cid !== aidFilter) return; // عميل لا يستطيع إدراج سجل تدقيق باسم عميل آخر
+    if (existingIds.has(item.id)) return; // سجل موجود فعلًا - يُتجاهَل التعديل عليه حفاظًا على سلامة التاريخ
+    existingIds.add(item.id);
+    merged.push(item);
+  });
+  return merged;
 }
 
 /* ═══════════════════════ /resolve-account ═══════════════════════ */
@@ -548,6 +619,8 @@ async function handleSyncPost(request, env, cors) {
           const existingAccount = existingList.find((a) => a && a.id === incomingAccount.id);
           return mergeAccount(existingAccount, incomingAccount);
         });
+      } else if (APPEND_ONLY_ARRAY_KEYS.includes(key)) {
+        merged[key] = mergeAppendOnlyArray(existingPayload[key], incomingPayload[key], null);
       } else {
         merged[key] = incomingPayload[key];
       }
@@ -564,9 +637,31 @@ async function handleSyncPost(request, env, cors) {
     }
     // admins تبقى كما هي في قاعدة البيانات تمامًا - العميل لا يملك أي تأثير عليها
     merged.admins = existingPayload.admins || [];
+    // yearClosings نفسها: العميل لا يملك صلاحية إغلاق/فتح فترة إطلاقًا (فعل
+    // إداري بحت) - تُبقى كما هي في قاعدة البيانات بغضّ النظر عما أرسله العميل
+    merged.yearClosings = existingPayload.yearClosings || [];
+    const blockedByPeriodLock = [];
     CLIENT_SCOPED_ARRAY_KEYS.forEach((key) => {
-      merged[key] = mergeClientScopedArray(existingPayload[key], incomingPayload[key], aid);
+      if (key === 'yearClosings') return; // عولجت أعلاه
+      if (APPEND_ONLY_ARRAY_KEYS.includes(key)) {
+        merged[key] = mergeAppendOnlyArray(existingPayload[key], incomingPayload[key], aid);
+        return;
+      }
+      const { allowed, blocked } = enforcePeriodLockOnClientArray(
+        key, existingPayload[key], incomingPayload[key], aid, existingPayload.yearClosings
+      );
+      blocked.forEach((item) => blockedByPeriodLock.push({ key, id: item.id }));
+      merged[key] = mergeClientScopedArray(existingPayload[key], allowed, aid);
     });
+    if (blockedByPeriodLock.length > 0) {
+      const savedAt = await writeCloudPayload(env, merged);
+      return json({
+        ok: true,
+        updated_at: new Date(savedAt).toISOString(),
+        warning: 'period_locked',
+        blocked: blockedByPeriodLock,
+      }, 200, cors);
+    }
   }
 
   const savedAt = await writeCloudPayload(env, merged);
@@ -664,7 +759,21 @@ async function handleOcrVision(request, env, cors) {
 async function handleUpload(request, env, cors) {
   const auth = await requireValidToken(request, env);
   if (!auth.ok) return json({ error: auth.error }, 401, cors);
-  const contentType = request.headers.get('Content-Type') || 'application/octet-stream';
+  // ⚠️ إصلاح ثغرة حقيقية: كان Content-Type يُؤخَذ من رأس الطلب كما أرسله
+  // المستخدم بلا أي تحقق، ويُعاد استخدامه لاحقًا حرفيًا عند تقديم الملف
+  // (writeHttpMetadata). عميل خبيث كان يستطيع رفع ملف بمحتوى HTML/SVG يحمل
+  // <script> فعليًا، معلنًا Content-Type: text/html أو image/svg+xml - فيُنفَّذ
+  // الكود عند فتح أي شخص (حتى الأدمن) لرابط الملف مباشرة (مثلًا عبر زر "عرض
+  // الإيصال"). الإصلاح: قائمة سماح صارمة لأنواع الملفات المتوقَّعة فعليًا
+  // (صور + PDF) فقط - أي نوع آخر يُرفَض عند الرفع نفسه.
+  const ALLOWED_UPLOAD_TYPES = new Set([
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif',
+    'application/pdf',
+  ]);
+  const contentType = (request.headers.get('Content-Type') || 'application/octet-stream').split(';')[0].trim().toLowerCase();
+  if (!ALLOWED_UPLOAD_TYPES.has(contentType)) {
+    return json({ error: 'Unsupported file type. Only images and PDF files are allowed.' }, 415, cors);
+  }
   const rawName = request.headers.get('X-File-Name') || 'file';
   const safeName = sanitizeFileName(rawName);
   // ⚠️ إصلاح: نستخدم هوية العميل الفعلي الذي يخصه الملف (وليس فقط من رفعه)
@@ -725,6 +834,13 @@ async function handleGetFile(request, env, cors, url) {
   object.writeHttpMetadata(headers);
   headers.set('etag', object.httpEtag);
   headers.set('Cache-Control', 'private, max-age=31536000, immutable');
+  // ⚠️ حماية إضافية دفاعية: تمنع المتصفح من "استنتاج" نوع محتوى مختلف عمّا
+  // أُعلن (MIME-sniffing) - طبقة حماية إضافية حتى لو كان نوع ملف قديم (مرفوع
+  // قبل إصلاح قائمة السماح في handleUpload) لا يزال يحمل نوعًا خطِرًا
+  headers.set('X-Content-Type-Options', 'nosniff');
+  const SAFE_INLINE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']);
+  const storedType = (object.httpMetadata?.contentType || '').split(';')[0].trim().toLowerCase();
+  if (!SAFE_INLINE_TYPES.has(storedType)) headers.set('Content-Disposition', 'attachment');
   return new Response(object.body, { headers });
 }
 async function handleDeleteFile(request, env, cors, url) {
@@ -829,6 +945,12 @@ function corsHeaders(env) {
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name',
     'Access-Control-Max-Age': '86400',
+    // ⚠️ رؤوس أمان إضافية دفاعية لكل استجابات الـAPI - نفس المبدأ المُطبَّق
+    // في CSP/headers الواجهة، لكن على مستوى الخادم هذه المرة
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Cache-Control': 'no-store', // استجابات API لا يجب تخزينها مؤقتًا أبدًا (بيانات حسّاسة) - ما عدا /file التي تُحدِّد Cache-Control خاصًا بها صراحة أعلى
   };
 }
 function json(obj, status, cors) {
