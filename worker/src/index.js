@@ -396,7 +396,14 @@ async function handleVerify2FA(request, env, cors) {
 // القديم يُعاد تجزئته تلقائيًا بالعدد الجديد الأعلى عند أول دخول ناجح له
 // (نفس آلية "needsUpgrade" المُستخدَمة أصلًا لترقية كلمات المرور النصية
 // القديمة) - ترقية تدريجية ذاتية بلا أي انقطاع خدمة لأي مستخدم.
-const PBKDF2_ITERATIONS = 600000;
+// ⚠️⚠️ إصلاح عاجل: Cloudflare Workers نفسها تفرض حدًا أقصى صارمًا 100,000
+// تكرار لـPBKDF2 على مستوى بيئة التشغيل (workerd) - أي رقم أعلى يرمي
+// NotSupportedError فورًا من crypto.subtle.deriveBits، بغضّ النظر عن الخطة
+// أو إعدادات CPU. رفع هذا الرقم لـ600,000 (توصية OWASP القياسية) كان يبدو
+// تحسينًا أمنيًا سليمًا نظريًا، لكنه في الواقع كان يُعطِّل كل عملية تعيين/
+// تغيير كلمة مرور فورًا بخطأ "Internal error" غامض - وهذا بالضبط ما حدث هنا.
+// 100,000 هو الحد الأقصى الفعلي المسموح به في هذه البيئة تحديدًا.
+const PBKDF2_ITERATIONS = 100000;
 const PBKDF2_LEGACY_ITERATIONS = 100000; // للسجلات القديمة السابقة لهذا التحديث
 
 async function verifyPasswordServerSide(plainPassword, record) {
