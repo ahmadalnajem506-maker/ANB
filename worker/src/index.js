@@ -275,7 +275,11 @@ async function handleResolveAccount(request, env, cors) {
     email: account.email || '',
     type: account.type || '',
     totpEnabled: !!account.totpEnabled,
-    isFirstTime: role === 'client' ? !account.pwSet : false,
+    // ⚠️ إصلاح خلل حقيقي: كانت isFirstTime دائمًا false للأدمن بلا أي تحقق
+    // فعلي من وجود كلمة مرور مسبقة - ما جعل شاشة "نسيت كلمة المرور" تصل
+    // بالأدمن حتى نهاية النموذج قبل أن يرفضها الخادم في اللحظة الأخيرة بخطأ
+    // غامض، بدل توجيهه من البداية بوضوح
+    isFirstTime: role === 'client' ? !account.pwSet : !account.passwordHash,
   }, 200, cors);
 }
 
