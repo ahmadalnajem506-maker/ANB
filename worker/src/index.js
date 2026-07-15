@@ -320,6 +320,7 @@ async function handleLogin(request, env, cors) {
     const rec = await makePasswordRecord(password);
     account.passwordSalt = rec.passwordSalt;
     account.passwordHash = rec.passwordHash;
+    account.passwordIterations = rec.passwordIterations;
     delete account.password; delete account.pwCustom; delete account.pw;
   }
   if (role === 'admin') account.lastLogin = new Date().toISOString().slice(0, 10);
@@ -381,13 +382,28 @@ async function handleVerify2FA(request, env, cors) {
 
 /* ═══════════════════════ التحقق من كلمة المرور + الترقية من نص صريح ═══════════════════════ */
 
+// ⚠️ رفع عدد تكرارات PBKDF2 من 100,000 إلى 600,000 (توصية OWASP الحالية
+// لـPBKDF2-HMAC-SHA256، 2023). المشكلة: كلمات المرور الموجودة فعليًا الآن
+// مُخزَّنة بهاش محسوب بـ100,000 تكرار فقط - لو غيّرنا الرقم مباشرة في دالة
+// التحقق، ستفشل كل عمليات تسجيل الدخول القديمة فورًا! الحل: نُخزِّن عدد
+// التكرارات المُستخدَم فعليًا مع كل سجل كلمة مرور (passwordIterations)،
+// ونتحقق باستخدام نفس العدد الذي حُسب به الهاش أصلًا (افتراضيًا 100,000
+// للسجلات القديمة التي لا تحمل هذا الحقل بعد). أي حساب لا يزال على العدد
+// القديم يُعاد تجزئته تلقائيًا بالعدد الجديد الأعلى عند أول دخول ناجح له
+// (نفس آلية "needsUpgrade" المُستخدَمة أصلًا لترقية كلمات المرور النصية
+// القديمة) - ترقية تدريجية ذاتية بلا أي انقطاع خدمة لأي مستخدم.
+const PBKDF2_ITERATIONS = 600000;
+const PBKDF2_LEGACY_ITERATIONS = 100000; // للسجلات القديمة السابقة لهذا التحديث
+
 async function verifyPasswordServerSide(plainPassword, record) {
   if (record.passwordHash && record.passwordSalt) {
-    const hash = await hashPasswordPBKDF2(plainPassword, record.passwordSalt);
+    const iterations = record.passwordIterations || PBKDF2_LEGACY_ITERATIONS;
+    const hash = await hashPasswordPBKDF2(plainPassword, record.passwordSalt, iterations);
     // ⚠️ مقارنة آمنة زمنيًا (كتلك المُستخدَمة أصلًا للتحقق من توقيع التوكن) -
     // بدل === العادية التي قد تُنهي المقارنة عند أول حرف مختلف، فتُسرِّب معلومة
     // زمنية دقيقة (نظريًا) عن مدى تطابق التخمين مع الهاش الصحيح
-    return { ok: timingSafeEqual(hash, record.passwordHash), needsUpgrade: false };
+    const ok = timingSafeEqual(hash, record.passwordHash);
+    return { ok, needsUpgrade: ok && iterations < PBKDF2_ITERATIONS };
   }
   const legacyPlain = record.password || record.pwCustom || record.pw;
   if (legacyPlain !== undefined && legacyPlain === plainPassword) {
@@ -399,13 +415,13 @@ async function makePasswordRecord(plainPassword) {
   const saltBytes = new Uint8Array(16);
   crypto.getRandomValues(saltBytes);
   const passwordSalt = bufToHex(saltBytes);
-  const passwordHash = await hashPasswordPBKDF2(plainPassword, passwordSalt);
-  return { passwordSalt, passwordHash };
+  const passwordHash = await hashPasswordPBKDF2(plainPassword, passwordSalt, PBKDF2_ITERATIONS);
+  return { passwordSalt, passwordHash, passwordIterations: PBKDF2_ITERATIONS };
 }
-async function hashPasswordPBKDF2(password, saltHex) {
+async function hashPasswordPBKDF2(password, saltHex, iterations) {
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(saltHex), iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(saltHex), iterations: iterations || PBKDF2_ITERATIONS, hash: 'SHA-256' }, keyMaterial, 256);
   return bufToHex(bits);
 }
 
@@ -508,6 +524,7 @@ async function handleSetPassword(request, env, cors) {
   const account = list[idx];
   account.passwordSalt = rec.passwordSalt;
   account.passwordHash = rec.passwordHash;
+  account.passwordIterations = rec.passwordIterations;
   delete account.password; delete account.pwCustom; delete account.pw;
   if (role === 'client') account.pwSet = true;
   clearFailedAttempts(account);
@@ -545,6 +562,7 @@ async function handleGenerateTempPassword(request, env, cors) {
   const account = list[idx];
   account.passwordSalt = rec.passwordSalt;
   account.passwordHash = rec.passwordHash;
+  account.passwordIterations = rec.passwordIterations;
   delete account.password; delete account.pwCustom; delete account.pw;
   account.pwSet = true;
   clearFailedAttempts(account);
