@@ -10,6 +10,28 @@
 <meta name="apple-mobile-web-app-title" content="ANB FinAdmin">
 <meta name="description" content="Professional accounting software for ZZP and freelancers">
 <title>ANB Financial Services</title>
+<!-- ⚠️ Content-Security-Policy دفاعية: تُقيِّد من أين يمكن تحميل السكربتات/الصور/
+     الاتصالات، وتمنع <object>/<embed> والإطارات المضمَّنة بالكامل. ملاحظة صادقة:
+     التطبيق يعتمد بنيويًا على معالجات أحداث inline (onclick=".." في آلاف الأماكن)
+     ونص JS ضخم داخل عنصر سكربت واحد - هذا يستلزم 'unsafe-inline' لـscript-src حاليًا،
+     ما يُضعف قدرة CSP على منع XSS تحديدًا (رغم أنها لا تزال تحمي من أشياء أخرى:
+     تسريب البيانات لدومين خارجي، حقن كائنات/إطارات، إلخ). الحل الجذري لهذا القيد
+     يتطلب إعادة هيكلة معالجات الأحداث لاستخدام addEventListener بدل onclick= مباشرة
+     عبر كل الملف - مهمة كبيرة منفصلة، لم تُنفَّذ هنا. ملاحظة أخرى: توجيه
+     frame-ancestors لا يعمل عبر meta tag (يتجاهله المتصفح) - يحتاج ضبطًا فعليًا
+     كرأس HTTP حقيقي من طبقة الاستضافة نفسها (راجع ملف _headers المُرفَق بجانب هذا الملف). -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+  worker-src 'self' blob: https://cdnjs.cloudflare.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com;
+  img-src 'self' data: blob: https://anb.ahmad-alnajem506.workers.dev;
+  connect-src 'self' https://anb.ahmad-alnajem506.workers.dev;
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!-- Tabler icons replaced with inline symbols -->
 <!-- jsPDF, XLSX, Tesseract.js, pdf.js are now lazy-loaded on demand (see loadScript/ensureXxx helpers) to speed up initial page load -->
@@ -437,6 +459,17 @@ tr:hover td{background:var(--gr1)}
   padding:18px;margin-bottom:12px}
 .settings-section h3{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--g1);
   margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--gr1)}
+.settings-nav{display:flex;gap:6px;background:var(--gr1);padding:5px;border-radius:12px;margin-bottom:16px}
+.settings-nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;
+  border:none;border-radius:9px;background:transparent;cursor:pointer;font-family:var(--fb);
+  font-size:10px;font-weight:600;color:var(--t3);transition:all .15s}
+.settings-nav-btn .snb-icon{font-size:16px;line-height:1}
+.settings-nav-btn.active{background:var(--g1);color:#FFD700;box-shadow:var(--sh)}
+.settings-nav-btn.danger.active{background:#a83232;color:#fff}
+.sec-desc{font-size:11px;color:var(--t3);line-height:1.6;margin-bottom:14px}
+.msec{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--gold);
+  margin:18px 0 10px;padding-top:16px;border-top:1px solid var(--gr2);display:flex;align-items:center;gap:6px}
+.msec.msec-first{margin-top:0;padding-top:0;border-top:none}
 
 /* ═══ BTW ═══ */
 
@@ -1993,7 +2026,7 @@ const CLOUD_ROW_ID='anb-main';
 // يعني: أي جلسة/جهاز مختلف (أو حتى نفس الجهاز بعد تحديث Service Worker
 // يُعيد التحميل من السحابة) يفقد كل الاتفاقيات الموقَّعة تمامًا - وهذا بالضبط
 // سبب ظهور "Agreement not found" عند محاولة مراجعة عقد مُوقَّع سابقًا.
-const CLOUD_SYNC_ARRAY_KEYS=['clients','admins','invoices','expenses','hours','docs','messages','journal','bankTx','recurring','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','contacts','cashPayments','cashierLog','cashierDayExceptions','supplierOcrProfiles'];
+const CLOUD_SYNC_ARRAY_KEYS=['clients','admins','invoices','expenses','hours','docs','messages','journal','bankTx','recurring','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','contacts','cashPayments','cashierLog','cashierDayExceptions','supplierOcrProfiles','auditLog'];
 let cloudSyncTimer=null;
 let cloudSyncStatus='idle'; // idle | syncing | synced | error | offline
 let cloudSyncInFlight=false;
@@ -2032,7 +2065,7 @@ function mergeArraysById(localArr,cloudArr){
 
 // المصفوفات المرتبطة بعميل واحد عبر cid - تُطابق تمامًا القائمة نفسها في
 // الـWorker (CLIENT_SCOPED_ARRAY_KEYS) للفلترة الآمنة على مستوى العميل
-const CLIENT_SCOPED_ARRAY_KEYS=['invoices','expenses','hours','docs','messages','journal','bankTx','recurring','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','contacts','cashPayments','cashierLog','cashierDayExceptions','supplierOcrProfiles'];
+const CLIENT_SCOPED_ARRAY_KEYS=['invoices','expenses','hours','docs','messages','journal','bankTx','recurring','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','contacts','cashPayments','cashierLog','cashierDayExceptions','supplierOcrProfiles','auditLog'];
 // ⚠️ تنقية دفاعية إضافية: حتى بعد إصلاح الخادم ليُرسل فقط بيانات هذا العميل،
 // قد يحتفظ المتصفح المحلي ببيانات عملاء آخرين مخبَّأة من قبل هذا الإصلاح
 // (بما أن الدمج المحلي اتحادي وليس استبدالًا). نُنقِّي الحالة المحلية هنا
@@ -3264,6 +3297,7 @@ function renderContent(){
     if(S.tab==='settings'){rSettings(el);return;}
     if(S.tab==='clients'){rClientsLis(el);return;}
     if(S.tab==='trash'){rTrash(el);return;}
+    if(S.tab==='archived'){rArchived(el);return;}
     if(S.tab==='auditlog'){rAuditLog(el);return;}
     // ✅ Handle admin-level tabs (when viewing all data, not specific client)
     if(!cid){
@@ -3331,7 +3365,7 @@ function rAdminReports(el){
           onmouseout="this.style.background='transparent'">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div style="flex:1">
-              <div style="font-weight:500;font-size:12px;color:var(--t1)">${i.num} - ${escapeHtml(i.desc)}</div>
+              <div style="font-weight:500;font-size:12px;color:var(--t1)">${escapeHtml(i.num)} - ${escapeHtml(i.desc)}</div>
               <div style="font-size:10px;color:var(--t3);margin-top:2px">👤 ${c?.name||'Unknown'}</div>
               <div style="font-size:10px;color:var(--t3);margin-top:2px">Due: ${FD(i.due)}</div>
             </div>
@@ -3357,7 +3391,7 @@ function rAdminReports(el){
           onmouseout="this.style.background='transparent'">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div style="flex:1">
-              <div style="font-weight:500;font-size:12px;color:var(--t1)">${i.num}</div>
+              <div style="font-weight:500;font-size:12px;color:var(--t1)">${escapeHtml(i.num)}</div>
               <div style="font-size:10px;color:var(--t3);margin-top:2px">👤 ${c?.name||'Unknown'}</div>
               <div style="font-size:10px;color:var(--red);margin-top:2px">Due: ${FD(i.due)}</div>
             </div>
@@ -5394,6 +5428,7 @@ function generateAllClientInvoices(){
         status:'Openstaand',amount:fee,btw:fee*0.21,total:fee*1.21,btwRate:21,
         amountPaid:0,billTo:cl.name,billToId:cl.id,billToManual:null};
       S.invoices.push(ni);
+      consumeInvoiceCounter(ANB_SELF_ID);
       postANBInvoiceToClientDocs(ni,cl.id);
       created++;
     });
@@ -6033,8 +6068,8 @@ function renderInvoicesTable(cid,searchTerm){
       ${sortTh(t('lbl_status'),'status','invoices',`renderInvoicesTable(${reArgs})`)}
       <th></th></tr></thead>
     <tbody>${inv.map(i=>`<tr>
-      <td style="font-family:var(--fm);font-size:11px;color:var(--g1);font-weight:600">${i.num}</td>
-      <td style="font-size:11px">${getBillToName(i)}${i.billToManual?'<span class="bdg b-draft" style="margin-left:4px;font-size:9px">one-time</span>':''}</td>
+      <td style="font-family:var(--fm);font-size:11px;color:var(--g1);font-weight:600">${escapeHtml(i.num)}</td>
+      <td style="font-size:11px">${escapeHtml(getBillToName(i))}${i.billToManual?'<span class="bdg b-draft" style="margin-left:4px;font-size:9px">one-time</span>':''}</td>
       <td>${escapeHtml(i.desc)}</td>
       <td style="color:var(--t3)">${FD(i.date)}</td>
       <td style="color:var(--t3)">${FD(i.due)}</td>
@@ -6122,7 +6157,7 @@ function renderExpensesTable(cid,searchTerm){
       <th></th>${isAdmin()?'<th></th>':''}</tr></thead>
     <tbody>${exp.map(e=>`<tr>
       <td style="color:var(--t3)">${FD(e.date)}</td>
-      <td style="font-weight:500">${e.supplier}</td>
+      <td style="font-weight:500">${escapeHtml(e.supplier)}</td>
       <td>${escapeHtml(e.desc)}</td>
       <td><span class="bdg b-draft">${e.cat}</span></td>
       <td style="color:var(--red)">${FMT(e.amount)}</td>
@@ -7932,7 +7967,7 @@ function renderEmployeesList(searchTerm,statusFilter){
       const isActive=e.employmentStatus==='active';
       return `<div onclick="openEmployeeDetail('${e.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--gr2);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--gr1)'" onmouseout="this.style.background='transparent'">
         <div>
-          <div style="font-size:13px;font-weight:600;color:var(--t1)">${e.name}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--t1)">${escapeHtml(e.name||'')}</div>
           <div style="font-size:11px;color:var(--t3);margin-top:2px">${e.jobTitle||'—'} · <span style="color:${theme.border};font-weight:600">${salaryLabel}</span></div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
@@ -7949,36 +7984,36 @@ function openEmployeeModal(employeeId,cid){
   const isNew=!emp;
 
   showModal(isNew?(t('add_employee')||'Add Employee'):(t('edit_employee')||'Edit Employee'),`
-    <div style="display:flex;flex-direction:column;gap:14px;max-height:65vh;overflow-y:auto;padding-right:4px">
+    <div style="display:flex;flex-direction:column;gap:2px;max-height:65vh;overflow-y:auto;padding-right:4px">
 
-      <div style="font-size:11px;font-weight:700;color:#0A2218;letter-spacing:.5px;border-bottom:2px solid #F5DC70;padding-bottom:4px">👤 PERSONAL DETAILS</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="fg"><label>${t('full_name')||'Full Name'} *</label><input type="text" id="emp-name" value="${emp?.name||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
-        <div class="fg"><label>BSN</label><input type="text" id="emp-bsn" value="${emp?.bsn||''}" maxlength="9" placeholder="123456789" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
-        <div class="fg"><label>${t('date_of_birth')||'Date of Birth'}</label><input type="date" id="emp-dob" value="${emp?.dob||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
-        <div class="fg"><label>${t('nationality')||'Nationality'}</label><input type="text" id="emp-nationality" value="${emp?.nationality||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+      <div class="msec msec-first">👤 ${t('msec_personal_details')||'Personal Details'}</div>
+      <div class="fr2">
+        <div class="fg"><label>${t('full_name')||'Full Name'} *</label><input type="text" id="emp-name" value="${escapeHtml(emp?.name||'')}"/></div>
+        <div class="fg"><label>BSN</label><input type="text" id="emp-bsn" value="${escapeHtml(emp?.bsn||'')}" maxlength="9" placeholder="123456789"/></div>
+        <div class="fg"><label>${t('date_of_birth')||'Date of Birth'}</label><input type="date" id="emp-dob" value="${escapeHtml(emp?.dob||'')}"/></div>
+        <div class="fg"><label>${t('nationality')||'Nationality'}</label><input type="text" id="emp-nationality" value="${escapeHtml(emp?.nationality||'')}"/></div>
       </div>
-      <div class="fg"><label>${t('address')||'Address'}</label><input type="text" id="emp-address" value="${emp?.address||''}" placeholder="Street, ZIP, City" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+      <div class="fg"><label>${t('address')||'Address'}</label><input type="text" id="emp-address" value="${escapeHtml(emp?.address||'')}" placeholder="Street, ZIP, City"/></div>
 
-      <div style="font-size:11px;font-weight:700;color:#0A2218;letter-spacing:.5px;border-bottom:2px solid #F5DC70;padding-bottom:4px;margin-top:6px">📋 EMPLOYMENT CONTRACT</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="fg"><label>${t('job_title')||'Job Title'} *</label><input type="text" id="emp-jobtitle" value="${emp?.jobTitle||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
-        <div class="fg"><label>${t('start_date')||'Start Date'} *</label><input type="date" id="emp-startdate" value="${emp?.startDate||TODAY()}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+      <div class="msec">📋 ${t('msec_employment_contract')||'Employment Contract'}</div>
+      <div class="fr2">
+        <div class="fg"><label>${t('job_title')||'Job Title'} *</label><input type="text" id="emp-jobtitle" value="${escapeHtml(emp?.jobTitle||'')}"/></div>
+        <div class="fg"><label>${t('start_date')||'Start Date'} *</label><input type="date" id="emp-startdate" value="${escapeHtml(emp?.startDate||TODAY())}"/></div>
         <div class="fg">
           <label>${t('contract_type')||'Contract Type'} *</label>
-          <select id="emp-contracttype" onchange="toggleContractEndDate()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);cursor:pointer">
+          <select id="emp-contracttype" onchange="toggleContractEndDate()">
             <option value="bepaalde_tijd" ${emp?.contractType==='bepaalde_tijd'||!emp?'selected':''}>Bepaalde tijd (Fixed-term)</option>
             <option value="onbepaalde_tijd" ${emp?.contractType==='onbepaalde_tijd'?'selected':''}>Onbepaalde tijd (Permanent)</option>
           </select>
         </div>
         <div class="fg" id="emp-contractend-wrap" style="${emp&&emp.contractType==='onbepaalde_tijd'?'display:none':''}">
           <label>${t('contract_end_date')||'Contract End Date'}</label>
-          <input type="date" id="emp-contractend" value="${emp?.contractEndDate||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/>
+          <input type="date" id="emp-contractend" value="${escapeHtml(emp?.contractEndDate||'')}"/>
         </div>
-        <div class="fg"><label>${t('hours_per_week')||'Hours per Week'} *</label><input type="number" id="emp-hoursweek" value="${emp?.hoursPerWeek||40}" min="1" max="40" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+        <div class="fg"><label>${t('hours_per_week')||'Hours per Week'} *</label><input type="number" id="emp-hoursweek" value="${emp?.hoursPerWeek||40}" min="1" max="40"/></div>
         <div class="fg">
           <label>${t('probation_period')||'Probation Period'}</label>
-          <select id="emp-probation" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);cursor:pointer">
+          <select id="emp-probation">
             <option value="none" ${emp?.probationPeriod==='none'?'selected':''}>${t('none')||'None'}</option>
             <option value="1_month" ${emp?.probationPeriod==='1_month'||!emp?'selected':''}>1 month</option>
             <option value="2_months" ${emp?.probationPeriod==='2_months'?'selected':''}>2 months</option>
@@ -7986,7 +8021,7 @@ function openEmployeeModal(employeeId,cid){
         </div>
         <div class="fg">
           <label>${t('notice_period')||'Notice Period'}</label>
-          <select id="emp-notice" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);cursor:pointer">
+          <select id="emp-notice">
             <option value="1_month" ${emp?.noticePeriod==='1_month'||!emp?'selected':''}>1 month</option>
             <option value="2_months" ${emp?.noticePeriod==='2_months'?'selected':''}>2 months</option>
             <option value="3_months" ${emp?.noticePeriod==='3_months'?'selected':''}>3 months</option>
@@ -7994,80 +8029,80 @@ function openEmployeeModal(employeeId,cid){
         </div>
       </div>
 
-      <div style="font-size:11px;font-weight:700;color:#0A2218;letter-spacing:.5px;border-bottom:2px solid #F5DC70;padding-bottom:4px;margin-top:6px">💰 SALARY</div>
+      <div class="msec">💰 ${t('msec_salary')||'Salary'}</div>
       <div class="fg">
         <label>${t('salary_type')||'Salary Type'} *</label>
-        <select id="emp-salarytype" onchange="toggleSalaryTypeFields()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);cursor:pointer">
+        <select id="emp-salarytype" onchange="toggleSalaryTypeFields()">
           <option value="fixed" ${emp?.salaryType==='fixed'||!emp?'selected':''}>${t('fixed_monthly')||'Fixed monthly salary'}</option>
           <option value="hourly" ${emp?.salaryType==='hourly'?'selected':''}>${t('variable_hourly')||'Variable — based on hours worked (entered monthly)'}</option>
         </select>
       </div>
       <div id="emp-fixed-wrap" style="${emp&&emp.salaryType==='hourly'?'display:none':''}">
-        <div class="fg"><label>${t('gross_monthly_salary')||'Gross Monthly Salary'} (€)</label><input type="number" id="emp-grosssalary" value="${emp?.grossMonthlySalary||''}" step="0.01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+        <div class="fg"><label>${t('gross_monthly_salary')||'Gross Monthly Salary'} (€)</label><input type="number" id="emp-grosssalary" value="${emp?.grossMonthlySalary||''}" step="0.01"/></div>
       </div>
       <div id="emp-hourly-wrap" style="${!(emp&&emp.salaryType==='hourly')?'display:none':''}">
-        <div class="fg"><label>${t('gross_hourly_rate')||'Gross Hourly Rate'} (€)</label><input type="number" id="emp-hourlyrate" value="${emp?.hourlyRate||''}" step="0.01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
-        <div style="font-size:10px;color:var(--t3)">${t('hourly_hint')||'Actual hours worked will be entered manually each month when generating the payslip.'}</div>
+        <div class="fg"><label>${t('gross_hourly_rate')||'Gross Hourly Rate'} (€)</label><input type="number" id="emp-hourlyrate" value="${emp?.hourlyRate||''}" step="0.01"/></div>
+        <div class="sec-desc" style="margin:-4px 0 0">${t('hourly_hint')||'Actual hours worked will be entered manually each month when generating the payslip.'}</div>
       </div>
 
-      <div style="font-size:11px;font-weight:700;color:#0A2218;letter-spacing:.5px;border-bottom:2px solid #F5DC70;padding-bottom:4px;margin-top:6px">🎁 BENEFITS & ADDITIONS</div>
-      <div style="background:#EAF4ED;border-left:3px solid #2d7a4f;border-radius:4px;padding:10px 12px;font-size:11px;color:#1a4d2e">
+      <div class="msec">🎁 ${t('msec_benefits')||'Benefits & Additions'}</div>
+      <div style="background:#EAF4ED;border-left:3px solid #2d7a4f;border-radius:4px;padding:10px 12px;font-size:11px;color:#1a4d2e;margin-bottom:10px">
         ✅ ${t('vacation_money_note')||'Vacation allowance (Vakantiegeld) 8% is legally mandatory in the Netherlands and is always included automatically.'}
       </div>
       <div class="fg">
         <label>${t('vacation_money_payout')||'Vacation Allowance Payout'}</label>
-        <select id="emp-vacation-payout" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);cursor:pointer">
+        <select id="emp-vacation-payout">
           <option value="annual_may" ${emp?.vacationMoneyPayout==='annual_may'||!emp?'selected':''}>${t('accrued_paid_may')||'Accrued monthly, paid out once in May'}</option>
           <option value="monthly" ${emp?.vacationMoneyPayout==='monthly'?'selected':''}>${t('paid_monthly')||'Paid monthly with salary'}</option>
         </select>
       </div>
 
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--t1)">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--t1);margin-top:6px">
         <input type="checkbox" id="emp-13th" ${emp?.has13thMonth?'checked':''} style="width:auto"/> ${t('has_13th_month')||'13th month salary (Dertiende maand)'}
       </label>
-      <div style="font-size:9px;color:var(--t3);margin-top:-8px;margin-left:24px">${t('13th_month_hint')||'Accrues automatically each month (1/12 of gross), paid out as a lump sum in December — same principle as vacation allowance.'}</div>
+      <div class="sec-desc" style="margin:0 0 6px 24px">${t('13th_month_hint')||'Accrues automatically each month (1/12 of gross), paid out as a lump sum in December — same principle as vacation allowance.'}</div>
 
       <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-top:6px">${t('travel_allowance')||'Travel Allowance'}</div>
       <div class="fg">
-        <select id="emp-travel-type" onchange="toggleTravelAllowanceFields()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);cursor:pointer">
+        <select id="emp-travel-type" onchange="toggleTravelAllowanceFields()">
           <option value="fixed" ${emp?.travelAllowanceType==='fixed'||!emp?'selected':''}>${t('fixed_amount')||'Fixed amount per month'}</option>
           <option value="per_km" ${emp?.travelAllowanceType==='per_km'?'selected':''}>${t('per_km')||'Variable — per kilometre (entered monthly)'}</option>
         </select>
       </div>
       <div id="emp-travel-fixed-wrap" style="${emp&&emp.travelAllowanceType==='per_km'?'display:none':''}">
-        <div class="fg"><label>${t('travel_fixed_amount')||'Fixed Travel Allowance'} (€/month)</label><input type="number" id="emp-travel" value="${emp?.travelAllowance||0}" step="0.01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
+        <div class="fg"><label>${t('travel_fixed_amount')||'Fixed Travel Allowance'} (€/month)</label><input type="number" id="emp-travel" value="${emp?.travelAllowance||0}" step="0.01"/></div>
       </div>
       <div id="emp-travel-km-wrap" style="${!(emp&&emp.travelAllowanceType==='per_km')?'display:none':''}">
-        <div class="fg"><label>${t('rate_per_km')||'Rate per Kilometre'} (€)</label><input type="number" id="emp-travel-kmrate" value="${emp?.travelAllowanceKmRate||0.25}" step="0.01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
-        <div style="font-size:10px;color:var(--t3)">${t('km_hint')||'Actual kilometres will be entered manually each month when generating the payslip.'}</div>
+        <div class="fg"><label>${t('rate_per_km')||'Rate per Kilometre'} (€)</label><input type="number" id="emp-travel-kmrate" value="${emp?.travelAllowanceKmRate||0.25}" step="0.01"/></div>
+        <div class="sec-desc" style="margin:-4px 0 0">${t('km_hint')||'Actual kilometres will be entered manually each month when generating the payslip.'}</div>
       </div>
 
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--t1);margin-top:6px">
         <input type="checkbox" id="emp-homework" ${emp?.hasHomeWorkAllowance?'checked':''} style="width:auto"/> ${t('has_homework_allowance')||'Work-from-home allowance'}
       </label>
-      <div class="fg"><label>${t('homework_rate')||'Rate per Work-from-Home Day'} (€)</label><input type="number" id="emp-homework-rate" value="${emp?.homeWorkRate||2.45}" step="0.01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
-      <div style="font-size:10px;color:var(--t3);margin-top:-8px">${t('homework_hint')||'Number of work-from-home days will be entered manually each month when generating the payslip.'}</div>
+      <div class="fg"><label>${t('homework_rate')||'Rate per Work-from-Home Day'} (€)</label><input type="number" id="emp-homework-rate" value="${emp?.homeWorkRate||2.45}" step="0.01"/></div>
+      <div class="sec-desc" style="margin:-6px 0 6px">${t('homework_hint')||'Number of work-from-home days will be entered manually each month when generating the payslip.'}</div>
 
-      <div class="fg"><label>${t('pension_percent')||'Pension Contribution'} (% of gross)</label><input type="number" id="emp-pension" value="${emp?.pensionPercent||0}" step="0.1" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
-      <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-top:4px">${t('custom_additions')||'Custom Additions (optional)'}</div>
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px">
-        <input type="text" id="emp-custom1-label" value="${emp?.customAdditions?.[0]?.label||''}" placeholder="Label" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px"/>
-        <select id="emp-custom1-type" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px">
+      <div class="fg"><label>${t('pension_percent')||'Pension Contribution'} (% of gross)</label><input type="number" id="emp-pension" value="${emp?.pensionPercent||0}" step="0.1"/></div>
+      <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-top:4px;margin-bottom:6px">${t('custom_additions')||'Custom Additions (optional)'}</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <input type="text" id="emp-custom1-label" value="${escapeHtml(emp?.customAdditions?.[0]?.label||'')}" placeholder="Label" style="padding:8px;border:1px solid var(--gr2);border-radius:var(--rs);font-size:12px"/>
+        <select id="emp-custom1-type" style="padding:8px;border:1px solid var(--gr2);border-radius:var(--rs);font-size:12px">
           <option value="fixed" ${emp?.customAdditions?.[0]?.type==='fixed'||!emp?'selected':''}>€ fixed</option>
           <option value="percent" ${emp?.customAdditions?.[0]?.type==='percent'?'selected':''}>% of gross</option>
         </select>
-        <input type="number" id="emp-custom1-value" value="${emp?.customAdditions?.[0]?.value||''}" step="0.01" placeholder="0" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px"/>
+        <input type="number" id="emp-custom1-value" value="${emp?.customAdditions?.[0]?.value||''}" step="0.01" placeholder="0" style="padding:8px;border:1px solid var(--gr2);border-radius:var(--rs);font-size:12px"/>
       </div>
       <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px">
-        <input type="text" id="emp-custom2-label" value="${emp?.customAdditions?.[1]?.label||''}" placeholder="Label" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px"/>
-        <select id="emp-custom2-type" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px">
+        <input type="text" id="emp-custom2-label" value="${escapeHtml(emp?.customAdditions?.[1]?.label||'')}" placeholder="Label" style="padding:8px;border:1px solid var(--gr2);border-radius:var(--rs);font-size:12px"/>
+        <select id="emp-custom2-type" style="padding:8px;border:1px solid var(--gr2);border-radius:var(--rs);font-size:12px">
           <option value="fixed" ${emp?.customAdditions?.[1]?.type==='fixed'||!emp?'selected':''}>€ fixed</option>
           <option value="percent" ${emp?.customAdditions?.[1]?.type==='percent'?'selected':''}>% of gross</option>
         </select>
-        <input type="number" id="emp-custom2-value" value="${emp?.customAdditions?.[1]?.value||''}" step="0.01" placeholder="0" style="padding:8px;border:2px solid var(--gr2);border-radius:6px;font-size:12px"/>
+        <input type="number" id="emp-custom2-value" value="${emp?.customAdditions?.[1]?.value||''}" step="0.01" placeholder="0" style="padding:8px;border:1px solid var(--gr2);border-radius:var(--rs);font-size:12px"/>
       </div>
 
-      <div style="font-size:11px;font-weight:700;color:#0A2218;letter-spacing:.5px;border-bottom:2px solid #F5DC70;padding-bottom:4px;margin-top:6px">🧾 TAX SETTINGS</div>
+      <div class="msec">🧾 ${t('msec_tax_settings')||'Tax Settings'}</div>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--t1)">
         <input type="checkbox" id="emp-korting" ${!emp||emp.applyLoonheffingskorting?'checked':''} style="width:auto"/> ${t('apply_korting')||'Apply loonheffingskorting (this is their main/only employer)'}
       </label>
@@ -8169,39 +8204,39 @@ function openPayslipModal(employeeId){
   const years=[];
   for(let y=curYear;y>=startYear;y--)years.push(y);
 
-  showModal('🧾 '+(t('generate_payslip')||'Generate Payslip')+' — '+emp.name,`
+  showModal('🧾 '+(t('generate_payslip')||'Generate Payslip')+' — '+escapeHtml(emp.name||''),`
     <div style="display:flex;flex-direction:column;gap:12px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="fr2">
         <div class="fg"><label>${t('year')||'Year'}</label>
-          <select id="payslip-year" onchange="updatePayslipMonthOptions('${employeeId}')" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);cursor:pointer">
+          <select id="payslip-year" onchange="updatePayslipMonthOptions('${employeeId}')">
             ${years.map(y=>`<option value="${y}" ${y===curYear?'selected':''}>${y}</option>`).join('')}
           </select>
         </div>
         <div class="fg"><label>${t('month')||'Month'}</label>
-          <select id="payslip-month" onchange="updatePayslipPreview('${employeeId}')" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);cursor:pointer"></select>
+          <select id="payslip-month" onchange="updatePayslipPreview('${employeeId}')"></select>
         </div>
       </div>
 
       ${emp.salaryType==='hourly'?`
       <div class="fg"><label>${t('hours_worked')||'Hours Worked This Month'} *</label>
-        <input type="number" id="payslip-hours" value="" step="0.25" oninput="updatePayslipPreview('${employeeId}')" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/>
+        <input type="number" id="payslip-hours" value="" step="0.25" oninput="updatePayslipPreview('${employeeId}')"/>
       </div>`:''}
 
       ${emp.travelAllowanceType==='per_km'?`
       <div class="fg"><label>${t('km_this_month')||'Kilometres Travelled This Month'}</label>
-        <input type="number" id="payslip-km" value="0" step="1" oninput="updatePayslipPreview('${employeeId}')" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/>
+        <input type="number" id="payslip-km" value="0" step="1" oninput="updatePayslipPreview('${employeeId}')"/>
       </div>`:''}
 
       ${emp.hasHomeWorkAllowance?`
       <div class="fg"><label>${t('homework_days_this_month')||'Work-from-Home Days This Month'}</label>
-        <input type="number" id="payslip-homework-days" value="0" step="1" oninput="updatePayslipPreview('${employeeId}')" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/>
+        <input type="number" id="payslip-homework-days" value="0" step="1" oninput="updatePayslipPreview('${employeeId}')"/>
       </div>`:''}
 
       <div id="payslip-breakdown" style="background:var(--gr1);border-radius:8px;padding:14px;font-size:12px"></div>
 
       <div class="fg">
         <label>${t('loonheffing')||'Loonheffing (Wage Tax)'} — €<span style="font-size:10px;color:var(--t3);font-weight:400">(${t('auto_calculated_editable')||'auto-calculated, editable'})</span></label>
-        <input type="number" id="payslip-loonheffing" step="0.01" oninput="updatePayslipNet()" style="width:100%;padding:10px;border:2px solid #B8860B;border-radius:6px;box-sizing:border-box;font-weight:600"/>
+        <input type="number" id="payslip-loonheffing" step="0.01" oninput="updatePayslipNet()" style="border-color:#B8860B;font-weight:600"/>
         <div style="font-size:9px;color:#B8860B;margin-top:4px">⚠️ ${t('loonheffing_disclaimer')||'Estimated using 2026 official brackets — verify before issuing officially.'}</div>
       </div>
 
@@ -8724,22 +8759,22 @@ function openContactModal(id, forceType){
   const showTypeDropdown=!isNew && !forceType;
   
   showModal(isNew?'Add Contact':'Edit Contact',`
-    <div class="fg"><label>Name *</label><input id="cm-name" value="${cont?.name||''}"/></div>
+    <div class="fg"><label>Name *</label><input id="cm-name" value="${escapeHtml(cont?.name||'')}"/></div>
     ${showTypeDropdown?`
     <div class="fg"><label>Type *</label><select id="cm-type" onchange="updateAccNum()">
       <option value="debtor" ${lockedType==='debtor'?'selected':''}>Debtor (Customer)</option>
       <option value="creditor" ${lockedType==='creditor'?'selected':''}>Creditor (Supplier)</option>
     </select></div>
     `:`<div style="display:none" id="cm-type-locked">${lockedType}</div>`}
-    <div class="fg"><label>Account # (Auto)</label><input id="cm-acc" value="${cont?.accountNumber||''}" disabled style="background:var(--gr1)"/></div>
+    <div class="fg"><label>Account # (Auto)</label><input id="cm-acc" value="${escapeHtml(cont?.accountNumber||'')}" disabled style="background:var(--gr1)"/></div>
     <div class="fr2">
-      <div class="fg"><label>Email</label><input id="cm-email" value="${cont?.email||''}"/></div>
-      <div class="fg"><label>Phone</label><input id="cm-phone" value="${cont?.phone||''}"/></div>
+      <div class="fg"><label>Email</label><input id="cm-email" value="${escapeHtml(cont?.email||'')}"/></div>
+      <div class="fg"><label>Phone</label><input id="cm-phone" value="${escapeHtml(cont?.phone||'')}"/></div>
     </div>
-    <div class="fg"><label>${t('set_address')}</label><input id="cm-addr" value="${cont?.address||''}"/></div>
+    <div class="fg"><label>${t('set_address')}</label><input id="cm-addr" value="${escapeHtml(cont?.address||'')}"/></div>
     <div class="fr2">
-      <div class="fg"><label>KvK</label><input id="cm-kvk" value="${cont?.kvk||''}"/></div>
-      <div class="fg"><label>BTW</label><input id="cm-btw" value="${cont?.btw||''}"/></div>
+      <div class="fg"><label>KvK</label><input id="cm-kvk" value="${escapeHtml(cont?.kvk||'')}"/></div>
+      <div class="fg"><label>BTW</label><input id="cm-btw" value="${escapeHtml(cont?.btw||'')}"/></div>
     </div>
   `,()=>{
     const selectedType=showTypeDropdown?document.getElementById('cm-type').value:lockedType;
@@ -8810,9 +8845,9 @@ function rInfo(el,cid){
     </div>
     <div style="display:grid;gap:8px;font-size:13px;margin-bottom:16px">
       ${c.email?`<div style="display:flex;gap:8px"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;color:var(--t3)" aria-hidden="true">✉</span>${escapeHtml(c.email)}</div>`:''}
-      ${c.kvk?`<div style="display:flex;gap:8px"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;color:var(--t3)" aria-hidden="true">🏢</span>KvK: ${c.kvk}</div>`:''}
-      ${c.btw?`<div style="display:flex;gap:8px"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;color:var(--t3)" aria-hidden="true">🧾</span>BTW: ${c.btw}</div>`:''}
-      ${c.iban?`<div style="display:flex;gap:8px"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;color:var(--t3)" aria-hidden="true">💳</span>${c.iban}</div>`:''}
+      ${c.kvk?`<div style="display:flex;gap:8px"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;color:var(--t3)" aria-hidden="true">🏢</span>KvK: ${escapeHtml(c.kvk)}</div>`:''}
+      ${c.btw?`<div style="display:flex;gap:8px"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;color:var(--t3)" aria-hidden="true">🧾</span>BTW: ${escapeHtml(c.btw)}</div>`:''}
+      ${c.iban?`<div style="display:flex;gap:8px"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;color:var(--t3)" aria-hidden="true">💳</span>${escapeHtml(c.iban)}</div>`:''}
     </div>
     <div class="kgrid" style="margin-bottom:16px">
       <div class="kcard"><div class="kl">${t('tab_invoices')}</div><div class="kv">${inv.length}</div></div>
@@ -8886,40 +8921,76 @@ function openDangerZoneGate(){
 function rSettings(el){
   const s=S.settings;
   const settingsTab=S.settingsTab||'company';
-  
-  // Navigation tabs
+  const theme={border:'#0A2218',accent:'#FFD700'};
+
+  const tabs=[
+    {id:'company',icon:'🏢',label:t('nav_company')||'Company'},
+    {id:'admins',icon:'🔑',label:t('nav_admins')||'Admins'},
+    {id:'credentials',icon:'🔐',label:t('nav_access')||'Access'},
+    {id:'danger',icon:'⚠️',label:t('nav_danger')||'Danger',danger:true,onclick:'openDangerZoneGate()'},
+  ];
   let html=`<div>
-    <div style="display:flex;gap:0;border-bottom:3px solid var(--gr2);margin-bottom:12px">
-      <button class="tab-btn ${settingsTab==='company'?'active':''}" onclick="S.settingsTab='company';renderContent()" title="${t('set_company_info')}" style="flex:1;padding:6px 2px;border:none;background:none;cursor:pointer;font-weight:${settingsTab==='company'?'700':'500'};color:${settingsTab==='company'?'var(--t1)':'var(--t3)'};border-bottom:${settingsTab==='company'?'3px solid #C89010':'none'};text-align:center;font-size:10px;line-height:1.3">🏢<br/>Co</button>
-      <button class="tab-btn ${settingsTab==='admins'?'active':''}" onclick="S.settingsTab='admins';renderContent()" title="${t('manage_admins')}" style="flex:1;padding:6px 2px;border:none;background:none;cursor:pointer;font-weight:${settingsTab==='admins'?'700':'500'};color:${settingsTab==='admins'?'var(--t1)':'var(--t3)'};border-bottom:${settingsTab==='admins'?'3px solid #C89010':'none'};text-align:center;font-size:10px;line-height:1.3">🔑<br/>Ad</button>
-      <button class="tab-btn ${settingsTab==='credentials'?'active':''}" onclick="S.settingsTab='credentials';renderContent()" title="${t('set_client_pw')}" style="flex:1;padding:6px 2px;border:none;background:none;cursor:pointer;font-weight:${settingsTab==='credentials'?'700':'500'};color:${settingsTab==='credentials'?'var(--t1)':'var(--t3)'};border-bottom:${settingsTab==='credentials'?'3px solid #C89010':'none'};text-align:center;font-size:10px;line-height:1.3">🔐<br/>Pw</button>
-      <button class="tab-btn ${settingsTab==='danger'?'active':''}" onclick="openDangerZoneGate()" title="${t('danger_zone')||'Danger Zone'}" style="flex:1;padding:6px 2px;border:none;background:${settingsTab==='danger'?'rgba(168,50,50,0.12)':'none'};cursor:pointer;font-weight:${settingsTab==='danger'?'700':'500'};color:${settingsTab==='danger'?'#a83232':'#a8323280'};border-bottom:${settingsTab==='danger'?'3px solid #a83232':'none'};text-align:center;font-size:10px;line-height:1.3">⚠️<br/>${t('danger_zone')||'Danger'}</button>
+    <div class="settings-nav">
+      ${tabs.map(tb=>`<button class="settings-nav-btn ${tb.danger?'danger':''} ${settingsTab===tb.id?'active':''}" onclick="${tb.onclick||`S.settingsTab='${tb.id}';renderContent()`}">
+        <span class="snb-icon">${tb.icon}</span><span>${tb.label}</span>
+      </button>`).join('')}
     </div>
-    
-    <div style="max-width:100%;overflow-x:hidden;padding:0 4px">`;
+    <div style="max-width:100%;overflow-x:hidden">`;
 
   // ═══════════════════════════ TAB 1: COMPANY ═══════════════════════════
   if(settingsTab==='company'){
-    html+=`<div class="settings-section">
-      <h3>${t('set_company_info')}</h3>
-      <div class="fr2">
-        <div class="fg"><label>${t('set_company_name')}</label><input id="s-cn" value="${s.companyName}"/></div>
-        <div class="fg"><label>${t('set_tagline')}</label><input id="s-tl" value="${s.tagline}"/></div>
+    html+=`
+    <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🏢 ${t('set_company_info')||'Company Identity'}</span></div>
+      <div style="padding:14px">
+        <div class="sec-desc">${t('set_company_identity_hint')||'Shown on invoices, contracts, and client-facing documents.'}</div>
+        <div class="fr2">
+          <div class="fg"><label>${t('set_company_name')}</label><input id="s-cn" value="${escapeHtml(s.companyName||'')}"/></div>
+          <div class="fg"><label>${t('set_tagline')}</label><input id="s-tl" value="${escapeHtml(s.tagline||'')}"/></div>
+        </div>
+        <div class="fg"><label>${t('set_address')}</label><input id="s-ad" value="${escapeHtml(s.address||'')}"/></div>
+        <div class="fr2">
+          <div class="fg"><label>${t('set_email')}</label><input id="s-em" type="email" value="${escapeHtml(s.email||'')}"/></div>
+          <div class="fg"><label>${t('set_phone')}</label><input id="s-ph" value="${escapeHtml(s.phone||'')}"/></div>
+        </div>
+        <div class="fg"><label>${t('set_website')||'Website'}</label><input id="s-web" placeholder="https://…" value="${escapeHtml(s.website||'')}"/></div>
       </div>
-      <div class="fg"><label>${t('set_address')}</label><input id="s-ad" value="${s.address}"/></div>
-      <div class="fr2">
-        <div class="fg"><label>${t('set_email')}</label><input id="s-em" value="${s.email}"/></div>
-        <div class="fg"><label>${t('set_phone')}</label><input id="s-ph" value="${s.phone}"/></div>
+    </div>
+
+    <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🧾 ${t('set_tax_banking')||'Tax & Banking Details'}</span></div>
+      <div style="padding:14px">
+        <div class="sec-desc">${t('set_tax_banking_hint')||'Used on invoices and your BTW filings — keep these exact and up to date.'}</div>
+        <div class="fr2">
+          <div class="fg"><label>${t('set_kvk')}</label><input id="s-kv" value="${escapeHtml(s.kvk||'')}"/></div>
+          <div class="fg"><label>${t('set_btw_num')}</label><input id="s-bt" value="${escapeHtml(s.btw||'')}"/></div>
+        </div>
+        <div class="fg"><label>${t('set_iban')}</label><input id="s-ib" value="${escapeHtml(s.iban||'')}"/></div>
       </div>
-      <div class="fr2">
-        <div class="fg"><label>${t('set_kvk')}</label><input id="s-kv" value="${s.kvk}"/></div>
-        <div class="fg"><label>${t('set_btw_num')}</label><input id="s-bt" value="${s.btw}"/></div>
+    </div>
+
+    <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🛡️ ${t('set_insurance_title')||'Professional Indemnity Insurance'}</span></div>
+      <div style="padding:14px">
+        <div class="sec-desc">${t('set_insurance_hint')||'Referenced in the liability clause of client service agreements. Leave blank until you have an actual policy.'}</div>
+        <div class="fr2">
+          <div class="fg"><label>${t('set_insurer_name')||'Insurer'}</label><input id="s-ins-name" value="${escapeHtml(s.insurerName||'')}"/></div>
+          <div class="fg"><label>${t('set_policy_number')||'Policy number'}</label><input id="s-ins-policy" value="${escapeHtml(s.insurancePolicyNumber||'')}"/></div>
+        </div>
+        <div class="fg"><label>${t('set_coverage_amount')||'Coverage amount (€ per claim)'}</label><input id="s-ins-cover" type="number" step="1000" value="${escapeHtml(s.insuranceCoverage||'')}"/></div>
       </div>
-      <div class="fg"><label>${t('set_iban')}</label><input id="s-ib" value="${s.iban}"/></div>
-      <button class="btn btn-p btn-xs" onclick="saveSettings()"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✓</span>${t('btn_save_settings')}</button>
-      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--gr2)">
-        <h3 style="margin-bottom:8px">💳 ${t('subscription_packages')||'Subscription Packages'}</h3>
-        <div style="font-size:11px;color:var(--t3);margin-bottom:10px">${t('subscription_packages_hint')||'Customize the plans offered when creating client contracts.'}</div>
+    </div>
+
+    <div style="position:sticky;bottom:8px;z-index:5;padding:10px 4px 2px">
+      <button class="btn btn-p" style="width:100%;justify-content:center;box-shadow:var(--sh)" onclick="saveSettings()">
+        <span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✓</span> ${t('btn_save_settings')}
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💳 ${t('subscription_packages')||'Subscription Packages'}</span></div>
+      <div style="padding:14px">
+        <div class="sec-desc" style="margin-bottom:10px">${t('subscription_packages_hint')||'Customize the plans offered when creating client contracts.'}</div>
         <button class="btn btn-xs" onclick="openManageServicePackages()">⚙️ ${t('manage_packages')||'Manage Packages'}</button>
       </div>
     </div>`;
@@ -8927,32 +8998,38 @@ function rSettings(el){
 
   // ═══════════════════════════ TAB 2: ADMINS ═══════════════════════════
   else if(settingsTab==='admins'){
-    html+=`<div class="settings-section">
-      <h3>🔑 ${t('manage_admins')}</h3>
-      <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Manage administrator accounts and their access</div>
-      
-      <!-- قائمة الـ admins -->
-      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-      <table style="margin-bottom:16px;width:100%;font-size:11px;min-width:400px">
-        <thead><tr><th style="font-size:10px;padding:6px 4px">Name</th><th style="font-size:10px;padding:6px 4px">Email</th><th style="font-size:10px;padding:6px 4px">Role</th><th style="font-size:10px;padding:6px 4px">Status</th><th style="font-size:10px;padding:6px 4px"></th></tr></thead>
-        <tbody>
-          ${S.admins.filter(admin=>!admin.deleted).map(admin=>'<tr><td style="padding:6px 4px;font-weight:500;max-width:80px;overflow:hidden;text-overflow:ellipsis">'+admin.name+'</td><td style="padding:6px 4px;color:var(--t3);font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis">'+admin.email+'</td><td style="padding:6px 4px"><span class="bdg" style="background:'+(admin.role==='super_admin'?'#C89010':'#4da876')+';color:white;font-size:9px;font-weight:600;padding:2px 4px">'+(admin.role==='super_admin'?'Super':'Admin')+'</span></td><td style="padding:6px 4px"><span class="bdg '+(admin.status==='active'?'b-paid':'b-draft')+'" style="font-size:9px">'+admin.status+'</span></td><td style="text-align:right;padding:6px 4px">'+(admin.role!=='super_admin'?'<button class="btn btn-xs btn-danger" onclick="delAdmin(\''+admin.id+'\')">✕</button>':'')+'</td></tr>').join('')}
-        </tbody>
-      </table>
+    const activeAdmins=S.admins.filter(admin=>!admin.deleted);
+    html+=`
+    <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🔑 ${t('manage_admins')||'Administrators'} (${activeAdmins.length})</span></div>
+      <div style="padding:14px">
+        <div class="sec-desc">${t('manage_admins_hint')||'People who can manage every client, settings, and billing.'}</div>
+        ${activeAdmins.map(admin=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--gr2)">
+            <div class="cb-av" style="width:34px;height:34px;font-size:12px;background:${admin.role==='super_admin'?'rgba(200,144,16,.15)':'rgba(77,168,118,.15)'};color:${admin.role==='super_admin'?'var(--gold)':'#2d7a4f'};flex-shrink:0">${INI(admin.name||'?')}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(admin.name||'')}</div>
+              <div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(admin.email||'')}</div>
+            </div>
+            <span class="bdg" style="background:${admin.role==='super_admin'?'#C89010':'#4da876'};color:#fff;font-size:9px;font-weight:600;flex-shrink:0">${admin.role==='super_admin'?(t('role_super')||'Super'):(t('role_admin')||'Admin')}</span>
+            <span class="bdg ${admin.status==='active'?'b-paid':'b-draft'}" style="font-size:9px;flex-shrink:0">${escapeHtml(admin.status||'')}</span>
+            ${admin.role!=='super_admin'?`<button class="btn btn-xs btn-danger" onclick="delAdmin('${admin.id}')" style="flex-shrink:0">✕</button>`:''}
+          </div>`).join('')}
       </div>
-      
-      <!-- إضافة admin جديد -->
-      <div style="background:var(--gr1);border:2px dashed var(--gr2);border-radius:8px;padding:12px">
-        <div style="font-size:11px;font-weight:600;margin-bottom:8px">➕ Add New Admin</div>
+    </div>
+
+    <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">➕ ${t('add_new_admin')||'Add New Admin'}</span></div>
+      <div style="padding:14px">
         <div class="fr2">
-          <div class="fg"><label>Name</label><input type="text" id="new-admin-name" placeholder="Admin name"/></div>
-          <div class="fg"><label>Email</label><input type="email" id="new-admin-email" placeholder="email@example.com"/></div>
+          <div class="fg"><label>${t('lbl_name')||'Name'}</label><input type="text" id="new-admin-name" placeholder="${t('admin_name_ph')||'Admin name'}"/></div>
+          <div class="fg"><label>${t('lbl_email')||'Email'}</label><input type="email" id="new-admin-email" placeholder="email@example.com"/></div>
         </div>
         <div class="fr2">
-          <div class="fg"><label>Phone</label><input type="tel" id="new-admin-phone" placeholder="+31 6 12345678"/></div>
-          <div class="fg"><label>Password</label><input type="password" id="new-admin-pw" placeholder="Strong password"/></div>
+          <div class="fg"><label>${t('lbl_phone')||'Phone'}</label><input type="tel" id="new-admin-phone" placeholder="+31 6 12345678"/></div>
+          <div class="fg"><label>${t('lbl_password')||'Password'}</label><input type="password" id="new-admin-pw" placeholder="${t('strong_password_ph')||'Strong password'}"/></div>
         </div>
-        <button class="btn btn-p btn-xs" onclick="addNewAdmin()">Create Admin Account</button>
+        <button class="btn btn-p" style="width:100%;justify-content:center" onclick="addNewAdmin()">${t('create_admin_account')||'Create Admin Account'}</button>
       </div>
     </div>`;
   }
@@ -8960,47 +9037,48 @@ function rSettings(el){
   // ═══════════════════════════ TAB 3: CREDENTIALS ═══════════════════════════
   else if(settingsTab==='credentials'){
     const curAdmin=S.admins.find(a=>a.id===S.currentAdmin);
-    html+=`<div class="settings-section">
-      <h3>🔐 Access Control</h3>
-      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">Manage login credentials for admins and clients</div>
-      
-      <!-- Two-Factor Authentication -->
-      <div style="background:var(--gr1);border:2px solid ${curAdmin?.totpEnabled?'#2d7a4f':'var(--gr2)'};border-radius:8px;padding:12px;margin-bottom:16px">
-        <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:#0A2218">🔒 ${t('two_factor_auth')||'Two-Factor Authentication (2FA)'}</div>
-        <div style="font-size:10px;color:var(--t3);margin-bottom:12px;line-height:1.6">${t('two_factor_hint')||'Adds an extra security step at login using an authenticator app (Google Authenticator, Microsoft Authenticator, Authy...)'}</div>
+    const activeAdmins=S.admins.filter(admin=>!admin.deleted);
+    const activeClients=S.clients.filter(c=>!c.deleted&&!c.isANBSelf);
+    html+=`
+    <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${curAdmin?.totpEnabled?'#2d7a4f':theme.border}"><span class="ct">🔒 ${t('two_factor_auth')||'Two-Factor Authentication (2FA)'}</span></div>
+      <div style="padding:14px">
+        <div class="sec-desc">${t('two_factor_hint')||'Adds an extra security step at login using an authenticator app (Google Authenticator, Microsoft Authenticator, Authy...)'}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <span style="font-size:12px;font-weight:600;color:${curAdmin?.totpEnabled?'#2d7a4f':'var(--t3)'}">${curAdmin?.totpEnabled?'✅ '+(t('enabled')||'Enabled'):'⚪ '+(t('not_enabled')||'Not enabled')}</span>
           <button class="btn btn-xs ${curAdmin?.totpEnabled?'btn-danger':'btn-p'}" onclick="open2FASetupModal()">${curAdmin?.totpEnabled?(t('disable_2fa')||'Disable 2FA'):(t('enable_2fa')||'Enable 2FA')}</button>
         </div>
       </div>
-      
-      <!-- Admin Credentials -->
-      <div style="background:var(--gr1);border:2px solid var(--gr2);border-radius:8px;padding:12px;margin-bottom:16px">
-        <div style="font-size:12px;font-weight:600;margin-bottom:12px;color:#C89010">👨‍💼 Admin Access Credentials</div>
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table style="width:100%;font-size:10px;min-width:350px">
-          <thead><tr><th style="padding:6px 4px;font-weight:600">Name</th><th style="padding:6px 4px;font-weight:600">Email</th><th style="padding:6px 4px;font-weight:600">2FA</th><th style="padding:6px 4px;font-weight:600">Reset</th></tr></thead>
-          <tbody>
-            ${S.admins.filter(admin=>!admin.deleted).map(admin=>'<tr style="border-top:1px solid var(--gr2)"><td style="padding:8px 4px;font-weight:500">'+admin.name+'</td><td style="padding:8px 4px;color:var(--t3);font-size:9px;max-width:140px;overflow:hidden;text-overflow:ellipsis">'+admin.email+'</td><td style="padding:8px 4px;text-align:center">'+(admin.totpEnabled?'<span style="color:#2d7a4f;font-size:9px">✅</span>':'<span style="color:var(--t3);font-size:9px">—</span>')+'</td><td style="padding:8px 4px;text-align:center"><button class="btn btn-xs" onclick="resetAdminPassword(\''+admin.id+'\')">Reset</button></td></tr>').join('')}
-          </tbody>
-        </table>
-        </div>
+    </div>
+
+    <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">👨‍💼 ${t('admin_access_credentials')||'Admin Access Credentials'}</span></div>
+      <div style="padding:14px">
+        ${activeAdmins.map(admin=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--gr2)">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(admin.name||'')}</div>
+              <div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(admin.email||'')}</div>
+            </div>
+            <span style="font-size:14px;flex-shrink:0" title="${admin.totpEnabled?'2FA enabled':'2FA not enabled'}">${admin.totpEnabled?'🔒':'—'}</span>
+            <button class="btn btn-xs" style="flex-shrink:0" onclick="resetAdminPassword('${admin.id}')">${t('reset')||'Reset'}</button>
+          </div>`).join('')}
       </div>
-      
-      <!-- Client Credentials -->
-      <div style="background:var(--gr1);border:2px solid var(--gr2);border-radius:8px;padding:12px">
-        <div style="font-size:12px;font-weight:600;margin-bottom:12px;color:#4da876">👤 Client Access Credentials</div>
-        <div style="font-size:10px;color:var(--t3);margin-bottom:12px;line-height:1.6">
-          Clients set their own password via "Forgot password" on login.
-        </div>
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table style="width:100%;font-size:10px;min-width:350px">
-          <thead><tr><th style="padding:6px 4px;font-weight:600">${t('tab_client')}</th><th style="padding:6px 4px;font-weight:600">Email</th><th style="padding:6px 4px;font-weight:600">Reset</th></tr></thead>
-          <tbody>
-            ${S.clients.filter(c=>!c.deleted&&!c.isANBSelf).map(c=>'<tr style="border-top:1px solid var(--gr2)"><td style="padding:8px 4px;font-weight:500">'+c.name+'</td><td style="padding:8px 4px;color:var(--t3);font-size:9px;max-width:140px;overflow:hidden;text-overflow:ellipsis">'+(c.email||'')+'</td><td style="padding:8px 4px;text-align:center;white-space:nowrap"><button class="btn btn-xs" onclick="generateClientTempPassword(\''+c.id+'\')" title="Generate a temporary password to hand to this client">🔑</button> <button class="btn btn-xs btn-danger" onclick="resetClientPw(\''+c.id+'\')">✕</button></td></tr>').join('')}
-          </tbody>
-        </table>
-        </div>
+    </div>
+
+    <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">👤 ${t('client_access_credentials')||'Client Access Credentials'}</span></div>
+      <div style="padding:14px">
+        <div class="sec-desc">${t('client_pw_self_service_hint')||'Clients set their own password via "Forgot password" on login.'}</div>
+        ${activeClients.map(c=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--gr2)">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.name||'')}</div>
+              <div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.email||'')}</div>
+            </div>
+            <button class="btn btn-xs" style="flex-shrink:0" onclick="generateClientTempPassword('${c.id}')" title="${t('generate_temp_pw_title')||'Generate a temporary password to hand to this client'}">🔑</button>
+            <button class="btn btn-xs btn-danger" style="flex-shrink:0" onclick="resetClientPw('${c.id}')">✕</button>
+          </div>`).join('')}
       </div>
     </div>`;
   }
@@ -9010,23 +9088,22 @@ function rSettings(el){
     const deletableClients=S.clients.filter(c=>!c.deleted&&c.id!==ANB_SELF_ID);
     const selectedId=S.dangerZoneSelectedClient||'';
     const selectedClient=deletableClients.find(c=>c.id===selectedId);
-    html+=`<div class="settings-section">
-      <h3 style="color:#a83232">⚠️ ${t('danger_zone')||'Danger Zone'}</h3>
-      <div style="font-size:11px;color:var(--t3);margin-bottom:16px;line-height:1.6">${t('danger_zone_hint')||'Permanently and completely delete a client and everything linked to them. This cannot be undone. Export their data first if they might need it later.'}</div>
-
-      <div class="fg"><label>${t('select_client_to_delete')||'Select Client to Delete'}</label>
-        <select id="danger-client-select" onchange="S.dangerZoneSelectedClient=this.value;renderContent()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1)">
-          <option value="">${t('choose_a_client')||'— Choose a client —'}</option>
-          ${deletableClients.map(c=>`<option value="${c.id}" ${c.id===selectedId?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}
-        </select>
+    html+=`
+    <div class="card" style="border:1px solid rgba(168,50,50,.35)">
+      <div class="ch" style="border-bottom:3px solid #a83232;background:rgba(168,50,50,.06)"><span class="ct" style="color:#a83232">⚠️ ${t('danger_zone')||'Danger Zone'}</span></div>
+      <div style="padding:14px">
+        <div class="sec-desc">${t('danger_zone_hint')||'Permanently and completely delete a client and everything linked to them. This cannot be undone. Export their data first if they might need it later.'}</div>
+        <div class="fg"><label>${t('select_client_to_delete')||'Select Client to Delete'}</label>
+          <select id="danger-client-select" onchange="S.dangerZoneSelectedClient=this.value;renderContent()">
+            <option value="">${t('choose_a_client')||'— Choose a client —'}</option>
+            ${deletableClients.map(c=>`<option value="${c.id}" ${c.id===selectedId?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}
+          </select>
+        </div>
+        ${selectedClient?renderDangerZoneChecklist(selectedClient):''}
       </div>
-      ${selectedClient?renderDangerZoneChecklist(selectedClient):''}
     </div>`;
   }
 
-  // ═══════════════════════════ TAB 4: DATA ═══════════════════════════
-  // Default to company tab if invalid
-  
   html+=`</div></div>`;
   el.innerHTML=html;
 }
@@ -9266,11 +9343,17 @@ function saveSettings(){
   S.settings.companyName=document.getElementById('s-cn')?.value||S.settings.companyName;
   S.settings.tagline=document.getElementById('s-tl')?.value||S.settings.tagline;
   S.settings.address=document.getElementById('s-ad')?.value||S.settings.address;
+  S.settings.website=document.getElementById('s-web')?.value||'';
   S.settings.email=document.getElementById('s-em')?.value||S.settings.email;
   S.settings.phone=document.getElementById('s-ph')?.value||S.settings.phone;
   S.settings.kvk=document.getElementById('s-kv')?.value||'';
   S.settings.btw=document.getElementById('s-bt')?.value||'';
   S.settings.iban=document.getElementById('s-ib')?.value||'';
+  // ⚠️ حقول تأمين المسؤولية المهنية (beroepsaansprakelijkheidsverzekering) -
+  // أُضيفت لربط بند المسؤولية في العقد بتغطية تأمينية فعلية بدل رقم اعتباطي
+  S.settings.insurerName=document.getElementById('s-ins-name')?.value||'';
+  S.settings.insurancePolicyNumber=document.getElementById('s-ins-policy')?.value||'';
+  S.settings.insuranceCoverage=document.getElementById('s-ins-cover')?.value||'';
   S.settings.adminPw=document.getElementById('s-ap')?.value||S.settings.adminPw;
   sv();toast(t('settings_nav')+' ✓','ti-check');
 }
@@ -9439,34 +9522,78 @@ function delDoc(id){
   });
 }
 
-// ══════════ سلة المحذوفات (Trash) — استرجاع خلال 30 يومًا ══════════
+// ══════════ سلة المحذوفات (Trash) — استرجاع خلال 30 يومًا؛ الاحتفاظ القانوني بالسجلات المالية 7 سنوات ══════════
+// ⚠️ إصلاح فجوة قانونية: كان النظام يحذف السجلات المالية نهائيًا (بما فيها
+// ملفات الفواتير/الإيصالات في R2) بعد 30 يومًا فقط من الحذف من السلة، بينما
+// القانون الهولندي (Art. 52 AWR — fiscale bewaarplicht) يُلزم بالاحتفاظ
+// بالسجلات المحاسبية 7 سنوات من تاريخ العملية نفسها. الإصلاح: نميّز بين
+// مفاتيح غير مالية (حساب/تواصل فقط، حذف نهائي بعد 30 يومًا آمن) ومفاتيح
+// مالية (لا حذف نهائي أبدًا قبل مرور 7 سنوات على تاريخ العملية نفسها، وليس
+// تاريخ حذفها) — بعد 30 يومًا فقط تُخرَج من واجهة السلة (archived) بلا محو فعلي.
 const TRASH_RETENTION_DAYS=30;
+const FINANCIAL_RETENTION_YEARS=7;
+const FINANCIAL_TRASH_KEYS=['invoices','expenses','hours','docs'];
+const NON_FINANCIAL_TRASH_KEYS=['clients','contacts'];
+
 function daysUntilPurge(deletedAt){
   if(!deletedAt)return TRASH_RETENTION_DAYS; // عناصر قديمة بلا طابع زمني (قبل هذا التحديث) — تُمنح مهلة كاملة
   const ageMs=Date.now()-new Date(deletedAt).getTime();
   const remaining=TRASH_RETENTION_DAYS-Math.floor(ageMs/864e5);
   return Math.max(0,remaining);
 }
-// يُشغَّل عند كل بدء تشغيل: يحذف نهائيًا كل ما تجاوز 30 يومًا في السلة
+// تاريخ العملية المحاسبية الفعلي لسجل مالي (وليس تاريخ حذفه من السلة) — هذا
+// هو المرجع القانوني الصحيح لحساب مدة الاحتفاظ الإلزامية
+function recordFiscalDate(item){
+  const raw=item.date||item.uploadedAt||item.createdAt||item.deletedAt;
+  const d=raw?new Date(raw):null;
+  return (d&&!isNaN(d.getTime()))?d:new Date(); // احتياطي آمن: "اليوم" إن تعذَّر أي تاريخ، لمنع محو سجل مجهول التاريخ قبل أوانه
+}
+function isPastFinancialRetention(item){
+  const cutoff=recordFiscalDate(item);
+  cutoff.setFullYear(cutoff.getFullYear()+FINANCIAL_RETENTION_YEARS);
+  return Date.now()>cutoff.getTime();
+}
+// يُشغَّل عند كل بدء تشغيل:
+// - مفاتيح غير مالية (clients/contacts): حذف نهائي بعد 30 يومًا في السلة، كما كان سابقًا.
+// - مفاتيح مالية (invoices/expenses/hours/docs): بعد 30 يومًا تُصبح "مؤرشَفة"
+//   (archived:true) فتختفي من واجهة السلة والتقارير، لكن بياناتها (وملف
+//   المستند في R2 إن وُجد) تبقى محفوظة فعليًا حتى تمرّ 7 سنوات على تاريخ
+//   العملية نفسها — عندها فقط يجوز المحو النهائي الحقيقي.
 async function purgeOldTrash(){
   const cutoff=Date.now()-TRASH_RETENTION_DAYS*864e5;
-  const isExpired=x=>x.deleted&&x.deletedAt&&new Date(x.deletedAt).getTime()<cutoff;
+  const isPastTrashWindow=x=>x.deleted&&x.deletedAt&&new Date(x.deletedAt).getTime()<cutoff;
   let changed=false;
 
-  // ✅ قبل الحذف المحلي: نحذف الملفات المرتبطة فعليًا من R2 لمنع تراكم ملفات يتيمة بلا أي مرجع في التطبيق
+  NON_FINANCIAL_TRASH_KEYS.forEach(key=>{
+    if(!S[key])return;
+    const before=S[key].length;
+    S[key]=S[key].filter(x=>!isPastTrashWindow(x));
+    if(S[key].length!==before)changed=true;
+  });
+
+  // بعد 30 يومًا: أرشفة السجلات المالية (إخفاء من الواجهة بلا محو فعلي)
+  FINANCIAL_TRASH_KEYS.forEach(key=>{
+    if(!S[key])return;
+    S[key].forEach(x=>{
+      if(isPastTrashWindow(x)&&!x.archived){ x.archived=true; changed=true; }
+    });
+  });
+
+  // المحو النهائي الحقيقي (بما فيه ملفات R2) لا يحدث إلا بعد انتهاء مدة
+  // الاحتفاظ القانونية الكاملة (7 سنوات من تاريخ العملية نفسها)
   if(S.docs){
-    const expiredDocsWithFiles=S.docs.filter(d=>isExpired(d)&&d.url);
-    for(const d of expiredDocsWithFiles){
+    const trulyExpiredDocsWithFiles=S.docs.filter(d=>d.deleted&&d.url&&isPastFinancialRetention(d));
+    for(const d of trulyExpiredDocsWithFiles){
       await deleteFileFromR2(d.url);
     }
   }
-
-  ['clients','invoices','expenses','hours','docs','contacts'].forEach(key=>{
+  FINANCIAL_TRASH_KEYS.forEach(key=>{
     if(!S[key])return;
     const before=S[key].length;
-    S[key]=S[key].filter(x=>!isExpired(x));
+    S[key]=S[key].filter(x=>!(x.deleted&&isPastFinancialRetention(x)));
     if(S[key].length!==before)changed=true;
   });
+
   if(changed)sv();
 }
 
@@ -9504,21 +9631,22 @@ function rTrash(el){
   const clientName=cid=>S.clients.find(c=>c.id===cid)?.name||'—';
 
   const items=[];
-  (S.clients||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'client',icon:'🏢',label:x.name,sub:'Client — all data',id:x.id,deletedAt:x.deletedAt}));
-  (S.invoices||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'invoice',icon:'📄',label:x.num+' — '+(x.desc||''),sub:clientName(x.cid)+' · '+FMT(x.total),id:x.id,deletedAt:x.deletedAt}));
-  (S.expenses||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'expense',icon:'🧾',label:x.desc||x.supplier||'Expense',sub:clientName(x.cid)+' · '+FMT(x.amount),id:x.id,deletedAt:x.deletedAt}));
-  (S.hours||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'hours',icon:'🕐',label:(x.hrs||0)+'h — '+(x.desc||''),sub:clientName(x.cid),id:x.id,deletedAt:x.deletedAt}));
-  (S.docs||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'doc',icon:'📁',label:x.name||'Document',sub:clientName(x.cid),id:x.id,deletedAt:x.deletedAt}));
+  (S.clients||[]).filter(x=>x.deleted&&!x.archived).forEach(x=>items.push({type:'client',icon:'🏢',label:x.name,sub:'Client — all data',id:x.id,deletedAt:x.deletedAt}));
+  (S.invoices||[]).filter(x=>x.deleted&&!x.archived).forEach(x=>items.push({type:'invoice',icon:'📄',label:x.num+' — '+(x.desc||''),sub:clientName(x.cid)+' · '+FMT(x.total),id:x.id,deletedAt:x.deletedAt}));
+  (S.expenses||[]).filter(x=>x.deleted&&!x.archived).forEach(x=>items.push({type:'expense',icon:'🧾',label:x.desc||x.supplier||'Expense',sub:clientName(x.cid)+' · '+FMT(x.amount),id:x.id,deletedAt:x.deletedAt}));
+  (S.hours||[]).filter(x=>x.deleted&&!x.archived).forEach(x=>items.push({type:'hours',icon:'🕐',label:(x.hrs||0)+'h — '+(x.desc||''),sub:clientName(x.cid),id:x.id,deletedAt:x.deletedAt}));
+  (S.docs||[]).filter(x=>x.deleted&&!x.archived).forEach(x=>items.push({type:'doc',icon:'📁',label:x.name||'Document',sub:clientName(x.cid),id:x.id,deletedAt:x.deletedAt}));
   (S.contacts||[]).filter(x=>x.deleted).forEach(x=>items.push({type:'contact',icon:'👤',label:x.name,sub:clientName(x.cid)+' · '+(x.type||''),id:x.id,deletedAt:x.deletedAt}));
 
   items.sort((a,b)=>new Date(b.deletedAt||0)-new Date(a.deletedAt||0));
 
   el.innerHTML=`
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px;flex-wrap:wrap">
     <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
       ← ${t('back_to_overview')||'Back'}
     </button>
     <span style="font-size:11px;color:var(--t3);font-weight:500">${t('trash_hint')||'Deleted items are kept for 30 days, then permanently removed'}</span>
+    <button class="btn btn-xs" onclick="setTab('archived')" style="margin-left:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid ${theme.border};color:${theme.border};border-radius:4px;cursor:pointer">📦 ${t('view_archived')||'View archived records (after 30 days)'} →</button>
   </div>
   <div class="card">
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🗑️ ${t('trash_title')||'Trash'} (${items.length})</span></div>
@@ -9541,20 +9669,103 @@ function rTrash(el){
   </div>`;
 }
 
+// ══════════ شاشة عرض السجلات المؤرشَفة (بعد 30 يومًا من الحذف، حتى انتهاء الاحتفاظ القانوني 7 سنوات) ══════════
+// هذه السجلات لم تعد قابلة للاسترجاع السريع من "سلة المحذوفات" العادية، لكنها
+// محفوظة فعليًا في قاعدة البيانات (وملفاتها في R2 إن وُجدت) للامتثال لالتزام
+// الاحتفاظ الضريبي الهولندي (Art. 52 AWR) — يمكن للأدمن هنا مراجعتها أو
+// استرجاعها بشكل استثنائي (مثلًا لتصحيح، أو عند طلب مصلحة الضرائب اطّلاعًا عليها)
+// ⚠️ مُقسَّمة الآن لكل عميل على حدة (قسم/بطاقة منفصلة لكل عميل بعنوان واضح)
+// بدل جدول واحد مُجمَّع لكل العملاء بلا أي تمييز - إما مُقيَّدة تلقائيًا بعميل
+// واحد إن كان الأدمن أصلًا داخل سياق عميل معيَّن، أو عبر فلتر اختيار عميل صريح
+// في العرض العام (كل العملاء)
+let _archivedFilterCid='all';
+function setArchivedFilterCid(cid){_archivedFilterCid=cid;renderContent();}
+function rArchived(el){
+  const theme={bg:'rgba(200,144,16,.08)',border:'#C89010',textDefault:'#0A2218',accent:'#0A2218'};
+  const clientName=cid=>S.clients.find(c=>c.id===cid)?.name||'—';
+
+  const allItems=[];
+  (S.invoices||[]).filter(x=>x.deleted&&x.archived).forEach(x=>allItems.push({cid:x.cid,type:'invoice',icon:'📄',label:x.num+' — '+(x.desc||''),sub:FMT(x.total),id:x.id,fiscalDate:x.date,deletedAt:x.deletedAt}));
+  (S.expenses||[]).filter(x=>x.deleted&&x.archived).forEach(x=>allItems.push({cid:x.cid,type:'expense',icon:'🧾',label:x.desc||x.supplier||'Expense',sub:FMT(x.amount),id:x.id,fiscalDate:x.date,deletedAt:x.deletedAt}));
+  (S.hours||[]).filter(x=>x.deleted&&x.archived).forEach(x=>allItems.push({cid:x.cid,type:'hours',icon:'🕐',label:(x.hrs||0)+'h — '+(x.desc||''),sub:'',id:x.id,fiscalDate:x.date,deletedAt:x.deletedAt}));
+  (S.docs||[]).filter(x=>x.deleted&&x.archived).forEach(x=>allItems.push({cid:x.cid,type:'doc',icon:'📁',label:x.name||'Document',sub:'',id:x.id,fiscalDate:x.uploadedAt||x.createdAt,deletedAt:x.deletedAt,url:x.url}));
+
+  function yearsUntilPurge(fiscalDate){
+    const d=fiscalDate?new Date(fiscalDate):new Date();
+    if(isNaN(d.getTime()))return FINANCIAL_RETENTION_YEARS;
+    const cutoff=new Date(d);cutoff.setFullYear(cutoff.getFullYear()+FINANCIAL_RETENTION_YEARS);
+    const msLeft=cutoff.getTime()-Date.now();
+    return Math.max(0,Math.ceil(msLeft/(365.25*864e5)*10)/10);
+  }
+
+  // إن كان الأدمن أصلًا داخل سياق عميل معيَّن، نُقيِّد العرض بهذا العميل تلقائيًا
+  // ولا نعرض فلتر الاختيار إطلاقًا (السياق نفسه هو الدليل الواضح)
+  const lockedToClient=!!S.currentClient;
+  const effectiveCid=lockedToClient?S.currentClient:_archivedFilterCid;
+
+  // تجميع حسب العميل - قسم/بطاقة مستقلة لكل عميل بعنوان واضح، بدل جدول مُجمَّع
+  const cidsWithItems=[...new Set(allItems.map(x=>x.cid))];
+  const groups=cidsWithItems
+    .filter(cid=>effectiveCid==='all'||cid===effectiveCid)
+    .map(cid=>({cid,name:clientName(cid),items:allItems.filter(x=>x.cid===cid).sort((a,b)=>new Date(b.deletedAt||0)-new Date(a.deletedAt||0))}))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  const totalCount=groups.reduce((n,g)=>n+g.items.length,0);
+
+  const filterBar=lockedToClient?
+    `<div style="font-size:11px;color:var(--t3);font-weight:500">📌 ${t('archived_scoped_to')||'Showing archived records for'}: <b style="color:${theme.border}">${clientName(S.currentClient)}</b></div>`
+    :`<select onchange="setArchivedFilterCid(this.value)" style="font-size:11px;padding:6px 8px;border-radius:6px;border:1px solid var(--gr2)">
+        <option value="all" ${_archivedFilterCid==='all'?'selected':''}>${t('all_clients')||'All Clients'} (${cidsWithItems.length})</option>
+        ${cidsWithItems.map(cid=>{const n=allItems.filter(x=>x.cid===cid).length;return `<option value="${cid}" ${_archivedFilterCid===cid?'selected':''}>${clientName(cid)} (${n})</option>`;}).join('')}
+      </select>`;
+
+  el.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px;flex-wrap:wrap">
+    <button class="btn" onclick="setTab('trash')" style="padding:8px 12px;font-size:12px;background:${theme.border};color:#fff;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px">
+      ← ${t('trash_title')||'Trash'}
+    </button>
+    <span style="font-size:11px;color:var(--t3);font-weight:500">${t('archived_hint')||'Kept for legal retention (7 years from the record date), even though they no longer appear in Trash'}</span>
+    <div style="margin-left:auto">${filterBar}</div>
+  </div>
+  <div style="font-size:11px;color:var(--t3);font-weight:600;margin-bottom:10px">📦 ${t('archived_title')||'Archived Records'} — ${totalCount} ${t('across')||'across'} ${groups.length} ${t('clients')||'client(s)'}</div>
+  ${groups.length===0?`<div class="card"><div class="empty">📦 ${t('archived_empty')||'No archived records'}</div></div>`:
+  groups.map(g=>`
+    <div class="card" style="margin-bottom:14px">
+      <div class="ch" style="border-bottom:3px solid ${theme.border};display:flex;justify-content:space-between;align-items:center">
+        <span class="ct">🏢 ${escapeHtml(g.name)}</span>
+        <span style="font-size:11px;color:var(--t3)">${g.items.length} ${t('items')||'item(s)'}</span>
+      </div>
+      <table style="width:100%;font-size:12px">
+        <thead><tr style="border-bottom:2px solid var(--gr2)"><th style="padding:8px;text-align:left">${t('lbl_description')||'Item'}</th><th style="padding:8px;text-align:left">${t('lbl_amount')||'Amount'}</th><th style="padding:8px;text-align:left">${t('archived_retained_for')||'Retained for (yrs)'}</th><th style="text-align:right;padding:8px">${t('actions')||'Actions'}</th></tr></thead>
+        <tbody>
+        ${g.items.map(it=>`<tr style="border-bottom:1px solid var(--gr2)">
+            <td style="padding:8px">${it.icon} ${it.label}</td>
+            <td style="padding:8px;color:var(--t3);font-size:11px">${it.sub}</td>
+            <td style="padding:8px;color:var(--t3)">${yearsUntilPurge(it.fiscalDate)}</td>
+            <td style="text-align:right;padding:8px">
+              ${it.url?`<button class="btn btn-xs" onclick="window.open('${it.url}','_blank')" style="margin-right:6px">👁 ${t('view')||'View'}</button>`:''}
+              <button class="btn btn-xs btn-p" onclick="restoreTrashItem('${it.type}','${it.id}')">↩ ${t('trash_restore')||'Restore'}</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`).join('')}
+  `;
+}
+
 function restoreTrashItem(type,id){
   const restoreMap={
     client:()=>{
-      S.clients=S.clients.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);
+      S.clients=S.clients.map(x=>x.id===id?{...x,deleted:false,deletedAt:null,archived:false}:x);
       // استرجاع كل بيانات العميل المحذوفة معه أيضًا
       ['invoices','expenses','hours','docs','contacts'].forEach(key=>{
-        S[key]=S[key].map(x=>x.cid===id&&x.deleted?{...x,deleted:false,deletedAt:null}:x);
+        S[key]=S[key].map(x=>x.cid===id&&x.deleted?{...x,deleted:false,deletedAt:null,archived:false}:x);
       });
     },
-    invoice:()=>{S.invoices=S.invoices.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);},
-    expense:()=>{S.expenses=S.expenses.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);},
-    hours:()=>{S.hours=S.hours.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);},
-    doc:()=>{S.docs=S.docs.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);},
-    contact:()=>{S.contacts=S.contacts.map(x=>x.id===id?{...x,deleted:false,deletedAt:null}:x);},
+    invoice:()=>{S.invoices=S.invoices.map(x=>x.id===id?{...x,deleted:false,deletedAt:null,archived:false}:x);},
+    expense:()=>{S.expenses=S.expenses.map(x=>x.id===id?{...x,deleted:false,deletedAt:null,archived:false}:x);},
+    hours:()=>{S.hours=S.hours.map(x=>x.id===id?{...x,deleted:false,deletedAt:null,archived:false}:x);},
+    doc:()=>{S.docs=S.docs.map(x=>x.id===id?{...x,deleted:false,deletedAt:null,archived:false}:x);},
+    contact:()=>{S.contacts=S.contacts.map(x=>x.id===id?{...x,deleted:false,deletedAt:null,archived:false}:x);},
   };
   if(restoreMap[type]){
     restoreMap[type]();
@@ -9634,9 +9845,9 @@ function renderAuditLog(searchTerm,actionFilter,filterCid){
         const color=actionColors[e.action]||'#0A2218';
         return `<tr style="border-bottom:1px solid var(--gr2)">
           <td style="padding:8px;color:var(--t3);white-space:nowrap;font-size:11px">${when}</td>
-          <td style="padding:8px;font-weight:500">${e.actor}</td>
+          <td style="padding:8px;font-weight:500">${escapeHtml(e.actor||'')}</td>
           <td style="padding:8px"><span style="display:inline-flex;align-items:center;gap:4px;background:${color}1A;color:${color};padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600">${actionIcons[e.action]||'•'} ${e.action.replace('_',' ')}</span></td>
-          <td style="padding:8px;color:var(--t2)">${e.summary}</td>
+          <td style="padding:8px;color:var(--t2)">${escapeHtml(e.summary||'')}</td>
         </tr>`;
       }).join('')}
       </tbody>
@@ -9747,7 +9958,8 @@ function generateRecurringInvoices(){
       const btw=rec.amount*(rec.btwRate/100);
       S.invoices.push({id:UID(),cid:rec.cid,num:nextNum(rec.cid),desc:rec.desc+' ('+FD(rec.nextDate)+')',
         date:rec.nextDate,due,status:'Openstaand',amount:rec.amount,btw,
-        total:rec.amount+btw,btwRate:rec.btwRate,fromRecurring:rec.id});
+        total:rec.amount+btw,btwRate:rec.btwRate,btwType:rec.btwType||'normal',fromRecurring:rec.id});
+      consumeInvoiceCounter(rec.cid);
       created++;
       rec.nextDate=addInterval(rec.nextDate,rec.frequency);
       guard++;
@@ -9966,13 +10178,8 @@ function switchEditClientTab(tabName){
     const panel=document.getElementById('editclient-tab-'+name);
     const btn=document.getElementById('editclient-tabbtn-'+name);
     if(!panel||!btn)return;
-    if(name===tabName){
-      panel.style.display='flex';
-      btn.style.fontWeight='700';btn.style.color='var(--t1)';btn.style.borderBottom='3px solid #C89010';
-    }else{
-      panel.style.display='none';
-      btn.style.fontWeight='500';btn.style.color='var(--t3)';btn.style.borderBottom='3px solid transparent';
-    }
+    panel.style.display=(name===tabName)?'flex':'none';
+    btn.classList.toggle('active',name===tabName);
   });
   // ⭐ زرا حفظ منفصلان بصريًا لكل قسم - يظهر فقط الزر المطابق للتبويب النشط
   const saveInfoBtn=document.getElementById('editclient-save-info');
@@ -9983,205 +10190,135 @@ function switchEditClientTab(tabName){
 function rEditClient(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   if(!c)return;
-  
-  // الألوان من الكرت المختار أو استخدام الافتراضي
+
   const theme=S.cardTheme||{bg:'rgba(184,230,209,0.08)',border:'#B8E6D1',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'};
-  
+
   el.innerHTML=`
   <div>
-    <!-- Header -->
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
-      <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:500" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}';this.style.transform='translateX(0)'">
+      <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:500" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
         ← ${t('back_to_overview')}
       </button>
-      <span style="font-size:11px;color:var(--t3);font-weight:500;flex:1">${c?.name||'Client'}</span>
+      <span style="font-size:12px;color:var(--t1);font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">✏️ ${escapeHtml(c?.name||'Client')}</span>
     </div>
 
-    <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">✏️ ${t('edit')} Client Details</span></div>
-      
-      <div style="display:flex;border-bottom:2px solid var(--gr2);margin:0 16px">
-        <button class="tab-btn" id="editclient-tabbtn-info" onclick="switchEditClientTab('info')" style="flex:1;padding:10px 4px;border:none;background:none;cursor:pointer;font-weight:700;color:var(--t1);border-bottom:3px solid #C89010;text-align:center;font-size:12px">📋 ${t('client_info_tab')||'Client Info'}</button>
-        <button class="tab-btn" id="editclient-tabbtn-config" onclick="switchEditClientTab('config')" style="flex:1;padding:10px 4px;border:none;background:none;cursor:pointer;font-weight:500;color:var(--t3);border-bottom:3px solid transparent;text-align:center;font-size:12px">⚙️ ${t('client_config_tab')||'Configuration'}</button>
-      </div>
-      <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
-        <div id="editclient-tab-info" style="display:flex;flex-direction:column;gap:16px">
-        <!-- ⭐ إعادة تنظيم بصري مطابق لتبويب الإعدادات: مجموعتان واضحتان بدل
-             ثلاثة أقسام متلاصقة بنفس الوزن البصري -->
+    <div class="settings-nav">
+      <button class="settings-nav-btn active" id="editclient-tabbtn-info" onclick="switchEditClientTab('info')"><span class="snb-icon">📋</span><span>${t('client_info_tab')||'Client Info'}</span></button>
+      <button class="settings-nav-btn" id="editclient-tabbtn-config" onclick="switchEditClientTab('config')"><span class="snb-icon">⚙️</span><span>${t('client_config_tab')||'Configuration'}</span></button>
+    </div>
 
-        <!-- ═══ المجموعة الأولى: الشركة وجهة الاتصال ═══ -->
-        <div style="background:rgba(157,212,191,0.08);border:1.5px solid rgba(157,212,191,0.3);border-radius:12px;padding:16px">
-          <div style="display:inline-flex;align-items:center;gap:6px;background:#0A2218;color:#FFD700;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.4px;margin-bottom:14px">👤 ${t('company_and_contact')||'Company & Contact'}</div>
+    <div id="editclient-tab-info" style="display:flex;flex-direction:column;gap:12px">
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div>
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Company Name *</label>
-              <input id="cf-n" value="${c?.name||''}" placeholder="Your company name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-            </div>
-            <div>
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Client Type</label>
-              <select id="cf-t" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
-                ${['Eenmanszaak','VOF','Maatschap','CV','BV','NV','Stichting','Vereniging','Coöperatie','Overig'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}
-              </select>
+      <div class="card">
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">👤 ${t('company_and_contact')||'Company & Contact'}</span></div>
+        <div style="padding:14px">
+          <div class="fr2">
+            <div class="fg"><label>${t('lbl_company_name')||'Company Name'} *</label><input id="cf-n" value="${escapeHtml(c?.name||'')}" placeholder="${t('company_name_ph')||'Your company name'}"/></div>
+            <div class="fg"><label>${t('lbl_client_type')||'Client Type'}</label>
+              <select id="cf-t">${['Eenmanszaak','VOF','Maatschap','CV','BV','NV','Stichting','Vereniging','Coöperatie','Overig'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}</select>
             </div>
           </div>
-
-          <div style="margin-bottom:12px">
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Email Address *</label>
-            <input id="cf-e" value="${c?.email||''}" type="email" placeholder="info@company.nl" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div>
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Phone Number</label>
-              <input id="cf-ph" value="${c?.phone||''}" placeholder="+31 6 12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-            </div>
-            <div>
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Contact Person *</label>
-              <input id="cf-cp" value="${c?.contactPerson||''}" placeholder="Full name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-            </div>
+          <div class="fg"><label>${t('lbl_email')||'Email Address'} *</label><input id="cf-e" value="${escapeHtml(c?.email||'')}" type="email" placeholder="info@company.nl"/></div>
+          <div class="fr2">
+            <div class="fg"><label>${t('lbl_phone')||'Phone Number'}</label><input id="cf-ph" value="${escapeHtml(c?.phone||'')}" placeholder="+31 6 12345678"/></div>
+            <div class="fg"><label>${t('lbl_contact_person')||'Contact Person'} *</label><input id="cf-cp" value="${escapeHtml(c?.contactPerson||'')}" placeholder="${t('full_name_ph')||'Full name'}"/></div>
           </div>
         </div>
+      </div>
 
-        <!-- ═══ المجموعة الثانية: البيانات الضريبية والبنكية والعنوان ═══ -->
-        <div style="background:rgba(15,48,37,0.05);border:1.5px solid rgba(15,48,37,0.15);border-radius:12px;padding:16px">
-          <div style="display:inline-flex;align-items:center;gap:6px;background:#0A2218;color:#FFD700;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.4px;margin-bottom:14px">🏢 ${t('tax_banking_address')||'Tax, Banking & Address'}</div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div>
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">KVK Number *</label>
-              <input id="cf-k" value="${c?.kvk||''}" placeholder="12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-            </div>
-            <div>
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">BTW/VAT Number *</label>
-              <input id="cf-b" value="${c?.btw||''}" placeholder="NL123456789B01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-            </div>
+      <div class="card">
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🧾 ${t('tax_banking')||'Tax & Banking'}</span></div>
+        <div style="padding:14px">
+          <div class="fr2">
+            <div class="fg"><label>${t('lbl_kvk')||'KVK Number'} *</label><input id="cf-k" value="${escapeHtml(c?.kvk||'')}" placeholder="12345678"/></div>
+            <div class="fg"><label>${t('lbl_btw')||'BTW/VAT Number'} *</label><input id="cf-b" value="${escapeHtml(c?.btw||'')}" placeholder="NL123456789B01"/></div>
           </div>
-
-          <div style="margin-bottom:12px">
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('kvk_registration_date')||'KVK Registration Date'}</label>
-            <input type="date" id="cf-kvkdate" value="${c?.kvkDate||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-            <div style="font-size:11px;color:var(--t3);margin-top:4px">${t('kvk_date_hint')||'Used to auto-detect starter status (startersaftrek) in the Tax Liability report'}</div>
+          <div class="fg"><label>${t('kvk_registration_date')||'KVK Registration Date'}</label>
+            <input type="date" id="cf-kvkdate" value="${escapeHtml(c?.kvkDate||'')}"/>
+            <div class="sec-desc" style="margin:4px 0 0">${t('kvk_date_hint')||'Used to auto-detect starter status (startersaftrek) in the Tax Liability report'}</div>
           </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div>
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">IBAN *</label>
-              <input id="cf-i" value="${c?.iban||''}" placeholder="NL91ABNA0417164300" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-            </div>
-            <div>
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">BIC</label>
-              <input id="cf-bic" value="${c?.bic||''}" placeholder="ABNANL2A" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-            </div>
+          <div class="fr2">
+            <div class="fg"><label>${t('lbl_iban')||'IBAN'} *</label><input id="cf-i" value="${escapeHtml(c?.iban||'')}" placeholder="NL91ABNA0417164300"/></div>
+            <div class="fg"><label>${t('lbl_bic')||'BIC'}</label><input id="cf-bic" value="${escapeHtml(c?.bic||'')}" placeholder="ABNANL2A"/></div>
           </div>
-
-          <div style="margin-bottom:14px">
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('customer_base_label')||'Customer Base'}</label>
-            <select id="cf-custbase" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
+          <div class="fg"><label>${t('customer_base_label')||'Customer Base'}</label>
+            <select id="cf-custbase">
               <option value="business" ${(c?.customerBase||'business')==='business'?'selected':''}>${t('customer_base_business')||'Mostly businesses (B2B)'}</option>
               <option value="individuals" ${c?.customerBase==='individuals'?'selected':''}>${t('customer_base_individuals')||'Mostly private individuals — 90%+ (B2C)'}</option>
             </select>
-            <div style="font-size:11px;color:var(--t3);margin-top:6px">${t('customer_base_hint')||'Determines the legal VAT accounting basis (Factuurstelsel/invoice basis for B2B, or Kasstelsel/cash basis eligible for 90%+ consumer sales — per Belastingdienst rules)'}</div>
+            <div class="sec-desc" style="margin:4px 0 0">${t('customer_base_hint')||'Determines the legal VAT accounting basis (Factuurstelsel/invoice basis for B2B, or Kasstelsel/cash basis eligible for 90%+ consumer sales — per Belastingdienst rules)'}</div>
           </div>
+        </div>
+      </div>
 
-          <div style="border-top:1px solid rgba(15,48,37,0.12);padding-top:14px">
-            <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:10px">📍 ${t('address_information')}</div>
-            <div style="margin-bottom:12px">
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Street Address *</label>
-              <input id="cf-addr" value="${c?.address||''}" placeholder="Straatnaam 123" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-              <div>
-                <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Postal Code *</label>
-                <input id="cf-zip" value="${c?.zipCode||''}" placeholder="1234 AB" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-              </div>
-              <div>
-                <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">City *</label>
-                <input id="cf-city" value="${c?.city||''}" placeholder="Amsterdam" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-              </div>
-            </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div>
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Country</label>
-              <select id="cf-country" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
-                <option value="NL" ${c?.country==='NL'?'selected':''}>Netherlands</option>
-                <option value="BE" ${c?.country==='BE'?'selected':''}>Belgium</option>
-                <option value="DE" ${c?.country==='DE'?'selected':''}>Germany</option>
-                <option value="Other" ${c?.country==='Other'?'selected':''}>Other</option>
+      <div class="card">
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">📍 ${t('address_information')||'Address'}</span></div>
+        <div style="padding:14px">
+          <div class="fg"><label>${t('lbl_street_address')||'Street Address'} *</label><input id="cf-addr" value="${escapeHtml(c?.address||'')}" placeholder="Straatnaam 123"/></div>
+          <div class="fr2">
+            <div class="fg"><label>${t('lbl_postal_code')||'Postal Code'} *</label><input id="cf-zip" value="${escapeHtml(c?.zipCode||'')}" placeholder="1234 AB"/></div>
+            <div class="fg"><label>${t('lbl_city')||'City'} *</label><input id="cf-city" value="${escapeHtml(c?.city||'')}" placeholder="Amsterdam"/></div>
+          </div>
+          <div class="fr2">
+            <div class="fg"><label>${t('lbl_country')||'Country'}</label>
+              <select id="cf-country">
+                <option value="NL" ${c?.country==='NL'?'selected':''}>${t('country_nl')||'Netherlands'}</option>
+                <option value="BE" ${c?.country==='BE'?'selected':''}>${t('country_be')||'Belgium'}</option>
+                <option value="DE" ${c?.country==='DE'?'selected':''}>${t('country_de')||'Germany'}</option>
+                <option value="Other" ${c?.country==='Other'?'selected':''}>${t('country_other')||'Other'}</option>
               </select>
             </div>
-            <div>
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Registration Number</label>
-              <input id="cf-regnum" value="${c?.registrationNumber||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-            </div>
+            <div class="fg"><label>${t('lbl_registration_number')||'Registration Number'}</label><input id="cf-regnum" value="${escapeHtml(c?.registrationNumber||'')}"/></div>
           </div>
         </div>
-        </div>
-        </div>
+      </div>
+    </div>
 
-        <div id="editclient-tab-config" style="display:none;flex-direction:column;gap:16px">
-        <!-- ⭐ إعادة تنظيم: بدل خمسة أقسام متلاصقة بنفس الوزن البصري تمامًا،
-             مجموعتان واضحتان بصريًا (خلفية مميَّزة لكل مجموعة) تُجمِّعان
-             الإعدادات المرتبطة منطقيًا معًا -->
+    <div id="editclient-tab-config" style="display:none;flex-direction:column;gap:12px">
 
-        <!-- ═══ المجموعة الأولى: الفوترة والحدود ═══ -->
-        ${cid===ANB_SELF_ID?'':`
-        <div style="background:rgba(184,134,11,0.05);border:1.5px solid rgba(184,134,11,0.25);border-radius:12px;padding:16px">
-          <div style="display:inline-flex;align-items:center;gap:6px;background:#0A2218;color:#FFD700;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.4px;margin-bottom:14px">💳 ${t('billing_and_limits')||'Billing & Limits'}</div>
-
-          <div style="margin-bottom:16px">
-            <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:10px">${t('subscription_information')||'Subscription'}</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div>
-                <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('plan')||'Plan'}</label>
-                <select id="cf-fee" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
-                  <option value="0" ${!c?.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
-                  ${renderPlanOptions(c?.monthlyFee)}
-                </select>
-              </div>
-              <div>
-                <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('subscription_end')||'Subscription end date'}</label>
-                <input type="date" id="cf-planexp" value="${c?.planExpiry||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-              </div>
+      ${cid===ANB_SELF_ID?'':`
+      <div class="card">
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💳 ${t('billing_and_limits')||'Billing & Limits'}</span></div>
+        <div style="padding:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:8px">${t('subscription_information')||'Subscription'}</div>
+          <div class="fr2">
+            <div class="fg"><label>${t('plan')||'Plan'}</label>
+              <select id="cf-fee">
+                <option value="0" ${!c?.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
+                ${renderPlanOptions(c?.monthlyFee)}
+              </select>
             </div>
-            <div style="font-size:11px;color:var(--t3);margin-top:6px">${t('subscription_end_hint')||'Leave empty for an ongoing subscription with no fixed end date'}</div>
+            <div class="fg"><label>${t('subscription_end')||'Subscription end date'}</label><input type="date" id="cf-planexp" value="${escapeHtml(c?.planExpiry||'')}"/></div>
           </div>
+          <div class="sec-desc" style="margin-top:-6px">${t('subscription_end_hint')||'Leave empty for an ongoing subscription with no fixed end date'}</div>
 
-          <div style="border-top:1px solid rgba(184,134,11,0.2);padding-top:14px">
+          <div style="border-top:1px solid var(--gr2);margin-top:12px;padding-top:14px">
             <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px">${t('monthly_limits')||'Monthly Transaction Limits'}</div>
-            <div style="font-size:11px;color:var(--t3);margin-bottom:10px">${t('monthly_limits_hint')||'Set how many invoices/expenses are included in this client\u2019s plan per month. You\u2019ll get an alert if they go over, so you can bill for the extra transactions.'}</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div>
-                <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('monthly_invoice_limit')||'Invoices / month'}</label>
-                <input type="number" id="cf-inv-limit" min="0" value="${c?.monthlyInvoiceLimit||''}" placeholder="${t('no_limit')||'No limit'}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-              </div>
-              <div>
-                <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('monthly_expense_limit')||'Expenses / month'}</label>
-                <input type="number" id="cf-exp-limit" min="0" value="${c?.monthlyExpenseLimit||''}" placeholder="${t('no_limit')||'No limit'}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-              </div>
+            <div class="sec-desc">${t('monthly_limits_hint')||'Set how many invoices/expenses are included in this client\u2019s plan per month. You\u2019ll get an alert if they go over, so you can bill for the extra transactions.'}</div>
+            <div class="fr2">
+              <div class="fg"><label>${t('monthly_invoice_limit')||'Invoices / month'}</label><input type="number" id="cf-inv-limit" min="0" value="${escapeHtml(c?.monthlyInvoiceLimit||'')}" placeholder="${t('no_limit')||'No limit'}"/></div>
+              <div class="fg"><label>${t('monthly_expense_limit')||'Expenses / month'}</label><input type="number" id="cf-exp-limit" min="0" value="${escapeHtml(c?.monthlyExpenseLimit||'')}" placeholder="${t('no_limit')||'No limit'}"/></div>
             </div>
           </div>
         </div>
-        `}
+      </div>
+      `}
 
-        <!-- ═══ المجموعة الثانية: تخصيص تجربة العميل ═══ -->
-        <div style="background:rgba(26,74,42,0.05);border:1.5px solid rgba(26,74,42,0.2);border-radius:12px;padding:16px">
-          <div style="display:inline-flex;align-items:center;gap:6px;background:#0A2218;color:#FFD700;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.4px;margin-bottom:14px">🎛️ ${t('client_customization')||'Client Customization'}</div>
-
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-            <div style="flex:1;min-width:160px;background:var(--white);border-radius:8px;padding:12px">
+      <div class="card">
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🎛️ ${t('client_customization')||'Client Customization'}</span></div>
+        <div style="padding:14px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div style="flex:1;min-width:160px;background:var(--gr1);border-radius:8px;padding:12px">
               <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px">🕐 ${t('hour_categories')||'Hour Logging Categories'}</div>
               <div style="font-size:10.5px;color:var(--t3);margin-bottom:10px;line-height:1.5">${t('hour_categories_hint')||'Customize the categories used when logging hours for this client (e.g. photography, consulting, construction).'}</div>
               <button class="btn btn-xs" onclick="openManageHourCategories('${cid}')">⚙️ ${t('manage_categories')||'Manage Categories'}</button>
             </div>
-            <div style="flex:1;min-width:160px;background:var(--white);border-radius:8px;padding:12px">
+            <div style="flex:1;min-width:160px;background:var(--gr1);border-radius:8px;padding:12px">
               <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px">💰 ${t('cashier_services')||'Cashier Services'}</div>
               <div style="font-size:10.5px;color:var(--t3);margin-bottom:10px;line-height:1.5">${t('cashier_services_hint')||'Set up quick-tap service buttons for this client\u2019s Cashier screen (e.g. Haircut \u2014 \u20ac20, Custom \u2014 editable price).'}</div>
               <button class="btn btn-xs" onclick="openManageCashierServices('${cid}')">⚙️ ${t('manage_services')||'Manage Services'}</button>
             </div>
-            <div style="flex:1;min-width:160px;background:var(--white);border-radius:8px;padding:12px">
+            <div style="flex:1;min-width:160px;background:var(--gr1);border-radius:8px;padding:12px">
               <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px">🧠 ${t('supplier_learning')||'Learned Suppliers (OCR)'}</div>
               <div style="font-size:10.5px;color:var(--t3);margin-bottom:10px;line-height:1.5">${t('supplier_learning_hint')||'Review and correct what the receipt-scanning system has learned about each supplier — VAT rate and typical amount.'}</div>
               <button class="btn btn-xs" onclick="openManageSupplierProfiles('${cid}')">⚙️ ${t('manage_learned_suppliers')||'Manage Learned Suppliers'}</button>
@@ -10189,44 +10326,40 @@ function rEditClient(el,cid){
           </div>
 
           ${cid===ANB_SELF_ID?'':`
-          <div style="border-top:1px solid rgba(26,74,42,0.15);padding-top:14px">
+          <div style="border-top:1px solid var(--gr2);margin-top:14px;padding-top:14px">
             <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px">👁️ ${t('visible_sections')||'Visible Sections for This Client'}</div>
-            <div style="font-size:11px;color:var(--t3);margin-bottom:12px;line-height:1.5">${t('visible_sections_hint')||'Choose which sections this specific client can see on their dashboard. Unchecked sections stay fully accessible to you as admin.'}</div>
+            <div class="sec-desc">${t('visible_sections_hint')||'Choose which sections this specific client can see on their dashboard. Unchecked sections stay fully accessible to you as admin.'}</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
               ${TOGGLEABLE_CLIENT_CARDS.map(card=>`
-                <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--white);border-radius:6px;cursor:pointer;font-size:12px;color:var(--t1)">
+                <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--gr1);border-radius:6px;cursor:pointer;font-size:12px;color:var(--t1)">
                   <input type="checkbox" id="cf-cardvis-${card.id}" ${isCardVisibleForClient(cid,card.id)?'checked':''}/>
-                  ${card.icon} ${card.label}
+                  ${card.icon} ${escapeHtml(card.label)}
                 </label>
               `).join('')}
             </div>
           </div>
           `}
         </div>
-        </div>
+      </div>
 
-        <!-- ⭐ زران منفصلان بصريًا للحفظ - واحد لكل قسم، يظهر فقط المطابق
-             للتبويب النشط حاليًا. كلاهما يحفظان كل البيانات معًا (تفاديًا لأي
-             فقدان بيانات جزئي)، لكن التسمية واللون يوضحان "أنت الآن هنا" -->
-        <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button class="btn" onclick="goBackToOverview()" style="background:var(--gr2);color:var(--t1);border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s" onmouseover="this.style.background='var(--gr3)'" onmouseout="this.style.background='var(--gr2)'">Cancel</button>
-          <button id="editclient-save-info" class="btn" onclick="saveEditClientFromTab('${c.id}')" style="background:#1A4A2A;color:#ffffff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:6px" onmouseover="this.style.background='#2d7a4f'" onmouseout="this.style.background='#1A4A2A'">👤 ${t('save_client_info')||'Save Client Info'}</button>
-          <button id="editclient-save-config" class="btn" onclick="saveEditClientFromTab('${c.id}')" style="background:#B8860B;color:#ffffff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s;display:none;align-items:center;gap:6px" onmouseover="this.style.background='#C89010'" onmouseout="this.style.background='#B8860B'">⚙️ ${t('save_configuration')||'Save Configuration'}</button>
-        </div>
-
-        <!-- ⚠️ قسم منفصل وواضح لتصدير كل بيانات العميل - نُقل من أيقونتين
-             صغيرتين في الرأس المزدحم إلى قسم مستقل بآخر الصفحة كما طُلب -->
-        ${cid!==ANB_SELF_ID?`
-        <div style="margin-top:8px;padding-top:20px;border-top:2px solid var(--gr2)">
-          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px">📦 ${t('export_full_client_data')||'Export Full Client Data'}</div>
-          <div style="font-size:11px;color:var(--t3);margin-bottom:12px;line-height:1.6">${t('export_full_client_data_hint')||'Get everything for this client in one file — useful if they\u2019re moving to another accountant.'}</div>
+      ${cid!==ANB_SELF_ID?`
+      <div class="card">
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">📦 ${t('export_full_client_data')||'Export Full Client Data'}</span></div>
+        <div style="padding:14px">
+          <div class="sec-desc">${t('export_full_client_data_hint')||'Get everything for this client in one file — useful if they\u2019re moving to another accountant.'}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn" onclick="exportClientDataExcel('${cid}')" style="padding:10px 16px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px">📊 ${t('export_all_excel')||'Export All Data (Excel)'}</button>
-            <button class="btn" onclick="exportClientDataPDF('${cid}')" style="padding:10px 16px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px">📄 ${t('export_all_pdf')||'Export All Data (PDF)'}</button>
+            <button class="btn btn-xs" onclick="exportClientDataExcel('${cid}')">📊 ${t('export_all_excel')||'Export All Data (Excel)'}</button>
+            <button class="btn btn-xs" onclick="exportClientDataPDF('${cid}')">📄 ${t('export_all_pdf')||'Export All Data (PDF)'}</button>
           </div>
         </div>
-        `:''}
       </div>
+      `:''}
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;padding:4px 0 10px">
+      <button class="btn" onclick="goBackToOverview()" style="background:var(--gr2);color:var(--t1)">${t('cancel')||'Cancel'}</button>
+      <button id="editclient-save-info" class="btn btn-p" onclick="saveEditClientFromTab('${c.id}')">👤 ${t('save_client_info')||'Save Client Info'}</button>
+      <button id="editclient-save-config" class="btn btn-p" style="display:none" onclick="saveEditClientFromTab('${c.id}')">⚙️ ${t('save_configuration')||'Save Configuration'}</button>
     </div>
   </div>`;
 }
@@ -10299,144 +10432,80 @@ function saveEditClientFromTab(clientId){
 function openClientModal(c){
   const isN=!c;
   showModal(isN?t('add_client_title'):t('edit')+' '+t('tab_client').toLowerCase(),`
-    <div style="display:flex;flex-direction:column;gap:16px">
-      
-      <!-- Back Button -->
-      ${!isN?`<div style="margin-bottom:8px">
+    <div style="display:flex;flex-direction:column;gap:2px">
+
+      ${!isN?`<div style="margin-bottom:10px">
         <button onclick="closeModal();goBackToOverview()" style="background:#4da876;color:white;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='#0A2218'" onmouseout="this.style.background='#4da876'">
           ← ${t('back_to_overview')}
         </button>
       </div>`:''}
-      
-      <!-- Basic Info Section -->
-      <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
-        <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px">📋 ${t('basic_information')}</div>
-        
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Company Name *</label>
-            <input id="cf-n" value="${c?.name||''}" placeholder="Your company name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Client Type</label>
-            <select id="cf-t" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
-              ${['Eenmanszaak','VOF','Maatschap','CV','BV','NV','Stichting','Vereniging','Coöperatie','Overig'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}
-            </select>
-          </div>
-        </div>
 
-        <div style="margin-bottom:12px">
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Email Address *</label>
-          <input id="cf-e" value="${c?.email||''}" type="email" placeholder="info@company.nl" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Phone Number</label>
-            <input id="cf-ph" value="${c?.phone||''}" placeholder="+31 6 12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Contact Person *</label>
-            <input id="cf-cp" value="${c?.contactPerson||''}" placeholder="Full name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
+      <div class="msec msec-first">📋 ${t('basic_information')}</div>
+      <div class="fr2">
+        <div class="fg"><label>Company Name *</label><input id="cf-n" value="${escapeHtml(c?.name||'')}" placeholder="Your company name"/></div>
+        <div class="fg"><label>Client Type</label>
+          <select id="cf-t">${['Eenmanszaak','VOF','Maatschap','CV','BV','NV','Stichting','Vereniging','Coöperatie','Overig'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}</select>
         </div>
       </div>
+      <div class="fg"><label>Email Address *</label><input id="cf-e" value="${escapeHtml(c?.email||'')}" type="email" placeholder="info@company.nl"/></div>
+      <div class="fr2">
+        <div class="fg"><label>Phone Number</label><input id="cf-ph" value="${escapeHtml(c?.phone||'')}" placeholder="+31 6 12345678"/></div>
+        <div class="fg"><label>Contact Person *</label><input id="cf-cp" value="${escapeHtml(c?.contactPerson||'')}" placeholder="Full name"/></div>
+      </div>
 
-      <!-- Business Info Section -->
-      <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
-        <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px">🏢 ${t('business_information')}</div>
-        
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">KVK Number *</label>
-            <input id="cf-k" value="${c?.kvk||''}" placeholder="12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">BTW/VAT Number *</label>
-            <input id="cf-b" value="${c?.btw||''}" placeholder="NL123456789B01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
-        </div>
+      <div class="msec">🏢 ${t('business_information')}</div>
+      <div class="fr2">
+        <div class="fg"><label>KVK Number *</label><input id="cf-k" value="${escapeHtml(c?.kvk||'')}" placeholder="12345678"/></div>
+        <div class="fg"><label>BTW/VAT Number *</label><input id="cf-b" value="${escapeHtml(c?.btw||'')}" placeholder="NL123456789B01"/></div>
+      </div>
+      <div class="fg"><label>${t('kvk_registration_date')||'KVK Registration Date'}</label>
+        <input type="date" id="cf-kvkdate" value="${escapeHtml(c?.kvkDate||'')}"/>
+        <div class="sec-desc" style="margin:4px 0 0">${t('kvk_date_hint')||'Used to auto-detect starter status (startersaftrek) in the Tax Liability report'}</div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label>IBAN *</label><input id="cf-i" value="${escapeHtml(c?.iban||'')}" placeholder="NL91ABNA0417164300"/></div>
+        <div class="fg"><label>BIC</label><input id="cf-bic" value="${escapeHtml(c?.bic||'')}" placeholder="ABNANL2A"/></div>
+      </div>
+      <div class="fg"><label>${t('customer_base_label')||'Customer Base'}</label>
+        <select id="cf-custbase">
+          <option value="business" ${(c?.customerBase||'business')==='business'?'selected':''}>${t('customer_base_business')||'Mostly businesses (B2B)'}</option>
+          <option value="individuals" ${c?.customerBase==='individuals'?'selected':''}>${t('customer_base_individuals')||'Mostly private individuals — 90%+ (B2C)'}</option>
+        </select>
+        <div class="sec-desc" style="margin:4px 0 0">${t('customer_base_hint')||'Determines the legal VAT accounting basis (Factuurstelsel/invoice basis for B2B, or Kasstelsel/cash basis eligible for 90%+ consumer sales — per Belastingdienst rules)'}</div>
+      </div>
 
-        <div style="margin-bottom:12px">
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('kvk_registration_date')||'KVK Registration Date'}</label>
-          <input type="date" id="cf-kvkdate" value="${c?.kvkDate||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          <div style="font-size:11px;color:var(--t3);margin-top:4px">${t('kvk_date_hint')||'Used to auto-detect starter status (startersaftrek) in the Tax Liability report'}</div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">IBAN *</label>
-            <input id="cf-i" value="${c?.iban||''}" placeholder="NL91ABNA0417164300" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">BIC</label>
-            <input id="cf-bic" value="${c?.bic||''}" placeholder="ABNANL2A" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
-        </div>
-
-        <div style="margin-top:12px">
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('customer_base_label')||'Customer Base'}</label>
-          <select id="cf-custbase" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
-            <option value="business" ${(c?.customerBase||'business')==='business'?'selected':''}>${t('customer_base_business')||'Mostly businesses (B2B)'}</option>
-            <option value="individuals" ${c?.customerBase==='individuals'?'selected':''}>${t('customer_base_individuals')||'Mostly private individuals — 90%+ (B2C)'}</option>
+      <div class="msec">📍 ${t('address_information')}</div>
+      <div class="fg"><label>Street Address *</label><input id="cf-addr" value="${escapeHtml(c?.address||'')}" placeholder="Straatnaam 123"/></div>
+      <div class="fr2">
+        <div class="fg"><label>Postal Code *</label><input id="cf-zip" value="${escapeHtml(c?.zipCode||'')}" placeholder="1234 AB"/></div>
+        <div class="fg"><label>City *</label><input id="cf-city" value="${escapeHtml(c?.city||'')}" placeholder="Amsterdam"/></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label>Country</label>
+          <select id="cf-country">
+            <option value="NL" ${c?.country==='NL'?'selected':''}>Netherlands</option>
+            <option value="BE" ${c?.country==='BE'?'selected':''}>Belgium</option>
+            <option value="DE" ${c?.country==='DE'?'selected':''}>Germany</option>
+            <option value="Other" ${c?.country==='Other'?'selected':''}>Other</option>
           </select>
-          <div style="font-size:11px;color:var(--t3);margin-top:6px">${t('customer_base_hint')||'Determines the legal VAT accounting basis (Factuurstelsel/invoice basis for B2B, or Kasstelsel/cash basis eligible for 90%+ consumer sales — per Belastingdienst rules)'}</div>
         </div>
+        <div class="fg"><label>Registration Number</label><input id="cf-regnum" value="${escapeHtml(c?.registrationNumber||'')}"/></div>
       </div>
 
-      <!-- Address Section -->
-      <div style="border-bottom:2px solid var(--gr2);padding-bottom:16px">
-        <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px">📍 ${t('address_information')}</div>
-        
-        <div style="margin-bottom:12px">
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Street Address *</label>
-          <input id="cf-addr" value="${c?.address||''}" placeholder="Straatnaam 123" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
+      <div class="msec">💳 ${t('subscription_information')||'Subscription'}</div>
+      <div class="fr2">
+        <div class="fg"><label>${t('plan')||'Plan'}${isN?' *':''}</label>
+          <select id="cf-fee">
+            <option value="0" ${c&&!c.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
+            <option value="100" ${parseInt(c?.monthlyFee)===100?'selected':''}>Basic — €100/month</option>
+            <option value="150" ${!c||parseInt(c?.monthlyFee)===150?'selected':''}>Plus — €150/month</option>
+            <option value="200" ${parseInt(c?.monthlyFee)===200?'selected':''}>Pro — €200/month</option>
+          </select>
         </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Postal Code *</label>
-            <input id="cf-zip" value="${c?.zipCode||''}" placeholder="1234 AB" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">City *</label>
-            <input id="cf-city" value="${c?.city||''}" placeholder="Amsterdam" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Country</label>
-            <select id="cf-country" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
-              <option value="NL" ${c?.country==='NL'?'selected':''}>Netherlands</option>
-              <option value="BE" ${c?.country==='BE'?'selected':''}>Belgium</option>
-              <option value="DE" ${c?.country==='DE'?'selected':''}>Germany</option>
-              <option value="Other" ${c?.country==='Other'?'selected':''}>Other</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Registration Number</label>
-            <input id="cf-regnum" value="${c?.registrationNumber||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('plan')||'Plan'}${isN?' *':''}</label>
-            <select id="cf-fee" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
-              <option value="0" ${c&&!c.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
-              <option value="100" ${parseInt(c?.monthlyFee)===100?'selected':''}>Basic — €100/month</option>
-              <option value="150" ${!c||parseInt(c?.monthlyFee)===150?'selected':''}>Plus — €150/month</option>
-              <option value="200" ${parseInt(c?.monthlyFee)===200?'selected':''}>Pro — €200/month</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('subscription_end')||'Subscription end date'}</label>
-            <input type="date" id="cf-planexp" value="${c?.planExpiry||''}" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px"/>
-          </div>
-        </div>
+        <div class="fg"><label>${t('subscription_end')||'Subscription end date'}</label><input type="date" id="cf-planexp" value="${escapeHtml(c?.planExpiry||'')}"/></div>
       </div>
 
-      <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3)">
+      <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3);margin-top:14px">
         ℹ️ Fields marked with * are required
       </div>
 
@@ -10536,12 +10605,36 @@ function openClientModal(c){
   },'Save Changes');
 }
 
+// ⚠️ إصلاح خلل ترقيم محتمل: كان الترقيم مبنيًا على طول مصفوفة الفواتير
+// (S.invoices.filter(...).length) - آمن طالما الفواتير المحذوفة تبقى في
+// المصفوفة (مؤرشَفة). لكن بعد المحو الفعلي النهائي بعد 7 سنوات (الاحتفاظ
+// القانوني)، يتراجع الطول، وقد يُقترَح - أو حتى يُقبَل - رقم فاتورة سبق
+// استخدامه فعليًا، وهو ما يخالف اشتراط التسلسل غير المنقطع لأرقام الفواتير.
+// الإصلاح: عدّاد دائم مُخزَّن على سجل العميل نفسه (client.invoiceCounter)
+// لا يتراجع أبدًا مهما حدث لاحقًا لمصفوفة الفواتير.
+function getInvoiceCounter(cid){
+  const c=S.clients.find(cc=>cc.id===cid);
+  if(!c)return (S.invoices||[]).filter(i=>i.cid===cid).length;
+  if(typeof c.invoiceCounter!=='number'){
+    // أول استخدام لهذا الإصلاح لعميل موجود مسبقًا: نبدأ من العدد الفعلي
+    // الحالي حتى لا يتراجع الترقيم فجأة أو يتكرر مع فواتير موجودة بالفعل
+    c.invoiceCounter=(S.invoices||[]).filter(i=>i.cid===cid).length;
+  }
+  return c.invoiceCounter;
+}
+// يُستدعى فقط عند إنشاء فاتورة جديدة فعليًا (وليس عند مجرد فتح النموذج أو
+// المعاينة) - يُقدِّم العدّاد للأمام بشكل دائم لا يتراجع أبدًا
+function consumeInvoiceCounter(cid){
+  const c=S.clients.find(cc=>cc.id===cid);
+  if(!c)return;
+  getInvoiceCounter(cid); // تأكد من التهيئة أولًا إن كان أول استخدام
+  c.invoiceCounter=(c.invoiceCounter||0)+1;
+}
 function nextNum(clientId){
   const cid=clientId||S.currentClient;
   const c=S.clients.find(cc=>cc.id===cid);
   const clientName=c?c.name.substring(0,3).toUpperCase():'CLI';
-  const clientInvoices=S.invoices.filter(i=>i.cid===cid);
-  return `${clientName}-${String(clientInvoices.length+1).padStart(3,'0')}`;
+  return `${clientName}-${String(getInvoiceCounter(cid)+1).padStart(3,'0')}`;
 }
 function openNewInvoice(){
   openInvoiceModal(null);
@@ -10604,6 +10697,7 @@ function openDailyRevenueEntry(){
       amountPaid:0,billTo:gd.name,billToId:gd.id,billToManual:null,isDailyRevenue:true};
 
     S.invoices.push(ni);
+    consumeInvoiceCounter(cid);
     logAudit('create','invoice','Daily revenue entry '+FD(date)+' — '+FMT(ni.total),cid);
 
     const paymentMethod=document.getElementById('dre-paymethod')?.value;
@@ -10678,6 +10772,7 @@ function openInvoiceModal(inv){
   const billToOptions=contacts.filter(c=>!c.isGeneral).map(c=>`<option value="${c.id}" data-name="${escapeHtml(c.name)}"${inv?.billToId===c.id?'selected':''}>${escapeHtml(c.name)} (${c.type})</option>`).join('');
   const initMode=inv?.billToManual?'manual':'select';
   showModal(isN?t('btn_new_invoice').replace('+ ',''):t('edit')+' '+t('tab_invoices').slice(0,-1),`
+    <div class="msec msec-first">📇 ${t('msec_bill_to')||'Bill To'}</div>
     <div class="fg"><label>Bill to (Customer) *</label>
       <div style="display:flex;gap:6px;margin-bottom:8px">
         <button type="button" class="btn btn-xs" id="bt-mode-select" style="flex:1;background:var(--g1);color:var(--gold3);border:none;cursor:pointer">📋 From list</button>
@@ -10720,6 +10815,7 @@ function openInvoiceModal(inv){
     </div>
     <input type="hidden" id="if-billto" value="${inv?.billTo||''}" />
     <input type="hidden" id="if-billto-id" value="${inv?.billToId||''}" />
+    <div class="msec">🧾 ${t('msec_invoice_details')||'Invoice Details'}</div>
     <div class="fr2">
       <div class="fg"><label>Invoice #</label><input id="if-n" value="${inv?.num||nextNum(cid)}"/></div>
       <div class="fg"><label>${t('lbl_due')}</label><input type="date" id="if-dd" value="${inv?.due||new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"/></div>
@@ -10731,11 +10827,21 @@ function openInvoiceModal(inv){
         🧾 Multiple items (sell several products/services on this invoice)
       </label>
     </div>`:''}
+    <div class="msec">💶 ${t('msec_amount_tax')||'Amount & Tax'}</div>
     <div id="if-single-wrap">
       <div class="fg"><label>${t('lbl_description')}</label><input id="if-desc" value="${inv?.desc||''}" placeholder="e.g. Financial advisory services Q2"/></div>
       <div class="fr2">
         <div class="fg"><label>Amount excl. BTW (€)</label><input type="number" id="if-a" value="${inv?.amount||''}" oninput="uIT()" step="0.01"/></div>
         <div class="fg"><label>${t('lbl_btw')}</label><select id="if-r" onchange="uIT()"><option value="21" ${inv?.btwRate===21?'selected':''}>21%</option><option value="9" ${inv?.btwRate===9?'selected':''}>9%</option><option value="0" ${inv?.btwRate===0?'selected':''}>0% KOR</option></select></div>
+      </div>
+      <div class="fg"><label>${t('lbl_btw_type')||'BTW type'}</label>
+        <select id="if-btwtype" onchange="uIT()">
+          <option value="normal" ${(!inv?.btwType||inv?.btwType==='normal')?'selected':''}>${t('btwtype_normal')||'Normal (rate above)'}</option>
+          <option value="verlegd_nl" ${inv?.btwType==='verlegd_nl'?'selected':''}>${t('btwtype_verlegd_nl')||'BTW verlegd — domestic reverse charge (rubriek 1e)'}</option>
+          <option value="eu_b2b" ${inv?.btwType==='eu_b2b'?'selected':''}>${t('btwtype_eu_b2b')||'EU business customer — reverse charge (rubriek 3b)'}</option>
+          <option value="export" ${inv?.btwType==='export'?'selected':''}>${t('btwtype_export')||'Outside EU / export (rubriek 3a)'}</option>
+        </select>
+        <div id="if-btwtype-hint" style="font-size:10px;color:var(--t3);margin-top:4px"></div>
       </div>
     </div>
     <div id="if-multi-wrap" style="display:none">
@@ -10750,7 +10856,8 @@ function openInvoiceModal(inv){
     ${isN?`
     <!-- ⚠️ طريقة الدفع عند الإنشاء - تُستبدَل بها قائمة الحالة اليدوية القديمة
          التي كانت تسمح بتعيين "مدفوعة" مباشرة بلا أي مطابقة فعلية -->
-    <div class="fg" style="margin-top:6px;border-top:1px solid var(--gr2);padding-top:12px">
+    <div class="msec">💳 ${t('msec_payment')||'Payment'}</div>
+    <div class="fg" style="margin-top:-4px">
       <label>💳 ${t('payment_method')||'Payment Method'}</label>
       <select id="if-paymethod" onchange="upInvoicePaymentMethod()">
         <option value="bank">${t('pay_bank_pending')||'Bank transfer (pending — match later)'}</option>
@@ -10766,7 +10873,8 @@ function openInvoiceModal(inv){
     </div>
     `:''}
     ${isN?`
-    <div class="fg" style="margin-top:10px">
+    <div class="msec">🔁 ${t('msec_recurring')||'Recurring'}</div>
+    <div class="fg" style="margin-top:-4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;font-size:12px;color:var(--t1)">
         <input type="checkbox" id="if-rec" onchange="document.getElementById('if-rec-freq-wrap').style.display=this.checked?'block':'none'" style="width:auto"/>
         🔁 Make this a recurring invoice
@@ -10780,6 +10888,7 @@ function openInvoiceModal(inv){
   `,()=>{
     const isMulti=document.getElementById('if-multi')?.checked;
     let a=0,r=21,items=null,descVal='';
+    const btwType=isMulti?'normal':(document.getElementById('if-btwtype')?.value||'normal'); // ⚠️ النموذج متعدد البنود لا يدعم الأنواع الخاصة حاليًا - يبقى "عادي"
     if(isMulti){
       const rows=Array.from(document.querySelectorAll('.if-item-row'));
       items=rows.map(row=>{
@@ -10793,7 +10902,7 @@ function openInvoiceModal(inv){
       descVal=items.length?items.map(it=>it.desc).join(', ').slice(0,140):'';
     }else{
       a=parseFloat(document.getElementById('if-a').value)||0;
-      r=parseFloat(document.getElementById('if-r').value);
+      r=btwType!=='normal'?0:(parseFloat(document.getElementById('if-r').value)||21); // ⚠️ فترة معكوسة/تصدير = 0% دائمًا بغضّ النظر عن قيمة القائمة
       descVal=document.getElementById('if-desc').value;
     }
     const btw=a*(r/100);
@@ -10832,7 +10941,7 @@ function openInvoiceModal(inv){
     const ni={id:inv?.id||UID(),cid,num:document.getElementById('if-n').value,
       desc:descVal,date:document.getElementById('if-d').value,
       due:document.getElementById('if-dd').value,status:inv?.status||'Openstaand',
-      amount:a,btw,total:a+btw,btwRate:r,items:items&&items.length?items:null,
+      amount:a,btw,total:a+btw,btwRate:r,btwType,items:items&&items.length?items:null,
       amountPaid:inv?.amountPaid||0,
       billTo,billToId,billToManual};
 
@@ -10852,6 +10961,7 @@ function openInvoiceModal(inv){
       return;
     }
     if(isN)S.invoices.push(ni);else S.invoices=S.invoices.map(i=>i.id===ni.id?ni:i);
+    if(isN)consumeInvoiceCounter(cid);
     // ⚠️ معالجة الجزء النقدي فور إنشاء الفاتورة (إن وُجد) - عبر نفس آلية
     // applyAllocationToTarget الموثوقة، فتُصبح الفاتورة "مدفوعة" تلقائيًا فقط
     // إن غطَّى الكاش (وحده أو مع مطابقة بنكية لاحقة) كامل المبلغ بالضبط
@@ -10872,7 +10982,7 @@ function openInvoiceModal(inv){
     if(isN&&document.getElementById('if-rec')?.checked){
       const freq=document.getElementById('if-rec-freq').value;
       if(!S.recurring)S.recurring=[];
-      S.recurring.push({id:UID(),cid,desc:ni.desc,amount:a,btwRate:r,frequency:freq,
+      S.recurring.push({id:UID(),cid,desc:ni.desc,amount:a,btwRate:r,btwType,frequency:freq,
         active:true,nextDate:addInterval(ni.date,freq),createdFrom:ni.id});
     }
     sv();closeModal();renderContent();toast(isN?t('tab_invoices')+' ✓':t('tab_invoices')+' ✓','ti-check');
@@ -10927,9 +11037,26 @@ function upBillTo(){
 }
 function uIT(){
   const a=parseFloat(document.getElementById('if-a')?.value)||0;
-  const r=parseFloat(document.getElementById('if-r')?.value)||21;
-  const b=document.getElementById('it-b'),t=document.getElementById('it-t');
-  if(b)b.textContent=FMT(a*(r/100));if(t)t.textContent=FMT(a+a*(r/100));
+  const rSel=document.getElementById('if-r');
+  const btwType=document.getElementById('if-btwtype')?.value||'normal';
+  const hintEl=document.getElementById('if-btwtype-hint');
+  // ⚠️ عند اختيار نوع غير "عادي" (فترة معكوسة/عميل أوروبي/تصدير)، لا تُحتسَب
+  // أي ضريبة على الفاتورة إطلاقًا (0% دائمًا) - المسؤولية تنتقل للعميل نفسه
+  // أو تخرج عن نطاق ضريبة القيمة المضافة الهولندية بالكامل
+  const isReverseOrOutOfScope=btwType!=='normal';
+  if(rSel){rSel.disabled=isReverseOrOutOfScope;if(isReverseOrOutOfScope)rSel.value='0';}
+  const r=isReverseOrOutOfScope?0:(parseFloat(rSel?.value)||21);
+  const b=document.getElementById('it-b'),tEl=document.getElementById('it-t');
+  if(b)b.textContent=FMT(a*(r/100));if(tEl)tEl.textContent=FMT(a+a*(r/100));
+  if(hintEl){
+    const hints={
+      verlegd_nl:'⚠️ '+(t('btwtype_hint_verlegd_nl')||'Invoice must state "BTW verlegd — art. 12 lid 3 Wet OB 1968". No VAT charged; the customer accounts for it.'),
+      eu_b2b:'⚠️ '+(t('btwtype_hint_eu_b2b')||'Invoice must state "BTW verlegd" and the customer\'s valid EU VAT number. No VAT charged.'),
+      export:'⚠️ '+(t('btwtype_hint_export')||'Outside the scope of Dutch VAT — no VAT charged.'),
+      normal:''
+    };
+    hintEl.textContent=hints[btwType]||'';
+  }
   upInvoicePaymentMethod(); // إعادة حساب تحذير نسبة الكاش عند تغيّر المبلغ الإجمالي
 }
 // يحسب الإجمالي الحالي لنموذج الفاتورة بغضّ النظر عن الوضع (بند واحد أو متعدد البنود)
@@ -11016,6 +11143,23 @@ function uITMulti(){
   upInvoicePaymentMethod();
 }
 
+// ⚠️ عند استلام فاتورة بنظام الضريبة المعكوسة (محلي أو من مورد خارج هولندا)،
+// لا ضريبة تُدفَع فعليًا للمورد، لكن يجب على العميل "الافتراض الذاتي" لها في
+// إقرار BTW: تُحتسَب كضريبة مستحقة (رُبريك 2a محلي أو 4b أجنبي) وتُخصَم فورًا
+// بالكامل كضريبة مدخلات (رُبريك 5b) - أثر نقدي صافٍ = صفر، لكن يجب إظهارها
+// في الإقرار. السعر المختار هنا يُستخدَم فقط لحساب هذا "الافتراض الذاتي".
+function upExpenseBtwType(){
+  const btwType=document.getElementById('ex-btwtype')?.value||'normal';
+  const rSel=document.getElementById('ex-r');
+  const hintEl=document.getElementById('ex-btwtype-hint');
+  if(hintEl){
+    hintEl.textContent=btwType==='verlegd_received'
+      ?'⚠️ '+(t('btwtype_hint_verlegd_received')||'No VAT was paid to the supplier — the rate below is used only to self-assess VAT for the return (net effect: €0).')
+      :'';
+  }
+  upExpensePaymentMethod();
+}
+
 // ⚠️ نظير upInvoicePaymentMethod للمصاريف - نفس المنطق تمامًا
 function upExpensePaymentMethod(){
   const method=document.getElementById('ex-paymethod')?.value;
@@ -11071,11 +11215,13 @@ function openNewExpense(){
       <button type="button" class="btn btn-xs" id="ex-camera-btn" style="flex:1;background:transparent;color:var(--t3);border:none;cursor:pointer">📸 Camera</button>
     </div>
     <div id="ex-manual-form" style="display:block">
+      <div class="msec msec-first">🧾 ${t('msec_expense_details')||'Expense Details'}</div>
       <div class="fr2">
         <div class="fg"><label>Date</label><input type="date" id="ex-d" value="${TODAY()}"/></div>
         <div class="fg"><label>${t('lbl_category')}</label><select id="ex-c">${['Software','Hardware','Kantoor','Marketing','Transport','Opleiding','Telecom','Overig'].map(c=>`<option>${c}</option>`).join('')}</select></div>
       </div>
 
+      <div class="msec">🏭 ${t('msec_supplier')||'Supplier'}</div>
       <div class="fg"><label>Pay to (Supplier) *</label>
         <div style="display:flex;gap:6px;margin-bottom:8px">
           <button type="button" class="btn btn-xs" id="pt-mode-manual" style="flex:1;background:var(--g1);color:var(--gold3);border:none;cursor:pointer">✍️ Type name</button>
@@ -11102,14 +11248,23 @@ function openNewExpense(){
         </div>
       </div>
 
+      <div class="msec">💶 ${t('msec_amount_tax')||'Amount & Tax'}</div>
       <div class="fg"><label>${t('lbl_description')}</label><input id="ex-desc"/></div>
       <div class="fr2">
         <div class="fg"><label>Amount excl. BTW (€)</label><input type="number" id="ex-a" step="0.01" oninput="upExpensePaymentMethod()"/></div>
         <div class="fg"><label>${t('lbl_btw')}</label><select id="ex-r" onchange="upExpensePaymentMethod()"><option value="21">21%</option><option value="9">9%</option><option value="0">0%</option></select></div>
       </div>
+      <div class="fg"><label>${t('lbl_btw_type')||'BTW type'}</label>
+        <select id="ex-btwtype" onchange="upExpenseBtwType()">
+          <option value="normal">${t('btwtype_normal')||'Normal (rate above, deductible)'}</option>
+          <option value="verlegd_received">${t('btwtype_verlegd_received')||'Reverse-charge invoice received (domestic or foreign supplier)'}</option>
+        </select>
+        <div id="ex-btwtype-hint" style="font-size:10px;color:var(--t3);margin-top:4px"></div>
+      </div>
       <!-- ⚠️ طريقة الدفع - نفس مفهوم الفاتورة، لكن هنا "نقدًا" تعني دفعًا فعليًا
            من صندوق الكاش (حركة صادرة)، وليس دخلًا واردًا -->
-      <div class="fg" style="margin-top:6px;border-top:1px solid var(--gr2);padding-top:12px">
+      <div class="msec">💳 ${t('msec_payment')||'Payment'}</div>
+      <div class="fg" style="margin-top:-4px">
         <label>💳 ${t('payment_method')||'Payment Method'}</label>
         <select id="ex-paymethod" onchange="upExpensePaymentMethod()">
           <option value="bank">${t('pay_bank_pending')||'Bank transfer (pending — match later)'}</option>
@@ -11134,6 +11289,7 @@ function openNewExpense(){
     if(currentMode==='manual'){
       const a=parseFloat(document.getElementById('ex-a').value)||0;
       const r=parseFloat(document.getElementById('ex-r').value);
+      const btwType=document.getElementById('ex-btwtype')?.value||'normal';
       if(!document.getElementById('ex-desc').value.trim()){toast('❌ Description required');markFieldError('ex-desc');return;}
       const exDesc=document.getElementById('ex-desc').value;
 
@@ -11165,7 +11321,10 @@ function openNewExpense(){
 
       const newExp={id:UID(),cid,date:document.getElementById('ex-d').value,
         supplier:payTo,payToId,desc:exDesc,
-        cat:document.getElementById('ex-c').value,amount:a,btw:a*(r/100),receiptDocId:attachedDocId,
+        cat:document.getElementById('ex-c').value,amount:a,
+        btw:btwType==='verlegd_received'?0:a*(r/100), // ⚠️ لا ضريبة فعلية مدفوعة للمورد في حالة الفترة المعكوسة
+        selfAssessedVat:btwType==='verlegd_received'?a*(r/100):0, // للإقرار فقط (رُبريك 2a/4b + 5b) - أثر نقدي صافٍ صفر
+        btwType,receiptDocId:attachedDocId,
         amountPaid:0,paymentStatus:'Onbetaald'};
       S.expenses.push(newExp);
       logAudit('create','expense','Added expense '+exDesc+' — '+FMT(a),cid);
@@ -11683,8 +11842,23 @@ function _exportPDF(id){
   doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
   doc.text('Subtotal (excl. BTW)',bx,y);doc.text(FMT(i.amount),W-M-3,y,{align:'right'});
   y+=6;
-  doc.text('BTW '+i.btwRate+'%',bx,y);doc.text(FMT(i.btw),W-M-3,y,{align:'right'});
+  const btwLineLabel=(i.btwType&&i.btwType!=='normal')?'BTW verlegd':('BTW '+i.btwRate+'%');
+  doc.text(btwLineLabel,bx,y);doc.text(FMT(i.btw),W-M-3,y,{align:'right'});
   y+=5;
+  if(i.btwType&&i.btwType!=='normal'){
+    // ⚠️ نص إلزامي على الفاتورة عند تطبيق نظام الضريبة المعكوسة أو الخروج عن
+    // نطاق ضريبة القيمة المضافة الهولندية - المادة 12 لد 3 من قانون ضريبة
+    // المبيعات الهولندي (Wet OB 1968) تشترط ذكر هذا صراحة على الفاتورة
+    const verlegdTexts={
+      verlegd_nl:'BTW verlegd — art. 12 lid 3 Wet OB 1968',
+      eu_b2b:'BTW verlegd — reverse charge (intra-EU, art. 44 EU VAT Directive)',
+      export:'Outside the scope of Dutch VAT (export)'
+    };
+    doc.setFontSize(7.5);doc.setTextColor(140,100,20);
+    doc.text(verlegdTexts[i.btwType]||'BTW verlegd',bx,y+3);
+    doc.setFontSize(8);doc.setTextColor(100,100,100);
+    y+=6;
+  }
   doc.setFillColor(10,34,24);doc.roundedRect(bx-3,y,68,9.5,1.2,1.2,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(255,255,255);
   doc.text('TOTAL',bx,y+6.3);
@@ -12072,6 +12246,7 @@ function postCashierDay(cid){
     amount:total/(1+r/100),btw:total-total/(1+r/100),total,btwRate:r,
     amountPaid:0,billTo:gd.name,billToId:gd.id,billToManual:null,isDailyRevenue:true,isCashierPosting:true};
   S.invoices.push(ni);
+  consumeInvoiceCounter(cid);
   logAudit('create','invoice','Posted cashier day '+FD(today)+' — '+FMT(total)+' ('+unposted.length+' entries)',cid);
 
   if(totalCash>0.005){
@@ -13160,14 +13335,46 @@ function rReportPL(el,cid){
 }
 
 /* ── REPORT: BTW ── */
+// ⚠️ حساب رُبريكات BTW مُستخرَج في دالة واحدة مشتركة - كان محسوبًا مباشرة
+// وبمنطق مختلف داخل كل من الشاشة (rReportBTW) وتصدير PDF/Excel بشكل منفصل،
+// ما تسبَّب سابقًا في أن التصدير الفعلي (المستند الذي يُقدَّم أو يُؤرشَف) بقي
+// بالبنية المُبسَّطة القديمة (out - in فقط) بعد إضافة أنواع verlegd/EU/export،
+// فيُفقد إظهار رُبريكات 1e/2a/3a/3b تمامًا في المستند الفعلي رغم ظهورها بشكل
+// صحيح على الشاشة فقط. أي تعديل مستقبلي على منطق الرُبريكات يجب أن يمر من هنا فقط.
+function computeBtwRubrieken(inv,exp){
+  const invNormal=inv.filter(i=>!i.btwType||i.btwType==='normal');
+  const r1a={amount:invNormal.filter(i=>i.btwRate===21).reduce((s,i)=>s+i.amount,0),btw:invNormal.filter(i=>i.btwRate===21).reduce((s,i)=>s+i.btw,0)};
+  const r1b={amount:invNormal.filter(i=>i.btwRate===9).reduce((s,i)=>s+i.amount,0),btw:invNormal.filter(i=>i.btwRate===9).reduce((s,i)=>s+i.btw,0)};
+  const r1e_domestic0=invNormal.filter(i=>i.btwRate===0).reduce((s,i)=>s+i.amount,0);
+  const r1e_verlegdNl=inv.filter(i=>i.btwType==='verlegd_nl').reduce((s,i)=>s+i.amount,0);
+  const r1e={amount:r1e_domestic0+r1e_verlegdNl,btw:0};
+  const r3b={amount:inv.filter(i=>i.btwType==='eu_b2b').reduce((s,i)=>s+i.amount,0),btw:0};
+  const r3a={amount:inv.filter(i=>i.btwType==='export').reduce((s,i)=>s+i.amount,0),btw:0};
+
+  const expNormal=exp.filter(e=>!e.btwType||e.btwType==='normal');
+  const expReverse=exp.filter(e=>e.btwType==='verlegd_received');
+  const r2a4b={amount:expReverse.reduce((s,e)=>s+e.amount,0),btw:expReverse.reduce((s,e)=>s+(e.selfAssessedVat||0),0)};
+  const r5b_normal=expNormal.reduce((s,e)=>s+(e.btw||0),0);
+  const r5b_reverse=expReverse.reduce((s,e)=>s+(e.selfAssessedVat||0),0);
+  const r5b=r5b_normal+r5b_reverse;
+
+  const totalOutputBtw=r1a.btw+r1b.btw+r2a4b.btw;
+  const btwPayable=totalOutputBtw-r5b;
+  return {r1a,r1b,r1e,r3a,r3b,r2a4b,r5b,totalOutputBtw,btwPayable};
+}
+
 function rReportBTW(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   const inv=getReportableInvoices(cid);
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
-  const btwOut=inv.reduce((s,i)=>s+(i.btw||0),0);
-  const btwIn=exp.reduce((s,e)=>s+(e.btw||0),0);
-  const btwPayable=btwOut-btwIn;
+  const {r1a,r1b,r1e,r3a,r3b,r2a4b,r5b,btwPayable}=computeBtwRubrieken(inv,exp);
+
+  const rubriekRow=(code,label,amount,btw,color)=>
+    `<div style="display:flex;justify-content:space-between;padding:8px 10px;font-size:11px;background:var(--white);border-radius:var(--rs);margin-bottom:4px">
+      <span><b>${code}</b> ${label}</span>
+      <span style="text-align:right"><span style="color:var(--t3)">${FMT(amount)}</span>${btw!==null?' · <b style="color:'+color+'">'+FMT(btw)+'</b>':''}</span>
+    </div>`;
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
@@ -13177,14 +13384,33 @@ function rReportBTW(el,cid){
   html+='<div style="margin-bottom:16px;padding:12px;background:rgba(200,144,16,.08);border-radius:var(--r);border-left:3px solid var(--gold)">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">BTW Payable (Due)</div>';
   html+='<div style="font-size:24px;font-weight:600;color:var(--gold)">'+FMT(btwPayable)+'</div></div>';
+
   html+='<div style="margin-bottom:16px">';
-  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gold)">VAT OUTPUT (Sales)</div>';
-  html+='<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:12px;font-weight:600;background:var(--white);padding:10px;border-radius:var(--rs)">';
-  html+='<span>Total VAT Output</span><span style="color:var(--green)">'+FMT(btwOut)+'</span></div></div>';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gold)">1. VAT OUTPUT (Sales / Prestaties binnenland)</div>';
+  html+=rubriekRow('1a','21%',r1a.amount,r1a.btw,'var(--green)');
+  html+=rubriekRow('1b','9%',r1b.amount,r1b.btw,'var(--green)');
+  html+=rubriekRow('1e',t('rubriek_1e')||'0% / BTW verlegd (domestic reverse charge issued)',r1e.amount,0,'var(--t3)');
+  html+='</div>';
+
   html+='<div style="margin-bottom:16px">';
-  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--red)">VAT INPUT (Expenses)</div>';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gold)">2. '+(t('rubriek_2_title')||'Reverse charge received (BTW verlegd naar u)')+'</div>';
+  html+=rubriekRow('2a/4b',t('rubriek_2a4b')||'Self-assessed VAT on reverse-charge purchases',r2a4b.amount,r2a4b.btw,'var(--red)');
+  html+='</div>';
+
+  html+='<div style="margin-bottom:16px">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gold)">3. '+(t('rubriek_3_title')||'Outside NL (Prestaties naar/in het buitenland)')+'</div>';
+  html+=rubriekRow('3a',t('rubriek_3a')||'Export outside EU',r3a.amount,null,'var(--t3)');
+  html+=rubriekRow('3b',t('rubriek_3b')||'Supplies/services to EU businesses (reverse charge)',r3b.amount,null,'var(--t3)');
+  html+='</div>';
+
+  html+='<div style="margin-bottom:16px">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--red)">5b. VAT INPUT (Voorbelasting — deductible)</div>';
   html+='<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:12px;font-weight:600;background:var(--white);padding:10px;border-radius:var(--rs)">';
-  html+='<span>Total VAT Input</span><span style="color:var(--red)">-'+FMT(btwIn)+'</span></div></div></div></div>';
+  html+='<span>Total deductible input VAT</span><span style="color:var(--red)">-'+FMT(r5b)+'</span></div></div>';
+
+  html+='<div style="font-size:10px;color:var(--t3);line-height:1.6;padding:10px;background:var(--gr1);border-radius:var(--rs)">⚠️ '+(t('btw_report_disclaimer')||'Boxes 2a and 4b are combined here for simplicity — verify with the exact Belastingdienst form whether a reverse-charge purchase belongs in 2a (domestic) or 4b (foreign supplier) before filing.')+'</div>';
+  html+='</div></div>';
+
   // ⭐ إجراء "إغلاق الفترة" - المكان الطبيعي لهذا: بعد مراجعة أرقام الإقرار
   // مباشرة قبل تقديمها، يحمي المعاملات من أي تعديل صامت لاحقًا
   if(isAdmin()&&cid!==ANB_SELF_ID){
@@ -13402,8 +13628,8 @@ function rReportDebtors(el,cid){
     aged.forEach(i=>{
       html+='<div style="padding:12px;border-bottom:1px solid var(--gr2);display:flex;justify-content:space-between;align-items:center">';
       html+='<div style="flex:1">';
-      html+='<div style="font-weight:500;font-size:12px;color:var(--t1)">'+i.num+' — '+getBillToName(i)+'</div>';
-      html+='<div style="font-size:10px;color:var(--t3);margin-top:2px">'+i.desc+'</div>';
+      html+='<div style="font-weight:500;font-size:12px;color:var(--t1)">'+escapeHtml(i.num)+' — '+escapeHtml(getBillToName(i))+'</div>';
+      html+='<div style="font-size:10px;color:var(--t3);margin-top:2px">'+escapeHtml(i.desc||'')+'</div>';
       html+='<div style="font-size:10px;color:var(--t3);margin-top:2px">Due: '+FD(i.due)+(i.daysOverdue>0?' · '+i.daysOverdue+'d overdue':'')+'</div></div>';
       html+='<div style="text-align:right;flex-shrink:0"><div style="font-size:12px;font-weight:600;color:'+(i.daysOverdue>60?theme.border:'var(--t1)')+'">'+FMT(i.total)+'</div></div></div>';
     });
@@ -14020,9 +14246,8 @@ function _exportReportPDF(type,cid){
   else if(type==='btw'){
     const inv=getReportableInvoices(cid);
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
-    const btwOut=inv.reduce((s,i)=>s+(parseFloat(i.btw)||0),0);
-    const btwIn=exp.reduce((s,e)=>s+(parseFloat(e.btw)||0),0);
-    const btwPayable=btwOut-btwIn;
+    const {r1a,r1b,r1e,r3a,r3b,r2a4b,r5b,totalOutputBtw,btwPayable}=computeBtwRubrieken(inv,exp);
+    const btwOut=totalOutputBtw, btwIn=r5b;
     
     const boxH=18, boxW=(W-4*M)/3;
     
@@ -14061,7 +14286,37 @@ function _exportReportPDF(type,cid){
     doc.text(`€${btwPayable.toFixed(2)}`,M+2*boxW+2*M+3,y+12);
     
     y+=25;
-    
+
+    // ⚠️ جدول الرُبريكات الفعلي - هذا الجزء كان مفقودًا تمامًا سابقًا، فالمستند
+    // المُصدَّر (الذي يُقدَّم أو يُؤرشَف فعليًا) لم يكن يُظهر مبالغ 1e/2a/3a/3b
+    // رغم كونها مطلوبة في إقرار BTW الفعلي حتى لو ضريبتها صفر
+    if(y>230){doc.addPage();y=M;}
+    setReportFont(doc,'bold');doc.setFontSize(10);doc.setTextColor(10,34,24);
+    doc.text('BTW Return — Boxes / Rubrieken',M,y);y+=8;
+    const rubriekRows=[
+      ['1a — 21%',r1a.amount,r1a.btw],
+      ['1b — 9%',r1b.amount,r1b.btw],
+      ['1e — 0% / verlegd (domestic, issued)',r1e.amount,0],
+      ['2a/4b — reverse charge received',r2a4b.amount,r2a4b.btw],
+      ['3a — export outside EU',r3a.amount,null],
+      ['3b — EU business customers',r3b.amount,null],
+    ];
+    setReportFont(doc,'normal');doc.setFontSize(9);
+    rubriekRows.forEach(([label,amount,btw])=>{
+      if(y>270){doc.addPage();y=M;}
+      doc.setTextColor(60,60,60);
+      doc.text(label,M+2,y);
+      doc.text(`€${amount.toFixed(2)}`,M+110,y,{align:'right'});
+      doc.text(btw===null?'—':`€${btw.toFixed(2)}`,W-M-3,y,{align:'right'});
+      y+=6;
+    });
+    y+=2;
+    doc.setDrawColor(200,144,16);doc.line(M,y,W-M,y);y+=6;
+    setReportFont(doc,'bold');doc.setFontSize(9);doc.setTextColor(10,34,24);
+    doc.text('5b — Total deductible input VAT',M+2,y);
+    doc.text(`-€${btwIn.toFixed(2)}`,W-M-3,y,{align:'right'});
+    y+=10;
+
     doc.setDrawColor(200,144,16);
     doc.setLineWidth(0.5);
     doc.line(M,y,W-M,y);
@@ -14613,25 +14868,33 @@ function _exportReportExcel(type,cid){
   }else if(type==='btw'){
     const inv=getReportableInvoices(cid);
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
-    const btwOut=inv.reduce((s,i)=>s+(parseFloat(i.btw)||0),0);
-    const btwIn=exp.reduce((s,e)=>s+(parseFloat(e.btw)||0),0);
-    const btwPayable=btwOut-btwIn;
+    const {r1a,r1b,r1e,r3a,r3b,r2a4b,r5b,totalOutputBtw,btwPayable}=computeBtwRubrieken(inv,exp);
+    const btwOut=totalOutputBtw, btwIn=r5b;
     
     data=[
       ['💰 VAT/BTW TAX RETURN'],
       isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
       ['Report Period',new Date().getFullYear()],
       [],
-      ['VAT Item','Amount','EUR'],
-      ['VAT Output (Sales Tax)',btwOut,'€'+btwOut.toFixed(2)],
-      ['VAT Input (Purchase Tax)',btwIn,'€'+btwIn.toFixed(2)],
+      ['Box / Rubriek','Amount (excl. VAT)','VAT'],
+      ['1a — 21%',r1a.amount,r1a.btw],
+      ['1b — 9%',r1b.amount,r1b.btw],
+      ['1e — 0% / verlegd (domestic, issued)',r1e.amount,0],
+      ['2a/4b — reverse charge received (self-assessed)',r2a4b.amount,r2a4b.btw],
+      ['3a — export outside EU',r3a.amount,''],
+      ['3b — EU business customers (reverse charge)',r3b.amount,''],
+      [],
+      ['5b — Total deductible input VAT','',-btwIn],
+      [],
+      ['VAT Output (1a+1b+2a/4b)',btwOut,'€'+btwOut.toFixed(2)],
+      ['VAT Input (5b)',btwIn,'€'+btwIn.toFixed(2)],
       [],
       ['VAT Status',btwPayable>0?'Payable':'Recoverable',''],
       ['VAT Payable/Recoverable',btwPayable,'€'+Math.abs(btwPayable).toFixed(2)],
       [],
       ['Supporting Information',''],
-      ['Invoices with VAT',inv.length],
-      ['Expenses with VAT',exp.length]
+      ['Invoices in period',inv.length],
+      ['Expenses in period',exp.length]
     ];
     sheets['BTW']=XLSX.utils.aoa_to_sheet(data);
   }else if(type==='expenses'){
@@ -15413,7 +15676,7 @@ function openRecordCashPayment(invId){
   const remaining=Math.max(0,(inv.total||0)-(inv.amountPaid||0));
   showModal('💵 '+(t('record_cash_payment')||'Record Cash Payment'),`
     <div style="font-size:11px;color:var(--t3);margin-bottom:12px;line-height:1.6">${(t('record_cash_payment_hint')||'For invoices settled in cash (e.g. barbers, driving instructors). This properly reconciles the invoice — it will only show as Paid once the full amount is covered.')}</div>
-    <div class="fg"><label>${t('invoice')||'Invoice'}</label><input value="${inv.num} — ${FMT(inv.total)}" disabled style="background:var(--gr1)"/></div>
+    <div class="fg"><label>${t('invoice')||'Invoice'}</label><input value="${escapeHtml(inv.num)} — ${FMT(inv.total)}" disabled style="background:var(--gr1)"/></div>
     <div class="fr2">
       <div class="fg"><label>${t('lbl_date')||'Date'}</label><input type="date" id="cp-date" value="${TODAY()}"/></div>
       <div class="fg"><label>${t('amount_received')||'Amount received (€)'}</label><input type="number" id="cp-amount" step="0.01" value="${remaining.toFixed(2)}"/></div>
@@ -16336,6 +16599,10 @@ function reviewAgreementDoc(docId){
     <div style="margin-top:14px;padding:10px;background:var(--white);border-radius:6px;font-size:11px">
       <strong>Status:</strong> ${statusLabels[agreement.status]||agreement.status}
       ${agreement.clientNotes?'<br/><strong>Requested changes:</strong> '+escapeHtml(agreement.clientNotes):''}
+      ${agreement.signatureAudit?`<br/><br/><strong>🔐 Signature proof</strong><br/>
+        Signed: ${escapeHtml(agreement.signatureAudit.signedAtIso||'')}<br/>
+        Document hash (SHA-256): <span style="font-family:var(--fm);font-size:9px;word-break:break-all">${escapeHtml(agreement.signatureAudit.documentHash||'—')}</span><br/>
+        Device: <span style="font-size:9px;color:var(--t3)">${escapeHtml((agreement.signatureAudit.userAgent||'').slice(0,80))}</span>`:''}
     </div>
   `,closeModal,'Close');
 
@@ -16387,14 +16654,32 @@ function signAgreementInApp(agreementId){
         <span>I consent to the processing of my data as described (GDPR)</span>
       </label>
     </div>
-  `,()=>{
+  `,async()=>{
     const agreedTerms=document.getElementById('agree-terms-inapp')?.checked;
     const agreedPrivacy=document.getElementById('agree-privacy-inapp')?.checked;
     if(!agreedTerms||!agreedPrivacy){toast('❌ Please accept both checkboxes first');return;}
 
+    // ⚠️ ربط التوقيع الإلكتروني بنص العقد الفعلي المعروض وقت التوقيع عبر بصمة
+    // SHA-256 - يُقوّي القيمة الإثباتية للتوقيع (عدم الإنكار) لأنه يُثبت
+    // بشكل تقني أي نسخة بالضبط من العقد وافق عليها الموقِّع، لا مجرد تسجيل
+    // اسم وتاريخ فقط كما كان سابقًا
+    let documentHash='';
+    try{
+      const contractHTML=generateDutchContractHTML(client);
+      const encoded=new TextEncoder().encode(contractHTML);
+      const digest=await crypto.subtle.digest('SHA-256',encoded);
+      documentHash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }catch(e){ /* بيئة بلا دعم SubtleCrypto (نادر) - التوقيع يبقى ساريًا بدون بصمة إضافية */ }
+
     agreement.status='client_signed';
     agreement.clientSignDate=TODAY();
     agreement.clientSignature=(client.contactPerson||'')+' ('+(client.email||'')+')';
+    agreement.signatureAudit={
+      documentHash,
+      userAgent:navigator.userAgent||'',
+      signedAtIso:new Date().toISOString(),
+      agreedTerms:true,agreedPrivacy:true
+    };
     const doc=(S.docs||[]).find(d=>d.agreementId===agreementId);
     if(doc)doc.status='client_signed';
     sv();closeModal();renderApp();
@@ -16473,7 +16758,13 @@ function generateDutchContractHTML(client){
   const startDate=TODAY();
   const endYear=today.getFullYear()+1;
   const endDate=(endYear)+'-'+(today.getMonth()+1).toString().padStart(2,'0')+'-'+today.getDate().toString().padStart(2,'0');
-  
+  const s=S.settings||{};
+  // ⚠️ سقف المسؤولية يُربَط بتغطية التأمين الفعلية إن وُجدت (بدل رقم اعتباطي
+  // يساوي رسم شهر واحد فقط، وهو منخفض جدًا لخدمة محاسبية/ضريبية مهنية)
+  const insuranceClause=s.insuranceCoverage
+    ?`De aansprakelijkheid van de Dienstverlener per gebeurtenis is beperkt tot het bedrag dat in het desbetreffende geval daadwerkelijk wordt uitgekeerd onder de beroepsaansprakelijkheidsverzekering van de Dienstverlener (dekking: €${escapeHtml(String(s.insuranceCoverage))} per aanspraak, verzekeraar: ${escapeHtml(s.insurerName||'—')}), vermeerderd met het eigen risico. Indien en voor zover om welke reden dan ook geen uitkering krachtens die verzekering plaatsvindt, is de aansprakelijkheid beperkt tot maximaal driemaal het maandelijkse servicetarief.`
+    :`De aansprakelijkheid van de Dienstverlener is beperkt tot maximaal driemaal het maandelijkse servicetarief per gebeurtenis. ⚠️ Let op: de Dienstverlener heeft op dit moment geen beroepsaansprakelijkheidsverzekering geregistreerd in het systeem — dit dient dringend te worden geregeld en aangevuld vóór ondertekening van cliëntovereenkomsten.`;
+
   return `
 <div style="text-align:center;margin-bottom:24px;padding-bottom:12px;border-bottom:2px solid var(--gr2)">
   <div style="font-size:14px;font-weight:600;color:#0A2218;margin-bottom:4px">SERVICEOVEREENKOMST</div>
@@ -16484,26 +16775,33 @@ function generateDutchContractHTML(client){
   <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">1. PARTIJEN (Parties / الأطراف)</div>
   <div style="font-size:10px;line-height:1.8;color:var(--t2)">
     <strong>Dienstverlener (Service Provider):</strong><br/>
-    ${S.settings?.companyName||'ANB Financial Services'}<br/>
-    ${S.settings?.address||''}<br/>
-    KVK: ${S.settings?.kvk||''}<br/>
-    BTW-ID: ${S.settings?.btw||''}<br/>
-    Email: ${S.settings?.email||''}<br/>
+    ${escapeHtml(s.companyName||'ANB Financial Services')}<br/>
+    ${escapeHtml(s.address||'')}<br/>
+    KVK: ${escapeHtml(s.kvk||'')}<br/>
+    BTW-ID: ${escapeHtml(s.btw||'')}<br/>
+    Email: ${escapeHtml(s.email||'')}<br/>
     <br/>
     <strong>Opdrachtgever (Client / العميل):</strong><br/>
-    ${client.name}<br/>
-    KVK: ${client.kvk}<br/>
-    BTW-ID: ${client.btw}<br/>
-    ${client.address}<br/>
-    ${client.zipCode} ${client.city}, ${client.country}<br/>
-    Telefoonnummer: ${client.phone}<br/>
-    E-mailadres: ${client.email}<br/>
-    Contactpersoon: ${client.contactPerson}
+    ${escapeHtml(client.name||'')}<br/>
+    KVK: ${escapeHtml(client.kvk||'')}<br/>
+    BTW-ID: ${escapeHtml(client.btw||'')}<br/>
+    ${escapeHtml(client.address||'')}<br/>
+    ${escapeHtml(client.zipCode||'')} ${escapeHtml(client.city||'')}, ${escapeHtml(client.country||'')}<br/>
+    Telefoonnummer: ${escapeHtml(client.phone||'')}<br/>
+    E-mailadres: ${escapeHtml(client.email||'')}<br/>
+    Contactpersoon: ${escapeHtml(client.contactPerson||'')}
   </div>
 </div>
 
 <div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
-  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">2. ONDERWERP VAN OVEREENKOMST (Subject Matter)</div>
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">2. HOEDANIGHEID VAN OPDRACHTGEVER (Business Capacity)</div>
+  <div style="font-size:10px;line-height:1.8;color:var(--t2)">
+    De Opdrachtgever verklaart dat deze overeenkomst wordt aangegaan in de uitoefening van een beroep of bedrijf (professioneel/zakelijk, niet als consument in de zin van Boek 6 en 7 BW). Indien de Opdrachtgever een natuurlijk persoon is die niet handelt in de uitoefening van een beroep of bedrijf, dient dit vóór ondertekening schriftelijk aan de Dienstverlener te worden gemeld, aangezien specifieke consumentenbeschermingsbepalingen (waaronder art. 6:236 BW inzake stilzwijgende verlenging) in dat geval onverkort van toepassing blijven, in afwijking van artikel 4 hieronder.
+  </div>
+</div>
+
+<div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">3. ONDERWERP VAN OVEREENKOMST (Subject Matter)</div>
   <div style="font-size:10px;line-height:1.8;color:var(--t2)">
     De Dienstverlener biedt professionele boekhoudkundige en financiële diensten aan de Opdrachtgever, waaronder maar niet beperkt tot:<br/><br/>
     <strong>✓ Diensten:</strong><br/>
@@ -16513,36 +16811,38 @@ function generateDutchContractHTML(client){
     • Factuurgeving en Inkoopboekhouding (Invoicing Management)<br/>
     • Financiële Consulting (Financial Advisory)<br/>
     • Documentbeheer en Contractmanagement (Document & Contract Management)<br/>
-    • Bankafschriften Import en Verwerking (Bank Statement Processing)
+    • Bankafschriften Import en Verwerking (Bank Statement Processing)<br/><br/>
+    <strong>ℹ️ Geautomatiseerde verwerking:</strong> Ter ondersteuning van de dienstverlening maakt de Dienstverlener gebruik van geautomatiseerde technologie (waaronder optische tekstherkenning/OCR voor bonnetjes en facturen). Eindcontrole en verantwoordelijkheid voor de juistheid van de boekhouding blijven te allen tijde bij de Dienstverlener conform artikel 7.
   </div>
 </div>
 
 <div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
-  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">3. LOOPTIJD (Duration / المدة)</div>
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">4. LOOPTIJD EN VERLENGING (Duration / المدة)</div>
   <div style="font-size:10px;line-height:1.8;color:var(--t2)">
     <strong>Begindatum (Start Date):</strong> ${client.contractStartDate||TODAY()}<br/>
     <strong>Initiale looptijd:</strong> ${client.contractDuration||12} maanden<br/>
     <strong>Eindatum:</strong> ${new Date(new Date(client.contractStartDate||TODAY()).getFullYear(), new Date(client.contractStartDate||TODAY()).getMonth()+(client.contractDuration||12), new Date(client.contractStartDate||TODAY()).getDate()).toISOString().split('T')[0]}<br/>
-    <strong>Verlenging:</strong> Deze overeenkomst wordt automatisch met periodes van 1 jaar verlengd, tenzij één van de partijen minimaal ${client.terminationNotice||1} maand van tevoren schriftelijk opzegt.<br/>
+    <strong>Verlenging:</strong> Deze overeenkomst wordt stilzwijgend met periodes van 1 jaar verlengd, tenzij één van de partijen minimaal ${client.terminationNotice||1} maand van tevoren schriftelijk opzegt. Deze bepaling geldt onverminderd artikel 2 hierboven.<br/>
     <strong>Opzeggingtermijn:</strong> ${client.terminationNotice||1} maand(en)
   </div>
 </div>
 
 <div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
-  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">4. VERGOEDING EN BETALINGSCONDITIES (Compensation)</div>
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">5. VERGOEDING EN BETALINGSCONDITIES (Compensation)</div>
   <div style="font-size:10px;line-height:1.8;color:var(--t2)">
     <strong>Gekozen Servicepakket:</strong> €${client.monthlyFee} per maand<br/>
     <strong>Maandelijks Tarief:</strong> €${client.monthlyFee},00 (exclusief BTW)<br/>
     <strong>Facturering:</strong> Maandelijks vooruit op de eerste dag van de maand<br/>
     <strong>Betalingstermijn:</strong> Binnen ${client.paymentTerms||15} dagen na factuurdatum<br/>
     <strong>Betaalmethode:</strong> Overboeking naar IBAN (conform eerste factuur)<br/>
-    <strong>Rente achterstallig bedrag:</strong> 1,5% per maand op achterstallige bedragen<br/>
+    <strong>Rente achterstallig bedrag:</strong> de wettelijke handelsrente (art. 6:119a BW) dan wel, indien de Opdrachtgever niet handelt in de uitoefening van beroep of bedrijf, de wettelijke rente (art. 6:119 BW), te rekenen vanaf de dag na het verstrijken van de betalingstermijn<br/>
+    <strong>Buitengerechtelijke incassokosten:</strong> conform de Wet Incassokosten (WIK) c.q. het Besluit vergoeding voor buitengerechtelijke incassokosten<br/>
     <strong>Alle bedragen zijn exclusief BTW (21%)</strong>
   </div>
 </div>
 
 <div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
-  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">5. VERPLICHTINGEN OPDRACHTGEVER (Client Obligations)</div>
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">6. VERPLICHTINGEN OPDRACHTGEVER (Client Obligations)</div>
   <div style="font-size:10px;line-height:1.8;color:var(--t2)">
     De Opdrachtgever verplicht zich:<br/>
     ✓ Nauwkeurige financiële documenten en gegevens verstrekt<br/>
@@ -16555,43 +16855,73 @@ function generateDutchContractHTML(client){
 </div>
 
 <div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
-  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">6. VERTROUWELIJKHEID & GEGEVENSBESCHERMING (Confidentiality)</div>
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">7. GEGEVENSBESCHERMING EN VERWERKERSOVEREENKOMST (Data Processing Agreement — AVG art. 28)</div>
   <div style="font-size:10px;line-height:1.8;color:var(--t2)">
-    Alle gevoelige informatie wordt vertrouwelijk behandeld overeenkomstig:<br/>
-    • GDPR (Verordening (EU) 2016/679)<br/>
-    • Algemene Verordening Gegevensbescherming (AVG)<br/>
-    • Nederlandse Authoriteit Persoonsgegevens (AP)<br/>
-    <br/>
-    Gegevens worden veilig opgeslagen en gebruikt uitsluitend voor de overeengekomen doeleinden.
+    Voor zover de Dienstverlener bij de uitvoering van deze overeenkomst persoonsgegevens verwerkt namens de Opdrachtgever, geldt het volgende als verwerkersovereenkomst in de zin van artikel 28 AVG:<br/><br/>
+    <strong>a. Aard en doel van de verwerking:</strong> financiële en administratieve verwerking (boekhouding, facturering, salarisadministratie indien van toepassing, BTW-aangifte) ten behoeve van de in artikel 3 genoemde diensten.<br/>
+    <strong>b. Categorieën betrokkenen/gegevens:</strong> klanten, leveranciers en (indien van toepassing) werknemers van de Opdrachtgever; NAW-gegevens, financiële gegevens, factuurgegevens, en — voor salarisadministratie — loongegevens.<br/>
+    <strong>c. Duur:</strong> voor de duur van deze overeenkomst, vermeerderd met de wettelijke fiscale bewaartermijn van 7 jaar (art. 52 AWR).<br/>
+    <strong>d. Beveiligingsmaatregelen:</strong> versleutelde opslag en verzending, toegangsbeperking op basis van functie, en logging van wijzigingen (audit trail).<br/>
+    <strong>e. Subverwerkers:</strong> de Dienstverlener maakt gebruik van cloudinfrastructuur en OCR-verwerking van derden binnen de EU/EER dan wel onder passende waarborgen (o.a. EU Standard Contractual Clauses) buiten de EER; een actuele lijst van subverwerkers wordt op verzoek verstrekt.<br/>
+    <strong>f. Datalekken:</strong> de Dienstverlener meldt een vermoedelijk datalek zonder onredelijke vertraging, en in beginsel binnen 48 uur na ontdekking, aan de Opdrachtgever.<br/>
+    <strong>g. Rechten van betrokkenen:</strong> de Dienstverlener verleent redelijke medewerking aan verzoeken van betrokkenen (inzage, correctie, verwijdering) voor zover de wettelijke bewaarplicht dit toelaat.<br/>
+    <strong>h. Teruggave/verwijdering:</strong> zie artikel 11 (Overdracht van Gegevens bij Beëindiging).<br/><br/>
+    Toezichthouder: Autoriteit Persoonsgegevens (AP), conform Verordening (EU) 2016/679 (AVG/GDPR).
   </div>
 </div>
 
 <div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
-  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">7. AANSPRAKELIJKHEID (Liability)</div>
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">8. AANSPRAKELIJKHEID EN BEROEPSAANSPRAKELIJKHEIDSVERZEKERING (Liability & Insurance)</div>
   <div style="font-size:10px;line-height:1.8;color:var(--t2)">
-    De Dienstverlener voert diensten uit op basis van 'beste inspanningen'.<br/>
-    De aansprakelijkheid is beperkt tot het maandelijks servicetarief, behalve in geval van opzet of grove schuld van de Dienstverlener.<br/>
-    Geen aansprakelijkheid voor indirecte schade of gederfde winsten.<br/>
-    Beide partijen zijn niet aansprakelijk voor overmacht (Force Majeure).
+    De Dienstverlener voert diensten uit op basis van een inspanningsverbintenis ('beste inspanningen'), niet een resultaatsverbintenis.<br/><br/>
+    ${insuranceClause}<br/><br/>
+    Deze beperking geldt niet in geval van opzet of bewuste roekeloosheid (grove schuld) van de Dienstverlener zelf (niet van diens hulppersonen), noch voor schade als gevolg van dood of lichamelijk letsel, conform art. 6:248 lid 2 BW.<br/>
+    Geen aansprakelijkheid voor indirecte schade, gevolgschade of gederfde winst.<br/>
+    Iedere vordering tot schadevergoeding vervalt indien deze niet binnen 12 maanden na ontdekking van de schade schriftelijk bij de Dienstverlener is ingediend.
   </div>
 </div>
 
 <div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
-  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">8. TOEPASSELIJK RECHT (Applicable Law)</div>
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">9. OVERMACHT (Force Majeure)</div>
+  <div style="font-size:10px;line-height:1.8;color:var(--t2)">
+    Onder overmacht (art. 6:75 BW) wordt in ieder geval verstaan: storingen bij cloud-/hostingproviders of internetinfrastructuur buiten de invloedssfeer van de Dienstverlener, storingen bij de Belastingdienst of bancaire systemen, cyberaanvallen, natuurrampen, oorlog, en overheidsmaatregelen.<br/>
+    Bij overmacht worden de verplichtingen van de betreffende partij opgeschort voor de duur van de overmachtsituatie. Duurt de overmacht langer dan 30 dagen, dan heeft elke partij het recht de overeenkomst schriftelijk te ontbinden, zonder gehoudenheid tot schadevergoeding.
+  </div>
+</div>
+
+<div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">10. TOEPASSELIJK RECHT EN GESCHILLEN (Applicable Law)</div>
   <div style="font-size:10px;line-height:1.8;color:var(--t2)">
     Deze overeenkomst wordt beheerst door Nederlands recht.<br/>
-    Geschillen worden opgelost door de bevoegde rechtbanken in Nederland.<br/>
-    De Nederlandse tekst is leidend in geval van verschillen.
+    Geschillen worden in eerste instantie voorgelegd conform de klachtenprocedure in artikel 12; leidt dit niet tot een oplossing, dan worden geschillen voorgelegd aan de bevoegde rechtbank in Nederland conform de wettelijke bevoegdheidsregels.<br/>
+    De Nederlandse tekst is leidend in geval van verschillen met vertaalde versies.
   </div>
 </div>
 
 <div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
-  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">9. WIJZIGING EN BEËINDIGING (Modification & Termination)</div>
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">11. OVERDRACHT VAN GEGEVENS BIJ BEËINDIGING (Data Handover on Termination)</div>
+  <div style="font-size:10px;line-height:1.8;color:var(--t2)">
+    Bij beëindiging van deze overeenkomst, om welke reden dan ook, verstrekt de Dienstverlener de Opdrachtgever binnen 30 dagen na het verzoek een exportbestand van de boekhoudkundige gegevens van de Opdrachtgever (facturen, uitgaven, journaalposten, en onderliggende documenten) in een gangbaar formaat.<br/>
+    De Dienstverlener blijft de gegevens nadien bewaren voor zover dit wettelijk verplicht is (fiscale bewaarplicht van 7 jaar, art. 52 AWR), doch uitsluitend ter voldoening aan deze wettelijke verplichting en niet langer actief toegankelijk voor operationeel gebruik.<br/>
+    Openstaande facturen van de Dienstverlener op het moment van beëindiging blijven onverminderd verschuldigd.
+  </div>
+</div>
+
+<div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">12. KLACHTENPROCEDURE (Complaints Procedure)</div>
+  <div style="font-size:10px;line-height:1.8;color:var(--t2)">
+    Klachten over de dienstverlening dienen schriftelijk (per e-mail) en binnen redelijke termijn na ontdekking te worden gemeld aan ${escapeHtml(s.email||'de Dienstverlener')}, onder vermelding van een duidelijke omschrijving van de klacht.<br/>
+    De Dienstverlener bevestigt ontvangst binnen 5 werkdagen en streeft ernaar de klacht binnen 30 dagen inhoudelijk af te handelen. Het indienen van een klacht schort de betalingsverplichting van de Opdrachtgever niet op.
+  </div>
+</div>
+
+<div style="background:var(--white);padding:12px;border-radius:6px;margin-bottom:12px">
+  <div style="font-weight:600;color:#0A2218;margin-bottom:8px;font-size:11px">13. WIJZIGING EN BEËINDIGING (Modification & Termination)</div>
   <div style="font-size:10px;line-height:1.8;color:var(--t2)">
     Wijzigingen van deze overeenkomst kunnen alleen schriftelijk en met wederzijdse instemming.<br/>
     Beëindiging door Dienstverlener: 1 maand schriftelijke opzegging<br/>
     Beëindiging door Opdrachtgever: 1 maand schriftelijke opzegging<br/>
-    Onmiddellijke beëindiging bij niet-betaling na 30 dagen aanmaning.
+    Elk der partijen kan de overeenkomst met onmiddellijke ingang schriftelijk ontbinden indien de andere partij, na een deugdelijke schriftelijke ingebrekestelling (aanmaning) met een redelijke termijn van herstel van ten minste 14 dagen, alsnog in verzuim blijft — waaronder in ieder geval niet-betaling na 30 dagen na aanmaning.
   </div>
 </div>
 
@@ -16600,7 +16930,7 @@ function generateDutchContractHTML(client){
   <div style="font-size:10px;line-height:1.6;color:var(--t2)">
     Dit document is elektronisch ondertekend en juridisch bindend conform:<br/>
     • Wet Elektronische Handtekeningen<br/>
-    • EU-Verordening (EU) 910/2014 (eIDAS)<br/>
+    • EU-Verordening (EU) 910/2014 (eIDAS) — gekwalificeerde elektronische handtekening niet vereist voor deze overeenkomst<br/>
     • Nederlandse Private Law (Privaatrecht)<br/>
     <br/>
     <strong>Handtekening geregistreerd op:</strong> ${TODAY()} om ${new Date().toLocaleTimeString('nl-NL')}<br/>
