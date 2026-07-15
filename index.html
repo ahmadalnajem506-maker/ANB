@@ -3002,12 +3002,16 @@ async function goForgot(){
     if(!res.ok){goStep(1);showErr('login-err-1',role==='admin'?'Email or phone not found':'No account found');return;}
     const acc=await res.json();
 
-    // ⚠️ عميل لديه كلمة مرور بالفعل: هذا ليس "إعداد أول" بل طلب استرجاع فعلي -
-    // الخادم يرفض هذا الآن (إصلاح أمني)، فنوجّه العميل للتواصل مع ANB مباشرة
-    // بدل محاولة المتابعة لشاشة تُرفَض من الخادم على أي حال.
-    if(role==='client'&&!acc.isFirstTime){
+    // ⚠️ لو كان للحساب كلمة مرور بالفعل، هذه ليست شاشة "إعداد أول" بل طلب
+    // استرجاع فعلي - الخادم يرفضها الآن على أي حال (إصلاح أمني)، فنوجّه
+    // المستخدم بوضوح من البداية بدل الوصول لشاشة سترفضها الخادم لاحقًا
+    if(!acc.isFirstTime){
       goStep(1);
-      showErr('login-err-1','For your security, please contact ANB directly to reset your password.');
+      if(role==='client'){
+        showErr('login-err-1','For your security, please contact ANB directly to reset your password.');
+      }else{
+        showErr('login-err-1','This admin account already has a password. Ask another administrator to reset it for you (Settings → Admins → Reset), or contact ANB technical support.');
+      }
       return;
     }
 
@@ -3078,7 +3082,13 @@ async function doSetPassword(){
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({role:authState.role,accountId,newPassword:pw1}),
     });
-    if(!res.ok){showErr('login-err-3','Something went wrong - please try again');return;}
+    if(!res.ok){
+      let serverMsg='Something went wrong - please try again';
+      try{const errData=await res.json();serverMsg=errData.message||errData.error||serverMsg;}catch{}
+      if(res.status===429)serverMsg='Too many attempts - please wait a minute and try again';
+      showErr('login-err-3',serverMsg);
+      return;
+    }
     const data=await res.json();
     setR2Token({token:data.token,exp:data.exp});
 
