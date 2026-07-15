@@ -177,6 +177,16 @@ body.rtl .lang-switch{right:auto;left:14px}
 .login-err{background:var(--red-bg);color:var(--red);padding:8px 12px;border-radius:var(--rs);
   font-size:12px;margin-bottom:12px;display:none}
 
+/* ⭐ زر إظهار/إخفاء كلمة المرور - مُضاف لكل حقول كلمة المرور الثلاثة في تسجيل
+   الدخول (تسجيل دخول، تعيين كلمة مرور، تأكيدها) بلا أي تغيير في تخطيط الشاشة
+   نفسها - فقط أيقونة صغيرة داخل الحقل */
+.pw-field-wrap{position:relative}
+.pw-toggle-btn{position:absolute;top:50%;transform:translateY(-50%);inset-inline-end:12px;
+  background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;
+  justify-content:center;color:rgba(255,255,255,.5);transition:color .2s;z-index:2}
+.pw-toggle-btn:hover{color:#C89010}
+.pw-toggle-btn svg{width:18px;height:18px;pointer-events:none}
+
 /* ═══ MOBILE LOGIN OPTIMIZATION ═══ */
 @media (max-width: 540px) {
   .login-main-container {
@@ -683,7 +693,7 @@ var S = {lang:'en', role:null, clients:[]};
       <!-- Email/Phone Input -->
       <div style="margin-bottom:20px">
         <label id="id-label" data-i18n="email_or_phone" style="display:block;font-size:11px;font-weight:700;color:#C89010;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Email or Phone</label>
-        <input type="text" id="login-id" placeholder="info@company.nl" style="width:100%;padding:14px 16px;border:2px solid #C89010;border-radius:10px;font-size:14px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')goStep2()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
+        <input type="text" id="login-id" autocomplete="username" placeholder="info@company.nl" style="width:100%;padding:14px 16px;border:2px solid #C89010;border-radius:10px;font-size:14px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')goStep2()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
       </div>
 
       <div id="login-err-1" style="background:rgba(184,134,11,0.12);color:#B8860B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #B8860B;font-weight:600;box-shadow:0 4px 12px rgba(184,134,11,0.15)"></div>
@@ -712,7 +722,10 @@ var S = {lang:'en', role:null, clients:[]};
 
       <div style="margin-bottom:14px">
         <label data-i18n="password" style="display:block;font-size:10px;font-weight:700;color:#C89010;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Password</label>
-        <input type="password" id="login-pw" placeholder="••••••••" style="width:100%;padding:12px 14px;border:2px solid #C89010;border-radius:10px;font-size:13px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')doLogin()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
+        <div class="pw-field-wrap">
+        <input type="password" id="login-pw" autocomplete="current-password" placeholder="••••••••" style="width:100%;padding:12px 42px 12px 14px;border:2px solid #C89010;border-radius:10px;font-size:13px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')doLogin()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
+        <button type="button" class="pw-toggle-btn" onclick="togglePwVisibility('login-pw',this)" aria-label="Show password" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
       </div>
 
       <div style="display:inline-block;margin-bottom:20px;color:#C89010;cursor:pointer;font-weight:700;transition:all 0.3s;font-size:11px" onclick="goForgot()" onmouseover="this.style.textDecoration='underline';this.style.color='#D4A520'" onmouseout="this.style.textDecoration='none';this.style.color='#C89010'" data-i18n="forgot_pw">Forgot password?</div>
@@ -760,14 +773,20 @@ var S = {lang:'en', role:null, clients:[]};
 
       <div style="margin-bottom:14px">
         <label style="display:block;font-size:10px;font-weight:700;color:#C89010;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">New password</label>
-        <input type="password" id="new-pw1" placeholder="Min. 6 characters" style="width:100%;padding:12px 14px;border:2px solid #C89010;border-radius:10px;font-size:13px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" oninput="checkPwStrength()" onkeydown="if(event.key==='Enter')document.getElementById('new-pw2').focus()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
+        <div class="pw-field-wrap">
+        <input type="password" id="new-pw1" autocomplete="new-password" placeholder="Min. 6 characters" style="width:100%;padding:12px 42px 12px 14px;border:2px solid #C89010;border-radius:10px;font-size:13px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" oninput="checkPwStrength()" onkeydown="if(event.key==='Enter')document.getElementById('new-pw2').focus()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
+        <button type="button" class="pw-toggle-btn" onclick="togglePwVisibility('new-pw1',this)" aria-label="Show password" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
         <div id="pw-bar" style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:7px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,0.3)"><div style="height:100%;width:0%;background:linear-gradient(90deg,#7A4A00,#D4A520,#1B5E35);transition:all 0.3s;box-shadow:0 0 8px currentColor;filter:drop-shadow(0 0 4px currentColor)" id="pw-bar-inner"></div></div>
         <div id="pw-hint" style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:5px;font-weight:600"></div>
       </div>
 
       <div style="margin-bottom:20px">
         <label style="display:block;font-size:10px;font-weight:700;color:#C89010;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Confirm password</label>
-        <input type="password" id="new-pw2" placeholder="Repeat password" style="width:100%;padding:12px 14px;border:2px solid #C89010;border-radius:10px;font-size:13px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')doSetPassword()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
+        <div class="pw-field-wrap">
+        <input type="password" id="new-pw2" autocomplete="new-password" placeholder="Repeat password" style="width:100%;padding:12px 42px 12px 14px;border:2px solid #C89010;border-radius:10px;font-size:13px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')doSetPassword()" onfocus="this.style.boxShadow='0 8px 24px rgba(200,144,16,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#D4A520';this.style.background='rgba(200,144,16,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(200,144,16,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#C89010';this.style.background='transparent'"/>
+        <button type="button" class="pw-toggle-btn" onclick="togglePwVisibility('new-pw2',this)" aria-label="Show password" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
       </div>
 
       <div id="login-err-3" style="background:rgba(184,134,11,0.12);color:#B8860B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #B8860B;font-weight:600;box-shadow:0 4px 12px rgba(184,134,11,0.15)"></div>
@@ -2458,6 +2477,33 @@ function renderGlobalSearchResults(results){
     }).join('')}
   `).join('');
 }
+// ⭐ تلميح لمرة واحدة فقط طوال عمر الجهاز، يُبرِز زر البحث الشامل (🔍) عند أول
+// ظهور له لأدمن - يُخفى تلقائيًا بعد النقر عليه أو على "فهمت"، ولا يظهر مجددًا
+// أبدًا بعدها (عبر localStorage). لا يُعدِّل أي تخطيط دائم، فقط عنصر عائم مؤقت.
+function maybeShowSearchHint(){
+  try{
+    if(localStorage.getItem('anb5_search_hint_shown'))return;
+  }catch{return;}
+  const btn=document.querySelector('#sb-role-badge button[onclick="openGlobalSearch()"]');
+  if(!btn)return;
+  const markShown=()=>{try{localStorage.setItem('anb5_search_hint_shown','1');}catch{}};
+  setTimeout(()=>{
+    if(document.getElementById('search-hint-tip'))return; // لا تُكرَّر لو أُعيد رسم الشريط الجانبي بسرعة
+    const rect=btn.getBoundingClientRect();
+    const tip=document.createElement('div');
+    tip.id='search-hint-tip';
+    tip.style.cssText=`position:fixed;top:${rect.bottom+8}px;left:${Math.max(8,rect.left-140)}px;z-index:10000;
+      background:#0A2218;color:#fff;padding:10px 14px;border-radius:10px;font-size:12px;max-width:220px;
+      box-shadow:0 8px 24px rgba(0,0,0,.35);border:1px solid rgba(200,144,16,.4);animation:fadeInDown .4s ease-out`;
+    tip.innerHTML=`💡 ${t('search_hint_text')||'Tip: search anything (clients, invoices...) instantly with the 🔍 button or Ctrl/Cmd+K'}
+      <div style="margin-top:8px;text-align:right"><button style="background:#C89010;color:#0A2218;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">${t('got_it')||'Got it'}</button></div>`;
+    tip.querySelector('button').onclick=()=>{tip.remove();markShown();};
+    btn.addEventListener('click',()=>{tip.remove();markShown();},{once:true});
+    document.body.appendChild(tip);
+    setTimeout(()=>{if(document.body.contains(tip)){tip.remove();markShown();}},10000); // إخفاء تلقائي بعد 10 ثوانٍ إن لم يتفاعل المستخدم
+  },1200);
+}
+
 function openGlobalSearch(){
   if(!isAdmin())return; // البحث الموحَّد للأدمن فقط - يبحث عبر بيانات كل العملاء
   let overlay=document.getElementById('global-search-overlay');
@@ -2750,17 +2796,40 @@ setTimeout(()=>{
   }
 },100);
 
+// ⭐ إظهار/إخفاء كلمة المرور - دالة عامة واحدة تُستخدَم لكل حقول كلمة المرور
+// الثلاثة في شاشة تسجيل الدخول (لا تغيير في تخطيط الشاشة، فقط أيقونة تبديل)
+function togglePwVisibility(inputId,btnEl){
+  const input=document.getElementById(inputId);
+  if(!input)return;
+  const showing=input.type==='text';
+  input.type=showing?'password':'text';
+  btnEl.innerHTML=showing
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+}
+
 function selRole(r){
   selRoleVal=r;
+  try{localStorage.setItem('anb5_last_role',r);}catch{}
   document.getElementById('rc-admin').className='role-card'+(r==='admin'?' sel':'');
   document.getElementById('rc-client').className='role-card'+(r==='client'?' sel':'');
   const lbl=document.getElementById('id-label');
   if(lbl)lbl.textContent=r==='admin'?'Admin email or phone':'Your email or phone number';
 }
+// ⭐ استرجاع آخر دور استُخدم على هذا الجهاز عند تحميل شاشة الدخول - يقلّل
+// احتكاكًا بسيطًا للمستخدم المتكرر (لا تغيير في التخطيط، فقط أي بطاقة مُحدَّدة
+// افتراضيًا كانت مُحدَّدة أصلًا في الـHTML الساكن - admin - نُبدِّلها هنا فقط
+// إن كان آخر دور فعلي مُسجَّل هو "client")
+(function restoreLastRole(){
+  try{
+    const last=localStorage.getItem('anb5_last_role');
+    if(last==='client'&&document.getElementById('rc-admin'))selRole('client');
+  }catch{}
+})();
 
 function showErr(id,msg){
   const el=document.getElementById(id);
-  if(el){el.textContent=msg;el.style.display=msg?'block':'none';}
+  if(el){el.textContent=msg?'⚠️ '+msg:'';el.style.display=msg?'block':'none';}
 }
 
 function goStep(n){
@@ -3090,15 +3159,17 @@ function renderSidebar(){
   if(isAdmin()){
     badge.innerHTML=`<span class="sb-role-badge badge-admin">🛡 ${S.settings?.adminName||'Administrator'}</span>
       <button onclick="openGlobalSearch()" title="${t('search_shortcut_hint')||'Search (Ctrl/Cmd+K)'}" style="margin-left:6px;padding:4px 8px;background:rgba(200,144,16,.15);border:1px solid rgba(200,144,16,.3);border-radius:6px;color:#FFD700;font-size:11px;cursor:pointer">🔍</button>`;
+    maybeShowSearchHint();
     if(!S.currentClient || S.tab==='settings' || S.tab==='trash'){
       lbl.textContent='';
       clients.innerHTML='';
+      const hasArchived=['invoices','expenses','hours','docs'].some(k=>(S[k]||[]).some(x=>x.deleted&&x.archived));
       const adminMainTabs=[
         {id:'dashboard',icon:'◼',key:'dashboard'},
-        {id:'trash',icon:'🗑️',key:'trash_title'},
+        {id:'trash',icon:'🗑️',key:'trash_title',dot:hasArchived},
         {id:'settings',icon:'⚙',key:'settings'}
       ];
-      foot.innerHTML=adminMainTabs.map(tab=>`<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block">${tab.icon}</span> ${t(tab.key)}</button>`).join('')+`${langBar}
+      foot.innerHTML=adminMainTabs.map(tab=>`<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block;position:relative">${tab.icon}${tab.dot?`<span style="position:absolute;top:-3px;right:-3px;width:7px;height:7px;border-radius:50%;background:#C89010;box-shadow:0 0 4px rgba(200,144,16,.8)" title="${t('archived_title')||'Archived records'}"></span>`:''}</span> ${t(tab.key)}</button>`).join('')+`${langBar}
       <div id="sync-badge" style="font-size:10px;color:rgba(255,255,255,.55);padding:4px 10px 2px;cursor:pointer" onclick="syncNow()"></div>
       <button class="logout-btn" onclick="doLogout()">⬅ ${t('sign_out')}</button>`;
       updateSyncBadge();
@@ -3134,13 +3205,14 @@ function renderSidebar(){
     }
     
     // Admin main tabs at bottom
+    const hasArchived2=['invoices','expenses','hours','docs'].some(k=>(S[k]||[]).some(x=>x.deleted&&x.archived));
     const adminMainTabs=[
       {id:'dashboard',icon:'◼',key:'dashboard'},
-      {id:'trash',icon:'🗑️',key:'trash_title'},
+      {id:'trash',icon:'🗑️',key:'trash_title',dot:hasArchived2},
       {id:'settings',icon:'⚙',key:'settings'}
     ];
     foot.innerHTML=`<div style="padding:8px 0;border-top:1px solid rgba(200,144,16,.2);margin-top:8px">
-      ${adminMainTabs.map(tab=>`<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block">${tab.icon}</span> ${t(tab.key)}</button>`).join('')}
+      ${adminMainTabs.map(tab=>`<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block;position:relative">${tab.icon}${tab.dot?`<span style="position:absolute;top:-3px;right:-3px;width:7px;height:7px;border-radius:50%;background:#C89010;box-shadow:0 0 4px rgba(200,144,16,.8)" title="${t('archived_title')||'Archived records'}"></span>`:''}</span> ${t(tab.key)}</button>`).join('')}
     </div>${langBar}
       <div id="sync-badge" style="font-size:10px;color:rgba(255,255,255,.55);padding:4px 10px 2px;cursor:pointer" onclick="syncNow()"></div>
       <button class="logout-btn" onclick="doLogout()">⬅ ${t('sign_out')}</button>`;
@@ -10073,19 +10145,30 @@ function showModal(title,body,onSave,saveLabel='Save'){
   // بقاء ذلك العنصر. الحل: نُعيد ضبط التذييل لحالته الافتراضية دائمًا هنا،
   // في نقطة الدخول المركزية الوحيدة، قبل أي تخصيص لاحق قد يحدث بعدها.
   document.getElementById('mo-f').innerHTML=`
-    <button class="btn btn-xs" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-xs" onclick="closeModalWithDirtyCheck()">Cancel</button>
     <button class="btn btn-p btn-xs" id="mo-s" onclick="modalSave()">Save</button>
   `;
   // ⚠️ إصلاح إضافي: إعادة ضبط زر "✕" في الرأس ليكون ظاهرًا دائمًا افتراضيًا -
   // بعض النوافذ (كبوابة جرد الكاش الإلزامية) قد تُخفيه عمدًا لمنع التحايل على
   // شرط إلزامي، لكن هذا الإخفاء يجب ألا يتسرَّب لأي نافذة تالية غير مقصودة
-  const headerCloseBtn=document.querySelector('#mo .mh button[onclick="closeModal()"]');
-  if(headerCloseBtn)headerCloseBtn.style.display='';
+  const headerCloseBtn=document.querySelector('#mo .mh button');
+  if(headerCloseBtn){headerCloseBtn.style.display='';headerCloseBtn.setAttribute('onclick','closeModalWithDirtyCheck()');}
   document.getElementById('mo-t').textContent=title;
   document.getElementById('mo-b').innerHTML=body;
   document.getElementById('mo').style.display='flex';
   document.getElementById('mo-s').textContent=saveLabel;
   window._ms=onSave;
+  // ⭐ تتبّع "تغييرات غير محفوظة" - أي إدخال/تغيير داخل جسم النافذة يُعلِّمها
+  // "متسخة"، فيُطلَب تأكيد قبل إغلاقها بـCancel أو ✕ (لا يؤثر على مسار الحفظ
+  // الطبيعي نفسه، فقط على التخلي عن التعديلات بلا حفظ)
+  window._modalDirty=false;
+  const bodyEl=document.getElementById('mo-b');
+  bodyEl.oninput=()=>{window._modalDirty=true;};
+  bodyEl.onchange=()=>{window._modalDirty=true;};
+}
+function closeModalWithDirtyCheck(){
+  if(window._modalDirty && !confirm(typeof t==='function'?(t('discard_changes_confirm')||'Discard unsaved changes?'):'Discard unsaved changes?'))return;
+  closeModal();
 }
 function closeModal(){document.getElementById('mo').style.display='none';document.getElementById('receipt-compare-panel')?.remove();}
 
