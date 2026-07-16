@@ -9153,6 +9153,18 @@ function rSettings(el){
     const selectedId=S.dangerZoneSelectedClient||'';
     const selectedClient=deletableClients.find(c=>c.id===selectedId);
     html+=`
+    <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💾 ${t('backups_title')||'Backups'}</span></div>
+      <div style="padding:14px">
+        <div class="sec-desc">${t('backups_hint')||'Automatic daily backup of your entire database, stored completely separately from it. Use this to recover from an accidental or unexpected data problem.'}</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button class="btn btn-p btn-xs" onclick="backupNow()">💾 ${t('backup_now')||'Backup Now'}</button>
+          <button class="btn btn-xs" onclick="loadBackupsList()">🔄 ${t('refresh_list')||'Refresh List'}</button>
+        </div>
+        <div id="backups-list-container">${t('backups_click_refresh')||'Click "Refresh List" to load available backups.'}</div>
+      </div>
+    </div>
+
     <div class="card" style="border:1px solid rgba(168,50,50,.35)">
       <div class="ch" style="border-bottom:3px solid #a83232;background:rgba(168,50,50,.06)"><span class="ct" style="color:#a83232">⚠️ ${t('danger_zone')||'Danger Zone'}</span></div>
       <div style="padding:14px">
@@ -9401,6 +9413,88 @@ async function start2FAEnableFlow(account,isAdminRole,accountLabel){
     renderContent();
     toast('✓ '+(t('twofa_enabled')||'Two-factor authentication enabled'));
   },t('confirm_enable')||'Confirm & Enable');
+}
+
+async // ⭐ نظام النسخ الاحتياطي - واجهة بسيطة لأخذ نسخة فورية، عرض قائمة النسخ
+// المتوفرة، واسترجاع نسخة مُحدَّدة (بعد تأكيد صارم لأنها تستبدل البيانات
+// الحالية بالكامل - مع أخذ نسخة أمان تلقائية من الحالة الحالية أولًا قبل ذلك)
+async function backupNow(){
+  toast('💾 '+(t('backing_up')||'Backing up...'));
+  try{
+    const res=await fetch(R2_WORKER_URL+'/admin/backup-now',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+getValidR2Token()},
+    });
+    if(!res.ok){
+      const errData=await res.json().catch(()=>({}));
+      toast('⚠ '+(errData.error||'Backup failed'),'⚠');
+      return;
+    }
+    toast('✓ '+(t('backup_complete')||'Backup complete'));
+    loadBackupsList();
+  }catch(e){
+    toast('⚠ Network error - please try again','⚠');
+  }
+}
+
+async function loadBackupsList(){
+  const container=document.getElementById('backups-list-container');
+  if(!container)return;
+  container.innerHTML='⏳ '+(t('loading')||'Loading...');
+  try{
+    const res=await fetch(R2_WORKER_URL+'/admin/backups',{
+      headers:{'Authorization':'Bearer '+getValidR2Token()},
+    });
+    if(!res.ok){
+      container.innerHTML='⚠ '+(t('could_not_load_backups')||'Could not load backups');
+      return;
+    }
+    const data=await res.json();
+    if(!data.backups||data.backups.length===0){
+      container.innerHTML=t('no_backups_yet')||'No backups yet — click "Backup Now" to create the first one.';
+      return;
+    }
+    container.innerHTML=`<table style="width:100%;font-size:11px">
+      <thead><tr style="border-bottom:1px solid var(--gr2)"><th style="text-align:left;padding:6px 4px">${t('lbl_date')||'Date'}</th><th style="text-align:left;padding:6px 4px">${t('size')||'Size'}</th><th style="text-align:right;padding:6px 4px">${t('actions')||'Actions'}</th></tr></thead>
+      <tbody>
+      ${data.backups.map(b=>{
+        const dateLabel=new Date(b.uploaded).toLocaleString();
+        const sizeKb=(b.size/1024).toFixed(1);
+        const isManual=b.key.includes('-manual');
+        const isSafety=b.key.includes('pre-restore-safety')||b.key.includes('safety');
+        return `<tr style="border-bottom:1px solid var(--gr1)">
+          <td style="padding:6px 4px">${dateLabel} ${isManual?'<span class="bdg" style="font-size:9px;background:#C89010;color:#fff">manual</span>':''}</td>
+          <td style="padding:6px 4px;color:var(--t3)">${sizeKb} KB</td>
+          <td style="text-align:right;padding:6px 4px"><button class="btn btn-xs btn-danger" onclick="restoreBackup('${b.key}')">↩ ${t('restore')||'Restore'}</button></td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>`;
+  }catch(e){
+    container.innerHTML='⚠ Network error';
+  }
+}
+
+async function restoreBackup(backupKey){
+  if(!confirm((t('restore_backup_confirm')||'This will REPLACE all current data with this backup. A safety backup of the current state will be taken first, but this action is significant. Continue?')))return;
+  if(!confirm((t('restore_backup_confirm2')||'Are you absolutely sure? Type-confirm by clicking OK once more.')))return;
+  toast('⏳ '+(t('restoring')||'Restoring...'));
+  try{
+    const res=await fetch(R2_WORKER_URL+'/admin/restore-backup',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
+      body:JSON.stringify({backupKey}),
+    });
+    if(!res.ok){
+      const errData=await res.json().catch(()=>({}));
+      toast('⚠ '+(errData.error||'Restore failed'),'⚠');
+      return;
+    }
+    toast('✓ '+(t('restore_complete_reloading')||'Restored — reloading app...'));
+    setTimeout(()=>location.reload(),1500);
+  }catch(e){
+    toast('⚠ Network error - please try again','⚠');
+  }
 }
 
 async function resetAdminPassword(adminId){
