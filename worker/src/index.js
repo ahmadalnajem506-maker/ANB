@@ -73,6 +73,7 @@ export default {
       if (url.pathname === '/login' && request.method === 'POST') return await handleLogin(request, env, cors);
       if (url.pathname === '/verify-2fa' && request.method === 'POST') return await handleVerify2FA(request, env, cors);
       if (url.pathname === '/set-password' && request.method === 'POST') return await handleSetPassword(request, env, cors);
+      if (url.pathname === '/admin/set-password' && request.method === 'POST') return await handleAdminSetPassword(request, env, cors);
       if (url.pathname === '/admin/generate-temp-password' && request.method === 'POST') return await handleGenerateTempPassword(request, env, cors);
       if (url.pathname === '/refresh-token' && request.method === 'POST') return await handleRefreshToken(request, env, cors);
       if (url.pathname === '/sync' && request.method === 'GET') return await handleSyncGet(request, env, cors);
@@ -81,12 +82,99 @@ export default {
       if (url.pathname.startsWith('/file/') && request.method === 'GET') return await handleGetFile(request, env, cors, url);
       if (url.pathname.startsWith('/file/') && request.method === 'DELETE') return await handleDeleteFile(request, env, cors, url);
       if (url.pathname === '/ocr-vision' && request.method === 'POST') return await handleOcrVision(request, env, cors);
+      if (url.pathname === '/admin/backup-now' && request.method === 'POST') return await handleBackupNow(request, env, cors);
+      if (url.pathname === '/admin/backups' && request.method === 'GET') return await handleListBackups(request, env, cors);
+      if (url.pathname === '/admin/restore-backup' && request.method === 'POST') return await handleRestoreBackup(request, env, cors);
       return json({ error: 'Not found' }, 404, cors);
     } catch (err) {
       return json({ error: 'Internal error', detail: String(err && err.message || err) }, 500, cors);
     }
   },
+
+  // ⭐ نسخ احتياطي تلقائي - يُستدعى تلقائيًا في الموعد المحدَّد في wrangler.toml
+  // (crons)، بلا أي طلب HTTP أو تدخل بشري إطلاقًا
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(performBackup(env, 'scheduled'));
+  },
 };
+
+/* ═══════════════════════ نظام النسخ الاحتياطي ═══════════════════════ */
+// ⚠️ لماذا هذا ضروري: كل بيانات العمل الحقيقية تعيش في صف واحد بقاعدة بيانات
+// واحدة (D1) بلا أي نسخة احتياطية دورية. أي خطأ (بشري أو برمجي، كخطأ في منطق
+// دمج المزامنة، أو استعلام SQL خاطئ يُنفَّذ يدويًا بالخطأ) قد يُتلف أو يمحو
+// هذا الصف بلا أي طريقة "تراجع" جاهزة. النسخ الاحتياطي يُخزَّن في R2 منفصل
+// تمامًا عن قاعدة البيانات نفسها (فشل D1 لا يؤثر على البيانات المُخزَّنة فيه).
+const BACKUP_RETENTION_COUNT = 60; // الاحتفاظ بآخر 60 نسخة (~شهرين عند نسخ يومي) قبل حذف الأقدم تلقائيًا
+
+async function performBackup(env, trigger) {
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return { ok: false, error: 'Could not read database' };
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const key = `backup-${timestamp}${trigger === 'manual' ? '-manual' : ''}.json`;
+  const body = JSON.stringify({ backedUpAt: new Date().toISOString(), trigger: trigger || 'scheduled', payload: cloud.payload });
+  await env.BACKUPS.put(key, body, { httpMetadata: { contentType: 'application/json' } });
+
+  // ⭐ تنظيف تلقائي: حذف أي نسخ أقدم من آخر BACKUP_RETENTION_COUNT، لمنع تراكم
+  // تخزين لا نهائي - النسخ الاحتياطية القديمة جدًا نادرًا ما تكون مفيدة عمليًا
+  const listed = await env.BACKUPS.list();
+  const sorted = listed.objects.map((o) => o.key).sort().reverse(); // الأحدث أولًا (التوقيت في اسم الملف يضمن الترتيب الأبجدي = الزمني)
+  const toDelete = sorted.slice(BACKUP_RETENTION_COUNT);
+  for (const oldKey of toDelete) {
+    await env.BACKUPS.delete(oldKey);
+  }
+
+  return { ok: true, key, deletedOldBackups: toDelete.length };
+}
+
+// محمي بتوكن أدمن - يسمح بأخذ نسخة احتياطية فورية (مثلًا قبل إجراء خطر أو
+// تغيير جوهري)، بدل انتظار الموعد التلقائي التالي
+async function handleBackupNow(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
+
+  const result = await performBackup(env, 'manual');
+  if (!result.ok) return json(result, 502, cors);
+  return json(result, 200, cors);
+}
+
+// محمي بتوكن أدمن - عرض كل النسخ الاحتياطية المتوفرة (بلا تحميل محتواها
+// الكامل، فقط الاسم والحجم والتاريخ) لاختيار نسخة للاسترجاع لاحقًا
+async function handleListBackups(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
+
+  const listed = await env.BACKUPS.list();
+  const backups = listed.objects
+    .map((o) => ({ key: o.key, size: o.size, uploaded: o.uploaded }))
+    .sort((a, b) => (a.key < b.key ? 1 : -1)); // الأحدث أولًا
+  return json({ backups }, 200, cors);
+}
+
+// محمي بتوكن أدمن - استرجاع نسخة احتياطية مُحدَّدة كاملةً، مع أخذ نسخة
+// احتياطية إضافية "قبل الاسترجاع" تلقائيًا من الحالة الحالية أولًا - لو تبيَّن
+// أن الاسترجاع كان خطأً، لا يزال بالإمكان العودة للحالة التي كانت قائمة قبله
+async function handleRestoreBackup(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { backupKey } = body || {};
+  if (!backupKey) return json({ error: 'backupKey is required' }, 400, cors);
+
+  const backupObj = await env.BACKUPS.get(backupKey);
+  if (!backupObj) return json({ error: 'Backup not found' }, 404, cors);
+  const backupData = JSON.parse(await backupObj.text());
+
+  // ⭐ شبكة أمان: نسخة احتياطية فورية من الحالة الحالية (قبل الكتابة فوقها)
+  await performBackup(env, 'pre-restore-safety');
+
+  await writeCloudPayload(env, backupData.payload);
+  return json({ ok: true, restoredFrom: backupKey, restoredBackupTimestamp: backupData.backedUpAt }, 200, cors);
+}
 
 /* ═══════════════════════ D1 helpers ═══════════════════════ */
 
@@ -501,50 +589,71 @@ async function verifyTotpCode(secret, userCode) {
 // كلمة مرور موجودة بالفعل، تُرفَض العملية ويُطلب من العميل التواصل مع ANB،
 // حيث يستخدم الأدمن نقطة /admin/generate-temp-password (محمية بتوكن الأدمن)
 // بعد أن يتحقق من هوية العميل بطريقته الخاصة خارج التطبيق.
+/* ═══════════════════════ /set-password — أُلغيت كنقطة عامة ═══════════════════════ */
+// ⚠️⚠️ إصلاح ثغرة استيلاء على الحسابات (Account Takeover): كانت هذه النقطة
+// عامة تمامًا - أي شخص يعرف بريد/هاتف أي حساب (أدمن أو عميل) كان يستطيع
+// استدعاءها مباشرة (عبر /resolve-account العامة أولًا لمعرفة accountId، ثم
+// هنا) ويُعيّن كلمة مرور من اختياره - طالما الحساب لا كلمة مرور مُسجَّلة له
+// بعد (حساب جديد، أو حساب أُعيد تعيينه). هذا استيلاء تام على الحساب بلا أي
+// إثبات هوية إطلاقًا. الحل: إلغاء هذا المسار العام نهائيًا - كل كلمات المرور
+// الأولى/المُعاد تعيينها يجب أن تصدر عن أدمن موثَّق فقط (انظر handleAdminSetPassword
+// أدناه)، الذي يتحقق من هوية صاحب الحساب بطريقته الخاصة خارج التطبيق (اتصال
+// هاتفي، لقاء شخصي...) قبل تسليمه كلمة المرور.
 async function handleSetPassword(request, env, cors) {
-  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  const bucketKey = `set-password:${ip}`;
-  if (await isRateLimited(env, bucketKey)) return json({ error: 'Too many attempts, slow down' }, 429, cors);
-  await registerAttempt(env, bucketKey);
+  return json({
+    error: 'self_service_disabled',
+    message: 'Self-service password setup has been disabled for security. Please contact your ANB administrator to receive your login credentials.',
+  }, 410, cors);
+}
+
+/* ═══════════════════════ /admin/set-password ═══════════════════════ */
+// محمية بتوكن أدمن حقيقي - النقطة الوحيدة الآن القادرة على تعيين/إعادة تعيين
+// كلمة مرور أي حساب (أدمن أو عميل). تحلّ محل كل من: النقطة العامة الملغاة
+// أعلاه، وآلية "Reset" في شاشة الإعدادات التي كانت تعتمد خطأً على مزامنة
+// عادية (/sync) لا تنجح فعليًا لأن الخادم يحمي حقول كلمة المرور من الكتابة
+// فوقها عبر ذلك المسار تحديدًا (لمنع عميل خبيث من حقن هاش كلمة مرور مزوَّر) -
+// هذه النقطة المخصَّصة هي الاستثناء الوحيد المشروع لتلك الحماية.
+async function handleAdminSetPassword(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
-  const { role, accountId, newPassword } = body || {};
-  if (!role || !accountId || !newPassword) return json({ error: 'role, accountId and newPassword are required' }, 400, cors);
-  if (newPassword.length < 6) return json({ error: 'Password must be at least 6 characters' }, 400, cors);
+  const { targetRole, targetAccountId, newPassword } = body || {};
+  if (!targetRole || !targetAccountId) return json({ error: 'targetRole and targetAccountId are required' }, 400, cors);
+  if (targetRole !== 'admin' && targetRole !== 'client') return json({ error: 'targetRole must be "admin" or "client"' }, 400, cors);
+  if (newPassword && newPassword.length < 6) return json({ error: 'Password must be at least 6 characters' }, 400, cors);
 
   const cloud = await fetchCloudPayload(env);
   if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
 
-  const list = listFor(cloud.payload, role);
-  const idx = list.findIndex((a) => a && a.id === accountId);
+  const list = listFor(cloud.payload, targetRole);
+  const idx = list.findIndex((a) => a && a.id === targetAccountId);
   if (idx === -1) return json({ error: 'Account not found' }, 404, cors);
-  const existing = list[idx];
+  const account = list[idx];
 
-  // ⚠️⚠️ إصلاح ثغرة حرجة جدًا: كان هذا الشرط ينطبق على العملاء فقط (role
-  // === 'client')، بينما حساب الأدمن مُستثنى تمامًا! هذا يعني: أي شخص يعرف
-  // بريد/هاتف الأدمن (عبر /resolve-account العامة، التي تكشف accountId) كان
-  // يستطيع استدعاء هذه النقطة مباشرة ويُعيّن كلمة مرور من اختياره لحساب
-  // الأدمن بالكامل - استيلاء تام على الحساب بلا أي معرفة بكلمة المرور
-  // القديمة أو أي تحقق آخر. الحل: تطبيق نفس الحارس على كل الأدوار بلا استثناء.
-  if (existing.passwordHash) {
-    return json({ error: 'password_already_set', message: 'This account already has a password. Please contact ANB to reset it.' }, 403, cors);
+  // ⚠️ لا يمكن لأي أدمن إعادة تعيين كلمة مرور Super Admin *غيره* عبر هذه
+  // الواجهة - يحمي من أن يُسقِط أدمن عادي مُخترَق صلاحيات الحساب الأعلى.
+  // لكن يبقى مسموحًا دائمًا للمستخدم تغيير كلمة مروره الخاصة هو (بصرف
+  // النظر عن دوره)، وإلا لن يستطيع الـsuper_admin نفسه تغيير كلمة مروره أبدًا
+  const isSelf = targetRole === 'admin' && targetAccountId === auth.payload.aid;
+  if (!isSelf && targetRole === 'admin' && account.role === 'super_admin') {
+    return json({ error: 'Cannot reset a Super Admin password this way' }, 403, cors);
   }
 
-  const rec = await makePasswordRecord(newPassword);
-  const account = list[idx];
+  const finalPassword = newPassword || generateTempPassword();
+  const rec = await makePasswordRecord(finalPassword);
   account.passwordSalt = rec.passwordSalt;
   account.passwordHash = rec.passwordHash;
   account.passwordIterations = rec.passwordIterations;
   delete account.password; delete account.pwCustom; delete account.pw;
-  if (role === 'client') account.pwSet = true;
+  if (targetRole === 'client') account.pwSet = true;
   clearFailedAttempts(account);
   list[idx] = account;
   await writeCloudPayload(env, cloud.payload);
 
-  const exp = Date.now() + TOKEN_TTL_MS;
-  const token = await signToken({ at: role, aid: account.id, exp }, env.R2_HMAC_SECRET);
-  return json({ token, exp }, 200, cors);
+  return json({ ok: true, tempPassword: newPassword ? undefined : finalPassword }, 200, cors);
 }
 
 /* ═══════════════════════ /admin/generate-temp-password ═══════════════════════ */
