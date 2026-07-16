@@ -2869,6 +2869,10 @@ async function goStep2(){
       if(data.error==='account_suspended'){showErr('login-err-1','This account is temporarily suspended. Please contact ANB Financial Services.');return;}
       if(data.error==='account_cancelled'){showErr('login-err-1','This account has been cancelled. Please contact ANB Financial Services.');return;}
     }
+    if(res.status===429){
+      showErr('login-err-1','Too many attempts — please wait about a minute and try again.');
+      return;
+    }
     if(!res.ok){
       showErr('login-err-1',selRoleVal==='admin'?'Email or phone not found for admin account':'No account found with this email or phone number');
       return;
@@ -2913,6 +2917,7 @@ async function doLogin(){
     const data=await res.json();
 
     if(res.status===423){showErr('login-err-2','Too many attempts. Try again in '+(data.minutesRemaining||15)+' min.');return;}
+    if(res.status===429){showErr('login-err-2','Too many attempts — please wait about a minute and try again.');return;}
     if(res.status===403&&data.error==='account_suspended'){showErr('login-err-2','This account is temporarily suspended. Please contact ANB Financial Services.');return;}
     if(res.status===403&&data.error==='account_cancelled'){showErr('login-err-2','This account has been cancelled. Please contact ANB Financial Services.');return;}
     if(res.status===403){showErr('login-err-2','This admin account is not active');return;}
