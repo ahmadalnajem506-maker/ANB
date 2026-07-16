@@ -13,3 +13,22 @@ id = "b9391dde5b494f2cbad03f23690a91be"
 binding = "DB"
 database_name = "anb-db"
 database_id = "2e7f1481-efe1-41e5-af58-d7333f352322"
+
+# ⭐ بيئة Staging - موارد منفصلة تمامًا عن الإنتاج (D1/R2/KV مختلفة)، حتى لا
+# يلمس أي اختبار بيانات عملاء حقيقية أبدًا. تُنشَر عبر:
+#   npx wrangler deploy --env staging
+[env.staging]
+name = "anb-file-worker-staging"
+
+[[env.staging.r2_buckets]]
+binding = "ANB_FILES"
+bucket_name = "anb-finadmin-files-staging"
+
+[[env.staging.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "1099137ea04c42d183839cada971f206"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "anb-db-staging"
+database_id = "c2413c6e-fe46-4d43-818a-cf75147b5729"
