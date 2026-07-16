@@ -82,12 +82,99 @@ export default {
       if (url.pathname.startsWith('/file/') && request.method === 'GET') return await handleGetFile(request, env, cors, url);
       if (url.pathname.startsWith('/file/') && request.method === 'DELETE') return await handleDeleteFile(request, env, cors, url);
       if (url.pathname === '/ocr-vision' && request.method === 'POST') return await handleOcrVision(request, env, cors);
+      if (url.pathname === '/admin/backup-now' && request.method === 'POST') return await handleBackupNow(request, env, cors);
+      if (url.pathname === '/admin/backups' && request.method === 'GET') return await handleListBackups(request, env, cors);
+      if (url.pathname === '/admin/restore-backup' && request.method === 'POST') return await handleRestoreBackup(request, env, cors);
       return json({ error: 'Not found' }, 404, cors);
     } catch (err) {
       return json({ error: 'Internal error', detail: String(err && err.message || err) }, 500, cors);
     }
   },
+
+  // ⭐ نسخ احتياطي تلقائي - يُستدعى تلقائيًا في الموعد المحدَّد في wrangler.toml
+  // (crons)، بلا أي طلب HTTP أو تدخل بشري إطلاقًا
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(performBackup(env, 'scheduled'));
+  },
 };
+
+/* ═══════════════════════ نظام النسخ الاحتياطي ═══════════════════════ */
+// ⚠️ لماذا هذا ضروري: كل بيانات العمل الحقيقية تعيش في صف واحد بقاعدة بيانات
+// واحدة (D1) بلا أي نسخة احتياطية دورية. أي خطأ (بشري أو برمجي، كخطأ في منطق
+// دمج المزامنة، أو استعلام SQL خاطئ يُنفَّذ يدويًا بالخطأ) قد يُتلف أو يمحو
+// هذا الصف بلا أي طريقة "تراجع" جاهزة. النسخ الاحتياطي يُخزَّن في R2 منفصل
+// تمامًا عن قاعدة البيانات نفسها (فشل D1 لا يؤثر على البيانات المُخزَّنة فيه).
+const BACKUP_RETENTION_COUNT = 60; // الاحتفاظ بآخر 60 نسخة (~شهرين عند نسخ يومي) قبل حذف الأقدم تلقائيًا
+
+async function performBackup(env, trigger) {
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return { ok: false, error: 'Could not read database' };
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const key = `backup-${timestamp}${trigger === 'manual' ? '-manual' : ''}.json`;
+  const body = JSON.stringify({ backedUpAt: new Date().toISOString(), trigger: trigger || 'scheduled', payload: cloud.payload });
+  await env.BACKUPS.put(key, body, { httpMetadata: { contentType: 'application/json' } });
+
+  // ⭐ تنظيف تلقائي: حذف أي نسخ أقدم من آخر BACKUP_RETENTION_COUNT، لمنع تراكم
+  // تخزين لا نهائي - النسخ الاحتياطية القديمة جدًا نادرًا ما تكون مفيدة عمليًا
+  const listed = await env.BACKUPS.list();
+  const sorted = listed.objects.map((o) => o.key).sort().reverse(); // الأحدث أولًا (التوقيت في اسم الملف يضمن الترتيب الأبجدي = الزمني)
+  const toDelete = sorted.slice(BACKUP_RETENTION_COUNT);
+  for (const oldKey of toDelete) {
+    await env.BACKUPS.delete(oldKey);
+  }
+
+  return { ok: true, key, deletedOldBackups: toDelete.length };
+}
+
+// محمي بتوكن أدمن - يسمح بأخذ نسخة احتياطية فورية (مثلًا قبل إجراء خطر أو
+// تغيير جوهري)، بدل انتظار الموعد التلقائي التالي
+async function handleBackupNow(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
+
+  const result = await performBackup(env, 'manual');
+  if (!result.ok) return json(result, 502, cors);
+  return json(result, 200, cors);
+}
+
+// محمي بتوكن أدمن - عرض كل النسخ الاحتياطية المتوفرة (بلا تحميل محتواها
+// الكامل، فقط الاسم والحجم والتاريخ) لاختيار نسخة للاسترجاع لاحقًا
+async function handleListBackups(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
+
+  const listed = await env.BACKUPS.list();
+  const backups = listed.objects
+    .map((o) => ({ key: o.key, size: o.size, uploaded: o.uploaded }))
+    .sort((a, b) => (a.key < b.key ? 1 : -1)); // الأحدث أولًا
+  return json({ backups }, 200, cors);
+}
+
+// محمي بتوكن أدمن - استرجاع نسخة احتياطية مُحدَّدة كاملةً، مع أخذ نسخة
+// احتياطية إضافية "قبل الاسترجاع" تلقائيًا من الحالة الحالية أولًا - لو تبيَّن
+// أن الاسترجاع كان خطأً، لا يزال بالإمكان العودة للحالة التي كانت قائمة قبله
+async function handleRestoreBackup(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { backupKey } = body || {};
+  if (!backupKey) return json({ error: 'backupKey is required' }, 400, cors);
+
+  const backupObj = await env.BACKUPS.get(backupKey);
+  if (!backupObj) return json({ error: 'Backup not found' }, 404, cors);
+  const backupData = JSON.parse(await backupObj.text());
+
+  // ⭐ شبكة أمان: نسخة احتياطية فورية من الحالة الحالية (قبل الكتابة فوقها)
+  await performBackup(env, 'pre-restore-safety');
+
+  await writeCloudPayload(env, backupData.payload);
+  return json({ ok: true, restoredFrom: backupKey, restoredBackupTimestamp: backupData.backedUpAt }, 200, cors);
+}
 
 /* ═══════════════════════ D1 helpers ═══════════════════════ */
 
