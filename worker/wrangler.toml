@@ -6,6 +6,12 @@ compatibility_date = "2026-01-01"
 binding = "ANB_FILES"
 bucket_name = "anb-finadmin-files"
 
+# ⭐ نسخ احتياطي - bucket منفصل تمامًا عن ملفات العملاء، مخصَّص فقط لنسخ
+# JSON لقاعدة البيانات الكاملة (anb_data) بتوقيت زمني
+[[r2_buckets]]
+binding = "BACKUPS"
+bucket_name = "anb-finadmin-backups"
+
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
 id = "b9391dde5b494f2cbad03f23690a91be"
@@ -13,6 +19,11 @@ id = "b9391dde5b494f2cbad03f23690a91be"
 binding = "DB"
 database_name = "anb-db"
 database_id = "2e7f1481-efe1-41e5-af58-d7333f352322"
+
+# ⭐ نسخ احتياطي تلقائي يوميًا الساعة 03:00 UTC (04:00/05:00 بتوقيت هولندا
+# حسب التوقيت الصيفي/الشتوي) - وقت هادئ جدًا لأي استخدام فعلي للتطبيق
+[triggers]
+crons = ["0 3 * * *"]
 
 # ⭐ بيئة Staging - موارد منفصلة تمامًا عن الإنتاج (D1/R2/KV مختلفة)، حتى لا
 # يلمس أي اختبار بيانات عملاء حقيقية أبدًا. تُنشَر عبر:
