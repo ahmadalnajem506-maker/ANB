@@ -2921,7 +2921,14 @@ async function doLogin(){
     if(res.status===403&&data.error==='account_suspended'){showErr('login-err-2','This account is temporarily suspended. Please contact ANB Financial Services.');return;}
     if(res.status===403&&data.error==='account_cancelled'){showErr('login-err-2','This account has been cancelled. Please contact ANB Financial Services.');return;}
     if(res.status===403){showErr('login-err-2','This admin account is not active');return;}
-    if(!res.ok){showErr('login-err-2','Incorrect password');return;}
+    if(res.status===401){showErr('login-err-2','Incorrect password');return;}
+    if(!res.ok){
+      // ⚠️ إصلاح خلل حقيقي: كان أي خطأ خادم (حتى 500 Internal Error فعلي، كخطأ
+      // تهيئة سرّ مفقود) يُعرَض دائمًا كـ"Incorrect password" - يُضلِّل تمامًا
+      // عن التشخيص الحقيقي. الآن يُعرَض السبب الفعلي من الخادم إن وُجد.
+      showErr('login-err-2',(data&&(data.message||data.detail||data.error))||'Something went wrong - please try again');
+      return;
+    }
 
     if(data.step==='2fa'){
       // كلمة المرور صحيحة، لكن الحساب مفعّل عليه 2FA — ننتقل لخطوة إدخال الرمز بدل الدخول المباشر
