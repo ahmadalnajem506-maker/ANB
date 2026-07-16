@@ -2988,58 +2988,18 @@ async function doVerify2FA(){
 }
 
 // Forgot / First time → STEP 3
-async function goForgot(){
-  showErr('login-err-3','');
-  const id=document.getElementById('login-id')?.value?.trim()||authState.identifier;
-  if(!id){goStep(1);showErr('login-err-1','Please enter your email or phone first');return;}
-
+// ⚠️ إصلاح ثغرة استيلاء على الحسابات: كان هذا المسار يسمح لأي شخص يعرف
+// بريد/هاتف أي حساب بتعيين كلمة مرور جديدة له مباشرة بلا أي تحقق من الهوية.
+// أُلغي المسار العام على مستوى الخادم بالكامل (يرد الآن بخطأ 410 دائمًا) -
+// هذه الدالة الآن توضّح للمستخدم أنه يحتاج التواصل مع الأدمن مباشرة بدل
+// محاولة مسار سيفشل حتمًا، مع توضيح آلية الاستعادة الصحيحة الجديدة.
+function goForgot(){
   const role=selRoleVal||authState.role;
-  try{
-    const res=await fetch(R2_WORKER_URL+'/resolve-account',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({role,identifier:id}),
-    });
-    if(!res.ok){goStep(1);showErr('login-err-1',role==='admin'?'Email or phone not found':'No account found');return;}
-    const acc=await res.json();
-
-    // ⚠️ لو كان للحساب كلمة مرور بالفعل، هذه ليست شاشة "إعداد أول" بل طلب
-    // استرجاع فعلي - الخادم يرفضها الآن على أي حال (إصلاح أمني)، فنوجّه
-    // المستخدم بوضوح من البداية بدل الوصول لشاشة سترفضها الخادم لاحقًا
-    if(!acc.isFirstTime){
-      goStep(1);
-      if(role==='client'){
-        showErr('login-err-1','For your security, please contact ANB directly to reset your password.');
-      }else{
-        showErr('login-err-1','This admin account already has a password. Ask another administrator to reset it for you (Settings → Admins → Reset), or contact ANB technical support.');
-      }
-      return;
-    }
-
-    if(role==='admin'){
-      authState={role:'admin',adminId:acc.accountId,identifier:id,clientId:null};
-      const t=document.getElementById('step3-title');
-      const s=document.getElementById('step3-sub');
-      const b=document.getElementById('step3-identity-box');
-      if(t)t.textContent='Set admin password';
-      if(s)s.textContent='You are setting the password for ANB Administrator';
-      if(b)b.innerHTML='🛡 <strong>ANB Administrator</strong><br>'+escapeHtml(id);
-    } else {
-      authState={role:'client',identifier:id,clientId:acc.accountId};
-      const t=document.getElementById('step3-title');
-      const s=document.getElementById('step3-sub');
-      const b=document.getElementById('step3-identity-box');
-      if(t)t.textContent='Set your password';
-      if(s)s.textContent='Choose a new password for your account';
-      if(b)b.innerHTML='👤 <strong>'+escapeHtml(acc.name||'')+'</strong><br>'+escapeHtml(id);
-    }
-    document.getElementById('new-pw1').value='';
-    document.getElementById('new-pw2').value='';
-    document.getElementById('pw-bar').style.cssText='';
-    document.getElementById('pw-hint').textContent='';
-    goStep(3);
-    setTimeout(()=>document.getElementById('new-pw1')?.focus(),100);
-  }catch(e){
-    showErr('login-err-1','Network error - please check your connection and try again');
+  goStep(1);
+  if(role==='admin'){
+    showErr('login-err-1','For security, admin passwords can no longer be self-set. Ask another administrator to set one for you (Settings → Admins → Reset), or contact ANB technical support.');
+  }else{
+    showErr('login-err-1','For your security, please contact ANB directly — they will verify your identity and provide you with login credentials.');
   }
 }
 
@@ -3603,6 +3563,7 @@ function rAdminContracts(el){
     <select id="contracts-status-filter" onchange="renderContractsList(this.value)"
       style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--white);color:var(--t1);cursor:pointer">
       <option value="" ${initialFilter===''?'selected':''}>All statuses</option>
+      <option value="needsAttention" ${initialFilter==='needsAttention'?'selected':''}>⚠️ Needs attention (all)</option>
       <option value="active" ${initialFilter==='active'?'selected':''}>✅ Active only</option>
       <option value="needsRenewal" ${initialFilter==='needsRenewal'?'selected':''}>🔔 Needs review/renewal</option>
       <option value="draft" ${initialFilter==='draft'?'selected':''}>📝 Pending signature</option>
@@ -3629,6 +3590,10 @@ function renderContractsList(statusFilter){
     if(!statusFilter)return true;
     if(statusFilter==='needsRenewal')return con.status==='active'&&isContractExpired(con);
     if(statusFilter==='active')return con.status==='active'&&!isContractExpired(con);
+    // ⭐ فلتر موحَّد "بحاجة انتباه" - يجمع كل الحالات التي تتطلب فعلًا من
+    // الأدمن (معلَّق، بانتظار توقيع، أو نشط لكن بحاجة تجديد) بدل الاضطرار
+    // لثلاث بطاقات منفصلة في لوحة التحكم لنفس الغرض
+    if(statusFilter==='needsAttention')return con.status==='suspended'||con.status==='draft'||(con.status==='active'&&isContractExpired(con));
     return con.status===statusFilter;
   });
   const sortState=getSortState('contracts','title','asc');
@@ -4845,18 +4810,23 @@ function rAdminDash(el){
   const contractsNeedingRenewal=S.contracts.filter(c=>c.status==='active'&&isContractExpired(c)).length;
   const contractsPendingSignature=S.contracts.filter(c=>c.status==='draft').length;
   const contractsSuspended=S.contracts.filter(c=>c.status==='suspended').length;
+  // ⭐ توحيد 4 بطاقات عقود منفصلة (نشطة/بحاجة تجديد/بانتظار توقيع/معلَّقة) إلى
+  // بطاقتين فقط: عدد "النشطة" كرقم مستقر دائم الظهور، وبطاقة "بحاجة انتباه"
+  // مُجمِّعة تظهر فقط عند وجود شيء فعلي يستدعي إجراءً - بدل أربع بطاقات
+  // منخفضة الإشارة تتنافس على نفس المساحة البصرية لنفس الموضوع أساسًا
+  const contractsNeedingAttention=contractsNeedingRenewal+contractsPendingSignature+contractsSuspended;
 
   const cards=[
     {icon:'📄',name:t('dashboard_pending_invoices'),alertText:pendingInvoices>0?pendingInvoices:null,value:pendingInvoices,color:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',onclickAttr:"goToAdminStat('invoices')"},
     {icon:'⚠️',name:t('dashboard_overdue'),alertText:overdueInvoices>0?overdueInvoices:null,value:overdueInvoices,color:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',onclickAttr:"goToAdminStat('overdue')"},
     {icon:'📁',name:t('dashboard_new_documents'),alertText:newDocuments>0?newDocuments:null,value:newDocuments,color:'linear-gradient(135deg, #1B5E35 0%, #2d7a4f 100%)',onclickAttr:"goToAdminStat('documents')"},
     {icon:'💬',name:t('dashboard_new_messages'),alertText:newMessages>0?newMessages:null,value:newMessages,color:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',textColor:'#0A2218',onclickAttr:"goToAdminStat('messages')"},
-    {icon:'🚫',name:'Suspended Contracts',alertText:contractsSuspended>0?contractsSuspended:null,value:contractsSuspended,color:'linear-gradient(135deg, #a83232 0%, #c24545 100%)',onclickAttr:"goToAdminStat('contracts_filter:suspended')"},
     {icon:'💼',name:t('active_clients'),value:totalClients,onclickAttr:"goToAdminStat('clients')"},
     {icon:'🕐',name:t('dashboard_hours_logged'),value:totalHours.toFixed(0),onclickAttr:"goToAdminStat('hours')"},
-    {icon:'📋',name:t('active_contracts')||'Active Contracts',value:contractsActive,onclickAttr:"goToAdminStat('contracts_filter:active')"},
-    {icon:'🔔',name:t('dashboard_contracts_renewal')||'Needs Renewal',value:contractsNeedingRenewal,onclickAttr:"goToAdminStat('contracts_filter:needsRenewal')"},
-    {icon:'📝',name:t('dashboard_pending_agreements')||'Pending Signature',value:contractsPendingSignature,onclickAttr:"goToAdminStat('contracts_filter:draft')"}
+    // ⭐ حذفت بطاقة "Active Contracts" - عميل نشط (Active Clients أعلاه) يعني
+    // عمليًا عقدًا نشطًا في كل الحالات تقريبًا، فتكرار الرقم ببطاقة منفصلة لا
+    // يضيف معلومة جديدة فعلية، فقط ازدحامًا بصريًا لنفس المفهوم
+    ...(contractsNeedingAttention>0?[{icon:'🔔',name:t('dashboard_contracts_attention')||'Contracts Needing Attention',alertText:contractsNeedingAttention,value:contractsNeedingAttention,color:'linear-gradient(135deg, #B8860B 0%, #d4a017 100%)',onclickAttr:"goToAdminStat('contracts_filter:needsAttention')"}]:[])
   ];
 
   const anbCardHtml=`
@@ -9200,15 +9170,29 @@ async function saveAdminAuth(){
   if(newPw1&&newPw1!==newPw2){toast('Passwords do not match','⚠');return;}
   if(email)S.settings.email=email;
   if(phone)S.settings.phone=phone;
-  // ✅ إصلاح: كانت تُحفظ سابقًا في S.settings.adminPwCustom وهو حقل لا تقرأه doLogin إطلاقًا
+  // ⚠️ إصلاح: نفس مشكلة resetAdminPassword - تغيير الهاش محليًا ثم الاعتماد
+  // على /sync العادية لا يعمل فعليًا (الخادم يحمي حقل كلمة المرور من ذلك
+  // المسار). يستدعي الآن نفس النقطة الموثَّقة، مستهدفًا حساب المستخدم نفسه.
   if(newPw1){
     const admin=S.admins.find(a=>a.id===S.currentAdmin);
     if(admin){
-      const rec=await makePasswordRecord(newPw1);
-      admin.passwordSalt=rec.passwordSalt;admin.passwordHash=rec.passwordHash;
-      delete admin.password;
-      clearFailedAttempts(admin);
-      logAudit('password_change','account','Changed own password: '+admin.name);
+      try{
+        const res=await fetch(R2_WORKER_URL+'/admin/set-password',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
+          body:JSON.stringify({targetRole:'admin',targetAccountId:admin.id,newPassword:newPw1}),
+        });
+        if(!res.ok){
+          const errData=await res.json().catch(()=>({}));
+          toast('⚠ '+(errData.error||'Could not change password'),'⚠');
+          return;
+        }
+        clearFailedAttempts(admin);
+        logAudit('password_change','account','Changed own password: '+admin.name);
+      }catch(e){
+        toast('⚠ Network error - please try again','⚠');
+        return;
+      }
     }
   }
   sv();toast(t('btn_save_creds')+' ✓');renderContent();
@@ -9243,16 +9227,35 @@ async function generateClientTempPassword(cid){
   });
 }
 
-function resetClientPw(cid){
-  showConfirmDialog(t('confirm_reset_pw')||'Reset Password',t('confirm_reset_client_pw')||"Reset this client's password? They will need to set a new one on next login.",()=>{
-    const idx=S.clients.findIndex(c=>c.id===cid);
-    if(idx>=0){
-      delete S.clients[idx].pwCustom;delete S.clients[idx].pwSet;
-      delete S.clients[idx].passwordHash;delete S.clients[idx].passwordSalt;
-      delete S.clients[idx].failedAttempts;delete S.clients[idx].lockedUntil;
-      logAudit('password_change','account','Reset password for client: '+S.clients[idx].name,cid);
+async function resetClientPw(cid){
+  showConfirmDialog(t('confirm_reset_pw')||'Reset Password',t('confirm_reset_client_pw')||"Reset this client's password? A new temporary password will be generated for you to share with them.",async()=>{
+    const client=S.clients.find(c=>c.id===cid);
+    if(!client)return;
+    // ⚠️ إصلاح: نفس مشكلة resetAdminPassword - الحذف المحلي للحقول ثم
+    // الاعتماد على /sync العادية كان لا يعمل فعليًا لأن الخادم يحمي حقول
+    // كلمة المرور من أي تغيير عبر ذلك المسار. الآن يستدعي نفس النقطة
+    // الموثَّقة المخصَّصة لهذا الغرض تحديدًا.
+    try{
+      const res=await fetch(R2_WORKER_URL+'/admin/set-password',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
+        body:JSON.stringify({targetRole:'client',targetAccountId:cid}), // بلا newPassword = يُولِّد كلمة مرور مؤقتة عشوائية
+      });
+      if(!res.ok){
+        const errData=await res.json().catch(()=>({}));
+        toast('⚠ '+(errData.error||'Could not reset password'),'⚠');
+        return;
+      }
+      const data=await res.json();
+      clearFailedAttempts(client); // تحديث محلي فوري للعرض فقط
+      logAudit('password_change','account','Reset password for client: '+client.name,cid);
+      renderContent();
+      showConfirmDialog(t('temp_password_title')||'New Temporary Password',
+        (t('temp_password_share_hint')||'Share this password with the client through a trusted channel (phone call, in person). It will not be shown again.')+'\n\n'+data.tempPassword,
+        ()=>{});
+    }catch(e){
+      toast('⚠ Network error - please try again','⚠');
     }
-    sv();toast('Password reset — client must set new password','✓');renderContent();
   });
 }
 
@@ -9388,37 +9391,49 @@ async function start2FAEnableFlow(account,isAdminRole,accountLabel){
   },t('confirm_enable')||'Confirm & Enable');
 }
 
-function resetAdminPassword(adminId){
+async function resetAdminPassword(adminId){
   const admin=S.admins.find(a=>a.id===adminId);
   if(!admin)return;
-  
+
   if(admin.role==='super_admin'){
     toast('⚠ Cannot reset Super Admin password here','⚠');
     return;
   }
-  
+
   const newPw=prompt('Enter new password for '+admin.name+':');
   if(!newPw||newPw.length<6){
     if(newPw)toast('⚠ Password must be at least 6 characters','⚠');
     return;
   }
-  
+
   const confirm2=prompt('Confirm password:');
   if(confirm2!==newPw){
     toast('⚠ Passwords do not match','⚠');
     return;
   }
-  
-  makePasswordRecord(newPw).then(rec=>{
-    admin.passwordSalt=rec.passwordSalt;
-    admin.passwordHash=rec.passwordHash;
-    delete admin.password;
-    clearFailedAttempts(admin);
+
+  // ⚠️ إصلاح: كان هذا الزر يحاول تغيير كلمة المرور محليًا ثم الاعتماد على
+  // المزامنة العادية (/sync) لنقلها للخادم - لكن الخادم يحمي حقول كلمة
+  // المرور من الكتابة فوقها عبر ذلك المسار تحديدًا (حماية أمنية ضرورية ضد
+  // حقن هاش مزوَّر)، فكان هذا الزر لا يعمل فعليًا بصمت. الآن يستدعي نقطة
+  // مخصَّصة موثَّقة بتوكن الأدمن، وهي الاستثناء المشروع الوحيد لتلك الحماية.
+  try{
+    const res=await fetch(R2_WORKER_URL+'/admin/set-password',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
+      body:JSON.stringify({targetRole:'admin',targetAccountId:adminId,newPassword:newPw}),
+    });
+    if(!res.ok){
+      const errData=await res.json().catch(()=>({}));
+      toast('⚠ '+(errData.error||'Could not reset password'),'⚠');
+      return;
+    }
+    clearFailedAttempts(admin); // تحديث محلي فوري للعرض فقط - المصدر الحقيقي هو الخادم أعلاه
     logAudit('password_change','account','Reset password for admin: '+admin.name);
-    sv();
     toast('✓ Password reset successfully','✓');
-  });
-  renderContent();
+  }catch(e){
+    toast('⚠ Network error - please try again','⚠');
+  }
 }
 
 function saveSettings(){
@@ -9436,7 +9451,6 @@ function saveSettings(){
   S.settings.insurerName=document.getElementById('s-ins-name')?.value||'';
   S.settings.insurancePolicyNumber=document.getElementById('s-ins-policy')?.value||'';
   S.settings.insuranceCoverage=document.getElementById('s-ins-cover')?.value||'';
-  S.settings.adminPw=document.getElementById('s-ap')?.value||S.settings.adminPw;
   sv();toast(t('settings_nav')+' ✓','ti-check');
 }
 
