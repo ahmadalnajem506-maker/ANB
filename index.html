@@ -376,7 +376,7 @@ body.rtl .nb{text-align:right;flex-direction:row-reverse}
 .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
 .kcard{background:var(--white);border:1px solid var(--gr2);border-radius:var(--r);padding:14px;box-shadow:var(--sh)}
 .kl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
-.kv{font-size:20px;font-weight:500;color:var(--t1);font-family:var(--fd)}
+.kv{font-size:24px;font-weight:800;color:var(--t1);font-family:var(--fd);font-variant-numeric:tabular-nums}
 .card{background:var(--white);border:1px solid var(--gr2);border-radius:var(--r);overflow:hidden;margin-bottom:12px;box-shadow:var(--sh)}
 .ch{padding:11px 14px;border-bottom:1px solid var(--gr1);display:flex;align-items:center;justify-content:space-between}
 .ct{font-size:13px;font-weight:500;color:var(--t1)}
@@ -596,6 +596,32 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
   body.rtl .sidebar { position: relative; transform: none; left: auto; right: auto; }
 }
 
+/* ⭐ تحويل تلقائي لأي جدول عادي لبطاقات مكدَّسة على شاشات الموبايل الضيقة -
+   بلا حاجة لتعديل كود بناء أي جدول فرديًا. يعتمد على data-label المُضافة
+   تلقائيًا عبر enhanceTablesForMobile() (تُستدعى مع كل رسم شاشة) والتي
+   تنسخ نص عنوان كل عمود إلى الخلية المقابلة - فقط على العرض الضيق، الجدول
+   العادي (بأعمدته) يبقى كما هو تمامًا على الشاشات الأوسع (تابلت/كمبيوتر).
+   لا تأثير إطلاقًا على تصدير Excel/PDF، فتلك تُبنى من البيانات الخام مباشرة. */
+@media (max-width: 640px) {
+  table.mobile-cards thead { display: none; }
+  table.mobile-cards, table.mobile-cards tbody, table.mobile-cards tr, table.mobile-cards td {
+    display: block; width: 100%;
+  }
+  table.mobile-cards tr {
+    background: var(--white); border: 1px solid var(--gr2); border-radius: var(--r);
+    padding: 10px 12px; margin-bottom: 8px; box-shadow: var(--sh);
+  }
+  table.mobile-cards td {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 5px 0; border: none !important; text-align: right;
+  }
+  table.mobile-cards td::before {
+    content: attr(data-label); font-size: 10px; font-weight: 700; color: var(--t3);
+    text-transform: uppercase; letter-spacing: .3px; text-align: left; flex-shrink: 0;
+  }
+  table.mobile-cards td:empty, table.mobile-cards td:not([data-label])::before { content: none; }
+}
+
 /* ⭐ حركات نافذة الترحيب (Onboarding) وقائمة "ابدأ هنا" */
 @keyframes obSlideIn {
   from { opacity: 0; transform: translateX(24px); }
@@ -670,6 +696,7 @@ window.toggleSidebar = function(){};
 // Stub S object
 var S = {lang:'en', role:null, clients:[]};
 </script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.21.0/dist/umd/lucide.js"></script>
 </head>
 <body>
 <div id="print-receipt-area"></div>
@@ -1338,6 +1365,19 @@ html { scroll-behavior: smooth; }
 const COLORS=['#1B5E35','#1B5E35','#C89010','#D4A520','#4da876','#2d7a4f','#B8860B','#1B5E35'];
 const FMT=n=>'€'+(+(n||0)).toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});
 const FMTi=FMT; // موحّدة الآن مع FMT لتفادي ظهور نفس المبلغ بشكلين مختلفين في التطبيق
+
+// ⭐ صندوق "الرقم الرئيسي" الموحَّد - يُستخدَم لأي رقم مالي هو محور شاشة/تقرير
+// (صافي الربح، BTW مستحقة، صافي التدفق النقدي، إجمالي الديون...). قبل هذه
+// الدالة، كان كل تقرير يبني صندوقه يدويًا بقيَم padding/font-size/radius
+// منفصلة قليلًا عن الآخر - فروقات بصرية طفيفة غير مقصودة. الآن أي صندوق
+// جديد يستخدم هذه الدالة يتطابق تلقائيًا وتمامًا مع كل الصناديق الأخرى،
+// ولا يمكن أن ينحرف عنها مستقبلًا بالخطأ.
+function heroNumberBox(label,value,color,bgColor){
+  return '<div style="padding:16px;background:'+(bgColor||'var(--gr1)')+';border-radius:var(--r);border-left:4px solid '+color+'">'
+    +'<div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin-bottom:2px">'+label+'</div>'
+    +'<div style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:'+color+'">'+value+'</div>'
+    +'</div>';
+}
 const TODAY=()=>new Date().toISOString().slice(0,10);
 
 // getLang must be defined before S so lang:getLang() works on init
@@ -3562,6 +3602,38 @@ function renderApp(){
   renderSidebar();renderTopbar();renderContent();
   if(typeof renderMobileNav==='function')renderMobileNav();
   if(typeof renderFloatingHelpButton==='function')renderFloatingHelpButton();
+  // ⭐ تحويل أي عناصر <i data-lucide="..."> جديدة أُضيفت في هذا الرسم لأيقونات
+  // SVG موحَّدة الشكل عبر كل الأجهزة - بدل الإيموجي التي تبدو مختلفة تمامًا
+  // بين Android وiPhone. يُستدعى بعد كل إعادة رسم لأن المحتوى يُستبدَل بالكامل
+  // في كل مرة (innerHTML)، فأي أيقونة سابقة تُفقَد وتحتاج تحويلًا من جديد
+  if(window.lucide)lucide.createIcons();
+  enhanceTablesForMobile();
+}
+
+// ⭐ يجعل أي جدول عادي (بأي عدد أعمدة، في أي شاشة) يتحوَّل تلقائيًا لبطاقات
+// مكدَّسة على شاشات الموبايل الضيقة - بلا حاجة لتعديل كود بناء الجدول نفسه
+// إطلاقًا. يعمل بقراءة نص كل عمود من <th> ونسخه كـ data-label لكل خلية
+// مقابلة، ثم CSS خاص (.mobile-cards) يتكفَّل بالباقي. يُستدعى مع كل رسم
+// شاشة، فأي جدول جديد يُعالَج تلقائيًا بلا أي جهد إضافي مستقبلًا.
+function enhanceTablesForMobile(){
+  document.querySelectorAll('table').forEach(table=>{
+    if(table.dataset.mobileEnhanced)return; // لا تُعالَج نفس بيانات الجدول مرتين إن لم تتغيّر
+    const headerCells=table.querySelectorAll('thead th');
+    if(headerCells.length===0)return; // جداول بلا thead (نادرة) تبقى كما هي
+    const labels=Array.from(headerCells).map(th=>th.textContent.trim());
+    table.querySelectorAll('tbody tr').forEach(tr=>{
+      Array.from(tr.children).forEach((td,i)=>{
+        if(labels[i])td.setAttribute('data-label',labels[i]);
+      });
+    });
+    table.classList.add('mobile-cards');
+  });
+}
+// ⭐ مساعد بسيط لتوليد كود أيقونة Lucide بحجم مُحدَّد - يُستخدَم بدل كتابة
+// إيموجي مباشرة في أماكن العرض الرئيسية (القائمة الجانبية، بطاقات لوحة
+// التحكم...) ليبدو التطبيق متطابقًا بصريًا عبر كل الأجهزة
+function LICON(name,size){
+  return `<i data-lucide="${name}" style="width:${size||16}px;height:${size||16}px;vertical-align:middle"></i>`;
 }
 
 // ⭐ زر مساعدة عائم دائم الظهور للعميل (وليس فقط في الداشبورد) - بالضبط
@@ -3679,11 +3751,11 @@ function renderSidebar(){
       clients.innerHTML='';
       const hasArchived=['invoices','expenses','hours','docs'].some(k=>(S[k]||[]).some(x=>x.deleted&&x.archived));
       const adminMainTabs=[
-        {id:'dashboard',icon:'◼',key:'dashboard'},
-        {id:'trash',icon:'🗑️',key:'trash_title',dot:hasArchived},
-        {id:'settings',icon:'⚙',key:'settings'}
+        {id:'dashboard',icon:LICON('layout-dashboard',15),key:'dashboard'},
+        {id:'trash',icon:LICON('trash-2',15),key:'trash_title',dot:hasArchived},
+        {id:'settings',icon:LICON('settings',15),key:'settings'}
       ];
-      foot.innerHTML=adminMainTabs.map(tab=>`<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="font-size:14px;width:15px;text-align:center;display:inline-block;position:relative">${tab.icon}${tab.dot?`<span style="position:absolute;top:-3px;right:-3px;width:7px;height:7px;border-radius:50%;background:#C89010;box-shadow:0 0 4px rgba(200,144,16,.8)" title="${t('archived_title')||'Archived records'}"></span>`:''}</span> ${t(tab.key)}</button>`).join('')+`${langBar}
+      foot.innerHTML=adminMainTabs.map(tab=>`<button class="nb ${S.tab===tab.id?'act':''}" onclick="setTab('${tab.id}')"><span style="width:15px;text-align:center;display:inline-block;position:relative">${tab.icon}${tab.dot?`<span style="position:absolute;top:-3px;right:-3px;width:7px;height:7px;border-radius:50%;background:#C89010;box-shadow:0 0 4px rgba(200,144,16,.8)" title="${t('archived_title')||'Archived records'}"></span>`:''}</span> ${t(tab.key)}</button>`).join('')+`${langBar}
       <div id="sync-badge" style="font-size:10px;color:rgba(255,255,255,.55);padding:4px 10px 2px;cursor:pointer" onclick="syncNow()"></div>
       <button class="logout-btn" onclick="doLogout()">⬅ ${t('sign_out')}</button>`;
       updateSyncBadge();
@@ -3941,7 +4013,7 @@ function rAdminReports(el){
     const invoices=allInvoices.filter(i=>['Openstaand','Verzonden','Verlopen'].includes(i.status));
     el.innerHTML=backBtnHtml+`
     <div class="card">
-      <div class="ch"><span class="ct">📄 ${t('tab_invoices')}</span></div>
+      <div class="ch"><span class="ct">${LICON('file-text',16)} ${t('tab_invoices')}</span></div>
       ${invoices.length===0?`<div class="empty">📄 ${t('no_data')}</div>`:
       invoices.map(i=>{
         const c=S.clients.find(x=>x.id===i.cid);
@@ -3967,7 +4039,7 @@ function rAdminReports(el){
     const overdue=allInvoices.filter(i=>isInvoiceOverdue(i));
     el.innerHTML=backBtnHtml+`
     <div class="card">
-      <div class="ch"><span class="ct">⚠️ Overdue Invoices</span></div>
+      <div class="ch"><span class="ct">${LICON('triangle-alert',16)} Overdue Invoices</span></div>
       ${overdue.length===0?`<div class="empty">✅ No overdue invoices</div>`:
       overdue.map(i=>{
         const c=S.clients.find(x=>x.id===i.cid);
@@ -3993,7 +4065,7 @@ function rAdminReports(el){
     const total=hours.reduce((s,h)=>s+h.hrs,0);
     el.innerHTML=backBtnHtml+`
     <div class="card">
-      <div class="ch"><span class="ct">🕐 Hours Logged</span></div>
+      <div class="ch"><span class="ct">${LICON('clock',16)} Hours Logged</span></div>
       <div style="padding:12px 14px;margin-bottom:12px;background:var(--white);border-radius:var(--r)">
         <div style="font-size:24px;font-weight:600;color:var(--gold)">${total.toFixed(1)}</div>
         <div style="font-size:11px;color:var(--t3);margin-top:4px">Total hours</div>
@@ -4033,7 +4105,7 @@ function rAdminMessages(el){
     </button>
   </div>
   <div class="card">
-    <div class="ch"><span class="ct">💬 All Messages</span></div>
+    <div class="ch"><span class="ct">${LICON('message-circle',16)} All Messages</span></div>
     ${allMessages.length===0?`<div class="empty">💬 ${t('no_data')}</div>`:
     allMessages.map(m=>{
       const c=S.clients.find(x=>x.id===m.cid);
@@ -4068,7 +4140,7 @@ function rAdminDocuments(el){
     </button>
   </div>
   <div class="card">
-    <div class="ch"><span class="ct">📁 ${t('documents')}</span>
+    <div class="ch"><span class="ct">${LICON('folder',16)} ${t('documents')}</span>
       ${newDocs.length>0?`<span style="background:var(--orange);color:white;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:8px">${newDocs.length} New</span>`:''}
     </div>
     ${allDocs.length===0?`<div class="empty">📁 ${t('no_data')}</div>`:
@@ -4150,7 +4222,7 @@ function renderContractsList(statusFilter){
     Renewed:{label:'Renewed',color:'#1a4d2e',bg:'rgba(26,77,46,0.12)'}
   };
   container.innerHTML=`<div class="card">
-    <div class="ch"><span class="ct">📋 ${t('contracts')} (${allContracts.length})</span>
+    <div class="ch"><span class="ct">${LICON('clipboard-list',16)} ${t('contracts')} (${allContracts.length})</span>
       <button class="btn btn-p btn-xs" onclick="openNewContractDialog()">➕ ${t('add')}</button>
     </div>
     ${allContracts.length===0?`<div class="empty">📋 ${statusFilter?(t('no_results')||'No matching contracts'):t('no_data')}</div>`:
@@ -4778,7 +4850,7 @@ function rContracts(el,cid){
     <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
   </div>
   <div class="card">
-    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">📋 ${t('contracts')}${isANBSelfBook?' — '+(t('all_clients')||'All Clients'):''}</span>
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('clipboard-list',16)} ${t('contracts')}${isANBSelfBook?' — '+(t('all_clients')||'All Clients'):''}</span>
       ${isANBSelfBook?'':`<button class="btn btn-p btn-xs" onclick="openAddContract('${cid}')">➕ ${t('add')}</button>`}
     </div>
     ${contracts.length>0?`<div style="padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap">
@@ -4895,7 +4967,7 @@ function rAssets(el,cid){
   </div>`:''}
 
   <div class="card">
-    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🏢 ${t('assets')}</span>
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('building-2',16)} ${t('assets')}</span>
       ${isAdmin()?`<div style="display:flex;gap:6px;flex-wrap:wrap">
         ${assets.some(a=>!a.isImmediatelyExpensable)?`<button class="btn btn-xs" onclick="generateDepreciationEntries('${cid}',new Date().getFullYear())">📊 ${t('generate_depreciation')||'Generate Depreciation'}</button>`:''}
         <button class="btn btn-xs" style="background:var(--gold);color:#0A2218" onclick="openImportDataModal('assets','${cid}')">📋 ${t('import_previous_data')||'Import Previous Data'}</button>
@@ -5056,7 +5128,7 @@ function rReportLoans(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+(t('back_to_reports')||'Back to Reports')+'</button>';
-  html+=`<div class="card" style="border:2px solid ${theme.border}"><div class="ch" style="background:${theme.bg}"><span class="ct">🏦 ${t('rep_loans_title')||'Loan Overview'}</span></div>
+  html+=`<div class="card" style="border:2px solid ${theme.border}"><div class="ch" style="background:${theme.bg}"><span class="ct">${LICON('landmark',16)} ${t('rep_loans_title')||'Loan Overview'}</span></div>
   <div style="padding:16px">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
       <div style="background:var(--gr1);border-radius:8px;padding:10px;text-align:center">
@@ -5118,7 +5190,7 @@ function rImport(el,cid){
     <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
   </div>
   <div class="card">
-    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">📥 ${t('import_data')}</span></div>
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('download',16)} ${t('import_data')}</span></div>
     <div style="padding:20px;text-align:center">
       <div style="margin-bottom:20px;font-size:13px;color:var(--t2)">${t('import_options')||'Import Data'}</div>
       <button class="btn btn-p" onclick="document.getElementById('bank-csv-${cid}').click()" style="margin-bottom:10px;display:block;width:100%">
@@ -5692,7 +5764,7 @@ function renderStyledCard(cd,opts){
   const plainShadow=cd.alertText?'0 0 0 1.5px #B8860B, 0 1px 3px rgba(10,34,24,0.07)':'0 1px 3px rgba(10,34,24,0.07)';
   return `<div onclick="${cd.onclickAttr}" style="position:relative;background:${isANB?anbBg:'#FBF8F1'};border-radius:10px;padding:10px 10px 10px 13px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden;box-shadow:${isANB?anbShadow:plainShadow}">
     <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${accentColor}"></div>
-    <div style="font-size:18px;flex-shrink:0">${cd.icon}</div>
+    <div style="font-size:18px;flex-shrink:0;color:${accentColor};display:flex;align-items:center">${cd.icon}</div>
     <div style="min-width:0;overflow:hidden;flex:1">
       <div style="font-size:10.5px;font-weight:700;color:#5a5346;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cd.name}</div>
       <div style="font-size:14px;font-weight:800;color:#0A2218;font-family:var(--fm);font-variant-numeric:tabular-nums">${cd.val!==undefined?cd.val:cd.value}</div>
@@ -5803,23 +5875,23 @@ function rClientDash(el,cid){
   const allFinancialCards=[
     // ⭐ نفس إعادة الترتيب الوظيفي المُطبَّقة في شاشة الأدمن: الفواتير مع
     // المدينين، المصاريف مع الدائنين، ثم العمليات الداعمة والموارد والتحليل
-    {id:'invoices',icon:'📄',name:t('card_invoices_title')||'Invoices',alertText:invoiceAlertText,val:inv.length,onclickAttr:"selectCard('invoices')"},
-    {id:'debtors',icon:'💵',name:t('card_debtors_title')||'Debtors',val:'→',onclickAttr:"selectCard('debtors')"},
-    {id:'expenses',icon:'🧾',name:t('card_expenses_title')||'Expenses',val:expTotal,onclickAttr:"selectCard('expenses')"},
-    {id:'creditors',icon:'🤝',name:t('card_creditors_title')||'Creditors',val:'→',onclickAttr:"selectCard('creditors')"},
-    {id:'hours',icon:'🕐',name:t('hours_time')||'Hours',alertText:billableHrs>0?billableHrs+' unbilled':null,val:billableHrs,onclickAttr:"selectCard('hours')"},
-    {id:'cash_ledger',icon:'💵',name:t('cash_ledger_title')||'Cash Ledger',val:'→',onclickAttr:"selectCard('cash_ledger')"},
-    {id:'cashier',icon:'💰',name:t('cashier_title')||'Cashier',val:'→',onclickAttr:"selectCard('cashier')"},
-    {id:'bank',icon:'🏦',name:t('tab_bank')||'Bank',val:'→',onclickAttr:"selectCard('bank')"},
-    {id:'assets',icon:'🏢',name:t('assets')||'Assets',val:'→',onclickAttr:"selectCard('assets')"},
-    {id:'reports',icon:'📈',name:t('tab_reports')||'Reports',val:'→',onclickAttr:"selectCard('reports')"}
+    {id:'invoices',icon:LICON('file-text',18),name:t('card_invoices_title')||'Invoices',alertText:invoiceAlertText,val:inv.length,onclickAttr:"selectCard('invoices')"},
+    {id:'debtors',icon:LICON('circle-dollar-sign',18),name:t('card_debtors_title')||'Debtors',val:'→',onclickAttr:"selectCard('debtors')"},
+    {id:'expenses',icon:LICON('receipt',18),name:t('card_expenses_title')||'Expenses',val:expTotal,onclickAttr:"selectCard('expenses')"},
+    {id:'creditors',icon:LICON('handshake',18),name:t('card_creditors_title')||'Creditors',val:'→',onclickAttr:"selectCard('creditors')"},
+    {id:'hours',icon:LICON('clock',18),name:t('hours_time')||'Hours',alertText:billableHrs>0?billableHrs+' unbilled':null,val:billableHrs,onclickAttr:"selectCard('hours')"},
+    {id:'cash_ledger',icon:LICON('wallet',18),name:t('cash_ledger_title')||'Cash Ledger',val:'→',onclickAttr:"selectCard('cash_ledger')"},
+    {id:'cashier',icon:LICON('banknote',18),name:t('cashier_title')||'Cashier',val:'→',onclickAttr:"selectCard('cashier')"},
+    {id:'bank',icon:LICON('landmark',18),name:t('tab_bank')||'Bank',val:'→',onclickAttr:"selectCard('bank')"},
+    {id:'assets',icon:LICON('building-2',18),name:t('assets')||'Assets',val:'→',onclickAttr:"selectCard('assets')"},
+    {id:'reports',icon:LICON('bar-chart-3',18),name:t('tab_reports')||'Reports',val:'→',onclickAttr:"selectCard('reports')"}
   ];
   const allAccountCards=[
-    {id:'documents',icon:'📁',name:t('documents')||'Documents',alertText:unreadDocs>0?unreadDocs+' new':null,val:unreadDocs,onclickAttr:"selectCard('documents')"},
-    {id:'messages',icon:'💬',name:t('messages_with_anb')||'Messages',alertText:unreadMsgs>0?unreadMsgs+' new':null,val:unreadMsgs,onclickAttr:"selectCard('messages')"},
-    {id:'security',icon:'🔒',name:t('security')||'Security',val:c?.totpEnabled?'✓ 2FA':'→',onclickAttr:"selectCard('security')"},
-    {id:'employees',icon:'👥',name:t('employees')||'Employees',val:(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length,onclickAttr:"selectCard('employees')"},
-    {id:'client_activity',icon:'📜',name:t('activity_log_title')||'Activity Log',val:'→',onclickAttr:"selectCard('client_activity')"}
+    {id:'documents',icon:LICON('folder',18),name:t('documents')||'Documents',alertText:unreadDocs>0?unreadDocs+' new':null,val:unreadDocs,onclickAttr:"selectCard('documents')"},
+    {id:'messages',icon:LICON('message-circle',18),name:t('messages_with_anb')||'Messages',alertText:unreadMsgs>0?unreadMsgs+' new':null,val:unreadMsgs,onclickAttr:"selectCard('messages')"},
+    {id:'security',icon:LICON('lock',18),name:t('security')||'Security',val:c?.totpEnabled?'✓ 2FA':'→',onclickAttr:"selectCard('security')"},
+    {id:'employees',icon:LICON('users',18),name:t('employees')||'Employees',val:(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length,onclickAttr:"selectCard('employees')"},
+    {id:'client_activity',icon:LICON('scroll-text',18),name:t('activity_log_title')||'Activity Log',val:'→',onclickAttr:"selectCard('client_activity')"}
   ];
   // ⚠️ تحكُّم الأدمن بما يراه هذا العميل تحديدًا (يشمل الآن كل التبويبات، لا
   // الأساسية الثمانية فقط) - يعتمد على isCardVisibleForClient التي تفرّق بين
@@ -5918,7 +5990,7 @@ function rClientSecurity(el,cid){
   </div>
 
   <div class="card" style="max-width:480px;margin-bottom:16px">
-    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🔑 ${t('change_password')||'Change Password'}</span></div>
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('key',16)} ${t('change_password')||'Change Password'}</span></div>
     <div style="padding:16px">
       <div class="fg"><label>${t('new_password')||'New password'}</label><input type="password" id="client-new-pw1" autocomplete="new-password" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
       <div class="fg"><label>${t('confirm_password')||'Confirm new password'}</label><input type="password" id="client-new-pw2" autocomplete="new-password" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
@@ -5927,7 +5999,7 @@ function rClientSecurity(el,cid){
   </div>
 
   <div class="card" style="max-width:480px">
-    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🔒 ${t('two_factor_auth')||'Two-Factor Authentication (2FA)'}</span></div>
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('lock',16)} ${t('two_factor_auth')||'Two-Factor Authentication (2FA)'}</span></div>
     <div style="padding:16px">
       <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">${t('two_factor_hint')||'Adds an extra security step at login using an authenticator app (Google Authenticator, Microsoft Authenticator, Authy...)'}</div>
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px;background:var(--gr1);border:2px solid ${c?.totpEnabled?'#2d7a4f':'var(--gr2)'};border-radius:8px">
@@ -6861,7 +6933,7 @@ function rInvoices(el,cid){
   <div id="inv-table-container"></div>
   ${isAdmin()&&(S.recurring||[]).filter(r=>r.cid===cid).length?`
   <div class="card">
-    <div class="ch"><span class="ct">🔁 Recurring invoice schedules</span></div>
+    <div class="ch"><span class="ct">${LICON('repeat',16)} Recurring invoice schedules</span></div>
     <table><thead><tr><th>${t('rec_desc')}</th><th>${t('rec_amount')}</th><th>${t('rec_freq')}</th><th>${t('rec_next')}</th><th>${t('rec_status')}</th><th></th></tr></thead>
     <tbody>${(S.recurring||[]).filter(r=>r.cid===cid).map(r=>`<tr>
       <td>${escapeHtml(r.desc)}</td>
@@ -8543,7 +8615,7 @@ function rMessages(el,cid){
       </button>
     </div>
     <div class="card">
-      <div class="ch"><span class="ct">💬 ${t('messages_with_anb')}</span></div>
+      <div class="ch"><span class="ct">${LICON('message-circle',16)} ${t('messages_with_anb')}</span></div>
       ${S.messages.filter(m=>m.cid===cid&&!m.deleted).length>0?`<input type="text" id="msg-search-client" placeholder="🔍 ${t('search')||'Search'} messages..." value="${escapeHtml(S.msgSearchTerm||'')}"
         oninput="S.msgSearchTerm=this.value;renderContent()"
         style="margin:10px 16px 0;padding:8px 12px;border:1px solid var(--gr1);border-radius:6px;background:var(--white);color:var(--t1);font-size:12px;width:calc(100% - 32px)"/>`:''}
@@ -8718,7 +8790,7 @@ function rEmployeeDetail(el){
   </div>
 
   <div class="card" style="margin-bottom:14px">
-    <div class="ch"><span class="ct">👤 ${escapeHtml(emp.name)}</span>${isActive?'<span class="bdg b-paid">Active</span>':'<span class="bdg b-draft">Ended '+FD(emp.endDate||'')+'</span>'}</div>
+    <div class="ch"><span class="ct">${LICON('user',16)} ${escapeHtml(emp.name)}</span>${isActive?'<span class="bdg b-paid">Active</span>':'<span class="bdg b-draft">Ended '+FD(emp.endDate||'')+'</span>'}</div>
     <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
       <div><span style="color:var(--t3)">${t('job_title')||'Job Title'}:</span> <b>${emp.jobTitle||'—'}</b></div>
       <div><span style="color:var(--t3)">BSN:</span> <b>${emp.bsn||'—'}</b></div>
@@ -8733,7 +8805,7 @@ function rEmployeeDetail(el){
   </div>
 
   <div class="card" style="margin-bottom:14px">
-    <div class="ch"><span class="ct">💰 ${t('salary')||'Salary'} & ${t('benefits')||'Benefits'}</span></div>
+    <div class="ch"><span class="ct">${LICON('banknote',16)} ${t('salary')||'Salary'} & ${t('benefits')||'Benefits'}</span></div>
     <div style="padding:16px;font-size:11px;color:var(--t2);line-height:2">
       <div>✅ ${t('vacation_money')||'Vacation allowance'}: 8% (${emp.vacationMoneyPayout==='monthly'?(t('paid_monthly')||'paid monthly'):(t('accrued_paid_may')||'accrued, paid in May')})</div>
       ${emp.has13thMonth?`<div>✅ ${t('has_13th_month')||'13th month salary'} (${t('13th_month_hint')?(t('accrued_paid_may')||'accrued, paid in December'):'accrued, paid in December'})</div>`:''}
@@ -8809,7 +8881,7 @@ function renderEmployeesList(searchTerm,statusFilter){
   employees=sortRows(employees,sortState.field,sortState.dir);
 
   container.innerHTML=`<div class="card">
-    <div class="ch"><span class="ct">👥 ${t('employees')||'Employees'} (${employees.length})</span></div>
+    <div class="ch"><span class="ct">${LICON('users',16)} ${t('employees')||'Employees'} (${employees.length})</span></div>
     ${employees.length===0?`<div class="empty">👥 ${term||statusFilter?(t('no_results')||'No matching employees'):(t('no_employees_yet')||'No employees added yet')}</div>`:
     employees.map(e=>{
       const salaryLabel=e.salaryType==='hourly'?FMT(e.hourlyRate)+'/hr':FMT(e.grossMonthlySalary)+'/mo';
@@ -9515,7 +9587,7 @@ function renderDebtorsTable(cid,searchTerm){
   const reArgs=`'${cid}',document.getElementById('deb-search')?.value||''`;
 
   container.innerHTML=`<div class="card">
-    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💵 ${isANBSelfBook?'Debtors (Subscribing Clients)':'Debtors (Customers)'}</span>
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('circle-dollar-sign',16)} ${isANBSelfBook?'Debtors (Subscribing Clients)':'Debtors (Customers)'}</span>
       ${isANBSelfBook?'':'<button class="btn btn-p btn-xs" onclick="openContactModal(null,\'debtor\')">➕ Add Debtor</button>'}
     </div>
     ${debtors.length===0?`<div class="empty">💵 ${term?(t('no_results')||'No matching debtors'):'No debtors yet'}</div>`:
@@ -9576,7 +9648,7 @@ function renderCreditorsTable(cid,searchTerm){
   const reArgs=`'${cid}',document.getElementById('cred-search')?.value||''`;
 
   container.innerHTML=`<div class="card">
-    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🤝 Creditors (Suppliers)</span>
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('handshake',16)} Creditors (Suppliers)</span>
       <button class="btn btn-p btn-xs" onclick="openContactModal(null,'creditor')">➕ Add Creditor</button>
     </div>
     ${creditors.length===0?`<div class="empty">🤝 ${term?(t('no_results')||'No matching creditors'):'No creditors yet'}</div>`:
@@ -9790,7 +9862,7 @@ function rSettings(el){
   if(settingsTab==='company'){
     html+=`
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🏢 ${t('set_company_info')||'Company Identity'}</span></div>
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('building-2',16)} ${t('set_company_info')||'Company Identity'}</span></div>
       <div style="padding:14px">
         <div class="sec-desc">${t('set_company_identity_hint')||'Shown on invoices, contracts, and client-facing documents.'}</div>
         <div class="fr2">
@@ -9807,7 +9879,7 @@ function rSettings(el){
     </div>
 
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🧾 ${t('set_tax_banking')||'Tax & Banking Details'}</span></div>
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('receipt',16)} ${t('set_tax_banking')||'Tax & Banking Details'}</span></div>
       <div style="padding:14px">
         <div class="sec-desc">${t('set_tax_banking_hint')||'Used on invoices and your BTW filings — keep these exact and up to date.'}</div>
         <div class="fr2">
@@ -9819,7 +9891,7 @@ function rSettings(el){
     </div>
 
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🛡️ ${t('set_insurance_title')||'Professional Indemnity Insurance'}</span></div>
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('shield',16)} ${t('set_insurance_title')||'Professional Indemnity Insurance'}</span></div>
       <div style="padding:14px">
         <div class="sec-desc">${t('set_insurance_hint')||'Referenced in the liability clause of client service agreements. Leave blank until you have an actual policy.'}</div>
         <div class="fr2">
@@ -9837,7 +9909,7 @@ function rSettings(el){
     </div>
 
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💳 ${t('subscription_packages')||'Subscription Packages'}</span></div>
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('credit-card',16)} ${t('subscription_packages')||'Subscription Packages'}</span></div>
       <div style="padding:14px">
         <div class="sec-desc" style="margin-bottom:10px">${t('subscription_packages_hint')||'Customize the plans offered when creating client contracts.'}</div>
         <button class="btn btn-xs" onclick="openManageServicePackages()">⚙️ ${t('manage_packages')||'Manage Packages'}</button>
@@ -9850,7 +9922,7 @@ function rSettings(el){
     const activeAdmins=S.admins.filter(admin=>!admin.deleted);
     html+=`
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🔑 ${t('manage_admins')||'Administrators'} (${activeAdmins.length})</span></div>
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('key',16)} ${t('manage_admins')||'Administrators'} (${activeAdmins.length})</span></div>
       <div style="padding:14px">
         <div class="sec-desc">${t('manage_admins_hint')||'People who can manage every client, settings, and billing.'}</div>
         ${activeAdmins.map(admin=>`
@@ -9868,7 +9940,7 @@ function rSettings(el){
     </div>
 
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">➕ ${t('add_new_admin')||'Add New Admin'}</span></div>
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('plus',16)} ${t('add_new_admin')||'Add New Admin'}</span></div>
       <div style="padding:14px">
         <div class="fr2">
           <div class="fg"><label>${t('lbl_name')||'Name'}</label><input type="text" id="new-admin-name" placeholder="${t('admin_name_ph')||'Admin name'}"/></div>
@@ -9890,7 +9962,7 @@ function rSettings(el){
     const activeClients=S.clients.filter(c=>!c.deleted&&!c.isANBSelf);
     html+=`
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${curAdmin?.totpEnabled?'#2d7a4f':theme.border}"><span class="ct">🔒 ${t('two_factor_auth')||'Two-Factor Authentication (2FA)'}</span></div>
+      <div class="ch" style="border-bottom:3px solid ${curAdmin?.totpEnabled?'#2d7a4f':theme.border}"><span class="ct">${LICON('lock',16)} ${t('two_factor_auth')||'Two-Factor Authentication (2FA)'}</span></div>
       <div style="padding:14px">
         <div class="sec-desc">${t('two_factor_hint')||'Adds an extra security step at login using an authenticator app (Google Authenticator, Microsoft Authenticator, Authy...)'}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -9901,7 +9973,7 @@ function rSettings(el){
     </div>
 
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">👨‍💼 ${t('admin_access_credentials')||'Admin Access Credentials'}</span></div>
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('user-cog',16)} ${t('admin_access_credentials')||'Admin Access Credentials'}</span></div>
       <div style="padding:14px">
         ${activeAdmins.map(admin=>`
           <div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--gr2)">
@@ -9916,7 +9988,7 @@ function rSettings(el){
     </div>
 
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">👤 ${t('client_access_credentials')||'Client Access Credentials'}</span></div>
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('user',16)} ${t('client_access_credentials')||'Client Access Credentials'}</span></div>
       <div style="padding:14px">
         <div class="sec-desc">${t('client_pw_self_service_hint')||'Clients set their own password via "Forgot password" on login.'}</div>
         ${activeClients.map(c=>`
@@ -9939,7 +10011,7 @@ function rSettings(el){
     const selectedClient=deletableClients.find(c=>c.id===selectedId);
     html+=`
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💾 ${t('backups_title')||'Backups'}</span></div>
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('save',16)} ${t('backups_title')||'Backups'}</span></div>
       <div style="padding:14px">
         <div class="sec-desc">${t('backups_hint')||'Automatic daily backup of your entire database, stored completely separately from it. Use this to recover from an accidental or unexpected data problem.'}</div>
         <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -10636,7 +10708,7 @@ function rTrash(el){
     <button class="btn btn-xs" onclick="setTab('archived')" style="margin-left:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid ${theme.border};color:${theme.border};border-radius:4px;cursor:pointer">📦 ${t('view_archived')||'View archived records (after 30 days)'} →</button>
   </div>
   <div class="card">
-    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🗑️ ${t('trash_title')||'Trash'} (${items.length})</span></div>
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('trash-2',16)} ${t('trash_title')||'Trash'} (${items.length})</span></div>
     ${items.length===0?`<div class="empty">🗑️ ${t('trash_empty')||'Trash is empty'}</div>`:
     `<table style="width:100%;font-size:12px">
       <thead><tr style="border-bottom:2px solid var(--gr2)"><th style="padding:8px;text-align:left">${t('lbl_description')||'Item'}</th><th style="padding:8px;text-align:left">${t('lbl_customer')||'Client'}</th><th style="padding:8px;text-align:left">${t('trash_days_left')||'Days left'}</th><th style="text-align:right;padding:8px">${t('actions')||'Actions'}</th></tr></thead>
@@ -10718,7 +10790,7 @@ function rArchived(el){
   groups.map(g=>`
     <div class="card" style="margin-bottom:14px">
       <div class="ch" style="border-bottom:3px solid ${theme.border};display:flex;justify-content:space-between;align-items:center">
-        <span class="ct">🏢 ${escapeHtml(g.name)}</span>
+        <span class="ct">${LICON('building-2',16)} ${escapeHtml(g.name)}</span>
         <span style="font-size:11px;color:var(--t3)">${g.items.length} ${t('items')||'item(s)'}</span>
       </div>
       <table style="width:100%;font-size:12px">
@@ -10816,7 +10888,7 @@ function renderAuditLog(searchTerm,actionFilter,filterCid){
   const actionColors={create:'#2d7a4f',edit:'#1A4A2A',delete:'#B8860B',restore:'#4da876',plan_change:'#C89010',password_change:'#0F3025',login_failed:'#7A4A00',login_locked:'#B8860B',security:'#0F3025'};
 
   container.innerHTML=`<div class="card">
-    <div class="ch" style="border-bottom:3px solid #0A2218"><span class="ct">📜 ${filterCid?(t('activity_log_title')||'Activity Log'):(t('audit_log_title')||'Audit Log')} (${log.length})</span>
+    <div class="ch" style="border-bottom:3px solid #0A2218"><span class="ct">${LICON('scroll-text',16)} ${filterCid?(t('activity_log_title')||'Activity Log'):(t('audit_log_title')||'Audit Log')} (${log.length})</span>
     </div>
     ${log.length===0?`<div class="empty">📜 ${term||actionFilter?(t('no_results')||'No matching entries'):(t('audit_log_empty')||'No activity recorded yet')}</div>`:
     `<table style="width:100%;font-size:12px">
@@ -11208,7 +11280,7 @@ function rEditClient(el,cid){
     <div id="editclient-tab-info" style="display:flex;flex-direction:column;gap:12px">
 
       <div class="card">
-        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">👤 ${t('company_and_contact')||'Company & Contact'}</span></div>
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('user',16)} ${t('company_and_contact')||'Company & Contact'}</span></div>
         <div style="padding:14px">
           <div class="fr2">
             <div class="fg"><label>${t('lbl_company_name')||'Company Name'} *</label><input id="cf-n" value="${escapeHtml(c?.name||'')}" placeholder="${t('company_name_ph')||'Your company name'}"/></div>
@@ -11225,7 +11297,7 @@ function rEditClient(el,cid){
       </div>
 
       <div class="card">
-        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🧾 ${t('tax_banking')||'Tax & Banking'}</span></div>
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('receipt',16)} ${t('tax_banking')||'Tax & Banking'}</span></div>
         <div style="padding:14px">
           <div class="fr2">
             <div class="fg"><label>${t('lbl_kvk')||'KVK Number'} *</label><input id="cf-k" value="${escapeHtml(c?.kvk||'')}" placeholder="12345678"/></div>
@@ -11250,7 +11322,7 @@ function rEditClient(el,cid){
       </div>
 
       <div class="card">
-        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">📍 ${t('address_information')||'Address'}</span></div>
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('map-pin',16)} ${t('address_information')||'Address'}</span></div>
         <div style="padding:14px">
           <div class="fg"><label>${t('lbl_street_address')||'Street Address'} *</label><input id="cf-addr" value="${escapeHtml(c?.address||'')}" placeholder="Straatnaam 123"/></div>
           <div class="fr2">
@@ -11276,7 +11348,7 @@ function rEditClient(el,cid){
 
       ${cid===ANB_SELF_ID?'':`
       <div class="card">
-        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💳 ${t('billing_and_limits')||'Billing & Limits'}</span></div>
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('credit-card',16)} ${t('billing_and_limits')||'Billing & Limits'}</span></div>
         <div style="padding:14px">
           <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:8px">${t('subscription_information')||'Subscription'}</div>
           <div class="fr2">
@@ -11304,7 +11376,7 @@ function rEditClient(el,cid){
 
       ${cid===ANB_SELF_ID?'':`
       <div class="card">
-        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💳 ${t('electronic_payment')||'Electronic Payment'}</span></div>
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('credit-card',16)} ${t('electronic_payment')||'Electronic Payment'}</span></div>
         <div style="padding:14px">
           <div class="sec-desc">${t('electronic_payment_hint')||'Let customers pay by card or bank app via a QR code in the Cashier screen. Connect the client\u2019s own payment provider account — their money goes directly to them, not through ANB.'}</div>
           <div class="fg">
@@ -11333,7 +11405,7 @@ function rEditClient(el,cid){
       `}
 
       <div class="card">
-        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🎛️ ${t('client_customization')||'Client Customization'}</span></div>
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('sliders-horizontal',16)} ${t('client_customization')||'Client Customization'}</span></div>
         <div style="padding:14px">
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             <div style="flex:1;min-width:160px;background:var(--gr1);border-radius:8px;padding:12px">
@@ -11372,7 +11444,7 @@ function rEditClient(el,cid){
 
       ${cid!==ANB_SELF_ID?`
       <div class="card">
-        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">📦 ${t('export_full_client_data')||'Export Full Client Data'}</span></div>
+        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('package',16)} ${t('export_full_client_data')||'Export Full Client Data'}</span></div>
         <div style="padding:14px">
           <div class="sec-desc">${t('export_full_client_data_hint')||'Get everything for this client in one file — useful if they\u2019re moving to another accountant.'}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -13092,14 +13164,14 @@ function rCashier(el,cid){
   // إما استثناء "خلل تسجيل" لا يزال بانتظار موافقة الأدمن، أو يوم مفقود لم
   // يُفسَّر بعد (يُطلَب توضيحه فورًا قبل أي شيء آخر)
   if(hasPendingCashierException(cid)){
-    el.innerHTML=backBtnHtml+`<div class="card"><div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💰 ${t('cashier_title')||'Cashier'}</span></div>
+    el.innerHTML=backBtnHtml+`<div class="card"><div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('banknote',16)} ${t('cashier_title')||'Cashier'}</span></div>
       <div class="empty">⏳ ${t('waiting_admin_approval')||'Waiting for ANB to review a recording issue before you can continue. Please check back soon.'}</div>
     </div>`;
     return;
   }
   const missingDays=getMissingCashierDays(cid);
   if(missingDays.length>0){
-    el.innerHTML=backBtnHtml+`<div class="card"><div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💰 ${t('cashier_title')||'Cashier'}</span></div>
+    el.innerHTML=backBtnHtml+`<div class="card"><div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('banknote',16)} ${t('cashier_title')||'Cashier'}</span></div>
       <div class="empty">📅 ${t('missing_days_pending')||'Please explain a missing day before continuing.'}</div>
     </div>`;
     openExplainMissingDay(cid,missingDays[0]);
@@ -13115,7 +13187,7 @@ function rCashier(el,cid){
 
   el.innerHTML=backBtnHtml+`<div class="card">
     <div class="ch" style="border-bottom:3px solid ${theme.border};display:flex;justify-content:space-between;align-items:center">
-      <span class="ct">💰 ${t('cashier_title')||'Cashier'}</span>
+      <span class="ct">${LICON('banknote',16)} ${t('cashier_title')||'Cashier'}</span>
       <button class="btn btn-xs" onclick="openManageCashierServices('${cid}')" title="${t('manage_services')||'Manage Services'}">⚙️ ${t('manage_my_services')||'My Services'}</button>
     </div>
     ${services.length===0?`<div class="empty">
@@ -13450,7 +13522,7 @@ function rCashierLog(el,cid){
   const entries=(S.cashierLog||[]).filter(e=>e.cid===cid);
   const pendingExceptions=(S.cashierDayExceptions||[]).filter(e=>e.cid===cid&&e.status==='pending_admin');
   el.innerHTML=backBtnHtml+`<div class="card">
-    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">🧾 ${t('cashier_log_title')||'Cashier Log'} — ${c?.name||''}</span>
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('receipt',16)} ${t('cashier_log_title')||'Cashier Log'} — ${c?.name||''}</span>
     </div>
     ${pendingExceptions.length>0?`<div style="margin:12px 14px;padding:12px;background:rgba(184,134,11,0.08);border:1.5px solid #B8860B;border-radius:10px">
       <div style="font-size:11px;font-weight:700;color:#8a6410;margin-bottom:8px">⏳ ${t('pending_exceptions_title')||'Missing Days Awaiting Your Review'}</div>
@@ -13526,7 +13598,7 @@ function rCashLedger(el,cid){
     <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
   </div>
   <div class="card">
-    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">💵 ${t('cash_ledger_title')||'Cash Ledger'}${isAdmin()?' — '+(c?.name||''):''}</span>
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('circle-dollar-sign',16)} ${t('cash_ledger_title')||'Cash Ledger'}${isAdmin()?' — '+(c?.name||''):''}</span>
       <button class="btn btn-xs" onclick="openRecordPersonalDrawingCash('${cid}')" title="${t('personal_drawing_hint')||'Money taken from the cash till for personal use'}">🏠 ${t('personal_drawing')||'Personal Drawing'}</button>
     </div>
     <div class="kgrid">
@@ -14184,7 +14256,7 @@ function rReportEmployeeFinancial(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💰 '+(t('rep_emp_financial_title')||'Employee Financial Report')+' — '+(c?.name||'')+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'emp_financial\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'emp_financial\',\''+cid+'\')">📊 Excel</button></div></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">'+LICON('banknote',16)+' '+(t('rep_emp_financial_title')||'Employee Financial Report')+' — '+(c?.name||'')+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'emp_financial\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'emp_financial\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
 
   html+='<div class="kgrid">';
@@ -14281,7 +14353,7 @@ function rReportEmployeeStats(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">📊 '+(t('rep_emp_stats_title')||'Employee Statistics Report')+' — '+(c?.name||'')+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'emp_stats\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'emp_stats\',\''+cid+'\')">📊 Excel</button></div></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">'+LICON('bar-chart-3',16)+' '+(t('rep_emp_stats_title')||'Employee Statistics Report')+' — '+(c?.name||'')+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'emp_stats\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'emp_stats\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
 
   html+='<div class="kgrid">';
@@ -14370,7 +14442,7 @@ function rReportCashFlow(el,cid){
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
   html+=renderReportPeriodSelector();
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💵 Cash Flow Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'cashflow\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'cashflow\',\''+cid+'\')">📊 Excel</button></div></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">'+LICON('circle-dollar-sign',16)+' Cash Flow Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'cashflow\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'cashflow\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
   
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
@@ -14385,11 +14457,8 @@ function rReportCashFlow(el,cid){
   html+='</div>';
   html+='</div>';
   
-  html+='<div style="padding:12px;background:linear-gradient(135deg,'+(netCashFlow>=0?'rgba(45,122,79,0.15) 0%,rgba(77,168,118,0.15)':'rgba(184,134,11,0.15) 0%,rgba(212,165,32,0.15)')+' 100%);border-radius:var(--r);border-left:4px solid '+(netCashFlow>=0?'#2d7a4f':'#B8860B')+';margin-bottom:16px">';
-  html+='<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600">';
-  html+='<span>Net Cash Flow</span><span style="color:'+(netCashFlow>=0?'#2d7a4f':'#B8860B')+'">'+(netCashFlow>=0?'+':'')+FMT(netCashFlow)+'</span>';
-  html+='</div>';
-  html+='</div>';
+  html+=heroNumberBox('NET CASH FLOW',(netCashFlow>=0?'+':'')+FMT(netCashFlow),netCashFlow>=0?'#2d7a4f':'#B8860B',netCashFlow>=0?'rgba(45,122,79,0.15)':'rgba(184,134,11,0.15)');
+  html+='<div style="margin-bottom:16px"></div>';
   
   html+='<div style="margin-bottom:16px">';
   html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #2d7a4f">Inflow Breakdown</div>';
@@ -14431,7 +14500,7 @@ function rReportSummary(el,cid){
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
   html+=renderReportPeriodSelector();
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">📊 '+(t('rep_summary')||'Summary')+' — '+c?.name+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'summary\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'summary\',\''+cid+'\')">📊 Excel</button></div></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">'+LICON('bar-chart-3',16)+' '+(t('rep_summary')||'Summary')+' — '+c?.name+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'summary\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'summary\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px">';
   html+='<div style="background:rgba(46,125,50,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--green)">';
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💰 Revenue</div>';
@@ -14473,12 +14542,12 @@ function rReportPL(el,cid){
   html+=renderReportPeriodSelector();
   html+='</div>';
   html+='<div class="card" style="border:2px solid '+theme.border+'">';
-  html+='<div class="ch" style="background:'+theme.bg+'"><span class="ct">📈 Profit & Loss Statement</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'pl\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'pl\',\''+cid+'\')">📊 Excel</button></div></div>';
+  html+='<div class="ch" style="background:'+theme.bg+'"><span class="ct">'+LICON('trending-up',16)+' Profit & Loss Statement</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'pl\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'pl\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
   html+='<div style="margin-bottom:20px">';
   html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gold)">REVENUE</div>';
-  html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)">';
-  html+='<span>Total Revenue</span><span style="font-weight:600;color:var(--green)">'+FMT(revenue)+'</span>';
+  html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;border-bottom:1px solid var(--gr2)">';
+  html+='<span>Total Revenue</span><span style="color:var(--green)">'+FMT(revenue)+'</span>';
   html+='</div></div>';
   
   html+='<div style="margin-bottom:20px">';
@@ -14495,14 +14564,11 @@ function rReportPL(el,cid){
     html+='</div>';
   }
   
-  html+='<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:12px;font-weight:600;border-top:1px solid var(--gr2);margin-top:8px">';
+  html+='<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:13px;font-weight:700;border-top:1px solid var(--gr2);margin-top:8px">';
   html+='<span>Total Expenses</span><span style="color:var(--red)">-'+FMT(expenses)+'</span>';
   html+='</div></div>';
   
-  html+='<div style="padding:12px;background:'+(profit>=0?'rgba(46,125,50,.1)':'rgba(184,134,11,.1)')+';border-radius:var(--r);border-left:4px solid '+(profit>=0?'var(--green)':'var(--red)')+'">';
-  html+='<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600">';
-  html+='<span>NET PROFIT/LOSS</span><span style="color:'+(profit>=0?'var(--green)':'var(--red)')+'">' + FMT(profit) + '</span>';
-  html+='</div></div>';
+  html+=heroNumberBox('NET PROFIT/LOSS',FMT(profit),profit>=0?'var(--green)':'var(--red)',profit>=0?'rgba(46,125,50,.1)':'rgba(184,134,11,.1)');
   html+='</div></div></div>';
   
   el.innerHTML=html;
@@ -14553,11 +14619,9 @@ function rReportBTW(el,cid){
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
   html+=renderReportPeriodSelector();
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💰 BTW Return (VAT)</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'btw\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'btw\',\''+cid+'\')">📊 Excel</button></div></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">'+LICON('banknote',16)+' BTW Return (VAT)</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'btw\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'btw\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
-  html+='<div style="margin-bottom:16px;padding:12px;background:rgba(200,144,16,.08);border-radius:var(--r);border-left:3px solid var(--gold)">';
-  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">BTW Payable (Due)</div>';
-  html+='<div style="font-size:24px;font-weight:600;color:var(--gold)">'+FMT(btwPayable)+'</div></div>';
+  html+='<div style="margin-bottom:16px">'+heroNumberBox('BTW Payable (Due)',FMT(btwPayable),'var(--gold)','rgba(200,144,16,.08)')+'</div>';
 
   html+='<div style="margin-bottom:16px">';
   html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gold)">1. VAT OUTPUT (Sales / Prestaties binnenland)</div>';
@@ -14720,7 +14784,7 @@ function rReportTaxLiability(el,cid){
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px">← '+t('back_to_reports')+'</button>';
   html+=renderReportPeriodSelector();
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">🏛️ '+(t('rep_tax_liability_title')||'Tax Liability')+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'tax_liability\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'tax_liability\',\''+cid+'\')">📊 Excel</button></div></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">'+LICON('landmark',16)+' '+(t('rep_tax_liability_title')||'Tax Liability')+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'tax_liability\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'tax_liability\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
 
   html+='<div style="margin-bottom:16px">';
@@ -14783,11 +14847,9 @@ function rReportDebtors(el,cid){
 
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">💵 Debtors Aging Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'debtors\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'debtors\',\''+cid+'\')">📊 Excel</button></div></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">'+LICON('circle-dollar-sign',16)+' Debtors Aging Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'debtors\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'debtors\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
-  html+='<div style="margin-bottom:16px;padding:12px;background:'+theme.bg+';border-radius:var(--r);border-left:3px solid '+theme.border+'">';
-  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Outstanding</div>';
-  html+='<div style="font-size:24px;font-weight:600;color:'+theme.border+'">'+FMT(total)+'</div></div>';
+  html+='<div style="margin-bottom:16px">'+heroNumberBox('Total Outstanding',FMT(total),theme.border,theme.bg)+'</div>';
 
   // ملخص أعمار الديون حسب الفترة
   html+='<div style="margin-bottom:16px">';
@@ -14826,11 +14888,9 @@ function rReportExpenses(el,cid){
   let html='<div style="padding:16px">';
   html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s" onmouseover="this.style.background=\''+theme.accent+'\';this.style.color=\''+theme.text+'\'" onmouseout="this.style.background=\''+theme.border+'\';this.style.color=\''+theme.textDefault+'\'">← '+t('back_to_reports')+'</button>';
   html+=renderReportPeriodSelector();
-  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">🧾 Expenses Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'expenses\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'expenses\',\''+cid+'\')">📊 Excel</button></div></div>';
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">'+LICON('receipt',16)+' Expenses Report</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'expenses\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'expenses\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
-  html+='<div style="margin-bottom:16px;padding:12px;background:rgba(184,134,11,.08);border-radius:var(--r);border-left:3px solid var(--red)">';
-  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Expenses</div>';
-  html+='<div style="font-size:24px;font-weight:600;color:var(--red)">'+FMT(total)+'</div></div>';
+  html+='<div style="margin-bottom:16px">'+heroNumberBox('Total Expenses',FMT(total),'var(--red)','rgba(184,134,11,.08)')+'</div>';
   
   html+='<div style="margin-bottom:16px">';
   html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--red)">'+t('expenses_by_category')+'</div>';
