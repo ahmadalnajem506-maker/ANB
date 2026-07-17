@@ -178,18 +178,86 @@ async function handleRestoreBackup(request, env, cors) {
 
 /* ═══════════════════════ D1 helpers ═══════════════════════ */
 
+// ⭐⭐ إعادة بناء معمارية التخزين: بدل خانة JSON واحدة ضخمة تحوي كل شيء (كل
+// عميل، كل فاتورة، كل مصروف...)، أصبحت البيانات موزَّعة على جداول منفصلة لكل
+// نوع (tbl_clients، tbl_invoices، tbl_expenses...)، كل سجل بصف مستقل. هذا يحل
+// مشكلتين حقيقيتين ستظهران مع نمو عدد العملاء: (1) سرعة القراءة/الكتابة -
+// عملية بسيطة لن تعود تنقل كامل بيانات الشركة في كل مرة، (2) تضارب التعديلات
+// المتزامنة - تعديل سجلَّين مختلفين الآن لا يتنافسان على نفس الصف إطلاقًا.
+//
+// ⚠️ الدالتان أدناه تحافظان على نفس التوقيع الخارجي تمامًا (نفس المدخلات
+// والمخرجات) الذي كانتا عليه في النظام القديم - فكل الكود الذي يستخدمهما
+// (١٧ موضعًا عبر هذا الملف، بما فيها منطق الدمج المعقَّد في handleSyncPost)
+// يستمر بالعمل بلا أي تعديل إطلاقًا. فقط ما بداخل الدالتين تغيَّر.
 async function fetchCloudPayload(env) {
-  const row = await env.DB.prepare('SELECT payload, updated_at FROM anb_data WHERE id = ?').bind(CLOUD_ROW_ID).first();
-  if (!row) return null;
-  try { return { payload: JSON.parse(row.payload), updated_at: row.updated_at }; } catch { return null; }
+  try {
+    const payload = {};
+    let maxUpdatedAt = 0;
+
+    for (const key of ALL_ARRAY_TABLE_KEYS) {
+      const table = 'tbl_' + key;
+      const { results } = await env.DB.prepare(`SELECT payload, updated_at FROM ${table}`).all();
+      payload[key] = results.map((r) => JSON.parse(r.payload));
+      results.forEach((r) => { if (r.updated_at > maxUpdatedAt) maxUpdatedAt = r.updated_at; });
+    }
+
+    const settingsRow = await env.DB.prepare(`SELECT payload, updated_at FROM tbl_settings WHERE id = 'main'`).first();
+    payload.settings = settingsRow ? JSON.parse(settingsRow.payload) : {};
+    if (settingsRow && settingsRow.updated_at > maxUpdatedAt) maxUpdatedAt = settingsRow.updated_at;
+
+    return { payload, updated_at: maxUpdatedAt || Date.now() };
+  } catch (err) {
+    return null;
+  }
 }
+
 async function writeCloudPayload(env, payloadObj) {
-  const json = JSON.stringify(payloadObj);
   const now = Date.now();
-  await env.DB.prepare(
-    `INSERT INTO anb_data (id, payload, updated_at) VALUES (?, ?, ?)
+  const statements = [];
+
+  for (const key of ALL_ARRAY_TABLE_KEYS) {
+    const table = 'tbl_' + key;
+    const items = (payloadObj[key] || []).filter((it) => it && it.id);
+    const currentIds = new Set(items.map((it) => it.id));
+
+    // ⚠️ حذف أي سجل كان موجودًا سابقًا في هذا الجدول ولم يعد موجودًا في
+    // القائمة الواردة (يعني حُذف فعليًا) - يحافظ هذا على تطابق الجدول تمامًا
+    // مع ما يُفترض أن يحتويه، تمامًا كما كان الاستبدال الكامل للمصفوفة يفعل
+    // في النظام القديم القائم على خانة واحدة
+    const { results: existingRows } = await env.DB.prepare(`SELECT id FROM ${table}`).all();
+    for (const row of existingRows) {
+      if (!currentIds.has(row.id)) {
+        statements.push(env.DB.prepare(`DELETE FROM ${table} WHERE id = ?`).bind(row.id));
+      }
+    }
+
+    for (const item of items) {
+      const json = JSON.stringify(item);
+      if (ALL_SINGLE_TABLE_KEYS.includes(key)) {
+        statements.push(env.DB.prepare(
+          `INSERT INTO ${table} (id, payload, updated_at) VALUES (?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`
+        ).bind(item.id, json, now));
+      } else {
+        const cid = item.cid || null;
+        statements.push(env.DB.prepare(
+          `INSERT INTO ${table} (id, cid, payload, updated_at) VALUES (?, ?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET cid = excluded.cid, payload = excluded.payload, updated_at = excluded.updated_at`
+        ).bind(item.id, cid, json, now));
+      }
+    }
+  }
+
+  statements.push(env.DB.prepare(
+    `INSERT INTO tbl_settings (id, payload, updated_at) VALUES ('main', ?, ?)
      ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`
-  ).bind(CLOUD_ROW_ID, json, now).run();
+  ).bind(JSON.stringify(payloadObj.settings || {}), now));
+
+  // ⚠️ D1 batch() تُنفِّذ كل الاستعلامات في جولة واحدة (أسرع بكثير من استعلام
+  // منفصل لكل جدول)، لكنها ليست معاملة (transaction) ذرِّية كاملة عبر جداول
+  // متعددة - مقبول هنا لأن كل جدول مستقل تمامًا عن الآخر منطقيًا
+  if (statements.length > 0) await env.DB.batch(statements);
+
   return now;
 }
 
@@ -209,6 +277,13 @@ const SENSITIVE_ACCOUNT_FIELDS = ['passwordHash', 'passwordSalt', 'totpSecret'];
 // المصفوفات المرتبطة بعميل واحد عبر حقل cid (غير clients/admins، اللذين
 // يُصفَّيان بقاعدة مختلفة تعتمد على id مباشرة بدل cid)
 const CLIENT_SCOPED_ARRAY_KEYS = ['invoices', 'expenses', 'hours', 'docs', 'messages', 'journal', 'bankTx', 'recurring', 'yearClosings', 'contracts', 'assets', 'serviceAgreements', 'importBatches', 'employees', 'contacts', 'cashPayments', 'cashierLog', 'cashierDayExceptions', 'supplierOcrProfiles', 'auditLog'];
+// ⚠️ يجب أن يُعرَّفا هنا تحديدًا - بعد CLIENT_SCOPED_ARRAY_KEYS مباشرة وليس
+// قبله - وإلا يقع الكود في نفس فخ "استخدام قبل التعريف" (TDZ) الذي واجهناه
+// سابقًا مع كلمة async اليتيمة: أي ثابت من نوع const يُحسَب فورًا لحظة
+// تحميل الملف، فلو استخدم متغيرًا لم يُعرَّف بعد نصيًا، يرمي خطأً فوريًا
+// يُسقِط تشغيل الـWorker بالكامل من هذه النقطة فصاعدًا
+const ALL_SINGLE_TABLE_KEYS = ['clients', 'admins']; // جداول تُطابَق بـid مباشرة (لا cid)
+const ALL_ARRAY_TABLE_KEYS = [...ALL_SINGLE_TABLE_KEYS, ...CLIENT_SCOPED_ARRAY_KEYS];
 
 function stripSensitiveFields(account) {
   if (!account || typeof account !== 'object') return account;
@@ -235,12 +310,41 @@ function filterPayloadForSync(payload, role, aid) {
   return filtered;
 }
 
+// ⚠️⚠️ إصلاح خلل فقدان بيانات حقيقي: كانت المزامنة تستبدل مصفوفة العميل
+// كاملة بما يملكه المتصفح محليًا وقت الحفظ - فلو كان لدى المتصفح نسخة قديمة
+// (لم تلحق بتغيير حدث من جهاز آخر بين الجلبين)، كان الحفظ يمحو ذلك التغيير
+// الآخر صامتًا بلا أي تحذير. الحل: الدمج الآن بالمعرِّف (upsert) - كل سجل
+// موجود في قاعدة البيانات ولم يُرسِله المتصفح الحالي يبقى كما هو، بدل افتراض
+// أن غيابه من الإرسال الحالي يعني حذفه (التطبيق أصلًا يعتمد الحذف الناعم عبر
+// حقل deleted:true وليس إزالة العنصر من المصفوفة، فهذا الافتراض آمن تمامًا)
+function mergeArrayByIdUpsert(existingArray, incomingArray) {
+  const result = [...(existingArray || [])];
+  const idxById = new Map();
+  result.forEach((item, idx) => { if (item && item.id != null) idxById.set(item.id, idx); });
+  (Array.isArray(incomingArray) ? incomingArray : []).forEach((incomingItem) => {
+    if (!incomingItem || incomingItem.id == null) return;
+    const idx = idxById.get(incomingItem.id);
+    if (idx !== undefined) {
+      result[idx] = incomingItem;
+    } else {
+      result.push(incomingItem);
+      idxById.set(incomingItem.id, result.length - 1);
+    }
+  });
+  return result;
+}
+
 // دمج آمن عند الكتابة: يستبدل فقط سجلات هذا العميل تحديدًا ضمن مصفوفة
-// مرتبطة بـcid، ويُبقي كل سجلات بقية العملاء كما هي في قاعدة البيانات تمامًا
+// مرتبطة بـcid، ويُبقي كل سجلات بقية العملاء كما هي في قاعدة البيانات تمامًا.
+// ⚠️ داخل نطاق هذا العميل نفسه، الدمج الآن بالمعرِّف (upsert) أيضًا بدل
+// الاستبدال الكامل - لنفس سبب mergeArrayByIdUpsert أعلاه (مثلًا لو فتح
+// العميل التطبيق من جهازين مختلفين في نفس الوقت تقريبًا)
 function mergeClientScopedArray(existingArray, incomingArray, aid) {
   const others = (existingArray || []).filter((item) => !item || item.cid !== aid);
-  const ownIncoming = (Array.isArray(incomingArray) ? incomingArray : []).filter((item) => item && item.cid === aid);
-  return [...others, ...ownIncoming];
+  const existingOwn = (existingArray || []).filter((item) => item && item.cid === aid);
+  const incomingOwn = (Array.isArray(incomingArray) ? incomingArray : []).filter((item) => item && item.cid === aid);
+  const mergedOwn = mergeArrayByIdUpsert(existingOwn, incomingOwn);
+  return [...others, ...mergedOwn];
 }
 
 /* ═══════════════════════ ⚠️ حماية الفترات المُقفَلة - تطبيقها في الخادم أيضًا ═══════════════════════
@@ -757,10 +861,22 @@ async function handleSyncPost(request, env, cors) {
           const existingAccount = existingList.find((a) => a && a.id === incomingAccount.id);
           return mergeAccount(existingAccount, incomingAccount);
         });
+        // ⚠️ الأدمن هنا أيضًا قد يرسل نسخة لا تحوي حسابًا أضافه أدمن آخر للتو -
+        // احتفظ بأي حساب موجود في القاعدة ولم يُذكَر إطلاقًا في الوارد
+        const incomingIds = new Set((incomingPayload[key] || []).map((a) => a && a.id));
+        existingList.forEach((existingAccount) => {
+          if (existingAccount && !incomingIds.has(existingAccount.id)) merged[key].push(existingAccount);
+        });
       } else if (APPEND_ONLY_ARRAY_KEYS.includes(key)) {
         merged[key] = mergeAppendOnlyArray(existingPayload[key], incomingPayload[key], null);
+      } else if (key === 'settings') {
+        merged[key] = incomingPayload[key]; // كائن مفرد (وليس مصفوفة) - لا معنى لدمج بالمعرِّف هنا
       } else {
-        merged[key] = incomingPayload[key];
+        // ⚠️⚠️ إصلاح خلل فقدان بيانات: كان هذا يستبدل المصفوفة كاملة بما لدى
+        // متصفح هذا الأدمن محليًا - فلو كانت لديه نسخة أقدم من تعديل حدث من
+        // جهاز/أدمن آخر بين آخر جلب وهذا الحفظ، كان يُمحى صامتًا بلا تحذير.
+        // الآن: دمج بالمعرِّف (upsert) بدل الاستبدال الكامل.
+        merged[key] = mergeArrayByIdUpsert(existingPayload[key], incomingPayload[key]);
       }
     });
   } else {
