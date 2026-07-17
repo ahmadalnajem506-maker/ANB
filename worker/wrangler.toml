@@ -20,6 +20,12 @@ binding = "DB"
 database_name = "anb-db"
 database_id = "2e7f1481-efe1-41e5-af58-d7333f352322"
 
+# ⭐ مساعد ذكاء اصطناعي للأدمن - Cloudflare Workers AI (مجاني ضمن حدود
+# سخية: 10,000 طلب/يوم) - لا يحتاج مفتاح API خارجي أو حسابًا منفصلًا،
+# يعمل مباشرة عبر نفس الـWorker
+[ai]
+binding = "AI"
+
 # ⭐ نسخ احتياطي تلقائي يوميًا الساعة 03:00 UTC (04:00/05:00 بتوقيت هولندا
 # حسب التوقيت الصيفي/الشتوي) - وقت هادئ جدًا لأي استخدام فعلي للتطبيق
 [triggers]
@@ -43,3 +49,6 @@ id = "1099137ea04c42d183839cada971f206"
 binding = "DB"
 database_name = "anb-db-staging"
 database_id = "c2413c6e-fe46-4d43-818a-cf75147b5729"
+
+[env.staging.ai]
+binding = "AI"
