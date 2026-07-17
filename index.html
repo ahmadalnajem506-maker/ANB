@@ -596,31 +596,6 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
   body.rtl .sidebar { position: relative; transform: none; left: auto; right: auto; }
 }
 
-/* ⭐ تحويل تلقائي لأي جدول عادي لبطاقات مكدَّسة على شاشات الموبايل الضيقة -
-   بلا حاجة لتعديل كود بناء أي جدول فرديًا. يعتمد على data-label المُضافة
-   تلقائيًا عبر enhanceTablesForMobile() (تُستدعى مع كل رسم شاشة) والتي
-   تنسخ نص عنوان كل عمود إلى الخلية المقابلة - فقط على العرض الضيق، الجدول
-   العادي (بأعمدته) يبقى كما هو تمامًا على الشاشات الأوسع (تابلت/كمبيوتر).
-   لا تأثير إطلاقًا على تصدير Excel/PDF، فتلك تُبنى من البيانات الخام مباشرة. */
-@media (max-width: 640px) {
-  table.mobile-cards thead { display: none; }
-  table.mobile-cards, table.mobile-cards tbody, table.mobile-cards tr, table.mobile-cards td {
-    display: block; width: 100%;
-  }
-  table.mobile-cards tr {
-    background: var(--white); border: 1px solid var(--gr2); border-radius: var(--r);
-    padding: 10px 12px; margin-bottom: 8px; box-shadow: var(--sh);
-  }
-  table.mobile-cards td {
-    display: flex; justify-content: space-between; align-items: center; gap: 10px;
-    padding: 5px 0; border: none !important; text-align: right;
-  }
-  table.mobile-cards td::before {
-    content: attr(data-label); font-size: 10px; font-weight: 700; color: var(--t3);
-    text-transform: uppercase; letter-spacing: .3px; text-align: left; flex-shrink: 0;
-  }
-  table.mobile-cards td:empty, table.mobile-cards td:not([data-label])::before { content: none; }
-}
 
 /* ⭐ حركات نافذة الترحيب (Onboarding) وقائمة "ابدأ هنا" */
 @keyframes obSlideIn {
@@ -3607,27 +3582,6 @@ function renderApp(){
   // بين Android وiPhone. يُستدعى بعد كل إعادة رسم لأن المحتوى يُستبدَل بالكامل
   // في كل مرة (innerHTML)، فأي أيقونة سابقة تُفقَد وتحتاج تحويلًا من جديد
   if(window.lucide)lucide.createIcons();
-  enhanceTablesForMobile();
-}
-
-// ⭐ يجعل أي جدول عادي (بأي عدد أعمدة، في أي شاشة) يتحوَّل تلقائيًا لبطاقات
-// مكدَّسة على شاشات الموبايل الضيقة - بلا حاجة لتعديل كود بناء الجدول نفسه
-// إطلاقًا. يعمل بقراءة نص كل عمود من <th> ونسخه كـ data-label لكل خلية
-// مقابلة، ثم CSS خاص (.mobile-cards) يتكفَّل بالباقي. يُستدعى مع كل رسم
-// شاشة، فأي جدول جديد يُعالَج تلقائيًا بلا أي جهد إضافي مستقبلًا.
-function enhanceTablesForMobile(){
-  document.querySelectorAll('table').forEach(table=>{
-    if(table.dataset.mobileEnhanced)return; // لا تُعالَج نفس بيانات الجدول مرتين إن لم تتغيّر
-    const headerCells=table.querySelectorAll('thead th');
-    if(headerCells.length===0)return; // جداول بلا thead (نادرة) تبقى كما هي
-    const labels=Array.from(headerCells).map(th=>th.textContent.trim());
-    table.querySelectorAll('tbody tr').forEach(tr=>{
-      Array.from(tr.children).forEach((td,i)=>{
-        if(labels[i])td.setAttribute('data-label',labels[i]);
-      });
-    });
-    table.classList.add('mobile-cards');
-  });
 }
 // ⭐ مساعد بسيط لتوليد كود أيقونة Lucide بحجم مُحدَّد - يُستخدَم بدل كتابة
 // إيموجي مباشرة في أماكن العرض الرئيسية (القائمة الجانبية، بطاقات لوحة
