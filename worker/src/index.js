@@ -85,6 +85,10 @@ export default {
       if (url.pathname === '/admin/backup-now' && request.method === 'POST') return await handleBackupNow(request, env, cors);
       if (url.pathname === '/admin/backups' && request.method === 'GET') return await handleListBackups(request, env, cors);
       if (url.pathname === '/admin/restore-backup' && request.method === 'POST') return await handleRestoreBackup(request, env, cors);
+      if (url.pathname === '/payment/save-provider' && request.method === 'POST') return await handleSavePaymentProvider(request, env, cors);
+      if (url.pathname === '/payment/provider-status' && request.method === 'GET') return await handlePaymentProviderStatus(request, env, cors);
+      if (url.pathname === '/payment/create' && request.method === 'POST') return await handleCreatePayment(request, env, cors);
+      if (url.pathname === '/payment/status' && request.method === 'GET') return await handlePaymentStatus(request, env, cors, url);
       return json({ error: 'Not found' }, 404, cors);
     } catch (err) {
       return json({ error: 'Internal error', detail: String(err && err.message || err) }, 500, cors);
@@ -128,6 +132,140 @@ async function performBackup(env, trigger) {
 
 // محمي بتوكن أدمن - يسمح بأخذ نسخة احتياطية فورية (مثلًا قبل إجراء خطر أو
 // تغيير جوهري)، بدل انتظار الموعد التلقائي التالي
+/* ═══════════════════════ نظام الدفع الإلكتروني ═══════════════════════ */
+// ⭐ طبقة تجريد عامة لمزوِّدي الدفع - Mollie مُفعَّل بالكامل الآن (الأنسب
+// لهولندا: توثيق ممتاز، iDEAL مدعوم أصلًا). Stripe وSumUp لهما نفس البنية
+// جاهزة أدناه (حالة إضافية في كل دالة + استدعاء API مكافئ) لإضافتهما لاحقًا
+// بلا أي تعديل على الواجهة أو منطق الحفظ - فقط تنفيذ استدعاء API الفعلي.
+const SUPPORTED_PAYMENT_PROVIDERS = {
+  mollie: { name: 'Mollie', live: true },
+  stripe: { name: 'Stripe', live: false },
+  sumup: { name: 'SumUp', live: false },
+};
+
+// حفظ إعداد مزوِّد الدفع لعميل مُحدَّد - العميل يعدِّل حسابه هو فقط، الأدمن يعدِّل أي عميل
+async function handleSavePaymentProvider(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { cid, provider, apiKey } = body || {};
+  if (!cid || !provider) return json({ error: 'cid and provider are required' }, 400, cors);
+  if (!SUPPORTED_PAYMENT_PROVIDERS[provider]) return json({ error: 'Unsupported provider' }, 400, cors);
+  if (auth.payload.at === 'client' && auth.payload.aid !== cid) {
+    return json({ error: 'Clients can only configure their own account' }, 403, cors);
+  }
+
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
+  const clients = cloud.payload.clients || [];
+  const idx = clients.findIndex((c) => c && c.id === cid);
+  if (idx === -1) return json({ error: 'Client not found' }, 404, cors);
+  clients[idx].paymentProvider = provider;
+  // ⚠️ لا نُفرِّغ مفتاحًا محفوظًا سابقًا لمجرد أن هذا الطلب لم يتضمَّن مفتاحًا
+  // جديدًا (مثلًا: تعديل عادي دون نية تغيير المفتاح نفسه)
+  if (apiKey) clients[idx].paymentApiKey = apiKey;
+  await writeCloudPayload(env, cloud.payload);
+  return json({ ok: true }, 200, cors);
+}
+
+// حالة الإعداد الحالية فقط (هل مُهيَّأ ولأي مزوِّد) - لا يُعاد المفتاح نفسه أبدًا
+async function handlePaymentProviderStatus(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  const reqUrl = new URL(request.url);
+  const cid = reqUrl.searchParams.get('cid');
+  if (!cid) return json({ error: 'cid is required' }, 400, cors);
+  if (auth.payload.at === 'client' && auth.payload.aid !== cid) {
+    return json({ error: 'Clients can only view their own configuration' }, 403, cors);
+  }
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
+  const client = (cloud.payload.clients || []).find((c) => c && c.id === cid);
+  if (!client) return json({ error: 'Client not found' }, 404, cors);
+  return json({
+    provider: client.paymentProvider || null,
+    configured: !!(client.paymentProvider && client.paymentApiKey),
+  }, 200, cors);
+}
+
+// إنشاء طلب دفع فعلي عبر مزوِّد العميل المحفوظ، يُعاد رابط دفع (يتحوَّل لرمز QR بالواجهة)
+async function handleCreatePayment(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { cid, amount, description } = body || {};
+  if (!cid || !amount) return json({ error: 'cid and amount are required' }, 400, cors);
+  if (auth.payload.at === 'client' && auth.payload.aid !== cid) {
+    return json({ error: 'Clients can only create payments for their own account' }, 403, cors);
+  }
+
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
+  const client = (cloud.payload.clients || []).find((c) => c && c.id === cid);
+  if (!client || !client.paymentProvider || !client.paymentApiKey) {
+    return json({ error: 'no_provider_configured', message: 'No payment provider configured for this account yet.' }, 400, cors);
+  }
+
+  const originHeader = request.headers.get('Origin') || env.ALLOWED_ORIGIN || 'https://anb-1cw.pages.dev';
+
+  if (client.paymentProvider === 'mollie') {
+    try {
+      const res = await fetch('https://api.mollie.com/v2/payments', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + client.paymentApiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: { currency: 'EUR', value: Number(amount).toFixed(2) },
+          description: description || 'Payment',
+          redirectUrl: originHeader,
+          method: 'ideal,creditcard,bancontact,applepay',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return json({ error: 'provider_error', message: data.detail || 'Payment provider rejected the request' }, 502, cors);
+      return json({ paymentId: data.id, checkoutUrl: data._links && data._links.checkout && data._links.checkout.href }, 200, cors);
+    } catch (err) {
+      return json({ error: 'provider_error', message: String(err && err.message || err) }, 502, cors);
+    }
+  }
+
+  // ⚠️ Stripe / SumUp: نقطة التوسعة - أضِف حالة هنا تستدعي API المزوِّد
+  // المكافئة (Stripe Checkout Sessions، أو SumUp Checkouts API) وتُعيد نفس
+  // الشكل {paymentId, checkoutUrl} بالضبط - لا حاجة لتغيير أي شيء آخر
+  return json({ error: 'provider_not_implemented', message: `${SUPPORTED_PAYMENT_PROVIDERS[client.paymentProvider]?.name || client.paymentProvider} support is coming soon — Mollie is fully supported now.` }, 501, cors);
+}
+
+// التحقق من حالة دفع سابق - تُستقصى دوريًا من الواجهة حتى تصبح 'paid'
+async function handlePaymentStatus(request, env, cors, url) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  const cid = url.searchParams.get('cid');
+  const paymentId = url.searchParams.get('paymentId');
+  if (!cid || !paymentId) return json({ error: 'cid and paymentId are required' }, 400, cors);
+  if (auth.payload.at === 'client' && auth.payload.aid !== cid) {
+    return json({ error: 'Clients can only check their own payments' }, 403, cors);
+  }
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
+  const client = (cloud.payload.clients || []).find((c) => c && c.id === cid);
+  if (!client || !client.paymentApiKey) return json({ error: 'no_provider_configured' }, 400, cors);
+
+  if (client.paymentProvider === 'mollie') {
+    try {
+      const res = await fetch('https://api.mollie.com/v2/payments/' + paymentId, {
+        headers: { 'Authorization': 'Bearer ' + client.paymentApiKey },
+      });
+      const data = await res.json();
+      if (!res.ok) return json({ error: 'provider_error' }, 502, cors);
+      return json({ status: data.status }, 200, cors); // 'open' | 'paid' | 'expired' | 'canceled' | 'failed'...
+    } catch (err) {
+      return json({ error: 'provider_error', message: String(err && err.message || err) }, 502, cors);
+    }
+  }
+  return json({ error: 'provider_not_implemented' }, 501, cors);
+}
+
 async function handleBackupNow(request, env, cors) {
   const auth = await requireValidToken(request, env);
   if (!auth.ok) return json({ error: auth.error }, 401, cors);
@@ -178,18 +316,86 @@ async function handleRestoreBackup(request, env, cors) {
 
 /* ═══════════════════════ D1 helpers ═══════════════════════ */
 
+// ⭐⭐ إعادة بناء معمارية التخزين: بدل خانة JSON واحدة ضخمة تحوي كل شيء (كل
+// عميل، كل فاتورة، كل مصروف...)، أصبحت البيانات موزَّعة على جداول منفصلة لكل
+// نوع (tbl_clients، tbl_invoices، tbl_expenses...)، كل سجل بصف مستقل. هذا يحل
+// مشكلتين حقيقيتين ستظهران مع نمو عدد العملاء: (1) سرعة القراءة/الكتابة -
+// عملية بسيطة لن تعود تنقل كامل بيانات الشركة في كل مرة، (2) تضارب التعديلات
+// المتزامنة - تعديل سجلَّين مختلفين الآن لا يتنافسان على نفس الصف إطلاقًا.
+//
+// ⚠️ الدالتان أدناه تحافظان على نفس التوقيع الخارجي تمامًا (نفس المدخلات
+// والمخرجات) الذي كانتا عليه في النظام القديم - فكل الكود الذي يستخدمهما
+// (١٧ موضعًا عبر هذا الملف، بما فيها منطق الدمج المعقَّد في handleSyncPost)
+// يستمر بالعمل بلا أي تعديل إطلاقًا. فقط ما بداخل الدالتين تغيَّر.
 async function fetchCloudPayload(env) {
-  const row = await env.DB.prepare('SELECT payload, updated_at FROM anb_data WHERE id = ?').bind(CLOUD_ROW_ID).first();
-  if (!row) return null;
-  try { return { payload: JSON.parse(row.payload), updated_at: row.updated_at }; } catch { return null; }
+  try {
+    const payload = {};
+    let maxUpdatedAt = 0;
+
+    for (const key of ALL_ARRAY_TABLE_KEYS) {
+      const table = 'tbl_' + key;
+      const { results } = await env.DB.prepare(`SELECT payload, updated_at FROM ${table}`).all();
+      payload[key] = results.map((r) => JSON.parse(r.payload));
+      results.forEach((r) => { if (r.updated_at > maxUpdatedAt) maxUpdatedAt = r.updated_at; });
+    }
+
+    const settingsRow = await env.DB.prepare(`SELECT payload, updated_at FROM tbl_settings WHERE id = 'main'`).first();
+    payload.settings = settingsRow ? JSON.parse(settingsRow.payload) : {};
+    if (settingsRow && settingsRow.updated_at > maxUpdatedAt) maxUpdatedAt = settingsRow.updated_at;
+
+    return { payload, updated_at: maxUpdatedAt || Date.now() };
+  } catch (err) {
+    return null;
+  }
 }
+
 async function writeCloudPayload(env, payloadObj) {
-  const json = JSON.stringify(payloadObj);
   const now = Date.now();
-  await env.DB.prepare(
-    `INSERT INTO anb_data (id, payload, updated_at) VALUES (?, ?, ?)
+  const statements = [];
+
+  for (const key of ALL_ARRAY_TABLE_KEYS) {
+    const table = 'tbl_' + key;
+    const items = (payloadObj[key] || []).filter((it) => it && it.id);
+    const currentIds = new Set(items.map((it) => it.id));
+
+    // ⚠️ حذف أي سجل كان موجودًا سابقًا في هذا الجدول ولم يعد موجودًا في
+    // القائمة الواردة (يعني حُذف فعليًا) - يحافظ هذا على تطابق الجدول تمامًا
+    // مع ما يُفترض أن يحتويه، تمامًا كما كان الاستبدال الكامل للمصفوفة يفعل
+    // في النظام القديم القائم على خانة واحدة
+    const { results: existingRows } = await env.DB.prepare(`SELECT id FROM ${table}`).all();
+    for (const row of existingRows) {
+      if (!currentIds.has(row.id)) {
+        statements.push(env.DB.prepare(`DELETE FROM ${table} WHERE id = ?`).bind(row.id));
+      }
+    }
+
+    for (const item of items) {
+      const json = JSON.stringify(item);
+      if (ALL_SINGLE_TABLE_KEYS.includes(key)) {
+        statements.push(env.DB.prepare(
+          `INSERT INTO ${table} (id, payload, updated_at) VALUES (?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`
+        ).bind(item.id, json, now));
+      } else {
+        const cid = item.cid || null;
+        statements.push(env.DB.prepare(
+          `INSERT INTO ${table} (id, cid, payload, updated_at) VALUES (?, ?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET cid = excluded.cid, payload = excluded.payload, updated_at = excluded.updated_at`
+        ).bind(item.id, cid, json, now));
+      }
+    }
+  }
+
+  statements.push(env.DB.prepare(
+    `INSERT INTO tbl_settings (id, payload, updated_at) VALUES ('main', ?, ?)
      ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`
-  ).bind(CLOUD_ROW_ID, json, now).run();
+  ).bind(JSON.stringify(payloadObj.settings || {}), now));
+
+  // ⚠️ D1 batch() تُنفِّذ كل الاستعلامات في جولة واحدة (أسرع بكثير من استعلام
+  // منفصل لكل جدول)، لكنها ليست معاملة (transaction) ذرِّية كاملة عبر جداول
+  // متعددة - مقبول هنا لأن كل جدول مستقل تمامًا عن الآخر منطقيًا
+  if (statements.length > 0) await env.DB.batch(statements);
+
   return now;
 }
 
@@ -205,10 +411,17 @@ function listFor(payload, role) {
  * الدور (فالتحقق يتم في الخادم فقط أصلًا)، وفلترة نطاق البيانات التجارية
  * ليرى كل عميل بيانات حسابه فقط عند الدور 'client'.
  */
-const SENSITIVE_ACCOUNT_FIELDS = ['passwordHash', 'passwordSalt', 'totpSecret'];
+const SENSITIVE_ACCOUNT_FIELDS = ['passwordHash', 'passwordSalt', 'totpSecret', 'paymentApiKey'];
 // المصفوفات المرتبطة بعميل واحد عبر حقل cid (غير clients/admins، اللذين
 // يُصفَّيان بقاعدة مختلفة تعتمد على id مباشرة بدل cid)
 const CLIENT_SCOPED_ARRAY_KEYS = ['invoices', 'expenses', 'hours', 'docs', 'messages', 'journal', 'bankTx', 'recurring', 'yearClosings', 'contracts', 'assets', 'serviceAgreements', 'importBatches', 'employees', 'contacts', 'cashPayments', 'cashierLog', 'cashierDayExceptions', 'supplierOcrProfiles', 'auditLog'];
+// ⚠️ يجب أن يُعرَّفا هنا تحديدًا - بعد CLIENT_SCOPED_ARRAY_KEYS مباشرة وليس
+// قبله - وإلا يقع الكود في نفس فخ "استخدام قبل التعريف" (TDZ) الذي واجهناه
+// سابقًا مع كلمة async اليتيمة: أي ثابت من نوع const يُحسَب فورًا لحظة
+// تحميل الملف، فلو استخدم متغيرًا لم يُعرَّف بعد نصيًا، يرمي خطأً فوريًا
+// يُسقِط تشغيل الـWorker بالكامل من هذه النقطة فصاعدًا
+const ALL_SINGLE_TABLE_KEYS = ['clients', 'admins']; // جداول تُطابَق بـid مباشرة (لا cid)
+const ALL_ARRAY_TABLE_KEYS = [...ALL_SINGLE_TABLE_KEYS, ...CLIENT_SCOPED_ARRAY_KEYS];
 
 function stripSensitiveFields(account) {
   if (!account || typeof account !== 'object') return account;
@@ -235,12 +448,41 @@ function filterPayloadForSync(payload, role, aid) {
   return filtered;
 }
 
+// ⚠️⚠️ إصلاح خلل فقدان بيانات حقيقي: كانت المزامنة تستبدل مصفوفة العميل
+// كاملة بما يملكه المتصفح محليًا وقت الحفظ - فلو كان لدى المتصفح نسخة قديمة
+// (لم تلحق بتغيير حدث من جهاز آخر بين الجلبين)، كان الحفظ يمحو ذلك التغيير
+// الآخر صامتًا بلا أي تحذير. الحل: الدمج الآن بالمعرِّف (upsert) - كل سجل
+// موجود في قاعدة البيانات ولم يُرسِله المتصفح الحالي يبقى كما هو، بدل افتراض
+// أن غيابه من الإرسال الحالي يعني حذفه (التطبيق أصلًا يعتمد الحذف الناعم عبر
+// حقل deleted:true وليس إزالة العنصر من المصفوفة، فهذا الافتراض آمن تمامًا)
+function mergeArrayByIdUpsert(existingArray, incomingArray) {
+  const result = [...(existingArray || [])];
+  const idxById = new Map();
+  result.forEach((item, idx) => { if (item && item.id != null) idxById.set(item.id, idx); });
+  (Array.isArray(incomingArray) ? incomingArray : []).forEach((incomingItem) => {
+    if (!incomingItem || incomingItem.id == null) return;
+    const idx = idxById.get(incomingItem.id);
+    if (idx !== undefined) {
+      result[idx] = incomingItem;
+    } else {
+      result.push(incomingItem);
+      idxById.set(incomingItem.id, result.length - 1);
+    }
+  });
+  return result;
+}
+
 // دمج آمن عند الكتابة: يستبدل فقط سجلات هذا العميل تحديدًا ضمن مصفوفة
-// مرتبطة بـcid، ويُبقي كل سجلات بقية العملاء كما هي في قاعدة البيانات تمامًا
+// مرتبطة بـcid، ويُبقي كل سجلات بقية العملاء كما هي في قاعدة البيانات تمامًا.
+// ⚠️ داخل نطاق هذا العميل نفسه، الدمج الآن بالمعرِّف (upsert) أيضًا بدل
+// الاستبدال الكامل - لنفس سبب mergeArrayByIdUpsert أعلاه (مثلًا لو فتح
+// العميل التطبيق من جهازين مختلفين في نفس الوقت تقريبًا)
 function mergeClientScopedArray(existingArray, incomingArray, aid) {
   const others = (existingArray || []).filter((item) => !item || item.cid !== aid);
-  const ownIncoming = (Array.isArray(incomingArray) ? incomingArray : []).filter((item) => item && item.cid === aid);
-  return [...others, ...ownIncoming];
+  const existingOwn = (existingArray || []).filter((item) => item && item.cid === aid);
+  const incomingOwn = (Array.isArray(incomingArray) ? incomingArray : []).filter((item) => item && item.cid === aid);
+  const mergedOwn = mergeArrayByIdUpsert(existingOwn, incomingOwn);
+  return [...others, ...mergedOwn];
 }
 
 /* ═══════════════════════ ⚠️ حماية الفترات المُقفَلة - تطبيقها في الخادم أيضًا ═══════════════════════
@@ -757,10 +999,22 @@ async function handleSyncPost(request, env, cors) {
           const existingAccount = existingList.find((a) => a && a.id === incomingAccount.id);
           return mergeAccount(existingAccount, incomingAccount);
         });
+        // ⚠️ الأدمن هنا أيضًا قد يرسل نسخة لا تحوي حسابًا أضافه أدمن آخر للتو -
+        // احتفظ بأي حساب موجود في القاعدة ولم يُذكَر إطلاقًا في الوارد
+        const incomingIds = new Set((incomingPayload[key] || []).map((a) => a && a.id));
+        existingList.forEach((existingAccount) => {
+          if (existingAccount && !incomingIds.has(existingAccount.id)) merged[key].push(existingAccount);
+        });
       } else if (APPEND_ONLY_ARRAY_KEYS.includes(key)) {
         merged[key] = mergeAppendOnlyArray(existingPayload[key], incomingPayload[key], null);
+      } else if (key === 'settings') {
+        merged[key] = incomingPayload[key]; // كائن مفرد (وليس مصفوفة) - لا معنى لدمج بالمعرِّف هنا
       } else {
-        merged[key] = incomingPayload[key];
+        // ⚠️⚠️ إصلاح خلل فقدان بيانات: كان هذا يستبدل المصفوفة كاملة بما لدى
+        // متصفح هذا الأدمن محليًا - فلو كانت لديه نسخة أقدم من تعديل حدث من
+        // جهاز/أدمن آخر بين آخر جلب وهذا الحفظ، كان يُمحى صامتًا بلا تحذير.
+        // الآن: دمج بالمعرِّف (upsert) بدل الاستبدال الكامل.
+        merged[key] = mergeArrayByIdUpsert(existingPayload[key], incomingPayload[key]);
       }
     });
   } else {
