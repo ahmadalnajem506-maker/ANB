@@ -3567,6 +3567,61 @@ function renderApp(){
 // ⭐ زر مساعدة عائم دائم الظهور للعميل (وليس فقط في الداشبورد) - بالضبط
 // لحالة "أنا الآن في هذه الشاشة تحديدًا ونسيت كيف أفعل كذا" التي وصفها
 // العميل - لا حاجة للعودة للوحة الرئيسية أولًا لإيجاد المساعدة
+// ⭐ يجعل زرًا عائمًا قابلًا للسحب لأي موضع بالشاشة (بدل موضع ثابت قد يُغطِّي
+// تفصيلة مهمة) - يتذكر الموضع المُختار عبر localStorage، ويُميِّز بين "نقرة"
+// عادية (تُشغِّل onclick) و"سحب" فعلي (لا يُشغِّل onclick) عبر قياس المسافة
+// المقطوعة، ويُبقي الزر ضمن حدود الشاشة دائمًا
+function makeButtonDraggable(btn,storageKey){
+  const saved=localStorage.getItem(storageKey);
+  if(saved){
+    try{
+      const pos=JSON.parse(saved);
+      btn.style.left=pos.left+'px';
+      btn.style.top=pos.top+'px';
+      btn.style.right='auto';
+      btn.style.bottom='auto';
+    }catch(e){}
+  }
+  let startX,startY,startLeft,startTop,dragging=false,moved=false;
+  const onDown=(e)=>{
+    const point=e.touches?e.touches[0]:e;
+    dragging=true;moved=false;
+    startX=point.clientX;startY=point.clientY;
+    const rect=btn.getBoundingClientRect();
+    startLeft=rect.left;startTop=rect.top;
+    e.preventDefault();
+  };
+  const onMove=(e)=>{
+    if(!dragging)return;
+    const point=e.touches?e.touches[0]:e;
+    const dx=point.clientX-startX,dy=point.clientY-startY;
+    if(Math.abs(dx)>6||Math.abs(dy)>6)moved=true;
+    if(moved){
+      let newLeft=startLeft+dx,newTop=startTop+dy;
+      newLeft=Math.max(4,Math.min(window.innerWidth-btn.offsetWidth-4,newLeft));
+      newTop=Math.max(4,Math.min(window.innerHeight-btn.offsetHeight-4,newTop));
+      btn.style.left=newLeft+'px';btn.style.top=newTop+'px';
+      btn.style.right='auto';btn.style.bottom='auto';
+    }
+  };
+  const onUp=()=>{
+    if(!dragging)return;
+    dragging=false;
+    if(moved){
+      const rect=btn.getBoundingClientRect();
+      localStorage.setItem(storageKey,JSON.stringify({left:rect.left,top:rect.top}));
+    }
+  };
+  btn.addEventListener('mousedown',onDown);
+  btn.addEventListener('touchstart',onDown,{passive:false});
+  window.addEventListener('mousemove',onMove);
+  window.addEventListener('touchmove',onMove,{passive:false});
+  window.addEventListener('mouseup',onUp);
+  window.addEventListener('touchend',onUp);
+  // ⚠️ يمنع onclick من التشغيل عندما كانت الحركة الأخيرة سحبًا فعليًا وليست نقرة
+  btn.addEventListener('click',(e)=>{if(moved){e.stopPropagation();e.preventDefault();moved=false;}},true);
+}
+
 function renderFloatingHelpButton(){
   let btn=document.getElementById('floating-help-btn');
   if(S.role!=='client'||!S.currentClient){
@@ -3575,10 +3630,11 @@ function renderFloatingHelpButton(){
     btn=document.createElement('button');
     btn.id='floating-help-btn';
     btn.setAttribute('aria-label','Help');
-    btn.style.cssText='position:fixed;bottom:78px;right:16px;z-index:9990;width:48px;height:48px;border-radius:50%;background:#0A2218;border:2px solid #C89010;color:#FFD700;font-size:20px;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;display:flex;align-items:center;justify-content:center';
+    btn.style.cssText='position:fixed;bottom:78px;right:16px;z-index:9990;width:48px;height:48px;border-radius:50%;background:#0A2218;border:2px solid #C89010;color:#FFD700;font-size:20px;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:grab;display:flex;align-items:center;justify-content:center;touch-action:none';
     btn.textContent='❓';
     btn.onclick=()=>showHelpCenter(S.currentClient);
     document.body.appendChild(btn);
+    makeButtonDraggable(btn,'anb_help_btn_pos');
   }
 
   // ⭐ زر مساعد ذكاء اصطناعي عائم للأدمن فقط - لحالات محاسبية/ضريبية/قانونية
@@ -3590,10 +3646,11 @@ function renderFloatingHelpButton(){
     aiBtn=document.createElement('button');
     aiBtn.id='floating-ai-assistant-btn';
     aiBtn.setAttribute('aria-label','AI Assistant');
-    aiBtn.style.cssText='position:fixed;bottom:78px;right:16px;z-index:9990;width:48px;height:48px;border-radius:50%;background:#0A2218;border:2px solid #C89010;color:#FFD700;font-size:20px;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;display:flex;align-items:center;justify-content:center';
+    aiBtn.style.cssText='position:fixed;bottom:78px;right:16px;z-index:9990;width:48px;height:48px;border-radius:50%;background:#0A2218;border:2px solid #C89010;color:#FFD700;font-size:20px;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:grab;display:flex;align-items:center;justify-content:center;touch-action:none';
     aiBtn.textContent='🤖';
     aiBtn.onclick=()=>showAdminAssistant();
     document.body.appendChild(aiBtn);
+    makeButtonDraggable(aiBtn,'anb_ai_btn_pos');
   }
 }
 
