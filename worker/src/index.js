@@ -140,7 +140,7 @@ async function performBackup(env, trigger) {
 const SUPPORTED_PAYMENT_PROVIDERS = {
   mollie: { name: 'Mollie', live: true },
   stripe: { name: 'Stripe', live: false },
-  sumup: { name: 'SumUp', live: false },
+  sumup: { name: 'SumUp', live: true },
 };
 
 // حفظ إعداد مزوِّد الدفع لعميل مُحدَّد - العميل يعدِّل حسابه هو فقط، الأدمن يعدِّل أي عميل
@@ -149,7 +149,7 @@ async function handleSavePaymentProvider(request, env, cors) {
   if (!auth.ok) return json({ error: auth.error }, 401, cors);
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
-  const { cid, provider, apiKey } = body || {};
+  const { cid, provider, apiKey, merchantCode } = body || {};
   if (!cid || !provider) return json({ error: 'cid and provider are required' }, 400, cors);
   if (!SUPPORTED_PAYMENT_PROVIDERS[provider]) return json({ error: 'Unsupported provider' }, 400, cors);
   if (auth.payload.at === 'client' && auth.payload.aid !== cid) {
@@ -165,6 +165,9 @@ async function handleSavePaymentProvider(request, env, cors) {
   // ⚠️ لا نُفرِّغ مفتاحًا محفوظًا سابقًا لمجرد أن هذا الطلب لم يتضمَّن مفتاحًا
   // جديدًا (مثلًا: تعديل عادي دون نية تغيير المفتاح نفسه)
   if (apiKey) clients[idx].paymentApiKey = apiKey;
+  // ⭐ بعض المزوِّدين (SumUp) يحتاجون معرِّفًا إضافيًا غير سرّي (رمز التاجر)
+  // بجانب المفتاح - يُحفَظ مباشرة بلا حاجة لحمايته كسرّ
+  if (merchantCode !== undefined) clients[idx].paymentMerchantCode = merchantCode;
   await writeCloudPayload(env, cloud.payload);
   return json({ ok: true }, 200, cors);
 }
@@ -230,10 +233,39 @@ async function handleCreatePayment(request, env, cors) {
     }
   }
 
-  // ⚠️ Stripe / SumUp: نقطة التوسعة - أضِف حالة هنا تستدعي API المزوِّد
-  // المكافئة (Stripe Checkout Sessions، أو SumUp Checkouts API) وتُعيد نفس
-  // الشكل {paymentId, checkoutUrl} بالضبط - لا حاجة لتغيير أي شيء آخر
-  return json({ error: 'provider_not_implemented', message: `${SUPPORTED_PAYMENT_PROVIDERS[client.paymentProvider]?.name || client.paymentProvider} support is coming soon — Mollie is fully supported now.` }, 501, cors);
+  // ⭐ SumUp - Hosted Checkout: SumUp يستضيف صفحة الدفع بنفسه (نفس مبدأ Mollie)،
+  // لكنه يحتاج merchant_code إضافيًا بجانب مفتاح API (رمز حساب التاجر نفسه،
+  // وليس سرًّا يجب حمايته بنفس درجة المفتاح، لذا يُحفَظ كحقل عادي)
+  if (client.paymentProvider === 'sumup') {
+    if (!client.paymentMerchantCode) {
+      return json({ error: 'no_provider_configured', message: 'SumUp requires a Merchant Code in addition to the API key — please add it in the client\'s payment settings.' }, 400, cors);
+    }
+    try {
+      const checkoutRef = 'anb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+      const res = await fetch('https://api.sumup.com/v0.1/checkouts', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + client.paymentApiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          checkout_reference: checkoutRef,
+          amount: Number(amount),
+          currency: 'EUR',
+          merchant_code: client.paymentMerchantCode,
+          description: description || 'Payment',
+          redirect_url: originHeader,
+          hosted_checkout: { enabled: true },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return json({ error: 'provider_error', message: (data && (data.message || data.error_message)) || 'Payment provider rejected the request' }, 502, cors);
+      return json({ paymentId: data.id, checkoutUrl: data.hosted_checkout_url }, 200, cors);
+    } catch (err) {
+      return json({ error: 'provider_error', message: String(err && err.message || err) }, 502, cors);
+    }
+  }
+
+  // ⚠️ Stripe: نقطة التوسعة - أضِف حالة هنا تستدعي Stripe Checkout Sessions
+  // وتُعيد نفس الشكل {paymentId, checkoutUrl} بالضبط - لا حاجة لتغيير أي شيء آخر
+  return json({ error: 'provider_not_implemented', message: `${SUPPORTED_PAYMENT_PROVIDERS[client.paymentProvider]?.name || client.paymentProvider} support is coming soon — Mollie and SumUp are fully supported now.` }, 501, cors);
 }
 
 // التحقق من حالة دفع سابق - تُستقصى دوريًا من الواجهة حتى تصبح 'paid'
@@ -259,6 +291,23 @@ async function handlePaymentStatus(request, env, cors, url) {
       const data = await res.json();
       if (!res.ok) return json({ error: 'provider_error' }, 502, cors);
       return json({ status: data.status }, 200, cors); // 'open' | 'paid' | 'expired' | 'canceled' | 'failed'...
+    } catch (err) {
+      return json({ error: 'provider_error', message: String(err && err.message || err) }, 502, cors);
+    }
+  }
+
+  // ⭐ SumUp: مفردات حالة مختلفة عن Mollie (PENDING/PAID/FAILED) - نُحوِّلها
+  // لنفس المفردات التي يتوقعها كود الاستقصاء بالواجهة بالفعل، فلا حاجة لتعديل
+  // منطق الاستقصاء نفسه إطلاقًا
+  if (client.paymentProvider === 'sumup') {
+    try {
+      const res = await fetch('https://api.sumup.com/v0.1/checkouts/' + paymentId, {
+        headers: { 'Authorization': 'Bearer ' + client.paymentApiKey },
+      });
+      const data = await res.json();
+      if (!res.ok) return json({ error: 'provider_error' }, 502, cors);
+      const statusMap = { PAID: 'paid', FAILED: 'failed', EXPIRED: 'expired', PENDING: 'open' };
+      return json({ status: statusMap[data.status] || 'open' }, 200, cors);
     } catch (err) {
       return json({ error: 'provider_error', message: String(err && err.message || err) }, 502, cors);
     }
