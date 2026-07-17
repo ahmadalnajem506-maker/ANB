@@ -3589,7 +3589,10 @@ function makeButtonDraggable(btn,storageKey){
     startX=point.clientX;startY=point.clientY;
     const rect=btn.getBoundingClientRect();
     startLeft=rect.left;startTop=rect.top;
-    e.preventDefault();
+    // ⚠️ لا نستدعي preventDefault هنا إطلاقًا - فعله فور بداية اللمس يمنع
+    // المتصفح (خصوصًا على الموبايل) من توليد حدث "النقر" الطبيعي حتى لو لم
+    // يتحرك الإصبع إطلاقًا، مما كان يُعطِّل النقر العادي بالكامل. نستدعيها
+    // فقط لاحقًا في onMove، وفقط بعد تأكيد أن هذا سحب فعلي وليس مجرد نقرة
   };
   const onMove=(e)=>{
     if(!dragging)return;
@@ -3597,6 +3600,7 @@ function makeButtonDraggable(btn,storageKey){
     const dx=point.clientX-startX,dy=point.clientY-startY;
     if(Math.abs(dx)>6||Math.abs(dy)>6)moved=true;
     if(moved){
+      e.preventDefault(); // الآن فقط، بعد تأكّد أنه سحب فعلي - لمنع تمرير الصفحة أثناء السحب
       let newLeft=startLeft+dx,newTop=startTop+dy;
       newLeft=Math.max(4,Math.min(window.innerWidth-btn.offsetWidth-4,newLeft));
       newTop=Math.max(4,Math.min(window.innerHeight-btn.offsetHeight-4,newTop));
