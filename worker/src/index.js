@@ -89,6 +89,7 @@ export default {
       if (url.pathname === '/payment/provider-status' && request.method === 'GET') return await handlePaymentProviderStatus(request, env, cors);
       if (url.pathname === '/payment/create' && request.method === 'POST') return await handleCreatePayment(request, env, cors);
       if (url.pathname === '/payment/status' && request.method === 'GET') return await handlePaymentStatus(request, env, cors, url);
+      if (url.pathname === '/admin/assistant' && request.method === 'POST') return await handleAdminAssistant(request, env, cors);
       return json({ error: 'Not found' }, 404, cors);
     } catch (err) {
       return json({ error: 'Internal error', detail: String(err && err.message || err) }, 500, cors);
@@ -313,6 +314,82 @@ async function handlePaymentStatus(request, env, cors, url) {
     }
   }
   return json({ error: 'provider_not_implemented' }, 501, cors);
+}
+
+/* ═══════════════════════ مساعد الأدمن بالذكاء الاصطناعي ═══════════════════════ */
+// ⭐ يستخدم Cloudflare Workers AI (مجاني ضمن 10,000 طلب/يوم تقريبًا) - لا
+// يحتاج مفتاح API خارجي أو حساب منفصل، يعمل مباشرة عبر ربط env.AI. مخصَّص
+// لمساعدة الأدمن في حالات محاسبية/ضريبية/قانونية غامضة - وليس بديلًا عن
+// استشاري حقيقي لأي قرار نهائي فعلي.
+const ADMIN_ASSISTANT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+
+// ⭐ دليل مرجعي بميزات تطبيق ANB الفعلية - بدونه، المساعد يُخمِّن إجابات عامة
+// قد لا تطابق التطبيق إطلاقًا (خطر توجيه لزر/شاشة غير موجودة). يُحدَّث هذا
+// النص يدويًا كلما أُضيفت ميزة جوهرية جديدة للتطبيق.
+const ANB_APP_REFERENCE = `Here is how the ANB FinAdmin Pro app (the tool the admin is using) actually works, so you can give specific, accurate guidance about where and how to record things — not generic guesses:
+
+- INVOICES: Created per client with a BTW type: Normal, "BTW verlegd" (domestic reverse charge, rubriek 1e), EU B2B reverse charge (rubriek 3b), or Export outside EU (rubriek 3a). Status tracked as paid/unpaid.
+- EXPENSES: Logged per client with a category and supplier. Receipts can be photographed and read automatically via OCR (Google Vision). Reverse-charge purchases received (domestic or foreign supplier) are a distinct BTW type too.
+- ASSETS (Aandelen/Vaste Activa section): Any purchased asset (equipment, furniture, machinery, vehicle, goodwill, etc.) is logged with acquisition cost, date, and useful life (Dutch law minimum: 5 years, 10 for goodwill; anything under €450 must be expensed immediately, not depreciated). Depreciation journal entries are generated per year via a button in that screen.
+  - LOAN FINANCING: Any asset (not just vehicles) can be marked as financed by a loan, with remaining balance and annual interest rate. Logging a payment there automatically splits it into interest (tax-deductible, posted as a journal entry) and principal (reduces the loan balance only, never expensed) using standard amortization math.
+  - VEHICLES specifically: have an additional private-use percentage field and a mileage-log note, because private use above a de-minimis threshold can trigger "Bijtelling" under Dutch rules — flagged in the UI but not auto-calculated (needs a tax advisor to confirm the exact treatment).
+  - A "Loan Overview" report (under Reports, not Assets) aggregates all financed assets for a client: total outstanding, interest paid this year and all-time, and full payment history per loan.
+- CASHIER (for businesses taking walk-in payments, e.g. driving instructors, hairdressers): quick-tap configurable services with a price, paid via cash / bank transfer (pending) / split / or card-QR (Mollie or SumUp, if the client has connected their own payment provider account). A daily "Post Today" reconciliation closes the books for that day.
+- CONTRACTS & SERVICE AGREEMENTS: Per-client service contracts with signing workflow, monthly/annual rate, start/end dates.
+- REPORTS available: Summary, P&L, BTW report, Tax Liability, Cashflow, Debtors, Expenses, Employee Financial, Employee Statistics, and Loan Overview (only shown if the client has a financed asset).
+- PERIOD LOCKING: Once a year or quarter is "closed" for a client, invoices/expenses dated in that period can no longer be edited or added by the client (admin can still see the lock).
+- ROLES: Admin (ANB staff) sees everything for every client. Clients only see their own data, and can manage their own Cashier services and payment provider connection themselves.
+
+When the admin asks "how do I record X" or "where do I do Y", answer with the specific screen/section name above and the concrete steps, not a generic bookkeeping answer.`;
+
+const ADMIN_ASSISTANT_SYSTEM_PROMPT = `You are an internal assistant for ANB Financial Services, a Dutch bookkeeping and financial administration firm serving freelancers (ZZP) and small businesses. You help the firm's own admin staff think through accounting, tax (Dutch BTW/Belastingdienst rules), and general business-administration questions they run into during daily work — including questions about how to record something in their own ANB FinAdmin Pro application.
+
+${ANB_APP_REFERENCE}
+
+Important rules you must always follow:
+- You are a helpful starting point for reasoning through a question, NOT a substitute for a qualified accountant, tax advisor, or lawyer for any final decision with real financial, tax, or legal consequences.
+- Always end your answer with a brief reminder to verify anything consequential with a qualified professional before acting on it, especially for Dutch tax filings or legal matters.
+- Be concise, practical, and specific. If the question is about Dutch tax rules (BTW, KOR, aftrekbaarheid, etc.), reason from general principles you're confident about, and clearly flag anything you are not fully certain about instead of guessing confidently.
+- If a question is about where/how to do something in the app, use the app reference above precisely — do not invent screens, buttons, or fields that aren't described there.
+- If the admin writes in Arabic or Dutch, reply in the same language they used.`;
+
+async function handleAdminAssistant(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
+
+  // ⚠️ حماية بسيطة من إساءة استخدام سريعة تستنزف الحصة اليومية المجانية
+  // بالكامل خلال دقائق - ليست بديلًا عن حد Cloudflare اليومي نفسه، فقط طبقة
+  // إضافية ضد الاستهلاك السريع غير المقصود (كضغط متكرر بالخطأ)
+  const bucketKey = `assistant:${auth.payload.aid}`;
+  if (await isRateLimited(env, bucketKey)) {
+    return json({ error: 'Too many requests, please wait a bit before asking again' }, 429, cors);
+  }
+  await registerAttempt(env, bucketKey);
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { question } = body || {};
+  if (!question || typeof question !== 'string' || !question.trim()) {
+    return json({ error: 'question is required' }, 400, cors);
+  }
+  if (question.length > 2000) {
+    return json({ error: 'Question is too long (max 2000 characters)' }, 400, cors);
+  }
+
+  try {
+    const aiResponse = await env.AI.run(ADMIN_ASSISTANT_MODEL, {
+      messages: [
+        { role: 'system', content: ADMIN_ASSISTANT_SYSTEM_PROMPT },
+        { role: 'user', content: question.trim() },
+      ],
+    });
+    const answer = (aiResponse && (aiResponse.response || aiResponse.result)) || '';
+    if (!answer) return json({ error: 'assistant_error', message: 'No response from the assistant — please try again.' }, 502, cors);
+    return json({ answer }, 200, cors);
+  } catch (err) {
+    return json({ error: 'assistant_error', message: String(err && err.message || err) }, 502, cors);
+  }
 }
 
 async function handleBackupNow(request, env, cors) {
