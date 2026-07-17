@@ -326,21 +326,85 @@ const ADMIN_ASSISTANT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 // ⭐ دليل مرجعي بميزات تطبيق ANB الفعلية - بدونه، المساعد يُخمِّن إجابات عامة
 // قد لا تطابق التطبيق إطلاقًا (خطر توجيه لزر/شاشة غير موجودة). يُحدَّث هذا
 // النص يدويًا كلما أُضيفت ميزة جوهرية جديدة للتطبيق.
-const ANB_APP_REFERENCE = `Here is how the ANB FinAdmin Pro app (the tool the admin is using) actually works, so you can give specific, accurate guidance about where and how to record things — not generic guesses:
+const ANB_APP_REFERENCE = `ANB FinAdmin Pro — comprehensive reference of how the app actually works (verified against its source code), organized by section. Use this to give specific, accurate guidance about where and how to record things — never invent screens, buttons, fields, or numbers not listed here.
 
-- INVOICES: Created per client with a BTW type: Normal, "BTW verlegd" (domestic reverse charge, rubriek 1e), EU B2B reverse charge (rubriek 3b), or Export outside EU (rubriek 3a). Status tracked as paid/unpaid.
-- EXPENSES: Logged per client with a category and supplier. Receipts can be photographed and read automatically via OCR (Google Vision). Reverse-charge purchases received (domestic or foreign supplier) are a distinct BTW type too.
-- ASSETS (Aandelen/Vaste Activa section): Any purchased asset (equipment, furniture, machinery, vehicle, goodwill, etc.) is logged with acquisition cost, date, and useful life (Dutch law minimum: 5 years, 10 for goodwill; anything under €450 must be expensed immediately, not depreciated). Depreciation journal entries are generated per year via a button in that screen.
-  - LOAN FINANCING: Any asset (not just vehicles) can be marked as financed by a loan, with remaining balance and annual interest rate. Logging a payment there automatically splits it into interest (tax-deductible, posted as a journal entry) and principal (reduces the loan balance only, never expensed) using standard amortization math.
-  - VEHICLES specifically: have an additional private-use percentage field and a mileage-log note, because private use above a de-minimis threshold can trigger "Bijtelling" under Dutch rules — flagged in the UI but not auto-calculated (needs a tax advisor to confirm the exact treatment).
-  - A "Loan Overview" report (under Reports, not Assets) aggregates all financed assets for a client: total outstanding, interest paid this year and all-time, and full payment history per loan.
-- CASHIER (for businesses taking walk-in payments, e.g. driving instructors, hairdressers): quick-tap configurable services with a price, paid via cash / bank transfer (pending) / split / or card-QR (Mollie or SumUp, if the client has connected their own payment provider account). A daily "Post Today" reconciliation closes the books for that day.
-- CONTRACTS & SERVICE AGREEMENTS: Per-client service contracts with signing workflow, monthly/annual rate, start/end dates.
-- REPORTS available: Summary, P&L, BTW report, Tax Liability, Cashflow, Debtors, Expenses, Employee Financial, Employee Statistics, and Loan Overview (only shown if the client has a financed asset).
-- PERIOD LOCKING: Once a year or quarter is "closed" for a client, invoices/expenses dated in that period can no longer be edited or added by the client (admin can still see the lock).
-- ROLES: Admin (ANB staff) sees everything for every client. Clients only see their own data, and can manage their own Cashier services and payment provider connection themselves.
+INVOICES (per client):
+- BTW/VAT types on each invoice: "normal" (standard rate applied), "verlegd_nl" (domestic reverse charge, must state "BTW verlegd — art. 12 lid 3 Wet OB 1968", goes in rubriek 1e, no VAT charged), "eu_b2b" (EU business customer reverse charge, must state "BTW verlegd" + customer's valid EU VAT number, rubriek 3b), "export" (outside EU, outside scope of Dutch VAT, rubriek 3a).
+- Status tracked as paid/unpaid; can be settled by cash payment (see Cash Ledger) or matched against a bank transaction.
+- Recurring invoice schedules can be set up and stopped (already-generated invoices are kept when stopped).
 
-When the admin asks "how do I record X" or "where do I do Y", answer with the specific screen/section name above and the concrete steps, not a generic bookkeeping answer.`;
+EXPENSES (per client):
+- Has a category and supplier. Reverse-charge purchases received (domestic or foreign supplier) are their own BTW type: "verlegd_received" — no VAT was actually paid to the supplier; the rate is used only to self-assess VAT for the return (net effect €0 on the return, appears in reverse-charge-received rubrieken 2a/4b).
+- Receipts can be photographed and read automatically via OCR (Google Cloud Vision). The system "learns" per-supplier typical VAT rate and amount over time (Settings → Manage Learned Suppliers) and flags amounts that deviate significantly from what's usually paid to that supplier, asking for manual verification.
+- OCR confidence is shown per field (color-coded); low-quality scans are flagged for careful manual review.
+
+HOURS:
+- Timer-based logging (start/pause/stop & log) with a task description, or manual entry.
+- Categories are customizable per client (Settings → Manage Categories) to match their actual work (photography, consulting, construction, etc.)
+- Tracks progress toward the Dutch "urencriterium" — 1,225 hours/year required for the self-employed deduction (Zelfstandigenaftrek). The app shows whether the client is on pace and whether the criterion is currently met.
+
+CASH LEDGER (distinct from Cashier — for businesses that occasionally get paid in cash, not walk-in service businesses):
+- Record Cash Payment: settles a specific existing invoice partially or fully in cash; invoice only shows "Paid" once fully covered.
+- Daily Revenue Entry: for businesses with many small daily payments (retail counters) — one total takings figure per day (excl. BTW) instead of itemizing every sale, ready to match against the bank.
+- Cash Withdrawal / Cash Deposit: recording money moved between the bank and the physical cash till.
+- Personal Drawing: money taken from the till for personal (non-business) use — affects the owner's capital account, NOT the profit & loss statement, and is NOT a business expense.
+- A warning appears if a cash entry is backdated by more than 1 day, since the Belastingdienst expects daily logging of cash takings.
+
+CASHIER (separate feature, for walk-in/service businesses — driving instructors, hairdressers, barbers, etc.):
+- Admin (or the client themselves) configures quick-tap "Services" with a name, optional icon, and price (which can be marked editable at time of use, e.g. for a custom amount).
+- Payment methods per transaction: cash (fully paid now), bank transfer (pending, matched later), split (part cash / part pending bank), or card/QR (only shown if the client has connected their own Mollie or SumUp account — see Electronic Payment below).
+- "Post Today" performs the daily reconciliation: requires counting the actual physical cash on hand first (flags a discrepancy if it doesn't match expected), then creates one invoice for the day's takings and locks the entries. Can only be done once per day.
+- If a day has zero entries when trying to post, the client must explain why first (no activity that day, or a genuine recording error) — a "missing day exception" that requires ANB admin approval before the client can continue using the Cashier.
+- Cashier Log (admin-only screen): full history of all cashier transactions with a reprint button per entry.
+- Receipt printing: after any cashier sale, the app offers to print a physical receipt via the browser's native print dialog (works with AirPrint on iOS or any connected printer on Android) — this is not a direct Bluetooth connection, it uses standard printing so it works across devices without special hardware pairing.
+
+ELECTRONIC PAYMENT (Cashier add-on):
+- Either the admin or the client themselves can connect the CLIENT's OWN payment provider account (their money goes directly to them, never through ANB): Mollie (live) or SumUp (live, additionally requires a "Merchant Code" alongside the API key) — Stripe is not yet implemented.
+- Generates a real payment request with the provider, shown to the customer as a QR code; the app polls for payment confirmation and auto-logs the Cashier entry once paid.
+
+BANK:
+- Bank statement transactions are reconciled against invoices/expenses via suggested matches, manual search, or marking "no match needed" (internal transfers, bank fees).
+
+ASSETS (Vaste Activa — any purchased asset, not just vehicles):
+- Categories include Equipment, Furniture, Vehicle, Goodwill, and others.
+- Any asset costing under €450 (excl. BTW) must be expensed immediately as a regular expense, NOT capitalized/depreciated as an asset (Dutch tax rule) — the app flags this and suggests using "Add Expense" instead.
+- Dutch tax law's minimum useful life for depreciation: 5 years for ordinary assets, 10 years for Goodwill. The app auto-adjusts a shorter entered life up to this legal minimum.
+- Depreciation is straight-line: (acquisition cost − residual value) ÷ useful life years. A "Generate Depreciation" button creates the year's journal entries per client (skips ones already created).
+- KIA (Kleinschaligheidsinvesteringsaftrek / Small-Scale Investment Deduction) is flagged as potentially applicable when total investment for the period falls within the current range (app shows a hint; exact percentage must be checked against the current official Belastingdienst table).
+- LOAN FINANCING (applies to ANY asset type, not just vehicles): mark an asset as financed by a loan with a remaining balance and annual interest rate. Logging a payment (one total amount entered) automatically splits it into interest (tax-deductible, posted as an actual journal entry) and principal (reduces the loan balance only, never expensed) using standard amortization: interest = remaining balance × annual rate ÷ 12.
+- VEHICLE-specific fields (only for category = Vehicle): a private-use percentage, and a mileage-log note. Private use above a de-minimis threshold typically triggers "Bijtelling" (added taxable income) under Dutch rules — the app flags this but does NOT calculate the exact amount (needs confirmation from a tax advisor); a detailed mileage log can support a claim of under 500 km/year private use.
+- "Loan Overview" report (under Reports, not the Assets screen itself) aggregates every financed asset for a client: total outstanding balance, interest paid this year and all-time, a progress bar per loan, and full payment history.
+
+EMPLOYEES / PAYROLL:
+- Salary types: Fixed Monthly or Variable Hourly.
+- Benefits: Vacation money (Vakantiegeld, 8% of gross annual salary, typically paid out once in May, or accrued monthly and shown as a running liability until then), 13th month bonus (accrues 1/12 of gross monthly, paid as a lump sum in December, same accrual principle as vacation money), homework allowance (tax-free up to the official rate, based on homework days per month), travel allowance (tax-free per-km rate or fixed monthly amount), pension percentage.
+- Payroll tax (Loonheffing) is estimated using official tax brackets — the app explicitly disclaims this needs verification before official use.
+- Payslips can be generated (status: CONCEPT while the month hasn't ended yet, then CONFIRMED) and exported as PDF, alongside a payslip history per employee.
+- Contract types: Permanent (Onbepaalde tijd) or Fixed-term (Bepaalde tijd) — fixed-term contracts ending within 90 days are flagged in the Employee Statistics report.
+- Reports: "Employee Financial Report" (payroll costs & payments, YTD gross/loonheffing/pension, outstanding accrued liabilities, per-employee breakdown) and "Employee Statistics Report" (headcount, average cost/tenure, contract-type/salary-type/job-title/nationality breakdowns, upcoming fixed-term contract endings). There's also a general "Payroll Report".
+
+CONTRACTS & SERVICE AGREEMENTS:
+- Per-client service contracts (monthly or annual rate, start/end dates, subscription package). New clients go through a signing workflow (agreement sent → client reviews & can request changes or sign → admin approves) before their accounting tabs unlock — while pending, the client only sees a waiting screen plus the ability to review/sign the agreement.
+- Subscription packages themselves are customizable (Settings) — existing signed contracts keep their price even if package definitions change later.
+
+DEBTORS / CREDITORS:
+- Contacts are tagged as "debtor" (customer who owes money) or "creditor" (supplier owed money), each with a ledger account number. A "General Debtors"/"General Creditors" catch-all contact exists per client for entries not tied to a specific named contact.
+
+REPORTS available (Reports screen, grouped): Summary, Profit & Loss (P&L), BTW report (VAT return by official Belastingdienst rubrieken — 1e domestic reverse charge issued, 2a/4b reverse charge received self-assessed [combined for simplicity in the UI, admin should verify the exact box before filing], 3a export outside EU, 3b EU B2B reverse charge), Tax Liability (estimated personal Inkomstenbelasting or corporate Vennootschapsbelasting — includes urencriterium/starter-status detection, KVK registration date auto-detects starter status for startersaftrek eligibility within first 5 years, customer-base setting [mostly B2B vs 90%+ B2C] determines VAT accounting basis: invoice-basis/factuurstelsel for B2B vs cash-basis/kasstelsel eligibility for mostly-consumer businesses), Cash Flow, Debtors, Expenses, Employee Financial, Employee Statistics, Payroll, and Loan Overview (only appears if the client has at least one financed asset).
+
+PERIOD LOCKING: Once a year or quarter is "closed" for a client (after filing that period's BTW return), transactions dated within it are protected — clients can no longer edit/delete them, and admins must explicitly confirm an override for any genuine correction. Periods can be reopened if needed.
+
+IMPORT: A template-based workflow (download template → fill with data from the client's previous accounting office → upload) to migrate historical data in, with required supporting files (bank statements, prior reports) and a full import history that can be reversed (removes all records + the journal entry created by that batch).
+
+SETTINGS: Company identity (shown on invoices/contracts/client documents, includes a Website field), Tax & Banking details (used on invoices and BTW filings), Professional Indemnity Insurance details (referenced in service agreement liability clauses — insurer name, policy number, coverage amount), Admin management (add/reset other admins — Super Admin role is protected from being reset by regular admins), Client credentials (admin generates temporary passwords for clients; clients self-serve "forgot password"), automatic daily Backups (stored completely separately from the live database, with manual "Backup Now", a list of available backups, and Restore which takes an automatic safety backup of the current state first), and a Danger Zone (permanent client deletion, gated by re-entering the admin's own password).
+
+TRASH & ARCHIVE: Deleted items go to Trash first; after 30 days they move to a separate Archived view (kept for the legal 7-year retention period from the record date, even though no longer in Trash).
+
+CLIENT-SIDE FEATURES: A first-time Welcome onboarding (3 short animated slides) shown once per client account, plus a "Quick Start" checklist on their dashboard (log first hours/expense, create first invoice, message ANB) that tracks real progress and disappears once complete or dismissed. A searchable Help Center (collapsible FAQ topics: invoices, expenses, hours, cashier, BTW report, messaging, documents) automatically filtered to only show topics for sections that client actually has enabled — accessed via a floating "❓" button visible on every screen. Clients can manage their own Cashier services and their own Electronic Payment provider connection.
+
+ROLES: Admin (ANB staff) sees and manages everything for every client, including a company-wide dashboard, messages, documents, and contracts overview across all clients. Clients only see their own data; which optional sections they can see (Reports, Employees, Bank, Assets, Client Activity log, Cashier, etc.) is individually toggled per client by the admin in Edit Client → Configuration → Visible Sections.
+
+AI ASSISTANT: This chatbot itself (admin-only, via a floating "🤖" button) — free via Cloudflare Workers AI, for accounting/tax/admin guidance including "how do I record X in this app" questions.`;
 
 const ADMIN_ASSISTANT_SYSTEM_PROMPT = `You are an internal assistant for ANB Financial Services, a Dutch bookkeeping and financial administration firm serving freelancers (ZZP) and small businesses. You help the firm's own admin staff think through accounting, tax (Dutch BTW/Belastingdienst rules), and general business-administration questions they run into during daily work — including questions about how to record something in their own ANB FinAdmin Pro application.
 
