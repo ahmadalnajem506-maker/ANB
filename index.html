@@ -396,12 +396,12 @@ tr:hover td{background:var(--gr1)}
 .btn{padding:6px 12px;border-radius:var(--rs);font-size:12px;cursor:pointer;
   display:inline-flex;align-items:center;gap:4px;border:1px solid var(--gr2);
   background:var(--white);color:var(--t2);font-family:var(--fb);white-space:nowrap;
-  transition:transform .1s ease,opacity .1s ease}
+  -webkit-tap-highlight-color:transparent}
 .btn:hover{background:var(--gr1)}
-/* ⭐ تأثير ضغط عام على كل زر في التطبيق - تصغير خفيف جدًا + شفافية طفيفة
-   عند اللمس/الضغط، يمنح إحساسًا حقيقيًا بأن الزر "استجاب" فورًا للمس -
-   مطبَّق على الفئة المشتركة .btn فيشمل تلقائيًا كل زر حاليًا ومستقبلًا */
-.btn:active{transform:scale(.96);opacity:.85}
+/* ⭐ تأثير ضغط مُتحكَّم به عبر JS (وليس :active) - انظر setupButtonPressEffect
+   أعلاه لسبب هذا الاختيار. بلا "transition" على الخروج عمدًا؛ الإزالة الفورية
+   للفئة عند رفع اللمس تمنع أي بقاء بصري عالق */
+.btn-pressed{transform:scale(.96);opacity:.85}
 .btn-p{background:var(--g1);color:var(--gold3);border-color:var(--g1)}
 .btn-p:hover{background:var(--g2)}
 .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--g1);
@@ -3679,6 +3679,28 @@ function runProgressBarAnimations(){
     requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.width=target+'%';}));
   });
 }
+// ⭐ تأثير ضغط عام على كل زر - مُتحكَّم به برمجيًا بالكامل (وليس عبر CSS
+// :active) لأن :active على الموبايل قد "يعلق" بصريًا عند تغيّر الشاشة بسرعة
+// (بالضبط المشكلة التي واجهناها). الحل: نضيف الفئة عند بداية اللمس/الضغط
+// تحديدًا على الزر المضغوط، ونُزيلها من *كل* العناصر (لا الزر نفسه فقط) عند
+// انتهاء اللمس - حتى لو استُبدِل محتوى الشاشة بالكامل أثناء اللمس (تنقّل
+// فوري)، لا يمكن لأي أثر أن يبقى عالقًا لأننا لا نعتمد على تطابق المتصفح
+// التلقائي لحالة :active، بل على تنظيف صريح فوري.
+(function setupButtonPressEffect(){
+  const PRESSED_CLASS='btn-pressed';
+  function onPress(e){
+    const btn=e.target.closest?.('.btn');
+    if(btn)btn.classList.add(PRESSED_CLASS);
+  }
+  function clearAllPressed(){
+    document.querySelectorAll('.'+PRESSED_CLASS).forEach(el=>el.classList.remove(PRESSED_CLASS));
+  }
+  document.addEventListener('mousedown',onPress);
+  document.addEventListener('touchstart',onPress,{passive:true});
+  document.addEventListener('mouseup',clearAllPressed);
+  document.addEventListener('touchend',clearAllPressed);
+  document.addEventListener('touchcancel',clearAllPressed); // ⚠️ يغطي حالة انقطاع اللمس (كتمرير الصفحة أثناء الضغط)
+})();
 function renderApp(){
   renderSidebar();renderTopbar();renderContent();
   if(typeof renderMobileNav==='function')renderMobileNav();
@@ -12859,7 +12881,11 @@ function openManageCashierServices(cid){
   // محفوظ فورًا فعليًا)، لكن يجب أن يبقى هناك زر واضح للخروج من النافذة -
   // إخفاء التذييل بالكامل (كما كان سابقًا) ترك المستخدم بلا أي طريقة واضحة
   // للخروج سوى الضغط خارج النافذة أو ✕ الصغيرة بالأعلى، وهذا غير كافٍ
-  document.getElementById('mo-f').innerHTML=`<button class="btn btn-p btn-xs" onclick="closeModal()" style="width:100%">✓ ${t('done')||'Done'}</button>`;
+  document.getElementById('mo-f').innerHTML=`<button class="btn btn-p btn-xs" onclick="closeModal();renderContent()" style="width:100%">✓ ${t('done')||'Done'}</button>`;
+  // ⭐ نفس الإصلاح لزر "✕" أعلى النافذة - أي طريقة خروج من هذه النافذة تحديدًا
+  // يجب أن تُحدِّث شاشة الكاشير الفعلية خلفها، وليس فقط زر "Done"
+  const headerCloseBtn=document.querySelector('#mo .mh button');
+  if(headerCloseBtn)headerCloseBtn.setAttribute('onclick','closeModal();renderContent()');
   renderCashierServiceDraftList(cid);
 }
 // ⭐ إعادة رسم قائمة الخدمات من بيانات العميل الفعلية مباشرة (وليس من مصفوفة
@@ -13308,7 +13334,7 @@ function rCashier(el,cid){
     </div>`:`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px">
       ${services.map(svc=>`
-        <button onclick="openCashierServiceEntry('${cid}','${svc.id}')" style="position:relative;background:${svc.color||'#1A4A2A'}0D;border:1px solid ${svc.color||'#1A4A2A'}33;border-radius:12px;padding:14px 12px 14px 16px;text-align:left;cursor:pointer;overflow:hidden;transition:transform .12s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
+        <button onclick="openCashierServiceEntry('${cid}','${svc.id}')" style="position:relative;background:${svc.color||'#1A4A2A'}0D;border:1px solid ${svc.color||'#1A4A2A'}33;border-radius:12px;padding:14px 12px 14px 16px;text-align:left;cursor:pointer;overflow:hidden;transition:transform .12s;-webkit-tap-highlight-color:transparent" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
           <div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:${svc.color||'#1A4A2A'}"></div>
           <div style="font-size:12.5px;font-weight:700;color:#0A2218;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(svc.name)}</div>
           <div style="display:inline-block;font-size:11px;font-weight:800;color:${svc.color||'#1A4A2A'};background:#fff;padding:3px 9px;border-radius:20px">${svc.priceEditable?(t('editable')||'Editable'):FMT(svc.price)}</div>
