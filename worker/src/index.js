@@ -74,6 +74,7 @@ export default {
       if (url.pathname === '/verify-2fa' && request.method === 'POST') return await handleVerify2FA(request, env, cors);
       if (url.pathname === '/set-password' && request.method === 'POST') return await handleSetPassword(request, env, cors);
       if (url.pathname === '/admin/set-password' && request.method === 'POST') return await handleAdminSetPassword(request, env, cors);
+      if (url.pathname === '/account/set-own-password' && request.method === 'POST') return await handleSetOwnPassword(request, env, cors);
       if (url.pathname === '/admin/generate-temp-password' && request.method === 'POST') return await handleGenerateTempPassword(request, env, cors);
       if (url.pathname === '/refresh-token' && request.method === 'POST') return await handleRefreshToken(request, env, cors);
       if (url.pathname === '/sync' && request.method === 'GET') return await handleSyncGet(request, env, cors);
@@ -476,6 +477,7 @@ EMPLOYEES / PAYROLL:
 
 CONTRACTS & SERVICE AGREEMENTS:
 - Per-client service contracts (monthly or annual rate, start/end dates, subscription package). New clients go through a signing workflow (agreement sent → client reviews & can request changes or sign → admin approves) before their accounting tabs unlock — while pending, the client only sees a waiting screen plus the ability to review/sign the agreement.
+- "Add Contract" always creates a brand-new client together with the contract (all the same required legal fields as "Add Client" — see NEW CLIENT CREATION below) — it does NOT offer a way to attach a new contract to an already-existing client. An existing client who needs a new/updated contract uses the 🔁 Renew or ✏ Edit buttons on their own current contract instead, never "Add Contract".
 - Subscription packages themselves are customizable (Settings) — existing signed contracts keep their price even if package definitions change later.
 
 DEBTORS / CREDITORS:
@@ -487,7 +489,12 @@ PERIOD LOCKING: Once a year or quarter is "closed" for a client (after filing th
 
 IMPORT: A template-based workflow (download template → fill with data from the client's previous accounting office → upload) to migrate historical data in, with required supporting files (bank statements, prior reports) and a full import history that can be reversed (removes all records + the journal entry created by that batch).
 
-SETTINGS: Company identity (shown on invoices/contracts/client documents, includes a Website field), Tax & Banking details (used on invoices and BTW filings), Professional Indemnity Insurance details (referenced in service agreement liability clauses — insurer name, policy number, coverage amount), Admin management (add/reset other admins — Super Admin role is protected from being reset by regular admins), Client credentials (admin generates temporary passwords for clients; clients self-serve "forgot password"), automatic daily Backups (stored completely separately from the live database, with manual "Backup Now", a list of available backups, and Restore which takes an automatic safety backup of the current state first), and a Danger Zone (permanent client deletion, gated by re-entering the admin's own password).
+NEW CLIENT CREATION & PASSWORD SECURITY:
+- Every new client (created via "Add Client" or "Add Contract" — both require the exact same legal fields: company name, email, contact person, KVK number, BTW number, IBAN, full address) automatically gets a one-time, randomly-generated temporary password immediately after creation, shown once to the admin in a dialog to copy and share with the client through a trusted channel (phone, in person) — it is never shown again after that.
+- The exact same one-time-password mechanism is used whenever an admin resets an existing client's password (Settings or the client's own screen → "Reset Password") for a forgotten-password situation — self-service "forgot password" is NOT available; only an admin can issue a new temporary password.
+- Any account that logs in with such a temporary password is immediately shown a mandatory, non-dismissible "Set Your Password" screen before anything else in the app becomes usable — there is no way to skip, close, or work around this screen; the account cannot proceed until a new password (min. 6 characters, confirmed twice) is successfully saved. This applies identically whether the temporary password came from brand-new client creation or from an admin-initiated password reset.
+
+SETTINGS: Company identity (shown on invoices/contracts/client documents, includes a Website field), Tax & Banking details (used on invoices and BTW filings), Professional Indemnity Insurance details (referenced in service agreement liability clauses — insurer name, policy number, coverage amount), Admin management (add/reset other admins — Super Admin role is protected from being reset by regular admins), Client credentials (admin generates a one-time temporary password for a client — see NEW CLIENT CREATION & PASSWORD SECURITY above for the full forced-change flow), automatic daily Backups (stored completely separately from the live database, with manual "Backup Now", a list of available backups, and Restore which takes an automatic safety backup of the current state first), and a Danger Zone (permanent client deletion, gated by re-entering the admin's own password).
 
 TRASH & ARCHIVE: Deleted items go to Trash first; after 30 days they move to a separate Archived view (kept for the legal 7-year retention period from the record date, even though no longer in Trash).
 
@@ -948,7 +955,7 @@ async function handleLogin(request, env, cors) {
 
   const exp = Date.now() + TOKEN_TTL_MS;
   const token = await signToken({ at: role, aid: account.id, exp }, env.R2_HMAC_SECRET);
-  return json({ step: 'done', token, exp }, 200, cors);
+  return json({ step: 'done', token, exp, mustChangePassword: !!account.mustChangePassword }, 200, cors);
 }
 
 /* ═══════════════════════ /verify-2fa ═══════════════════════ */
@@ -992,7 +999,7 @@ async function handleVerify2FA(request, env, cors) {
 
   const exp = Date.now() + TOKEN_TTL_MS;
   const token = await signToken({ at: role, aid: account.id, exp }, env.R2_HMAC_SECRET);
-  return json({ token, exp }, 200, cors);
+  return json({ token, exp, mustChangePassword: !!account.mustChangePassword }, 200, cors);
 }
 
 /* ═══════════════════════ التحقق من كلمة المرور + الترقية من نص صريح ═══════════════════════ */
@@ -1129,7 +1136,41 @@ async function handleSetPassword(request, env, cors) {
   }, 410, cors);
 }
 
-/* ═══════════════════════ /admin/set-password ═══════════════════════ */
+/* ═══════════════════════ /account/set-own-password ═══════════════════════ */
+// ⭐ نقطة منفصلة تمامًا عن /admin/set-password: هذه للمستخدم نفسه (أدمن أو
+// عميل، بحسب هويته في التوكن الخاص به فقط - لا يُقرَأ أي معرِّف حساب من نص
+// الطلب إطلاقًا) ليُعيِّن كلمة مرور جديدة خاصة به. تُستخدَم تحديدًا في شاشة
+// "حدِّد كلمة مرورك" الإلزامية عند أول دخول بكلمة مرور مؤقتة.
+async function handleSetOwnPassword(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { newPassword } = body || {};
+  if (!newPassword || newPassword.length < 6) return json({ error: 'Password must be at least 6 characters' }, 400, cors);
+
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
+
+  const list = listFor(cloud.payload, auth.payload.at);
+  const idx = list.findIndex((a) => a && a.id === auth.payload.aid);
+  if (idx === -1) return json({ error: 'Account not found' }, 404, cors);
+  const account = list[idx];
+
+  const rec = await makePasswordRecord(newPassword);
+  account.passwordSalt = rec.passwordSalt;
+  account.passwordHash = rec.passwordHash;
+  account.passwordIterations = rec.passwordIterations;
+  delete account.password; delete account.pwCustom; delete account.pw;
+  if (auth.payload.at === 'client') account.pwSet = true;
+  account.mustChangePassword = false; // ⚠️ هذا هو ما يُنهي فرض شاشة التغيير الإلزامية
+  clearFailedAttempts(account);
+  list[idx] = account;
+  await writeCloudPayload(env, cloud.payload);
+
+  return json({ ok: true }, 200, cors);
+}
 // محمية بتوكن أدمن حقيقي - النقطة الوحيدة الآن القادرة على تعيين/إعادة تعيين
 // كلمة مرور أي حساب (أدمن أو عميل). تحلّ محل كل من: النقطة العامة الملغاة
 // أعلاه، وآلية "Reset" في شاشة الإعدادات التي كانت تعتمد خطأً على مزامنة
@@ -1172,6 +1213,11 @@ async function handleAdminSetPassword(request, env, cors) {
   account.passwordIterations = rec.passwordIterations;
   delete account.password; delete account.pwCustom; delete account.pw;
   if (targetRole === 'client') account.pwSet = true;
+  // ⭐ كلمة مرور مؤقتة مُولَّدة عشوائيًا (وليست كلمة مرور مُحدَّدة يدويًا من
+  // الأدمن) تعني أن الحساب يجب أن يُجبَر على تعيين كلمة مرور خاصة به في أول
+  // تسجيل دخول - يُفحَص هذا العلم عند تسجيل الدخول (handleLogin) لعرض شاشة
+  // "حدِّد كلمة مرورك" الإلزامية قبل السماح بالدخول للتطبيق
+  account.mustChangePassword = !newPassword;
   clearFailedAttempts(account);
   list[idx] = account;
   await writeCloudPayload(env, cloud.payload);
