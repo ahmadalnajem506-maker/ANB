@@ -54,7 +54,12 @@
   --shl:0 14px 44px rgba(10,34,24,.24);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14px;line-height:1.5}
+body{font-family:var(--fb);background:var(--cream);color:var(--t1);font-size:14px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+/* ⭐ إصلاح شامل: إزالة تمييز اللمس الأزرق الافتراضي من كل عنصر بالتطبيق دفعة
+   واحدة (وليس فقط .btn) - بطاقات لوحة التحكم وأي عنصر آخر قابل للنقر (عبر
+   onclick على div عادي مثلًا) كان يظهر عليه هذا التمييز أيضًا، لأن الإصلاح
+   السابق كان مقصورًا على فئة .btn تحديدًا */
+*{-webkit-tap-highlight-color:transparent}
 
 /* ═══ LOGIN PAGE ═══ */
 #login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;
@@ -647,7 +652,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.dash-card { animation: cardEnter .35s ease-out backwards; }
+.dash-card { animation: cardEnter .35s ease-out backwards; -webkit-tap-highlight-color: transparent; }
 .dash-card:nth-child(1){animation-delay:.02s}
 .dash-card:nth-child(2){animation-delay:.06s}
 .dash-card:nth-child(3){animation-delay:.10s}
