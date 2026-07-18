@@ -674,6 +674,14 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 }
 .notif-pulse { animation: notifPulse 1.8s ease-in-out infinite; }
 
+/* ⭐ انتقال عام سلس عند التنقل بين أي شاشتين - خفيف ومختصر (لا يُبطئ الشعور
+   بالاستجابة)، يمنح إحساسًا بالحركة بدل التبديل الفوري الجاف بين الشاشات */
+@keyframes contentFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.content-transition { animation: contentFadeIn .25s ease-out; }
+
 /* ⭐ إيصال قابل للطباعة - يعمل عبر نافذة الطباعة القياسية للمتصفح (تدعم
    AirPrint على iOS وأي طابعة عادية على Android)، بدل الاتصال المباشر
    (Web Bluetooth) الذي لا يعمل على iPhone إطلاقًا. عند الطباعة، كل شيء
@@ -3999,6 +4007,15 @@ function renderTopbar(){
 /* ── CONTENT ROUTER ── */
 function renderContent(){
   const el=document.getElementById('content');
+  // ⭐ حركة انتقال عامة عند كل تنقل بين الشاشات - تُعاد إعادة تشغيلها في كل
+  // مرة عبر إزالة الفئة أولًا ثم إجبار "إعادة تدفق" المتصفح قبل إضافتها من
+  // جديد (نفس أسلوب اهتزاز الحقول الخاطئة)، وإلا لا يُعاد تشغيل نفس الـCSS
+  // animation على عنصر يحملها بالفعل
+  if(el){
+    el.classList.remove('content-transition');
+    void el.offsetWidth;
+    el.classList.add('content-transition');
+  }
   const cid=S.currentClient;
   if(isAdmin()){
     if(S.tab==='settings'){rSettings(el);return;}
@@ -12795,6 +12812,7 @@ function removeHourCategoryDraft(index){
 // (اسم، إيموجي اختياري، سعر ثابت أو قابل للتعديل عند الاستخدام)
 // ══════════════════════════════════════════════════════════════════
 function openManageCashierServices(cid){
+  window._csvcCurrentCid=cid;
   const client=S.clients.find(cl=>cl.id===cid);
   const services=client?.cashierServices||[];
   const hintText=isAdmin()
@@ -12806,49 +12824,71 @@ function openManageCashierServices(cid){
     <div style="border-top:1px solid var(--gr2);padding-top:12px">
       <div class="fg"><label>${t('service_name')||'Service Name'}</label><input type="text" id="csvc-name" placeholder="${t('service_name_placeholder')||'e.g. Haircut'}"/></div>
       <div class="fr2">
-        <div class="fg"><label>${t('icon_optional')||'Icon (optional)'}</label><input type="text" id="csvc-icon" placeholder="✂️" maxlength="2"/></div>
+        <div class="fg"><label>${t('service_color')||'Card Color'}</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 0">
+            ${SERVICE_COLOR_PALETTE.map(c=>`<div onclick="selectServiceColor('${c}')" data-color-swatch="${c}" style="width:26px;height:26px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent;transition:transform .15s" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"></div>`).join('')}
+          </div>
+          <input type="hidden" id="csvc-color" value="${SERVICE_COLOR_PALETTE[0]}"/>
+        </div>
         <div class="fg"><label>${t('price_eur')||'Price (€)'}</label><input type="number" id="csvc-price" step="0.01"/></div>
       </div>
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t1);margin-bottom:10px"><input type="checkbox" id="csvc-editable"/> ${t('price_editable')||'Price editable at time of use'}</label>
       <button class="btn btn-p btn-xs" onclick="addCashierServiceDraft()" style="width:100%">➕ ${t('add')||'Add'}</button>
     </div>
-  `,()=>{
-    const cl=S.clients.find(cl=>cl.id===cid);
-    if(cl)cl.cashierServices=[...window._csvcDraft];
-    sv();closeModal();renderContent();toast('✓ '+(t('services_saved')||'Services saved'));
-  },t('save')||'Save');
-  window._csvcDraft=[...services];
-  renderCashierServiceDraftList();
+  `,null,'');
+  document.getElementById('mo-f').style.display='none'; // ⭐ لا حاجة لزر "حفظ" منفصل بعد الآن - كل إضافة/حذف يُحفَظ فورًا (انظر أدناه)
+  renderCashierServiceDraftList(cid);
 }
-function renderCashierServiceDraftList(){
+// ⭐ إعادة رسم قائمة الخدمات من بيانات العميل الفعلية مباشرة (وليس من مصفوفة
+// مؤقتة منفصلة) - كل زر "حذف" هنا يحذف فورًا من سجل العميل الحقيقي أيضًا
+function renderCashierServiceDraftList(cid){
   const container=document.getElementById('csvc-list');
   if(!container)return;
-  container.innerHTML=window._csvcDraft.map((svc,i)=>`
+  const client=S.clients.find(cl=>cl.id===cid);
+  const services=client?.cashierServices||[];
+  container.innerHTML=services.map((svc,i)=>`
     <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--gr1);border-radius:6px">
-      <span style="font-size:16px">${svc.icon||'💰'}</span>
+      <div style="width:20px;height:20px;border-radius:50%;background:${svc.color||'#1A4A2A'};flex-shrink:0"></div>
       <span style="flex:1;font-size:12px;color:var(--t1)">${escapeHtml(svc.name)}</span>
       <span style="font-size:11px;color:var(--t3)">${svc.priceEditable?(t('editable')||'Editable'):FMT(svc.price)}</span>
-      <button class="btn btn-danger btn-xs" onclick="removeCashierServiceDraft(${i})" style="padding:2px 8px">✕</button>
+      <button class="btn btn-danger btn-xs" onclick="removeCashierServiceDraft('${cid}',${i})" style="padding:2px 8px">✕</button>
     </div>
   `).join('')||`<div style="font-size:11px;color:var(--t3);padding:8px">${t('no_services_yet')||'No services yet — add at least one below.'}</div>`;
 }
 function addCashierServiceDraft(){
+  const cid=window._csvcCurrentCid;
+  const client=S.clients.find(cl=>cl.id===cid);
+  if(!client)return;
   const name=(document.getElementById('csvc-name').value||'').trim();
-  const icon=(document.getElementById('csvc-icon').value||'').trim();
+  const color=(document.getElementById('csvc-color').value||SERVICE_COLOR_PALETTE[0]);
   const priceEditable=document.getElementById('csvc-editable').checked;
   const price=parseFloat(document.getElementById('csvc-price').value)||0;
   if(!name){toast('❌ '+(t('service_name_required')||'Service name required'));markFieldError('csvc-name');return;}
   if(!priceEditable&&price<=0){toast('❌ '+(t('enter_valid_price')||'Enter a valid price, or mark it editable'));markFieldError('csvc-price');return;}
-  window._csvcDraft.push({id:UID(),name,icon,price:priceEditable?0:price,priceEditable});
+  if(!client.cashierServices)client.cashierServices=[];
+  client.cashierServices.push({id:UID(),name,color,price:priceEditable?0:price,priceEditable});
+  sv(); // ⭐ حفظ فوري - لا ينتظر أي زر "حفظ" آخر
   document.getElementById('csvc-name').value='';
-  document.getElementById('csvc-icon').value='';
   document.getElementById('csvc-price').value='';
   document.getElementById('csvc-editable').checked=false;
-  renderCashierServiceDraftList();
+  renderCashierServiceDraftList(cid);
+  toast('✓ '+(t('service_added')||'Service added'));
 }
-function removeCashierServiceDraft(index){
-  window._csvcDraft.splice(index,1);
-  renderCashierServiceDraftList();
+// ⭐ لوحة ألوان مُنسَّقة لبطاقات الخدمات - بديل أرقى وأكثر احترافية من اختيار
+// إيموجي يدويًا، ويضمن مظهرًا متسقًا بصريًا مهما كانت الخدمة
+const SERVICE_COLOR_PALETTE=['#1A4A2A','#C89010','#7A4A00','#2d7a4f','#8a1f1f','#1f4e8a','#6a1f8a','#8a5a1f'];
+function selectServiceColor(color){
+  document.getElementById('csvc-color').value=color;
+  document.querySelectorAll('[data-color-swatch]').forEach(el=>{
+    el.style.border=el.dataset.colorSwatch===color?'2px solid #0A2218':'2px solid transparent';
+  });
+}
+function removeCashierServiceDraft(cid,index){
+  const client=S.clients.find(cl=>cl.id===cid);
+  if(!client||!client.cashierServices)return;
+  client.cashierServices.splice(index,1);
+  sv();
+  renderCashierServiceDraftList(cid);
 }
 
 function openLogHours(){
@@ -13245,8 +13285,9 @@ function rCashier(el,cid){
     </div>`:`
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:14px">
       ${services.map(svc=>`
-        <button onclick="openCashierServiceEntry('${cid}','${svc.id}')" style="background:#FBF8F1;border:1.5px solid #e8e1cd;border-radius:10px;padding:14px 8px;text-align:center;cursor:pointer">
-          <div style="font-size:24px;margin-bottom:6px">${svc.icon||'💰'}</div>
+        <button onclick="openCashierServiceEntry('${cid}','${svc.id}')" style="position:relative;background:#FBF8F1;border:1.5px solid #e8e1cd;border-radius:10px;padding:14px 8px 10px;text-align:center;cursor:pointer;overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${svc.color||'#1A4A2A'}"></div>
+          <div style="width:32px;height:32px;border-radius:50%;background:${svc.color||'#1A4A2A'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;margin:4px auto 8px">${escapeHtml((svc.name||'?').charAt(0).toUpperCase())}</div>
           <div style="font-size:11px;font-weight:700;color:#0A2218">${escapeHtml(svc.name)}</div>
           <div style="font-size:10px;color:var(--t3);margin-top:2px">${svc.priceEditable?(t('editable')||'Editable'):FMT(svc.price)}</div>
         </button>
@@ -13267,7 +13308,7 @@ function openCashierServiceEntry(cid,serviceId){
   const client=S.clients.find(cl=>cl.id===cid);
   const svc=(client?.cashierServices||[]).find(s=>s.id===serviceId);
   if(!svc)return;
-  showModal(`${svc.icon||'💰'} ${escapeHtml(svc.name)}`,`
+  showModal(escapeHtml(svc.name),`
     ${svc.priceEditable?`<div class="fg"><label>${t('price_eur')||'Price (€)'}</label><input type="number" id="cse-price" step="0.01" oninput="upCashierEntryPaymentMethod()"/></div>`:
       `<input type="hidden" id="cse-price" value="${svc.price}"/><div class="fg"><label>${t('price_eur')||'Price (€)'}</label><input value="${FMT(svc.price)}" disabled style="background:var(--gr1)"/></div>`}
     <div class="fg">
