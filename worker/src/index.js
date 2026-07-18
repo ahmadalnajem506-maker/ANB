@@ -99,9 +99,98 @@ export default {
   // ⭐ نسخ احتياطي تلقائي - يُستدعى تلقائيًا في الموعد المحدَّد في wrangler.toml
   // (crons)، بلا أي طلب HTTP أو تدخل بشري إطلاقًا
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(performBackup(env, 'scheduled'));
+    // ⭐ جدولتان منفصلتان الآن: النسخ الاحتياطي (3 صباحًا) وترحيل أيام الكاشير
+    // المتروكة تلقائيًا (منتصف الليل بالضبط) - event.cron يُميِّز بينهما
+    if (event.cron === '0 0 * * *') {
+      ctx.waitUntil(autoPostStaleCashierDaysServer(env));
+    } else {
+      ctx.waitUntil(performBackup(env, 'scheduled'));
+    }
   },
 };
+
+/* ═══════════════════════ ترحيل أيام الكاشير المتروكة تلقائيًا ═══════════════════════ */
+// ⭐ يعمل بجدولة خادم مستقلة عند منتصف الليل بالضبط - وليس معتمدًا على أن
+// يُسجِّل أحد الدخول (بعكس المحاولة الأولى للميزة، التي كانت تعمل فقط عند
+// تسجيل الدخول). يُعيد استخدام بالضبط نفس المنطق المحاسبي الذي يستخدمه العميل
+// (postCashierDayForDate) لكن مُعاد كتابته هنا للعمل مباشرة على كائن البيانات
+// الكامل (payload) بدل الاعتماد على حالة متصفح العميل S.
+async function autoPostStaleCashierDaysServer(env) {
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return; // لا داعي للمحاولة إن تعذَّر الوصول لقاعدة البيانات هذه المرة - ستُعالَج تلقائيًا في الدورة القادمة (أو عند دخول أي مستخدم لاحقًا)
+  const payload = cloud.payload;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const cashierLog = payload.cashierLog || [];
+  const staleGroups = new Map(); // "cid|date" -> true
+  cashierLog.forEach((e) => {
+    if (!e.posted && e.date && e.date < today) staleGroups.set(e.cid + '|' + e.date, true);
+  });
+  if (staleGroups.size === 0) return;
+
+  if (!payload.invoices) payload.invoices = [];
+  if (!payload.cashPayments) payload.cashPayments = [];
+  if (!payload.contacts) payload.contacts = [];
+  const now = new Date().toISOString();
+  let postedCount = 0;
+
+  for (const key of staleGroups.keys()) {
+    const [cid, date] = key.split('|');
+    const unposted = cashierLog.filter((e) => e.cid === cid && e.date === date && !e.posted);
+    if (unposted.length === 0) continue;
+    const alreadyPosted = cashierLog.some((e) => e.cid === cid && e.date === date && e.posted);
+    if (alreadyPosted) continue; // ⚠️ نفس القفل الصارم الموجود بالمنطق الأصلي: لا ترحيل مزدوج لنفس اليوم
+
+    const total = unposted.reduce((s, e) => s + (e.price || 0), 0);
+    const totalCash = unposted.reduce((s, e) => s + (e.cashAmount || 0), 0);
+    const r = 21;
+
+    // getOrCreateGeneralDebtor المكافئة
+    let gd = payload.contacts.find((c) => c.type === 'debtor' && c.isGeneral && c.cid === cid && !c.deleted);
+    if (!gd) {
+      gd = { id: genId(), cid, type: 'debtor', name: 'General Debtors', isGeneral: true, accountNumber: '4999' };
+      payload.contacts.push(gd);
+    }
+
+    // nextNum/getInvoiceCounter المكافئة
+    const client = (payload.clients || []).find((c) => c.id === cid);
+    if (client && typeof client.invoiceCounter !== 'number') {
+      client.invoiceCounter = payload.invoices.filter((i) => i.cid === cid).length;
+    }
+    const counter = client ? client.invoiceCounter : payload.invoices.filter((i) => i.cid === cid).length;
+    const clientName = client ? client.name.substring(0, 3).toUpperCase() : 'CLI';
+    const num = `${clientName}-${String(counter + 1).padStart(3, '0')}`;
+    if (client) client.invoiceCounter = counter + 1;
+
+    const ni = {
+      id: genId(), cid, num,
+      desc: 'Cashier daily takings — ' + date,
+      date, due: date, status: 'Openstaand',
+      amount: total / (1 + r / 100), btw: total - total / (1 + r / 100), total, btwRate: r,
+      amountPaid: 0, billTo: gd.name, billToId: gd.id, billToManual: null,
+      isDailyRevenue: true, isCashierPosting: true,
+    };
+    payload.invoices.push(ni);
+
+    if (totalCash > 0.005) {
+      payload.cashPayments.push({
+        id: genId(), cid: ni.cid, invoiceId: ni.id, direction: 'in', date: ni.date,
+        amount: totalCash, note: 'Auto-posted (day was left open)', recordedBy: 'system', createdAt: now,
+      });
+      // applyAllocationToTarget المكافئة (حالة الفاتورة فقط، بلا احتفال بصري هنا)
+      ni.amountPaid = (ni.amountPaid || 0) + totalCash;
+      if (ni.amountPaid >= ni.total - 0.005) { ni.status = 'Betaald'; ni.paidDate = ni.paidDate || date; }
+    }
+
+    unposted.forEach((e) => { e.posted = true; e.postedAt = now; e.postedInvoiceId = ni.id; e.autoPosted = true; });
+    postedCount++;
+  }
+
+  if (postedCount > 0) {
+    await writeCloudPayload(env, payload);
+  }
+}
+function genId() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
 
 /* ═══════════════════════ نظام النسخ الاحتياطي ═══════════════════════ */
 // ⚠️ لماذا هذا ضروري: كل بيانات العمل الحقيقية تعيش في صف واحد بقاعدة بيانات
@@ -345,16 +434,18 @@ HOURS:
 
 CASH LEDGER (distinct from Cashier — for businesses that occasionally get paid in cash, not walk-in service businesses):
 - Record Cash Payment: settles a specific existing invoice partially or fully in cash; invoice only shows "Paid" once fully covered.
-- Daily Revenue Entry: for businesses with many small daily payments (retail counters) — one total takings figure per day (excl. BTW) instead of itemizing every sale, ready to match against the bank.
+- Daily Revenue Entry: for businesses with many small daily payments (retail counters) — one total takings figure per day (excl. BTW) instead of itemizing every sale, ready to match against the bank. This is ONLY available/shown when Cashier is NOT enabled for that client — if Cashier is enabled, this button is hidden and blocked (with an explanatory message if somehow triggered anyway), because daily income is already posted from the Cashier itself; having both active at once would double-count the same day's revenue.
 - Cash Withdrawal / Cash Deposit: recording money moved between the bank and the physical cash till.
 - Personal Drawing: money taken from the till for personal (non-business) use — affects the owner's capital account, NOT the profit & loss statement, and is NOT a business expense.
 - A warning appears if a cash entry is backdated by more than 1 day, since the Belastingdienst expects daily logging of cash takings.
+- Cash amounts that came from a Cashier day posting are labeled clearly (e.g. "🧾 Cashier — 18/07/2026 (invoice number)") in the Cash Ledger list, not just a bare invoice number, so the connection between the two features is visible at a glance.
 
 CASHIER (separate feature, for walk-in/service businesses — driving instructors, hairdressers, barbers, etc.):
-- Admin (or the client themselves) configures quick-tap "Services" with a name, optional icon, and price (which can be marked editable at time of use, e.g. for a custom amount).
+- Admin (or the client themselves) configures quick-tap "Services" with a name, a color (chosen from a preset palette, shown as a left accent stripe and tinted card background — not an emoji), and price (which can be marked editable at time of use, e.g. for a custom amount).
 - Payment methods per transaction: cash (fully paid now), bank transfer (pending, matched later), split (part cash / part pending bank), or card/QR (only shown if the client has connected their own Mollie or SumUp account — see Electronic Payment below).
 - "Post Today" performs the daily reconciliation: requires counting the actual physical cash on hand first (flags a discrepancy if it doesn't match expected), then creates one invoice for the day's takings and locks the entries. Can only be done once per day.
-- If a day has zero entries when trying to post, the client must explain why first (no activity that day, or a genuine recording error) — a "missing day exception" that requires ANB admin approval before the client can continue using the Cashier.
+- AUTOMATIC POSTING OF FORGOTTEN DAYS: if a day's Cashier entries are never manually posted, they are posted automatically — a scheduled server job runs exactly at midnight and posts any previous day (never the current day) that still has unposted entries, for every client, using the exact same accounting logic as the manual "Post Today" button (invoice + cash-ledger entry), marked internally as auto-posted. As a backup safety net, the same check also runs client-side the next time anyone logs in, in case the midnight job was ever missed — both are safe to run repeatedly (a day already posted is simply skipped, never posted twice).
+- If a day has zero entries when trying to post manually, the client must explain why first (no activity that day, or a genuine recording error) — a "missing day exception" that requires ANB admin approval before the client can continue using the Cashier. (The automatic midnight/login posting only ever acts on days that DO have unposted entries — empty days are a separate manual-only flow.)
 - Cashier Log (admin-only screen): full history of all cashier transactions with a reprint button per entry.
 - Receipt printing: after any cashier sale, the app offers to print a physical receipt via the browser's native print dialog (works with AirPrint on iOS or any connected printer on Android) — this is not a direct Bluetooth connection, it uses standard printing so it works across devices without special hardware pairing.
 
