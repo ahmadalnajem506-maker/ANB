@@ -491,10 +491,15 @@ IMPORT: A template-based workflow (download template → fill with data from the
 
 NEW CLIENT CREATION & PASSWORD SECURITY:
 - Every new client (created via "Add Client" or "Add Contract" — both require the exact same legal fields: company name, email, contact person, KVK number, BTW number, IBAN, full address) automatically gets a one-time, randomly-generated temporary password immediately after creation, shown once to the admin in a dialog to copy and share with the client through a trusted channel (phone, in person) — it is never shown again after that.
-- The exact same one-time-password mechanism is used whenever an admin resets an existing client's password (Settings or the client's own screen → "Reset Password") for a forgotten-password situation — self-service "forgot password" is NOT available; only an admin can issue a new temporary password.
+- The exact same one-time-password mechanism is used whenever an admin resets an existing client's password (Settings → Clients tab, or the client's own screen → "Reset Password") for a forgotten-password situation — self-service "forgot password" is NOT available; only an admin can issue a new temporary password.
 - Any account that logs in with such a temporary password is immediately shown a mandatory, non-dismissible "Set Your Password" screen before anything else in the app becomes usable — there is no way to skip, close, or work around this screen; the account cannot proceed until a new password (min. 6 characters, confirmed twice) is successfully saved. This applies identically whether the temporary password came from brand-new client creation or from an admin-initiated password reset.
+- Separately, a client can voluntarily change their own password any time from their dashboard's Security card ("Change Password") — this requires entering their CURRENT password correctly first (server-verified) before the new password (min. 6 characters, confirmed twice) is accepted. This is a self-service option distinct from the admin-issued temporary-password flow above, and does not require contacting ANB.
 
-SETTINGS: Company identity (shown on invoices/contracts/client documents, includes a Website field), Tax & Banking details (used on invoices and BTW filings), Professional Indemnity Insurance details (referenced in service agreement liability clauses — insurer name, policy number, coverage amount), Admin management (add/reset other admins — Super Admin role is protected from being reset by regular admins), Client credentials (admin generates a one-time temporary password for a client — see NEW CLIENT CREATION & PASSWORD SECURITY above for the full forced-change flow), automatic daily Backups (stored completely separately from the live database, with manual "Backup Now", a list of available backups, and Restore which takes an automatic safety backup of the current state first), and a Danger Zone (permanent client deletion, gated by re-entering the admin's own password).
+SETTINGS is organized into three tabs now (the previous separate "Company" tab was removed):
+- Admins tab: the list of admin accounts (add/remove — Super Admin role is protected from being reset or removed by regular admins), each admin's password reset button, and Two-Factor Authentication (2FA) setup for the currently logged-in admin's own account.
+- Clients tab: the list of client accounts with a password-reset button per client and a button to view a copy of their signed contract (PDF), plus Subscription Packages management (the plans offered when creating new client contracts).
+- Danger Zone tab: automatic daily Backups (stored completely separately from the live database, with manual "Backup Now", a list of available backups, and Restore which takes an automatic safety backup of the current state first), and permanent client deletion (gated by re-entering the admin's own password).
+- ANB's own company details (company name, KVK, BTW, IBAN, address, tagline, website, and Professional Indemnity Insurance details referenced in service agreement liability clauses) now live in ANB's own record under Edit Client — reached the same way as editing any other client (ANB is modeled as a special client itself) — rather than a separate Settings tab. Saving this screen for ANB automatically keeps the underlying data used by invoice/contract generation in sync, with no separate step needed.
 
 TRASH & ARCHIVE: Deleted items go to Trash first; after 30 days they move to a separate Archived view (kept for the legal 7-year retention period from the record date, even though no longer in Trash).
 
@@ -1147,7 +1152,7 @@ async function handleSetOwnPassword(request, env, cors) {
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
-  const { newPassword } = body || {};
+  const { newPassword, currentPassword } = body || {};
   if (!newPassword || newPassword.length < 6) return json({ error: 'Password must be at least 6 characters' }, 400, cors);
 
   const cloud = await fetchCloudPayload(env);
@@ -1157,6 +1162,16 @@ async function handleSetOwnPassword(request, env, cors) {
   const idx = list.findIndex((a) => a && a.id === auth.payload.aid);
   if (idx === -1) return json({ error: 'Account not found' }, 404, cors);
   const account = list[idx];
+
+  // ⭐ لو أُرسلت كلمة المرور الحالية (تغيير طوعي أثناء جلسة عادية)، تحقَّق
+  // منها أولًا - يمنع أي شخص يستولي على جهاز مفتوح من تغيير كلمة المرور
+  // بلا معرفة القديمة. لا يُطلَب هذا التحقق في تدفق "التغيير الإلزامي" بعد
+  // كلمة مرور مؤقتة (لا توجد "قديمة" منطقية هناك، والمستخدم أثبت هويته للتو
+  // باستخدام تلك الكلمة المؤقتة نفسها بنجاح قبل لحظات).
+  if (currentPassword) {
+    const verdict = await verifyPasswordServerSide(currentPassword, account);
+    if (!verdict.ok) return json({ error: 'Current password is incorrect' }, 401, cors);
+  }
 
   const rec = await makePasswordRecord(newPassword);
   account.passwordSalt = rec.passwordSalt;
