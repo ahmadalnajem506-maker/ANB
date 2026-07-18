@@ -13772,6 +13772,10 @@ function getCashPaymentRefLabel(p){
   }
   if(p.invoiceId){
     const inv=S.invoices.find(i=>i.id===p.invoiceId);
+    // ⭐ توضيح أن هذه الحركة أصلها ترحيل يوم من الكاشير - الربط بين الكاشير
+    // ودفتر النقدية كان موجودًا فعليًا في البيانات، لكن كان يظهر فقط برقم
+    // فاتورة غامض بلا أي إشارة لمصدره، فيبدو للمستخدم وكأنه غير مرتبط إطلاقًا
+    if(inv?.isCashierPosting)return '🧾 '+(t('cashier_title')||'Cashier')+' — '+FD(inv.date)+(inv.num?' ('+inv.num+')':'');
     return inv?.num||'—';
   }
   return '—';
