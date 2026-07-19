@@ -5526,7 +5526,6 @@ function rClientsLis(el){
       <option value="150">Plus</option>
       <option value="200">Pro</option>
       <option value="none">${t('no_subscription')||'No subscription'}</option>
-      <option value="expired">${t('expired')||'Expired'}</option>
     </select>
     <select id="contract-status-filter" style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--white);color:var(--t1);cursor:pointer"
       onchange="filterClients(document.getElementById('client-search').value)">
@@ -5578,11 +5577,8 @@ function renderClientsList(searchTerm){
   const filtered=S.clients.filter(c=>{
     if(c.deleted||c.isANBSelf)return false;
     const matchesSearch=term===''||c.name.toLowerCase().includes(term)||c.email.toLowerCase().includes(term)||c.phone.includes(term);
-    const isExpiredClient=x=>parseInt(x.monthlyFee)>0&&x.planExpiry&&new Date(x.planExpiry)<new Date(new Date().toDateString());
     const matchesPlan=planFilter===''||
-      (planFilter==='none'?!(parseInt(c.monthlyFee)>0):
-       planFilter==='expired'?isExpiredClient(c):
-       (parseInt(c.monthlyFee)===parseInt(planFilter)&&!isExpiredClient(c)));
+      (planFilter==='none'?!(parseInt(c.monthlyFee)>0):parseInt(c.monthlyFee)===parseInt(planFilter));
     return matchesSearch&&matchesPlan&&matchesContractStatus(c);
   });
   
@@ -5798,7 +5794,6 @@ function rAdminDash(el){
   const cardsWrap=document.createElement('div');
   renderQuickDashboard(cardsWrap,[
     {icon:'💼',label:t('clients_list')||'Clients List',onclickAttr:"setTab('clients')"},
-    {icon:'📋',label:t('add')+' '+(t('contracts')||'Contract'),onclickAttr:'openNewContractDialog()'},
     {icon:'💬',label:t('messages')||'Messages',onclickAttr:"goToAdminStat('messages')"}
   ],cards);
 
@@ -11522,16 +11517,12 @@ function rEditClient(el,cid){
         <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('credit-card',16)} ${t('billing_and_limits')||'Billing & Limits'}</span></div>
         <div style="padding:14px">
           <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:8px">${t('subscription_information')||'Subscription'}</div>
-          <div class="fr2">
-            <div class="fg"><label>${t('plan')||'Plan'}</label>
-              <select id="cf-fee">
-                <option value="0" ${!c?.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
-                ${renderPlanOptions(c?.monthlyFee)}
-              </select>
-            </div>
-            <div class="fg"><label>${t('subscription_end')||'Subscription end date'}</label><input type="date" id="cf-planexp" value="${escapeHtml(c?.planExpiry||'')}"/></div>
+          <div class="fg"><label>${t('plan')||'Plan'}</label>
+            <select id="cf-fee">
+              <option value="0" ${!c?.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
+              ${renderPlanOptions(c?.monthlyFee)}
+            </select>
           </div>
-          <div class="sec-desc" style="margin-top:-6px">${t('subscription_end_hint')||'Leave empty for an ongoing subscription with no fixed end date'}</div>
 
           <div style="border-top:1px solid var(--gr2);margin-top:12px;padding-top:14px">
             <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px">${t('monthly_limits')||'Monthly Transaction Limits'}</div>
@@ -11718,7 +11709,6 @@ function saveClientConfigTab(clientId){
   const updatedClient={
     ...c,
     monthlyFee:newFee,
-    planExpiry:document.getElementById('cf-planexp')?.value||'',
     monthlyInvoiceLimit:parseInt(document.getElementById('cf-inv-limit')?.value)||0,
     monthlyExpenseLimit:parseInt(document.getElementById('cf-exp-limit')?.value)||0,
     cardVisibility:TOGGLEABLE_CLIENT_CARDS.reduce((map,card)=>{
@@ -11806,16 +11796,14 @@ function openClientModal(c){
       </div>
 
       <div class="msec">💳 ${t('subscription_information')||'Subscription'}</div>
-      <div class="fr2">
-        <div class="fg"><label>${t('plan')||'Plan'}${isN?' *':''}</label>
-          <select id="cf-fee">
-            <option value="0" ${c&&!c.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
-            <option value="100" ${parseInt(c?.monthlyFee)===100?'selected':''}>Basic — €100/month</option>
-            <option value="150" ${!c||parseInt(c?.monthlyFee)===150?'selected':''}>Plus — €150/month</option>
-            <option value="200" ${parseInt(c?.monthlyFee)===200?'selected':''}>Pro — €200/month</option>
-          </select>
-        </div>
-        <div class="fg"><label>${t('subscription_end')||'Subscription end date'}</label><input type="date" id="cf-planexp" value="${escapeHtml(c?.planExpiry||'')}"/></div>
+      <div class="fg">
+        <label>${t('plan')||'Plan'}${isN?' *':''}</label>
+        <select id="cf-fee">
+          <option value="0" ${c&&!c.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
+          <option value="100" ${parseInt(c?.monthlyFee)===100?'selected':''}>Basic — €100/month</option>
+          <option value="150" ${!c||parseInt(c?.monthlyFee)===150?'selected':''}>Plus — €150/month</option>
+          <option value="200" ${parseInt(c?.monthlyFee)===200?'selected':''}>Pro — €200/month</option>
+        </select>
       </div>
 
       <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3);margin-top:14px">
@@ -11865,7 +11853,6 @@ function openClientModal(c){
         country:document.getElementById('cf-country').value,
         registrationNumber:document.getElementById('cf-regnum').value,
         monthlyFee:planVal,
-        planExpiry:document.getElementById('cf-planexp')?.value||'',
         customerBase:document.getElementById('cf-custbase')?.value||'business',
         color:'#7dbfa3',
         createdDate:TODAY()
@@ -11931,7 +11918,6 @@ function openClientModal(c){
         country:document.getElementById('cf-country').value,
         registrationNumber:document.getElementById('cf-regnum').value,
         monthlyFee:parseInt(document.getElementById('cf-fee')?.value)||0,
-        planExpiry:document.getElementById('cf-planexp')?.value||'',
         customerBase:document.getElementById('cf-custbase')?.value||'business'
       };
       if(updatedClient.monthlyFee!==c.monthlyFee){
