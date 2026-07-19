@@ -6497,7 +6497,7 @@ function postANBInvoiceToClientDocs(invoice,clientId){
     name:'ANB Invoice — '+(invoice.desc||invoice.num)+' ('+FMT(invoice.total)+')',
     type:'anb_invoice',category:'anb_invoice',
     sourceInvoiceId:invoice.id,
-    date:invoice.date,from:'anb',size:'—',
+    date:invoice.date,from:'anb',size:'—',createdAt:Date.now(),
     status:'pending_review'
   });
 }
@@ -7433,7 +7433,17 @@ function renderDocsList(cid,searchTerm,sortValue){
     return (d.name||'').toLowerCase().includes(term);
   });
   const [field,dir]=(sortValue||'date|desc').split('|');
-  docs=sortRows(docs,field,dir);
+  // ⚠️ إصلاح خلل حقيقي: حقل "date" يحمل التاريخ فقط بلا وقت (YYYY-MM-DD)،
+  // فأي مستندات مرفوعة بنفس اليوم كانت تتساوى في الترتيب وتبقى بترتيب
+  // الرفع الأصلي (الأقدم أولًا) بدل الأحدث أولًا فعليًا. الآن نستخدم طابعًا
+  // زمنيًا دقيقًا (createdAt) عند الترتيب حسب التاريخ تحديدًا، مع رجوع
+  // للتاريخ المحلَّل كـFallback للمستندات القديمة السابقة لهذا الإصلاح.
+  if(field==='date'){
+    docs=docs.map(d=>({...d,_sortTs:d.createdAt||(d.date?new Date(d.date).getTime():0)}));
+    docs=sortRows(docs,'_sortTs',dir);
+  }else{
+    docs=sortRows(docs,field,dir);
+  }
 
   container.innerHTML=docs.length===0?`<div class="empty" style="padding:28px 16px">
       <div style="font-size:32px;margin-bottom:8px">📁</div>
@@ -8579,7 +8589,7 @@ async function handleDocUpload(ev,cid){
       // نرفع الملف لـ R2 بدل تضمينه كنص Base64 كامل في بيانات التطبيق
       const uploaded=await uploadFileToR2(dataUrlToBlob(dataUrl),file.name,file.type||'application/octet-stream',cid);
       const docRecord={id:UID(),cid,name:file.name,type:file.type||'application/octet-stream',
-        date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),category:'general'};
+        date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),category:'general',createdAt:Date.now()};
       if(uploaded&&uploaded.url){
         docRecord.url=uploaded.url; // مُخزَّن في R2 - خفيف جدًا على بيانات التطبيق
       }else{
@@ -8677,6 +8687,12 @@ function rMessages(el,cid){
     // Admin: Simple list of clients + messages
     const selectedClient=S.selectedMsgClient;
     const isMobile=window.innerWidth<=860;
+    // ⭐ ترتيب قائمة العملاء حسب آخر نشاط رسائل فعليًا (الأحدث أولًا) - وليس
+    // بترتيب افتراضي/أبجدي كما كان. عميل بلا أي رسائل بعد يظهر في الآخر.
+    const _clientsSortedByMsg=S.clients.filter(c=>!c.deleted&&!c.isANBSelf).map(c=>{
+      const lastMsg=S.messages.filter(m=>m.cid===c.id&&!m.deleted).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];
+      return {c,lastTs:lastMsg?.createdAt||0};
+    }).sort((a,b)=>b.lastTs-a.lastTs).map(x=>x.c);
     
     if(isMobile&&selectedClient){
       // Mobile: Show only messages for selected client (full width)
@@ -8711,8 +8727,8 @@ function rMessages(el,cid){
       <div style="border:1px solid var(--gr1);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;height:600px;background:var(--white)">
         <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1)">💼 Clients</div>
         <div style="flex:1;overflow-y:auto">
-          ${S.clients.filter(c=>!c.deleted&&!c.isANBSelf).length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
-          S.clients.filter(c=>!c.deleted&&!c.isANBSelf).map(c=>{
+          ${_clientsSortedByMsg.length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
+          _clientsSortedByMsg.map(c=>{
             const unread=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead).length;
             return `<div onclick="selectMsgClient('${c.id}')" style="padding:14px;cursor:pointer;border-bottom:1px solid var(--gr1);background:transparent;user-select:none;display:flex;justify-content:space-between;align-items:center;transition:all 0.2s">
               <div style="font-weight:500;color:var(--t1)">${escapeHtml(c.name)}</div>
@@ -8728,8 +8744,8 @@ function rMessages(el,cid){
         <div style="border:1px solid var(--gr1);border-radius:8px;overflow:hidden;display:flex;flex-direction:column">
           <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1)">💼 Clients</div>
           <div style="flex:1;overflow-y:auto">
-            ${S.clients.filter(c=>!c.deleted&&!c.isANBSelf).length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
-            S.clients.filter(c=>!c.deleted&&!c.isANBSelf).map(c=>{
+            ${_clientsSortedByMsg.length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
+            _clientsSortedByMsg.map(c=>{
               const unread=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead).length;
               return `<div onclick="selectMsgClient('${c.id}')" style="padding:12px;cursor:pointer;border-bottom:1px solid var(--gr1);background:${selectedClient===c.id?'var(--gr2)':'transparent'};user-select:none">
                 <div style="display:flex;justify-content:space-between;align-items:center">
@@ -8826,6 +8842,7 @@ function sendMsgAdmin(cid){
     text:txt,
     date:TODAY(),
     time:now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'),
+    createdAt:now.getTime(),
     isRead:true,
     deleted:false
   });
@@ -8847,6 +8864,7 @@ function sendMsgClient(cid){
     text:txt,
     date:TODAY(),
     time:now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'),
+    createdAt:now.getTime(),
     isRead:false,
     deleted:false
   });
@@ -11343,7 +11361,11 @@ function openEditClient(id){
 // التقارير والموظفون والبنك والأصول وسجل النشاط أصبحت قابلة للتفعيل اختياريًا
 // لكل عميل على حدة (تبقى مخفية افتراضيًا حتى يُفعِّلها الأدمن صراحة له)،
 // بينما التبويبات الأساسية الثمانية تبقى ظاهرة افتراضيًا ويمكن إخفاؤها.
-const DEFAULT_VISIBLE_CARD_IDS=['invoices','expenses','debtors','creditors','hours','documents','messages','security','cash_ledger'];
+// ⭐ الشاشات الافتراضية المفعَّلة تلقائيًا لأي عميل جديد - الفواتير والمصاريف
+// والرسائل والمستندات والأمان فقط. أي شاشة أخرى (المدينون، الدائنون، الساعات،
+// دفتر النقدية، الكاشير، التقارير، الموظفون، البنك، الأصول...) تبقى معطَّلة
+// حتى يُفعِّلها الأدمن يدويًا لاحقًا من "إدارة الشاشات" حسب طبيعة عمل العميل.
+const DEFAULT_VISIBLE_CARD_IDS=['invoices','expenses','documents','messages','security'];
 const TOGGLEABLE_CLIENT_CARDS=[
   {id:'invoices',icon:'📄',label:'Invoices'},
   {id:'expenses',icon:'🧾',label:'Expenses'},
@@ -12721,7 +12743,7 @@ function openNewExpense(){
         const docId=UID();
         const uploaded1=await uploadFileToR2(dataUrlToBlob(dataUrl),file.name,file.type||'application/octet-stream',S.currentClient);
         const docRecord1={id:docId,cid:S.currentClient,name:file.name,type:file.type||'application/octet-stream',
-          date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),isNew:true,category:'receipt'};
+          date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),isNew:true,category:'receipt',createdAt:Date.now()};
         if(uploaded1&&uploaded1.url)docRecord1.url=uploaded1.url;else docRecord1.data=dataUrl;
         S.docs.push(docRecord1);
         attachedDocId=docId;
@@ -12786,7 +12808,7 @@ function openNewExpense(){
         const fileName2='Receipt_'+TODAY()+'_'+UID().slice(0,4)+'.jpg';
         const uploaded2=await uploadFileToR2(dataUrlToBlob(dataUrl),fileName2,'image/jpeg',S.currentClient);
         const docRecord2={id:docId,cid:S.currentClient,name:fileName2,type:'image/jpeg',
-          date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),isNew:true,category:'receipt'};
+          date:TODAY(),from:isAdmin()?'anb':'client',size:humanSize(sizeBytes),isNew:true,category:'receipt',createdAt:Date.now()};
         if(uploaded2&&uploaded2.url)docRecord2.url=uploaded2.url;else docRecord2.data=dataUrl;
         S.docs.push(docRecord2);
         attachedDocId=docId;
@@ -17872,7 +17894,7 @@ async function commitImportBatch(category,cid,rows,referenceTotal,supportingFile
       reader.onerror=()=>reject(new Error('Could not read supporting file: '+file.name));
       reader.readAsDataURL(file);
     });
-    S.docs.push({id:docId,cid,name:file.name,type:file.type,url:dataUrl,category:'migration_support',importBatchId:batchId,uploadDate:migrationDate,isNew:false});
+    S.docs.push({id:docId,cid,name:file.name,type:file.type,url:dataUrl,category:'migration_support',importBatchId:batchId,uploadDate:migrationDate,isNew:false,createdAt:Date.now()});
     newDocIds.push(docId);
   }
 
@@ -18052,7 +18074,7 @@ function createContractAgreement(client,contract){
     name:(contract?.title||'Service Agreement')+' — '+client.name,
     type:'agreement',category:'agreement',
     agreementId:agreement.id,contractId:contract?contract.id:null,
-    date:TODAY(),from:'anb',size:'—',
+    date:TODAY(),from:'anb',size:'—',createdAt:Date.now(),
     isNew:true,deleted:false
   });
 
