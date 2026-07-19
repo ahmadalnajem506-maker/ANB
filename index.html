@@ -8625,7 +8625,11 @@ function selectMsgClient(clientId){
   // ✅ الأدمن يفتح محادثة العميل → رسائل العميل (الواردة للأدمن) تُعلَّم كمقروءة من طرف الأدمن
   S.messages.filter(m=>m.cid===clientId&&m.from==='client'&&!m.isRead).forEach(m=>m.isRead=true);
   sv();
-  rMessages(document.getElementById('content'));
+  // ⚠️ إصلاح خلل حقيقي: كان يُعيد رسم منطقة المحتوى فقط (rMessages)، فتبقى
+  // شارة "غير مقروء" في القائمة الجانبية (عند تصفُّح تبويبات هذا العميل تحديدًا)
+  // عالقة على الرقم القديم رغم تعليم الرسائل كمقروءة فعليًا. renderApp() يُحدِّث
+  // كل الشارات دفعة واحدة (القائمة الجانبية + المحتوى) بدل واحدة فقط.
+  renderApp();
 }
 
 
@@ -8795,6 +8799,12 @@ function rMessages(el,cid){
     if(hadUnread){
       S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.isRead).forEach(m=>m.isRead=true);
       sv();
+      // ⚠️ إصلاح خلل حقيقي: هذا التعليم كمقروء يحدث *أثناء* تنفيذ نفس دورة
+      // الرسم التي رسمت القائمة الجانبية للتو بالعدد القديم (قبل التعليم
+      // كمقروء) - فتبقى شارة "غير مقروء" عالقة حتى إعادة رسم لاحقة. نُحدِّث
+      // القائمة الجانبية فورًا هنا تحديدًا (وليس renderApp الكاملة، تفاديًا
+      // لاستدعاء متداخل لنفس دورة الرسم الجارية بالفعل)
+      if(typeof renderSidebar==='function')setTimeout(renderSidebar,0);
     }
     // Client: Simple message view
     const clientMsgTerm=(S.msgSearchTerm||'').toLowerCase().trim();
