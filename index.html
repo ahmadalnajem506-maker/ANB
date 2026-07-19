@@ -2306,11 +2306,15 @@ async function syncNow(){
   }
   updateSyncBadge();
   cloudSyncInFlight=false;
-  // ✅ Only re-render if there were actual changes AND not viewing messages
-  // AND no modal currently open (لا نُفلت نموذجًا مفتوحًا من تحت يدي المستخدم
-  // أثناء تعبئته - مهم أكثر الآن بعد إضافة المزامنة الدورية كل 10 ثوانٍ)
-  const modalOpen=document.getElementById('mo')?.style.display==='flex';
-  if(S.role&&hadChanges&&S.tab!=='messages'&&!modalOpen)renderApp();
+  // ⚠️ إصلاح جذري (وليس ترقيعًا) لمشكلة الرفة: كانت أي مزامنة خلفية (الأولى
+  // بعد الفتح بثانية أو اثنتين، والدورية كل 10 ثوانٍ لاحقًا) تُطلِق renderApp()
+  // كاملة - أي تفكيك وإعادة بناء كل الشاشة (الشريط الجانبي + العلوي + المحتوى)
+  // من الصفر. هذا مزعج بصريًا دائمًا بغضّ النظر عن مدى دقة اكتشاف "هل تغيَّر
+  // شيء فعليًا" (جرَّبنا تحسين الدقة، والمشكلة استمرت/زادت لأن الجذر مختلف).
+  // الحل الجذري: لا نُطلِق أي إعادة رسم كاملة من المزامنة الخلفية إطلاقًا بعد
+  // الآن. S تبقى محدَّثة بصمت من الدمج أعلاه، وأي تنقُّل طبيعي لاحق (تبديل
+  // تبويب، فتح عميل...) سيعرض البيانات الطازجة تلقائيًا بلا أي رفة، لأن كل
+  // شاشة أصلًا تُعيد قراءة S من جديد عند رسمها.
 }
 
 // إعادة محاولة تلقائية بتأخير متصاعد عند فشل المزامنة (بدل الانتظار الصامت للمزامنة التالية فقط)
@@ -3947,7 +3951,7 @@ function renderSidebar(){
       {id:'contracts',icon:'📋',key:'contracts'},
       {id:'assets',icon:'🏢',key:'assets'},
     ];
-    const unreadMsgs=S.messages.filter(m=>m.cid===S.currentClient&&m.from==='client'&&!m.isRead&&!m.deleted).length;
+    const unreadMsgs=getUnreadMsgCount(S.currentClient,'admin');
     
     // ✅ إذا كان في صفحة البطاقات، لا نعرض الخيارات في الـ Sidebar
     if(S.tab==='client_overview'){
@@ -5664,7 +5668,7 @@ function renderClientsList(searchTerm){
     const overdue=inv.filter(i=>isInvoiceOverdue(i)).length;
     const pending=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).length;
     const exp=S.expenses.filter(e=>e.cid===c.id&&!e.deleted).length;
-    const msgs=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead&&!m.deleted).length;
+    const msgs=getUnreadMsgCount(c.id,'admin');
     
     // حساب إجمالي التنبيهات
     const totalAlerts=overdue+pending+(exp>0?1:0)+(msgs>0?1:0);
@@ -5790,7 +5794,7 @@ function rAdminDash(el){
   // ✅ لا يُحتسب ضمن "العملاء النشطين" من عقده ملغى أو معلَّق حاليًا
   const totalClients=S.clients.filter(c=>!c.deleted&&!c.isANBSelf&&c.accountStatus!=='cancelled'&&c.accountStatus!=='suspended').length;
   const pendingInvoices=S.invoices.filter(i=>['Openstaand','Verzonden','Verlopen'].includes(i.status)).length;
-  const newMessages=S.messages.filter(m=>m.from==='client'&&!m.isRead&&!m.deleted).length;
+  const newMessages=getUnreadMsgCount(null,'admin');
   const totalHours=S.hours.reduce((s,h)=>s+h.hrs,0);
   const overdueInvoices=S.invoices.filter(i=>isInvoiceOverdue(i)).length;
   // ✅ لا يُحتسب ضمن "المستندات الجديدة" إيصالات المصاريف (category:'receipt') بما أنها مستبعدة أصلًا من شاشة Documents نفسها
@@ -6068,8 +6072,7 @@ function rClientDash(el,cid){
   const hrs=S.hours.filter(h=>h.cid===cid&&!h.deleted);
   const billableHrs=hrs.filter(h=>!h.invoiced).length;
   
-  const msgs=S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.isRead&&!m.deleted);
-  const unreadMsgs=msgs.length;
+  const unreadMsgs=getUnreadMsgCount(cid,'client');
   
   const docs=S.docs.filter(d=>d.cid===cid&&d.isNew&&d.category!=='receipt');
   const unreadDocs=docs.length;
@@ -6408,8 +6411,7 @@ function rClientActionCards(el,cid){
   const hrs=S.hours.filter(h=>h.cid===cid&&!h.deleted);
   const billableHrs=hrs.filter(h=>!h.invoiced).length;
   
-  const msgs=S.messages.filter(m=>m.cid===cid&&m.from==='client'&&!m.isRead&&!m.deleted);
-  const unreadMsgs=msgs.length;
+  const unreadMsgs=getUnreadMsgCount(cid,'admin');
   
   // ⚠️ إصلاح: كانت تبحث سابقًا عن status==='pending_review' وهي ليست حالة عقد
   // إطلاقًا (بل حالة اتفاقية) - فالتنبيه لم يكن يظهر أبدًا. الحالة الصحيحة
@@ -8628,8 +8630,7 @@ function selectMsgClient(clientId){
   S.selectedMsgClient=clientId;
   S.msgSearchTerm=''; // نُصفِّر البحث عند التبديل بين محادثات عملاء مختلفين
   // ✅ الأدمن يفتح محادثة العميل → رسائل العميل (الواردة للأدمن) تُعلَّم كمقروءة من طرف الأدمن
-  S.messages.filter(m=>m.cid===clientId&&m.from==='client'&&!m.isRead).forEach(m=>m.isRead=true);
-  sv();
+  markMsgsRead(clientId,'admin');
   // ⚠️ إصلاح خلل حقيقي: كان يُعيد رسم منطقة المحتوى فقط (rMessages)، فتبقى
   // شارة "غير مقروء" في القائمة الجانبية (عند تصفُّح تبويبات هذا العميل تحديدًا)
   // عالقة على الرقم القديم رغم تعليم الرسائل كمقروءة فعليًا. renderApp() يُحدِّث
@@ -8686,6 +8687,29 @@ function editMessage(msgId){
     },t('save')||'Save');
 }
 
+// ══════════════════════════════════════════════════════════════════
+// ⭐ إصلاح جذري: كانت هناك أكثر من 10 حسابات منفصلة ومكرَّرة لـ"الرسائل غير
+// المقروءة" منتشرة في أنحاء الملف (لوحة الأدمن، الشريط الجانبي، قائمة
+// العملاء، شاشة العميل...) - أي منها قد يُنسى تحديثه عند تعديل لاحق، وهذا
+// بالضبط ما كان يُسبِّب بقاء الإشعار عالقًا رغم قراءة الرسالة فعليًا. الآن
+// كل شاشة تقرأ من هاتين الدالتين فقط - مصدر حقيقة واحد لا غير.
+// forRole='admin': يحسب رسائل العميل(اء) التي لم يقرأها الأدمن بعد.
+// forRole='client': يحسب رسائل ANB الموجَّهة لعميل معيَّن لم يقرأها هو بعد.
+// cid=null مع forRole='admin' يعني: الإجمالي عبر كل العملاء (لوحة تحكم الأدمن).
+function getUnreadMsgCount(cid,forRole){
+  if(forRole==='admin'){
+    return S.messages.filter(m=>!m.deleted&&!m.isRead&&m.from==='client'&&(cid==null||m.cid===cid)).length;
+  }
+  return S.messages.filter(m=>!m.deleted&&!m.isRead&&m.from==='anb'&&m.cid===cid).length;
+}
+function markMsgsRead(cid,forRole){
+  const fromWho=forRole==='admin'?'client':'anb';
+  const target=S.messages.filter(m=>m.cid===cid&&m.from===fromWho&&!m.isRead);
+  if(target.length===0)return false;
+  target.forEach(m=>m.isRead=true);
+  sv();
+  return true;
+}
 function rMessages(el,cid){
   if(!S.messages)S.messages=[];
   
@@ -8738,7 +8762,7 @@ function rMessages(el,cid){
         <div style="flex:1;overflow-y:auto">
           ${_clientsSortedByMsg.length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
           _clientsSortedByMsg.map(c=>{
-            const unread=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead).length;
+            const unread=getUnreadMsgCount(c.id,'admin');
             return `<div onclick="selectMsgClient('${c.id}')" style="padding:14px;cursor:pointer;border-bottom:1px solid var(--gr1);background:transparent;user-select:none;display:flex;justify-content:space-between;align-items:center;transition:all 0.2s">
               <div style="font-weight:500;color:var(--t1)">${escapeHtml(c.name)}</div>
               ${unread>0?`<span style="background:var(--red);color:white;font-size:10px;padding:3px 6px;border-radius:6px;font-weight:600">${unread}</span>`:''}
@@ -8755,7 +8779,7 @@ function rMessages(el,cid){
           <div style="flex:1;overflow-y:auto">
             ${_clientsSortedByMsg.length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
             _clientsSortedByMsg.map(c=>{
-              const unread=S.messages.filter(m=>m.cid===c.id&&m.from==='client'&&!m.isRead).length;
+              const unread=getUnreadMsgCount(c.id,'admin');
               return `<div onclick="selectMsgClient('${c.id}')" style="padding:12px;cursor:pointer;border-bottom:1px solid var(--gr1);background:${selectedClient===c.id?'var(--gr2)':'transparent'};user-select:none">
                 <div style="display:flex;justify-content:space-between;align-items:center">
                   <div style="font-weight:500;color:var(--t1)">${escapeHtml(c.name)}</div>
@@ -8800,10 +8824,8 @@ function rMessages(el,cid){
     },50);
   } else {
     // ✅ العميل فتح شاشة رسائله فعليًا الآن → رسائل الأدمن الموجَّهة له تُعلَّم كمقروءة من طرفه هو (وليس من طرف الأدمن)
-    const hadUnread=S.messages.some(m=>m.cid===cid&&m.from==='anb'&&!m.isRead);
+    const hadUnread=markMsgsRead(cid,'client');
     if(hadUnread){
-      S.messages.filter(m=>m.cid===cid&&m.from==='anb'&&!m.isRead).forEach(m=>m.isRead=true);
-      sv();
       // ⚠️ إصلاح خلل حقيقي: هذا التعليم كمقروء يحدث *أثناء* تنفيذ نفس دورة
       // الرسم التي رسمت القائمة الجانبية للتو بالعدد القديم (قبل التعليم
       // كمقروء) - فتبقى شارة "غير مقروء" عالقة حتى إعادة رسم لاحقة. نُحدِّث
