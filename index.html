@@ -2269,7 +2269,12 @@ async function syncNow(){
   const cloudPayload=cloud.payload||{};
   const merged={};
   CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{merged[k]=mergeArraysById(S[k],cloudPayload[k]);});
-  const hadChanges=CLOUD_SYNC_ARRAY_KEYS.some(k=>merged[k].length!==S[k].length);
+  // ⚠️ إصلاح خلل حقيقي: المقارنة السابقة كانت تقارن *عدد العناصر* فقط، وليس
+  // محتواها - أي فرق طفيف (ترتيب مختلف، أو تحديث حقل بلا تغيير العدد، أو حتى
+  // فروقات بسيطة من تقليم النطاق المحلي) كان يُبلَّغ كـ"تغيير حقيقي"، فيُطلِق
+  // إعادة رسم كاملة للتطبيق (الرفة المرئية) في كل مرة تقريبًا بعد فتحه مباشرة،
+  // لأن هذه المزامنة تعمل تلقائيًا فور الإطلاق. الآن نقارن المحتوى الفعلي.
+  const hadChanges=CLOUD_SYNC_ARRAY_KEYS.some(k=>JSON.stringify(merged[k])!==JSON.stringify(S[k]));
   CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{S[k]=merged[k];});
   pruneLocalStateToOwnScope();
   if(!S.settings)S.settings=cloudPayload.settings||{};
