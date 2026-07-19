@@ -2736,6 +2736,12 @@ async function submitForcedPasswordChange(){
       return;
     }
     window._mustChangePassword=false;
+    // ⚠️ تحديث محلي فوري للسجل الفعلي أيضًا - ليس فقط المتغيّر المؤقت -
+    // متسقًا مع الفحص الأكثر موثوقية في launchApp() أعلاه
+    const _acc=isAdmin()
+      ?S.admins.find(a=>a.id===S.currentAdmin)
+      :S.clients.find(c=>c.id===S.currentClient);
+    if(_acc)_acc.mustChangePassword=false;
     document.getElementById('forced-pwchange-overlay')?.remove();
     toast('✓ '+(t('password_updated')||'Password updated successfully'));
   }catch(e){
@@ -3698,10 +3704,18 @@ function launchApp(){
   renderApp();
   syncNow();
   maybeShowInstallPrompt();
-  // ⭐ إن كانت كلمة المرور مؤقتة (مُولَّدة تلقائيًا عند إنشاء الحساب أو إعادة
-  // تعيينها)، تُفرَض شاشة "حدِّد كلمة مرورك" فورًا فوق كل شيء - لا يمكن
-  // تجاوزها أو إغلاقها قبل تعيين كلمة مرور خاصة بالمستخدم نفسه
-  if(window._mustChangePassword){
+  // ⚠️ إصلاح خلل حقيقي: كان الفحص يعتمد فقط على window._mustChangePassword
+  // (متغيّر مؤقت بالذاكرة يُضبَط فقط أثناء تسجيل الدخول الفعلي عبر doLogin/
+  // التحقق بخطوتين) - أي تحديث للصفحة أو إعادة فتح التطبيق لاحقًا (مسار
+  // "استئناف الجلسة" أدناه) يستدعي launchApp() مباشرة بلا المرور بذلك
+  // الفحص إطلاقًا، فيُفقَد المتغيّر ولا تظهر الشاشة الإلزامية أبدًا بعد أول
+  // مرة. الحل الصحيح: التحقق من الحقل الفعلي المحفوظ في سجل الحساب نفسه
+  // (S.admins/S.clients) بعد اكتمال المزامنة أعلاه - يبقى صحيحًا عبر أي
+  // عدد من عمليات إعادة التحميل، لأنه يُقرَأ من البيانات المُزامَنة فعليًا.
+  const _currentAccount=isAdmin()
+    ?S.admins.find(a=>a.id===S.currentAdmin)
+    :S.clients.find(c=>c.id===S.currentClient);
+  if(window._mustChangePassword||_currentAccount?.mustChangePassword){
     setTimeout(showForcedPasswordChangeScreen,300);
   }
 
@@ -5987,6 +6001,37 @@ function dismissStartHereChecklist(cid){
   renderContent();
 }
 
+// ⭐ عدّاد تسجيل الساعات - مُوحَّد الآن في دالة واحدة بدل تكراره كاملًا في
+// مكانين منفصلين (لوحة التحكم وشاشة الساعات)، وأصغر حجمًا وأكثر تنظيمًا:
+// زر التشغيل/الإيقاف من 56px إلى 40px، رقم العدّاد من 30px إلى 20px، حشو
+// أقل، وصف التصنيف/المهمة/الإيقاف مُعاد ترتيبها بشكل أوضح.
+function renderTimerWidget(cid){
+  const tmr=S.timer;
+  const todayHoursTotal=(S.hours||[]).filter(h=>h.cid===cid&&!h.deleted&&h.date===TODAY()).reduce((s,h)=>s+(h.hrs||0),0);
+  return `<div style="background:linear-gradient(135deg, #0A2218 0%, ${tmr.running?'#12331f':'#0F3025'} 100%);border:1.5px solid ${tmr.running?'#4da876':'#C89010'};border-radius:12px;padding:10px 12px;margin-bottom:12px;color:#fff;transition:all .4s ease;box-shadow:${tmr.running?'0 0 0 2px rgba(77,168,118,0.15)':'none'}">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <button onclick="timerToggle()" style="flex-shrink:0;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;background:${tmr.running?'linear-gradient(135deg,#4da876,#3a8c62)':'linear-gradient(135deg,#FFD700,#C89010)'};display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3)">
+        <span style="font-size:16px;color:${tmr.running?'#fff':'#0A2218'};margin-left:${tmr.running?'0':'2px'}">${tmr.running?'⏸':'▶'}</span>
+      </button>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="font-family:var(--fm);font-size:20px;font-weight:700;letter-spacing:1px;line-height:1" id="timer-disp">${fmtT(tmr.seconds)}</div>
+          ${tmr.running?'<span style="width:6px;height:6px;border-radius:50%;background:#4da876;animation:timerPulse 1.4s ease-in-out infinite"></span>':''}
+        </div>
+        <div style="font-size:9px;color:rgba(255,255,255,.55);margin-top:2px;text-transform:uppercase;letter-spacing:.5px">${tmr.running?(t('tracking')||'Tracking'):(t('timer_stopped')||'Timer stopped')} ${todayHoursTotal>0?'· '+todayHoursTotal.toFixed(1)+'h '+(t('logged_today')||'logged today'):''}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+      <select id="t-cat" style="flex:1;min-width:90px;padding:6px 8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:6px;color:#fff;font-size:10px;cursor:pointer">
+        ${getClientHourCategories(cid).map(cat=>`<option style="color:#000">${escapeHtml(cat)}</option>`).join('')}
+      </select>
+      <input id="t-task" placeholder="${t('task_placeholder')||'Task...'}" style="flex:1.3;min-width:90px;padding:6px 8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:6px;color:#fff;font-size:10px"/>
+      <button style="padding:6px 10px;border-radius:6px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:10px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px" onclick="timerStop('${cid}')">⏹ ${t('stop_and_log')||'Stop & log'}</button>
+    </div>
+    <div style="font-size:8.5px;color:rgba(255,255,255,.4);margin-top:6px;display:flex;align-items:center;gap:3px">📊 ${t('timer_urencriterium_hint')||'Logged hours count toward the 1,225-hour urencriterium threshold'}</div>
+  </div>
+  <style>@keyframes timerPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}</style>`;
+}
 function rClientDash(el,cid){
   const c=S.clients.find(c=>c.id===cid);
 
@@ -6084,33 +6129,7 @@ function rClientDash(el,cid){
     </div>
   </div>
 
-  ${(()=>{
-    const tmr=S.timer;
-    const todayHoursTotal=(S.hours||[]).filter(h=>h.cid===cid&&!h.deleted&&h.date===TODAY()).reduce((s,h)=>s+(h.hrs||0),0);
-    return `<div style="background:linear-gradient(135deg, #0A2218 0%, ${tmr.running?'#12331f':'#0F3025'} 100%);border:2px solid ${tmr.running?'#4da876':'#C89010'};border-radius:14px;padding:16px;margin-bottom:14px;color:#fff;transition:all .4s ease;box-shadow:${tmr.running?'0 0 0 3px rgba(77,168,118,0.15)':'none'}">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-      <button onclick="timerToggle()" style="flex-shrink:0;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:${tmr.running?'linear-gradient(135deg,#4da876,#3a8c62)':'linear-gradient(135deg,#FFD700,#C89010)'};display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.3);transition:all .25s" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
-        <span style="font-size:22px;color:${tmr.running?'#fff':'#0A2218'};margin-left:${tmr.running?'0':'3px'}">${tmr.running?'⏸':'▶'}</span>
-      </button>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px">
-          <div style="font-family:var(--fm);font-size:30px;font-weight:700;letter-spacing:2px;line-height:1" id="timer-disp">${fmtT(tmr.seconds)}</div>
-          ${tmr.running?'<span style="width:8px;height:8px;border-radius:50%;background:#4da876;animation:timerPulse 1.4s ease-in-out infinite"></span>':''}
-        </div>
-        <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px;text-transform:uppercase;letter-spacing:.6px">${tmr.running?(t('tracking')||'Tracking'):(t('timer_stopped')||'Timer stopped')} ${todayHoursTotal>0?'· '+todayHoursTotal.toFixed(1)+'h '+(t('logged_today')||'logged today'):''}</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <select id="t-cat" style="flex:1;min-width:100px;padding:8px 10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:11px;cursor:pointer">
-        ${getClientHourCategories(cid).map(cat=>`<option style="color:#000">${escapeHtml(cat)}</option>`).join('')}
-      </select>
-      <input id="t-task" placeholder="${t('task_placeholder')||'Task...'}" style="flex:1.3;min-width:100px;padding:8px 10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:11px"/>
-      <button style="padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px" onclick="timerStop('${cid}')">⏹ ${t('stop_and_log')||'Stop & log'}</button>
-    </div>
-    <div style="font-size:9.5px;color:rgba(255,255,255,.4);margin-top:8px;display:flex;align-items:center;gap:4px">📊 ${t('timer_urencriterium_hint')||'Logged hours count toward the 1,225-hour urencriterium threshold'}</div>
-  </div>
-  <style>@keyframes timerPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}</style>`;
-  })()}
+  ${renderTimerWidget(cid)}
 
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
     <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
@@ -6318,33 +6337,7 @@ function rANBOverview(el,cid){
     <div onclick="selectCard('edit_client')" style="background:rgba(200,144,16,0.15);border:1.5px solid #C89010;border-radius:8px;padding:9px;text-align:center;color:#FFD700;font-size:11.5px;font-weight:700;cursor:pointer">⚙️ ${t('company_settings')||'Company Settings'}</div>
   </div>
 
-  ${(()=>{
-    const tmr=S.timer;
-    const todayHoursTotal=(S.hours||[]).filter(h=>h.cid===cid&&!h.deleted&&h.date===TODAY()).reduce((s,h)=>s+(h.hrs||0),0);
-    return `<div style="background:linear-gradient(135deg, #0A2218 0%, ${tmr.running?'#12331f':'#0F3025'} 100%);border:2px solid ${tmr.running?'#4da876':'#C89010'};border-radius:14px;padding:16px;margin-bottom:14px;color:#fff;transition:all .4s ease;box-shadow:${tmr.running?'0 0 0 3px rgba(77,168,118,0.15)':'none'}">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-      <button onclick="timerToggle()" style="flex-shrink:0;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:${tmr.running?'linear-gradient(135deg,#4da876,#3a8c62)':'linear-gradient(135deg,#FFD700,#C89010)'};display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.3);transition:all .25s" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
-        <span style="font-size:22px;color:${tmr.running?'#fff':'#0A2218'};margin-left:${tmr.running?'0':'3px'}">${tmr.running?'⏸':'▶'}</span>
-      </button>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px">
-          <div style="font-family:var(--fm);font-size:30px;font-weight:700;letter-spacing:2px;line-height:1" id="timer-disp">${fmtT(tmr.seconds)}</div>
-          ${tmr.running?'<span style="width:8px;height:8px;border-radius:50%;background:#4da876;animation:timerPulse 1.4s ease-in-out infinite"></span>':''}
-        </div>
-        <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px;text-transform:uppercase;letter-spacing:.6px">${tmr.running?(t('tracking')||'Tracking'):(t('timer_stopped')||'Timer stopped')} ${todayHoursTotal>0?'· '+todayHoursTotal.toFixed(1)+'h '+(t('logged_today')||'logged today'):''}</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <select id="t-cat" style="flex:1;min-width:100px;padding:8px 10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:11px;cursor:pointer">
-        ${getClientHourCategories(cid).map(cat=>`<option style="color:#000">${escapeHtml(cat)}</option>`).join('')}
-      </select>
-      <input id="t-task" placeholder="${t('task_placeholder')||'Task...'}" style="flex:1.3;min-width:100px;padding:8px 10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:11px"/>
-      <button style="padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px" onclick="timerStop('${cid}')">⏹ ${t('stop_and_log')||'Stop & log'}</button>
-    </div>
-    <div style="font-size:9.5px;color:rgba(255,255,255,.4);margin-top:8px;display:flex;align-items:center;gap:4px">📊 ${t('timer_urencriterium_hint')||'Logged hours count toward the 1,225-hour urencriterium threshold'}</div>
-  </div>
-  <style>@keyframes timerPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}</style>`;
-  })()}
+  ${renderTimerWidget(cid)}
 
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
     <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
@@ -11447,13 +11440,13 @@ function rEditClient(el,cid){
             <div class="fg"><label>${t('lbl_iban')||'IBAN'} *</label><input id="cf-i" value="${escapeHtml(c?.iban||'')}" placeholder="NL91ABNA0417164300"/></div>
             <div class="fg"><label>${t('lbl_bic')||'BIC'}</label><input id="cf-bic" value="${escapeHtml(c?.bic||'')}" placeholder="ABNANL2A"/></div>
           </div>
-          <div class="fg"><label>${t('customer_base_label')||'Customer Base'}</label>
+          ${cid!==ANB_SELF_ID?`<div class="fg"><label>${t('customer_base_label')||'Customer Base'}</label>
             <select id="cf-custbase">
               <option value="business" ${(c?.customerBase||'business')==='business'?'selected':''}>${t('customer_base_business')||'Mostly businesses (B2B)'}</option>
               <option value="individuals" ${c?.customerBase==='individuals'?'selected':''}>${t('customer_base_individuals')||'Mostly private individuals — 90%+ (B2C)'}</option>
             </select>
             <div class="sec-desc" style="margin:4px 0 0">${t('customer_base_hint')||'Determines the legal VAT accounting basis (Factuurstelsel/invoice basis for B2B, or Kasstelsel/cash basis eligible for 90%+ consumer sales — per Belastingdienst rules)'}</div>
-          </div>
+          </div>`:''}
         </div>
       </div>
 
@@ -11484,14 +11477,11 @@ function rEditClient(el,cid){
         <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('building-2',16)} ${t('anb_own_details')||'ANB\u2019s Own Details'}</span></div>
         <div style="padding:14px">
           <div class="sec-desc">${t('anb_own_details_hint')||'These extra fields apply only to ANB itself (not a regular client) — shown on invoices, contracts, and the client-facing service agreement.'}</div>
-          <div class="fg"><label>${t('set_tagline')||'Tagline'}</label><input id="cf-anb-tagline" value="${escapeHtml(S.settings?.tagline||'')}"/></div>
-          <div class="fg"><label>${t('set_website')||'Website'}</label><input id="cf-anb-website" placeholder="https://…" value="${escapeHtml(S.settings?.website||'')}"/></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('shield',16)} ${t('set_insurance_title')||'Professional Indemnity Insurance'}</span></div>
-        <div style="padding:14px">
-          <div class="sec-desc">${t('set_insurance_hint')||'Referenced in the liability clause of client service agreements. Leave blank until you have an actual policy.'}</div>
+          <div class="fr2">
+            <div class="fg"><label>${t('set_tagline')||'Tagline'}</label><input id="cf-anb-tagline" value="${escapeHtml(S.settings?.tagline||'')}"/></div>
+            <div class="fg"><label>${t('set_website')||'Website'}</label><input id="cf-anb-website" placeholder="https://…" value="${escapeHtml(S.settings?.website||'')}"/></div>
+          </div>
+          <div class="sec-desc" style="margin-top:8px;padding-top:10px;border-top:1px solid var(--gr2)">${LICON('shield',13)} ${t('set_insurance_title')||'Professional Indemnity Insurance'} — ${t('set_insurance_hint')||'referenced in client service agreements, leave blank until you have an actual policy.'}</div>
           <div class="fr2">
             <div class="fg"><label>${t('set_insurer_name')||'Insurer'}</label><input id="cf-anb-ins-name" value="${escapeHtml(S.settings?.insurerName||'')}"/></div>
             <div class="fg"><label>${t('set_policy_number')||'Policy number'}</label><input id="cf-anb-ins-policy" value="${escapeHtml(S.settings?.insurancePolicyNumber||'')}"/></div>
