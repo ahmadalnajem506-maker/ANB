@@ -43,6 +43,7 @@
   --t1:#1A1810;--t2:#48443A;--t3:#888070;
   --green:#1B5E35;--green-bg:#EAF4ED;
   --red:#B8860B;--red-bg:#FDF8EC;
+  --danger:#a83232;--danger-bg:rgba(168,50,50,0.1);
   --orange:#7A4A00;--orange-bg:#FEF3E2;
   --blue:#1a4d2e;--blue-bg:#EAF4ED;
   --sw:240px;
@@ -67,6 +68,7 @@ body.dark-mode{
   --t1:#F0EDE4;--t2:#C4C0B4;--t3:#8A9088;
   --green:#4DA876;--green-bg:#16261C;
   --red:#E0B830;--red-bg:#2A2214;
+  --danger:#E85D5D;--danger-bg:rgba(232,93,93,0.15);
   --orange:#E0A040;--orange-bg:#2A2014;
   --blue:#4DA876;--blue-bg:#16261C;
   --sh:0 1px 2px rgba(0,0,0,.25),0 6px 20px rgba(0,0,0,.35);
@@ -415,7 +417,7 @@ tr:hover td{background:var(--gr1)}
 .bdg{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
 .b-paid{background:var(--green-bg);color:var(--green)}
 .b-open{background:var(--orange-bg);color:var(--orange)}
-.b-over{background:rgba(168,50,50,0.1);color:#a83232}
+.b-over{background:var(--danger-bg);color:var(--danger)}
 .b-draft{background:var(--gr1);color:var(--t3);border:1px solid var(--gr2)}
 .b-sent{background:var(--blue-bg);color:var(--blue)}
 .btn{padding:6px 12px;border-radius:var(--rs);font-size:12px;cursor:pointer;
@@ -505,7 +507,7 @@ tr:hover td{background:var(--gr1)}
   font-size:10px;font-weight:600;color:var(--t3);transition:all .15s}
 .settings-nav-btn .snb-icon{font-size:16px;line-height:1}
 .settings-nav-btn.active{background:var(--g1);color:#FFD700;box-shadow:var(--sh)}
-.settings-nav-btn.danger.active{background:#a83232;color:#fff}
+.settings-nav-btn.danger.active{background:var(--danger);color:#fff}
 .sec-desc{font-size:11px;color:var(--t3);line-height:1.6;margin-bottom:14px}
 .msec{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--gold);
   margin:18px 0 10px;padding-top:16px;border-top:1px solid var(--gr2);display:flex;align-items:center;gap:6px}
@@ -1416,7 +1418,7 @@ html { scroll-behavior: smooth; }
 
 <script>
 /* ═══════════════════════════ DATA ═══════════════════════════ */
-const COLORS=['#1B5E35','#1B5E35','#C89010','#D4A520','#4da876','#2d7a4f','#B8860B','#1B5E35'];
+const COLORS=['#1B5E35','#1B5E35','#C89010','#D4A520','#4da876','#2d7a4f','var(--red)','#1B5E35'];
 const FMT=n=>'€'+(+(n||0)).toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});
 const FMTi=FMT; // موحّدة الآن مع FMT لتفادي ظهور نفس المبلغ بشكلين مختلفين في التطبيق
 
@@ -2405,8 +2407,8 @@ function updateSyncBadge(){
     idle:{dot:'#999',text:t('not_synced')},
     syncing:{dot:'#C89010',text:t('syncing')},
     synced:{dot:'#2E7D32',text:t('synced')},
-    error:{dot:'#B8860B',text:t('sync_error')},
-    offline:{dot:'#B8860B',text:t('offline')},
+    error:{dot:'var(--red)',text:t('sync_error')},
+    offline:{dot:'var(--red)',text:t('offline')},
   };
   const m=map[cloudSyncStatus]||map.idle;
   const lastSync=localStorage.getItem('anb5_synced_at');
@@ -2771,7 +2773,7 @@ function showForcedPasswordChangeScreen(){
     </div>
     <div class="fg"><label>${t('new_password')||'New Password'}</label><input type="password" id="fpc-new" autocomplete="new-password"/></div>
     <div class="fg"><label>${t('confirm_new_password')||'Confirm New Password'}</label><input type="password" id="fpc-confirm" autocomplete="new-password"/></div>
-    <div id="fpc-error" style="color:#a83232;font-size:11px;margin-bottom:10px;display:none"></div>
+    <div id="fpc-error" style="color:var(--danger);font-size:11px;margin-bottom:10px;display:none"></div>
     <button class="btn btn-p" onclick="submitForcedPasswordChange()" style="width:100%;padding:12px;font-weight:700">${t('save_and_continue')||'Save & Continue'}</button>
   </div>`;
   document.body.appendChild(overlay);
@@ -2869,14 +2871,14 @@ async function askAdminAssistant(){
     document.getElementById(thinkingId)?.remove();
     if(!res.ok){
       const errData=await res.json().catch(()=>({}));
-      log.innerHTML+=`<div style="align-self:flex-start;max-width:85%;background:rgba(168,50,50,.1);color:#a83232;padding:9px 12px;border-radius:12px 12px 12px 2px;font-size:12px">⚠ ${escapeHtml(errData.message||errData.error||'Something went wrong')}</div>`;
+      log.innerHTML+=`<div style="align-self:flex-start;max-width:85%;background:rgba(168,50,50,.1);color:var(--danger);padding:9px 12px;border-radius:12px 12px 12px 2px;font-size:12px">⚠ ${escapeHtml(errData.message||errData.error||'Something went wrong')}</div>`;
     }else{
       const data=await res.json();
       log.innerHTML+=`<div style="align-self:flex-start;max-width:85%;background:var(--gr1);color:var(--t1);padding:9px 12px;border-radius:12px 12px 12px 2px;font-size:12.5px;white-space:pre-wrap;line-height:1.5">${escapeHtml(data.answer)}</div>`;
     }
   }catch(e){
     document.getElementById(thinkingId)?.remove();
-    log.innerHTML+=`<div style="align-self:flex-start;font-size:12px;color:#a83232">⚠ Network error - please try again</div>`;
+    log.innerHTML+=`<div style="align-self:flex-start;font-size:12px;color:var(--danger)">⚠ Network error - please try again</div>`;
   }
   sendBtn.disabled=false;
   log.scrollTop=log.scrollHeight;
@@ -3696,7 +3698,7 @@ function checkPwStrength(){
   if(/[^A-Za-z0-9]/.test(pw))score++;
   const levels=[
     {w:'20%',bg:'#7A4A00',t:'Too short'},
-    {w:'40%',bg:'#B8860B',t:'Weak'},
+    {w:'40%',bg:'var(--red)',t:'Weak'},
     {w:'60%',bg:'#D4A520',t:'Fair'},
     {w:'80%',bg:'#7dbfa3',t:'Good'},
     {w:'100%',bg:'#1B5E35',t:'Strong ✓'},
@@ -4757,7 +4759,7 @@ function openEditContract(contractId,cid){
 
   showModal('Edit Contract',`
     <div style="display:flex;flex-direction:column;gap:12px">
-      ${locked?`<div style="background:rgba(168,50,50,0.1);border-left:4px solid #a83232;padding:10px;border-radius:4px;font-size:12px;color:#a83232">🚫 This contract is cancelled and read-only.</div>`:''}
+      ${locked?`<div style="background:var(--danger-bg);border-left:4px solid var(--danger);padding:10px;border-radius:4px;font-size:12px;color:var(--danger)">🚫 This contract is cancelled and read-only.</div>`:''}
 
       <div>
         <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📋 Contract Title *</label>
@@ -5136,12 +5138,12 @@ function renderClientContractsList(cid,searchTerm,sortValue){
       const latestAgreement=linkedAgreements[0];
       const agreementDoc=latestAgreement?(S.docs||[]).find(d=>d.agreementId===latestAgreement.id):null;
       const agreementStatusMeta={
-        pending_review:{label:t('agreement_status_pending')||'Awaiting client review',color:'#B8860B'},
+        pending_review:{label:t('agreement_status_pending')||'Awaiting client review',color:'var(--red)'},
         client_signed:{label:t('agreement_status_signed')||'Signed — awaiting your approval',color:'#2d7a4f'},
-        changes_requested:{label:t('agreement_status_changes')||'Client requested changes',color:'#a83232'},
+        changes_requested:{label:t('agreement_status_changes')||'Client requested changes',color:'var(--danger)'},
         active:{label:t('agreement_status_active')||'Signed & active',color:'#2d7a4f'},
-        client_rejected:{label:t('agreement_status_rejected')||'Rejected by client',color:'#a83232'},
-        rejected:{label:t('agreement_status_rejected')||'Rejected by client',color:'#a83232'},
+        client_rejected:{label:t('agreement_status_rejected')||'Rejected by client',color:'var(--danger)'},
+        rejected:{label:t('agreement_status_rejected')||'Rejected by client',color:'var(--danger)'},
       };
       const meta=latestAgreement?agreementStatusMeta[latestAgreement.status]:null;
       return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
@@ -5261,7 +5263,7 @@ function renderAssetsList(cid,searchTerm,sortValue){
             <div style="font-weight:600;font-size:12px;color:var(--t1)">${escapeHtml(a.name||'')} <span style="font-size:9px;color:var(--t3);font-weight:400">(${a.category||'Other'})</span></div>
             <div style="font-size:11px;color:var(--t3);margin-top:2px">${escapeHtml(a.desc||'')}</div>
             ${a.isImmediatelyExpensable?
-              `<div style="font-size:10px;color:#B8860B;margin-top:4px">⚠️ ${t('expensed_immediately')||'Expensed immediately (< €450)'} — ${FMT(a.acquisitionCost)}</div>`:
+              `<div style="font-size:10px;color:var(--red);margin-top:4px">⚠️ ${t('expensed_immediately')||'Expensed immediately (< €450)'} — ${FMT(a.acquisitionCost)}</div>`:
               `<div style="font-size:10px;color:var(--t3);margin-top:4px">${t('acquired')||'Acquired'}: ${FD(a.acquisitionDate)} · ${t('cost')||'Cost'}: ${FMT(a.acquisitionCost)} · ${t('useful_life')||'Life'}: ${a.usefulLifeYears}${t('yrs_short')||'y'}</div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px">
                 <div style="font-size:10px"><span style="color:var(--t3)">${t('book_value')||'Book Value'}:</span> <strong>${FMT(bookValue)}</strong></div>
@@ -5269,7 +5271,7 @@ function renderAssetsList(cid,searchTerm,sortValue){
                 <div style="font-size:10px"><span style="color:var(--t3)">${t('per_year')||'Per Year'}:</span> <strong>${FMT(annualDep)}</strong></div>
               </div>`}
             ${a.loanFinanced||a.isVehicle?`<div style="margin-top:8px;padding:8px 10px;background:var(--gr1);border-radius:6px">
-              ${a.isVehicle&&a.privateUsePercent>0?`<div style="font-size:10px;color:#B8860B;margin-bottom:4px">⚠️ ${t('private_use_percent')||'Private Use'}: <strong>${a.privateUsePercent}%</strong> — ${t('bijtelling_may_apply')||'Bijtelling may apply, confirm with tax advisor'}</div>`:''}
+              ${a.isVehicle&&a.privateUsePercent>0?`<div style="font-size:10px;color:var(--red);margin-bottom:4px">⚠️ ${t('private_use_percent')||'Private Use'}: <strong>${a.privateUsePercent}%</strong> — ${t('bijtelling_may_apply')||'Bijtelling may apply, confirm with tax advisor'}</div>`:''}
               ${a.loanFinanced?`<div style="font-size:10px;color:var(--t1)">🏦 ${t('loan_remaining_amount')||'Loan Remaining'}: <strong>${FMT(a.loanRemainingAmount)}</strong> @ ${a.loanInterestRate}% ${t('per_year')||'/year'}</div>
                 <div style="font-size:10px;color:var(--t3);margin-top:2px">${t('loan_payments_logged')||'Payments logged'}: ${(a.loanPayments||[]).length}</div>`:''}
             </div>`:''}
@@ -5773,7 +5775,7 @@ function renderClientsList(searchTerm){
       isExpired?(t('expired')||'Expired'):(planNames[monthlyFeeInt]||'Basic');
     const planColor=isExpired?'#7A4A00':hasSubscription?(planColors[monthlyFeeInt]||'#0A2218'):'#888070';
     const planBg=isExpired?'#FEF3E2':hasSubscription?(planBgColors[monthlyFeeInt]||'#E8F4F0'):'#F4F2EC';
-    const planBorder=isExpired?'#B8860B':hasSubscription?(planBorderColors[monthlyFeeInt]||'#2d7a4f'):'#C4C0B0';
+    const planBorder=isExpired?'var(--red)':hasSubscription?(planBorderColors[monthlyFeeInt]||'#2d7a4f'):'#C4C0B0';
     
     return `
     <div onclick="selClient('${c.id}')" style="padding:10px 12px;background:${planBg};border:1.5px solid ${planBorder};border-left:3px solid ${planColor};border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .15s ease;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,0.05)"
@@ -5793,7 +5795,7 @@ function renderClientsList(searchTerm){
       <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
         ${awaitingSignature?'<span style="background:#FEF3E2;color:#7A4A00;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600">📝'+(t('awaiting_signature')||'Awaiting Signature')+'</span>':''}
         ${contractNeedsRenewal?'<span style="background:#FDF8EC;color:#8a6410;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600">🔔'+(t('needs_renewal')||'Needs Renewal')+'</span>':''}
-        ${contractSuspended?'<span style="background:rgba(184,134,11,0.15);color:#B8860B;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600">⏸'+(t('suspended')||'Suspended')+'</span>':''}
+        ${contractSuspended?'<span style="background:rgba(184,134,11,0.15);color:var(--red);font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600">⏸'+(t('suspended')||'Suspended')+'</span>':''}
         ${overdue>0?'<span style="background:#FDF8EC;color:#7A4A00;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600">⚠️'+overdue+'</span>':''}
         ${msgs>0?'<span style="background:#c8e6c9;color:#1b5e20;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600">💬'+msgs+'</span>':''}
         ${totalAlerts>0?'<span style="background:#1a4d2e;color:white;font-weight:700;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px">'+totalAlerts+'</span>':''}
@@ -5865,7 +5867,7 @@ function renderQuickDashboard(el,quickActions,cards,styleOpts){
     calm.forEach(c=>{
       html+='<div onclick="'+c.onclickAttr+'" style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:9px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden">';
       html+='<div style="font-size:17px;flex-shrink:0">'+c.icon+'</div>';
-      html+='<div style="min-width:0;overflow:hidden"><div style="font-size:10.5px;font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:13px;font-weight:800;color:#0A2218">'+c.value+'</div></div>';
+      html+='<div style="min-width:0;overflow:hidden"><div style="font-size:10.5px;font-weight:700;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:13px;font-weight:800;color:#0A2218">'+c.value+'</div></div>';
       html+='</div>';
     });
     html+='</div>';
@@ -5904,7 +5906,7 @@ function rAdminDash(el){
     // ⭐ حذفت بطاقة "Active Contracts" - عميل نشط (Active Clients أعلاه) يعني
     // عمليًا عقدًا نشطًا في كل الحالات تقريبًا، فتكرار الرقم ببطاقة منفصلة لا
     // يضيف معلومة جديدة فعلية، فقط ازدحامًا بصريًا لنفس المفهوم
-    ...(contractsNeedingAttention>0?[{icon:'🔔',name:t('dashboard_contracts_attention')||'Contracts Needing Attention',alertText:contractsNeedingAttention,value:contractsNeedingAttention,color:'linear-gradient(135deg, #B8860B 0%, #d4a017 100%)',onclickAttr:"goToAdminStat('contracts_filter:needsAttention')"}]:[])
+    ...(contractsNeedingAttention>0?[{icon:'🔔',name:t('dashboard_contracts_attention')||'Contracts Needing Attention',alertText:contractsNeedingAttention,value:contractsNeedingAttention,color:'linear-gradient(135deg, var(--red) 0%, #d4a017 100%)',onclickAttr:"goToAdminStat('contracts_filter:needsAttention')"}]:[])
   ];
 
   const anbCardHtml=`
@@ -6029,16 +6031,16 @@ function renderStyledCard(cd,opts){
   // تمييز أرقى عبر جودة المادة نفسها (دفء اللون + رقة الحافة)، بلا أي نص
   const anbBg='linear-gradient(135deg,#FBF3DE 0%,#F5E8C8 100%)';
   const anbShadow='0 0 0 1px #C89010, 0 0 0 3px rgba(200,144,16,0.15), 0 2px 5px rgba(10,34,24,0.10)';
-  const plainShadow=cd.alertText?'0 0 0 1.5px #B8860B, 0 1px 3px rgba(10,34,24,0.07)':'0 1px 3px rgba(10,34,24,0.07)';
+  const plainShadow=cd.alertText?'0 0 0 1.5px var(--red), 0 1px 3px rgba(10,34,24,0.07)':'0 1px 3px rgba(10,34,24,0.07)';
   return `<div class="dash-card" onclick="${cd.onclickAttr}" style="position:relative;background:${isANB?anbBg:'#FBF8F1'};border-radius:10px;padding:10px 10px 10px 13px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden;box-shadow:${isANB?anbShadow:plainShadow}">
     <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${accentColor}"></div>
     <div style="font-size:18px;flex-shrink:0;color:${accentColor};display:flex;align-items:center">${cd.icon}</div>
     <div style="min-width:0;overflow:hidden;flex:1">
       <div style="font-size:10.5px;font-weight:700;color:#5a5346;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cd.name}</div>
       <div style="font-size:14px;font-weight:800;color:#0A2218;font-family:var(--fm);font-variant-numeric:tabular-nums">${cd.val!==undefined?cd.val:cd.value}</div>
-      ${cd.alertText?`<div style="font-size:8.5px;color:#B8860B;font-weight:700;margin-top:1px">${cd.alertText}</div>`:''}
+      ${cd.alertText?`<div style="font-size:8.5px;color:var(--red);font-weight:700;margin-top:1px">${cd.alertText}</div>`:''}
     </div>
-    ${cd.alertText?'<div class="notif-pulse" style="width:7px;height:7px;border-radius:50%;background:#B8860B;flex-shrink:0"></div>':''}
+    ${cd.alertText?'<div class="notif-pulse" style="width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0"></div>':''}
   </div>`;
 }
 
@@ -6227,15 +6229,15 @@ function rClientDash(el,cid){
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
     <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
       <div style="font-size:15px;font-weight:800;color:#0A2218">${pending+overdue}</div>
-      <div style="font-size:8.5px;color:#777;font-weight:600;margin-top:2px">${t('pending_invoices')||'Pending Invoices'}</div>
+      <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('pending_invoices')||'Pending Invoices'}</div>
     </div>
     <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
       <div style="font-size:15px;font-weight:800;color:#0A2218">${unreadMsgs}</div>
-      <div style="font-size:8.5px;color:#777;font-weight:600;margin-top:2px">${t('new_messages')||'New Messages'}</div>
+      <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('new_messages')||'New Messages'}</div>
     </div>
     <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
       <div style="font-size:15px;font-weight:800;color:#0A2218">${billableHrs}</div>
-      <div style="font-size:8.5px;color:#777;font-weight:600;margin-top:2px">${t('unbilled_hours')||'Unbilled Hours'}</div>
+      <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('unbilled_hours')||'Unbilled Hours'}</div>
     </div>
   </div>
 
@@ -6267,7 +6269,7 @@ function rClientSecurity(el,cid){
       <div class="fg"><label>${t('current_password')||'Current password'}</label><input type="password" id="client-current-pw" autocomplete="current-password" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
       <div class="fg"><label>${t('new_password')||'New password'}</label><input type="password" id="client-new-pw1" autocomplete="new-password" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
       <div class="fg"><label>${t('confirm_password')||'Confirm new password'}</label><input type="password" id="client-new-pw2" autocomplete="new-password" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;box-sizing:border-box"/></div>
-      <div id="client-pw-error" style="color:#a83232;font-size:11px;margin-bottom:8px;display:none"></div>
+      <div id="client-pw-error" style="color:var(--danger);font-size:11px;margin-bottom:8px;display:none"></div>
       <button class="btn btn-p btn-xs" onclick="saveClientOwnPassword()" style="margin-top:6px">${t('btn_save_creds')||'🔒 Save credentials'}</button>
     </div>
   </div>
@@ -6435,15 +6437,15 @@ function rANBOverview(el,cid){
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
     <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
       <div style="font-size:15px;font-weight:800;color:#0A2218">${activeClients}</div>
-      <div style="font-size:8.5px;color:#777;font-weight:600;margin-top:2px">${t('active_clients')||'Active Clients'}</div>
+      <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('active_clients')||'Active Clients'}</div>
     </div>
     <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
       <div style="font-size:15px;font-weight:800;color:#0A2218">${FMT(monthRevenue)}</div>
-      <div style="font-size:8.5px;color:#777;font-weight:600;margin-top:2px">${t('this_month_revenue')||'This Month Revenue'}</div>
+      <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('this_month_revenue')||'This Month Revenue'}</div>
     </div>
     <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
       <div style="font-size:15px;font-weight:800;color:#0A2218">${FMT(pendingExpenses)}</div>
-      <div style="font-size:8.5px;color:#777;font-weight:600;margin-top:2px">${t('pending_expenses')||'Pending Expenses'}</div>
+      <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('pending_expenses')||'Pending Expenses'}</div>
     </div>
   </div>
 
@@ -6467,7 +6469,7 @@ function rClientActionCards(el,cid){
   // "المستندات" (لمتابعة حالة الاتفاقية المُرسَلة) + رابط مباشر للعقد نفسه
   if(!isANBSelfBook&&!isClientAccountingActive(cid)){
     const clientContract=(S.contracts||[]).find(x=>x.cid===cid);
-    const theme=S.cardTheme||{bg:'rgba(184,134,11,0.08)',border:'#B8860B',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
+    const theme=S.cardTheme||{bg:'rgba(184,134,11,0.08)',border:'var(--red)',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
     el.innerHTML=`
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
       <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
@@ -6528,7 +6530,7 @@ function rClientActionCards(el,cid){
     {id:'bank',icon:'🏦',name:t('tab_bank')||'Bank',value:'→',onclickAttr:"selectCard('bank')"},
     {id:'assets',icon:'🏢',name:t('assets')||'Assets',value:assets.length,onclickAttr:"selectCard('assets')"},
     {id:'reports',icon:'📈',name:t('tab_reports'),value:'→',onclickAttr:"selectCard('reports')"},
-    {id:'contracts',icon:'📋',name:t('contracts')||'Contract',alertText:contractAlert,value:clientContract?(clientContract.status||'—'):'—',color:contractSuspended?'linear-gradient(135deg, #a83232 0%, #c24545 100%)':'linear-gradient(135deg, #B8860B 0%, #d4a017 100%)',onclickAttr:"selectCard('contracts')"},
+    {id:'contracts',icon:'📋',name:t('contracts')||'Contract',alertText:contractAlert,value:clientContract?(clientContract.status||'—'):'—',color:contractSuspended?'linear-gradient(135deg, var(--danger) 0%, #c24545 100%)':'linear-gradient(135deg, var(--red) 0%, #d4a017 100%)',onclickAttr:"selectCard('contracts')"},
     // ⚠️ الرسائل غير منطقية عند عرض حسابات ANB نفسها (لا معنى لمراسلة ANB من ANB)
     ...(isANBSelfBook?[]:[{id:'messages',icon:'💬',name:t('messages'),alertText:unreadMsgs>0?unreadMsgs+' unread':null,value:unreadMsgs,color:'linear-gradient(135deg, #9dd4bf 0%, #B8E6D1 100%)',textColor:'#0A2218',onclickAttr:"selectCard('messages')"}]),
     {id:'client_activity',icon:'📜',name:t('activity_log_title')||'Activity Log',value:'→',onclickAttr:"selectCard('client_activity')"},
@@ -6700,7 +6702,7 @@ function viewDebtorLedger(debtorId){
     invoices.map(i=>{
       const remaining=getInvoiceRemaining(i);
       const paid=remaining<=0.01;
-      const statusColor=paid?'#2d7a4f':(isInvoiceOverdue(i)?'#a83232':'#B8860B');
+      const statusColor=paid?'#2d7a4f':(isInvoiceOverdue(i)?'var(--danger)':'var(--red)');
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gr2)">'+
         '<div><div style="font-size:12px;font-weight:600">'+escapeHtml(i.num||'')+'</div><div style="font-size:10px;color:var(--t3)">'+FD(i.date)+' - '+escapeHtml(i.desc||'')+'</div></div>'+
         '<div style="text-align:right"><div style="font-size:12px;font-weight:700">'+FMT(i.total)+'</div><div style="font-size:10px;color:'+statusColor+'">'+(paid?'Paid':FMT(remaining)+' due')+'</div></div>'+
@@ -6710,7 +6712,7 @@ function viewDebtorLedger(debtorId){
   showModal('Debtor: '+escapeHtml(debtor.name),
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
     '<div style="background:var(--gr1);border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--t3)">Total Invoiced</div><div style="font-size:16px;font-weight:700">'+FMT(totalInvoiced)+'</div></div>'+
-    '<div style="background:'+(balance>0.01?'rgba(184,134,11,0.1)':'rgba(45,122,79,0.1)')+';border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--t3)">Balance Due</div><div style="font-size:16px;font-weight:700;color:'+(balance>0.01?'#B8860B':'#2d7a4f')+'">'+FMT(balance)+'</div></div>'+
+    '<div style="background:'+(balance>0.01?'rgba(184,134,11,0.1)':'rgba(45,122,79,0.1)')+';border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--t3)">Balance Due</div><div style="font-size:16px;font-weight:700;color:'+(balance>0.01?'var(--red)':'#2d7a4f')+'">'+FMT(balance)+'</div></div>'+
     '</div>'+
     '<div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:8px">Invoices ('+invoices.length+')</div>'+
     '<div style="max-height:280px;overflow-y:auto">'+rows+'</div>'
@@ -6732,14 +6734,14 @@ function viewCreditorLedger(creditorId){
       const paid=remaining<=0.01;
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gr2)">'+
         '<div><div style="font-size:12px;font-weight:600">'+escapeHtml(e.desc||'')+'</div><div style="font-size:10px;color:var(--t3)">'+FD(e.date)+' - '+escapeHtml(e.cat||'')+'</div></div>'+
-        '<div style="text-align:right"><div style="font-size:12px;font-weight:700">'+FMT(total)+'</div><div style="font-size:10px;color:'+(paid?'#2d7a4f':'#B8860B')+'">'+(paid?'Paid':FMT(remaining)+' due')+'</div></div>'+
+        '<div style="text-align:right"><div style="font-size:12px;font-weight:700">'+FMT(total)+'</div><div style="font-size:10px;color:'+(paid?'#2d7a4f':'var(--red)')+'">'+(paid?'Paid':FMT(remaining)+' due')+'</div></div>'+
         '</div>';
     }).join('');
 
   showModal('Creditor: '+escapeHtml(creditor.name),
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
     '<div style="background:var(--gr1);border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--t3)">Total Expensed</div><div style="font-size:16px;font-weight:700">'+FMT(totalExpensed)+'</div></div>'+
-    '<div style="background:'+(balance>0.01?'rgba(184,134,11,0.1)':'rgba(45,122,79,0.1)')+';border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--t3)">Balance Owed</div><div style="font-size:16px;font-weight:700;color:'+(balance>0.01?'#B8860B':'#2d7a4f')+'">'+FMT(balance)+'</div></div>'+
+    '<div style="background:'+(balance>0.01?'rgba(184,134,11,0.1)':'rgba(45,122,79,0.1)')+';border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--t3)">Balance Owed</div><div style="font-size:16px;font-weight:700;color:'+(balance>0.01?'var(--red)':'#2d7a4f')+'">'+FMT(balance)+'</div></div>'+
     '</div>'+
     '<div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:8px">Expenses ('+expenses.length+')</div>'+
     '<div style="max-height:280px;overflow-y:auto">'+rows+'</div>'
@@ -7056,7 +7058,7 @@ function renderRemindersSection(){
   return `<div style="margin-bottom:16px">
     <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;display:flex;align-items:center;gap:6px">🔔 ${t('reminders')||'Reminders'}</div>
     ${reminders.map(r=>{
-      const urgencyColor=r.urgency==='high'?'#a83232':'#B8860B';
+      const urgencyColor=r.urgency==='high'?'var(--danger)':'var(--red)';
       return `<div onclick="${r.onclickAttr}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${r.urgency==='high'?'rgba(168,50,50,0.08)':'rgba(184,134,11,0.08)'};border-left:3px solid ${urgencyColor};border-radius:6px;margin-bottom:6px;cursor:pointer;transition:all .15s" onmouseover="this.style.transform='translateX(3px)'" onmouseout="this.style.transform='translateX(0)'">
         <span style="font-size:18px;flex-shrink:0">${r.icon}</span>
         <div style="flex:1;min-width:0">
@@ -7117,10 +7119,10 @@ function getClientHourCriterionAlert(cid){
   const expectedPace=(1225/365)*dayOfYear;
   const actualHours=getHoursWorkedInYear(cid,now.getFullYear());
   if(actualHours>=expectedPace*0.7)return ''; // على المسار الصحيح - لا تنبيه
-  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(184,134,11,0.12);border:1.5px solid #B8860B;border-radius:8px;margin-bottom:12px">
+  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(184,134,11,0.12);border:1.5px solid var(--red);border-radius:8px;margin-bottom:12px">
     <span style="font-size:16px;flex-shrink:0">🕐</span>
     <div style="flex:1;min-width:0">
-      <div style="font-size:11px;font-weight:700;color:#B8860B">${t('reminder_hours_title')||'Behind on urencriterium pace'}</div>
+      <div style="font-size:11px;font-weight:700;color:var(--red)">${t('reminder_hours_title')||'Behind on urencriterium pace'}</div>
       <div style="font-size:10px;color:var(--t3)">${actualHours.toFixed(0)} / ${expectedPace.toFixed(0)} ${t('expected_hours_by_now')||'hours expected by now'} (1,225 ${t('target_for_year')||'target for the year'})</div>
     </div>
   </div>`;
@@ -7148,7 +7150,7 @@ function renderClientInfoCard(c){
 }
 function renderClientHealthBadge(cid){
   const health=getClientHealthScore(cid);
-  const colors={green:{bg:'rgba(77,168,118,0.12)',border:'#4da876',text:'#2d7a4f',icon:'✓'},yellow:{bg:'rgba(184,134,11,0.12)',border:'#B8860B',text:'#B8860B',icon:'!'},red:{bg:'rgba(168,50,50,0.12)',border:'#a83232',text:'#a83232',icon:'⚠'}};
+  const colors={green:{bg:'rgba(77,168,118,0.12)',border:'#4da876',text:'#2d7a4f',icon:'✓'},yellow:{bg:'rgba(184,134,11,0.12)',border:'var(--red)',text:'var(--red)',icon:'!'},red:{bg:'rgba(168,50,50,0.12)',border:'var(--danger)',text:'var(--danger)',icon:'⚠'}};
   const c=colors[health.level];
   const label={green:t('health_good')||'Healthy',yellow:t('health_watch')||'Needs Attention',red:t('health_urgent')||'Action Needed'}[health.level];
   return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:${c.bg};border:1.5px solid ${c.border};border-radius:8px;margin-bottom:12px" title="${escapeHtml(health.reasons.map(r=>r.text).join(' · '))}">
@@ -7509,10 +7511,10 @@ function renderDocsList(cid,searchTerm,sortValue){
   const agreementStatusMeta={
     pending_review:{label:'Pending Signature',color:'#8a6410',bg:'rgba(200,144,16,0.15)'},
     client_signed:{label:'Signed — Awaiting Approval',color:'#1a4d2e',bg:'rgba(77,168,118,0.15)'},
-    changes_requested:{label:'Changes Requested',color:'#B8860B',bg:'rgba(184,134,11,0.15)'},
+    changes_requested:{label:'Changes Requested',color:'var(--red)',bg:'rgba(184,134,11,0.15)'},
     active:{label:'✓ Signed & Active',color:'#2d7a4f',bg:'rgba(45,122,79,0.15)'},
-    client_rejected:{label:'Rejected',color:'#a83232',bg:'rgba(168,50,50,0.15)'},
-    rejected:{label:'Rejected',color:'#a83232',bg:'rgba(168,50,50,0.15)'}
+    client_rejected:{label:'Rejected',color:'var(--danger)',bg:'rgba(168,50,50,0.15)'},
+    rejected:{label:'Rejected',color:'var(--danger)',bg:'rgba(168,50,50,0.15)'}
   };
   const billStatusMeta={
     pending_review:{label:'Pending Review',color:'#8a6410',bg:'rgba(200,144,16,0.15)'},
@@ -8590,7 +8592,7 @@ function deleteSupplierProfile(profileId,cid){
 function applyOcrFieldsToExpenseForm(extracted){
   // ⭐ تطبيق تعلُّم المورد أولًا - قبل ملء أي حقل، لضمان استخدام أحدث تصحيح متاح
   extracted=applySupplierLearning(S.currentClient,extracted);
-  const confColor={high:'#2d7a4f',medium:'#C89010',low:'#B8860B'};
+  const confColor={high:'#2d7a4f',medium:'#C89010',low:'var(--red)'};
   const markField=(id,conf)=>{
     const el=document.getElementById(id);
     if(!el)return;
@@ -8613,7 +8615,7 @@ function applyOcrFieldsToExpenseForm(extracted){
   if(extracted.supplierAmountWarning){
     const amountEl=document.getElementById('ex-a');
     if(amountEl){
-      amountEl.style.borderLeft='4px solid #a83232';
+      amountEl.style.borderLeft='4px solid var(--danger)';
       amountEl.title='⚠️ '+(t('ocr_amount_deviates')||'This is very different from what you usually pay this supplier — please double-check against the receipt');
     }
     toast('⚠️ '+(t('ocr_amount_deviates_toast')||'Amount looks unusual for this supplier (usually ~')+FMT(extracted.supplierAvgAmount)+') — '+(t('please_verify')||'please verify against the receipt'));
@@ -9063,7 +9065,7 @@ function renderContactsLists(searchTerm,sortValue){
         </div>
         <div style="display:flex;gap:4px">
           <button onclick="openContactModal('${c.id}')" class="btn btn-sm" style="padding:4px 8px">✎</button>
-          <button onclick="delContact('${c.id}')" class="btn btn-sm" style="padding:4px 8px;background:#B8860B">✕</button>
+          <button onclick="delContact('${c.id}')" class="btn btn-sm" style="padding:4px 8px;background:var(--red)">✕</button>
         </div>
       </div>
     </div>
@@ -9081,7 +9083,7 @@ function renderContactsLists(searchTerm,sortValue){
         </div>
         <div style="display:flex;gap:4px">
           <button onclick="openContactModal('${c.id}')" class="btn btn-sm" style="padding:4px 8px">✎</button>
-          <button onclick="delContact('${c.id}')" class="btn btn-sm" style="padding:4px 8px;background:#B8860B">✕</button>
+          <button onclick="delContact('${c.id}')" class="btn btn-sm" style="padding:4px 8px;background:var(--red)">✕</button>
         </div>
       </div>
     </div>
@@ -9477,8 +9479,8 @@ function openPayslipModal(employeeId){
 
       <div class="fg">
         <label>${t('loonheffing')||'Loonheffing (Wage Tax)'} — €<span style="font-size:10px;color:var(--t3);font-weight:400">(${t('auto_calculated_editable')||'auto-calculated, editable'})</span></label>
-        <input type="number" id="payslip-loonheffing" step="0.01" oninput="updatePayslipNet()" style="border-color:#B8860B;font-weight:600"/>
-        <div style="font-size:9px;color:#B8860B;margin-top:4px">⚠️ ${t('loonheffing_disclaimer')||'Estimated using 2026 official brackets — verify before issuing officially.'}</div>
+        <input type="number" id="payslip-loonheffing" step="0.01" oninput="updatePayslipNet()" style="border-color:var(--red);font-weight:600"/>
+        <div style="font-size:9px;color:var(--red);margin-top:4px">⚠️ ${t('loonheffing_disclaimer')||'Estimated using 2026 official brackets — verify before issuing officially.'}</div>
       </div>
 
       <div id="payslip-net-display" style="background:#0A2218;color:#F5DC70;border-radius:8px;padding:14px;text-align:center;font-size:18px;font-weight:700"></div>
@@ -9558,14 +9560,14 @@ function updatePayslipPreview(employeeId){
     const year=parseInt(document.getElementById('payslip-year')?.value)||new Date().getFullYear();
     const status=getPayslipStatus(month,year);
     const statusBadge=status==='concept'
-      ?`<div style="text-align:center;margin-bottom:8px;font-size:10px;font-weight:700;color:#B8860B;background:rgba(184,134,11,0.12);border-radius:4px;padding:5px">📝 ${t('status_concept')||'CONCEPT — month not yet ended'}</div>`
+      ?`<div style="text-align:center;margin-bottom:8px;font-size:10px;font-weight:700;color:var(--red);background:rgba(184,134,11,0.12);border-radius:4px;padding:5px">📝 ${t('status_concept')||'CONCEPT — month not yet ended'}</div>`
       :`<div style="text-align:center;margin-bottom:8px;font-size:10px;font-weight:700;color:#2d7a4f;background:rgba(45,122,79,0.12);border-radius:4px;padding:5px">✅ ${t('status_confirmed')||'CONFIRMED'}</div>`;
     breakdownEl.innerHTML=statusBadge+`
       <div style="display:flex;justify-content:space-between;padding:3px 0"><span>${t('gross_base')||'Gross base'}</span><b>${FMT(b.grossBase)}</b></div>
       ${vacationLine}
       ${thirteenthLine}
       ${b.customTotal>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;color:#2d7a4f"><span>+ Custom additions</span><b>${FMT(b.customTotal)}</b></div>`:''}
-      ${b.pensionDeduction>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;color:#B8860B"><span>− ${t('pension')||'Pension'}</span><b>−${FMT(b.pensionDeduction)}</b></div>`:''}
+      ${b.pensionDeduction>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;color:var(--red)"><span>− ${t('pension')||'Pension'}</span><b>−${FMT(b.pensionDeduction)}</b></div>`:''}
       <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:2px solid var(--gr2);margin-top:4px;font-weight:700"><span>${t('taxable_gross')||'Taxable gross'}</span><b>${FMT(b.taxableGross)}</b></div>
       ${b.travelAllowance>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;color:#2d7a4f"><span>+ ${t('travel_allowance')||'Travel allowance'} (${t('tax_free')||'tax-free'})</span><b>${FMT(b.travelAllowance)}</b></div>`:''}
       ${b.homeWorkAllowance>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;color:#2d7a4f"><span>+ ${t('homework_allowance')||'Work-from-home allowance'} (${t('tax_free')||'tax-free'})</span><b>${FMT(b.homeWorkAllowance)}</b></div>`:''}
@@ -9824,7 +9826,7 @@ function openPayslipHistoryModal(employeeId){
       slips.map(p=>{
         const status=getPayslipStatus(p.month,p.year);
         const badge=status==='concept'
-          ?`<span style="font-size:8px;font-weight:700;color:#B8860B;background:rgba(184,134,11,0.12);padding:1px 6px;border-radius:3px;margin-left:6px">CONCEPT</span>`
+          ?`<span style="font-size:8px;font-weight:700;color:var(--red);background:rgba(184,134,11,0.12);padding:1px 6px;border-radius:3px;margin-left:6px">CONCEPT</span>`
           :`<span style="font-size:8px;font-weight:700;color:#2d7a4f;background:rgba(45,122,79,0.12);padding:1px 6px;border-radius:3px;margin-left:6px">${t('status_confirmed')}</span>`;
         return `
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid var(--gr2)">
@@ -9922,7 +9924,7 @@ function renderDebtorsTable(cid,searchTerm){
       ${debtors.map(d=>{
         const invoices=(S.invoices||[]).filter(i=>i.billToId===d.id&&!i.deleted);
         const balance=invoices.reduce((s,i)=>s+getInvoiceRemaining(i),0);
-        return '<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+(d.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+(d.accountNumber||'—')+'</td><td style="text-align:right;padding:8px;font-weight:700;color:'+(balance>0.01?'#B8860B':'#2d7a4f')+'">'+(invoices.length?FMT(balance):'—')+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="viewDebtorLedger(\''+d.id+'\')">📖 Ledger</button>'+(d.isGeneral||d.isClientRecord?'':'<button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button>')+'</td></tr>';
+        return '<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+d.name+(d.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(d.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+(d.accountNumber||'—')+'</td><td style="text-align:right;padding:8px;font-weight:700;color:'+(balance>0.01?'var(--red)':'#2d7a4f')+'">'+(invoices.length?FMT(balance):'—')+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="viewDebtorLedger(\''+d.id+'\')">📖 Ledger</button>'+(d.isGeneral||d.isClientRecord?'':'<button class="btn btn-xs" onclick="openContactModal(\''+d.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+d.id+'\')">Delete</button>')+'</td></tr>';
       }).join('')}
       </tbody>
     </table>`}
@@ -9983,7 +9985,7 @@ function renderCreditorsTable(cid,searchTerm){
       ${creditors.map(cr=>{
         const expenses=(S.expenses||[]).filter(e=>e.payToId===cr.id&&!e.deleted);
         const balance=expenses.reduce((s,e)=>s+getExpenseRemaining(e),0);
-        return '<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+(cr.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px;font-weight:700;color:'+(balance>0.01?'#B8860B':'#2d7a4f')+'">'+(expenses.length?FMT(balance):'—')+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="viewCreditorLedger(\''+cr.id+'\')">📖 Ledger</button>'+(cr.isGeneral?'':'<button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button>')+'</td></tr>';
+        return '<tr style="border-bottom:1px solid var(--gr2)"><td style="padding:8px">'+cr.name+(cr.isGeneral?' <span class="bdg b-draft" style="font-size:9px">General</span>':'')+'</td><td style="padding:8px;color:var(--t3);font-size:10px">'+(cr.email||'')+'</td><td style="padding:8px;font-weight:600;color:'+theme.border+'">'+cr.accountNumber+'</td><td style="text-align:right;padding:8px;font-weight:700;color:'+(balance>0.01?'var(--red)':'#2d7a4f')+'">'+(expenses.length?FMT(balance):'—')+'</td><td style="text-align:right;padding:8px"><button class="btn btn-xs" onclick="viewCreditorLedger(\''+cr.id+'\')">📖 Ledger</button>'+(cr.isGeneral?'':'<button class="btn btn-xs" onclick="openContactModal(\''+cr.id+'\')">Edit</button><button class="btn btn-xs btn-danger" onclick="delContact(\''+cr.id+'\')">Delete</button>')+'</td></tr>';
       }).join('')}
       </tbody>
     </table>`}
@@ -10108,11 +10110,11 @@ function rInfo(el,cid){
 // ══════════════════════════════════════════════════════════════════
 function openDangerZoneGate(){
   showModal('⚠️ '+(t('danger_zone')||'Danger Zone'),`
-    <div style="padding:10px;background:rgba(168,50,50,0.08);border:1.5px solid #a83232;border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--t1);line-height:1.6">
+    <div style="padding:10px;background:rgba(168,50,50,0.08);border:1.5px solid var(--danger);border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--t1);line-height:1.6">
       ${t('danger_zone_gate_hint')||'This area permanently deletes client data. Re-enter your password to continue.'}
     </div>
     <div class="fg"><label>${t('your_password')||'Your Password'}</label><input type="password" id="danger-gate-pw" autocomplete="current-password"/></div>
-    <div id="danger-gate-err" style="color:#a83232;font-size:11px;min-height:14px"></div>
+    <div id="danger-gate-err" style="color:var(--danger);font-size:11px;min-height:14px"></div>
   `,async()=>{
     const pw=document.getElementById('danger-gate-pw')?.value||'';
     if(!pw){document.getElementById('danger-gate-err').textContent=t('incorrect_password')||'Incorrect password';return;}
@@ -10283,7 +10285,7 @@ function rSettings(el){
     </div>
 
     <div class="card" style="border:1px solid rgba(168,50,50,.35)">
-      <div class="ch" style="border-bottom:3px solid #a83232;background:rgba(168,50,50,.06)"><span class="ct" style="color:#a83232">⚠️ ${t('danger_zone')||'Danger Zone'}</span></div>
+      <div class="ch" style="border-bottom:3px solid var(--danger);background:rgba(168,50,50,.06)"><span class="ct" style="color:var(--danger)">⚠️ ${t('danger_zone')||'Danger Zone'}</span></div>
       <div style="padding:14px">
         <div class="sec-desc">${t('danger_zone_hint')||'Permanently and completely delete a client and everything linked to them. This cannot be undone. Export their data first if they might need it later.'}</div>
         <div class="fg"><label>${t('select_client_to_delete')||'Select Client to Delete'}</label>
@@ -10979,7 +10981,7 @@ function rTrash(el){
         return `<tr style="border-bottom:1px solid var(--gr2)">
           <td style="padding:8px">${it.icon} ${it.label}</td>
           <td style="padding:8px;color:var(--t3);font-size:11px">${it.sub}</td>
-          <td style="padding:8px;color:${urgent?'#B8860B':'var(--t3)'};font-weight:${urgent?600:400}">${daysLeft} ${t('trash_days')||'days'}</td>
+          <td style="padding:8px;color:${urgent?'var(--red)':'var(--t3)'};font-weight:${urgent?600:400}">${daysLeft} ${t('trash_days')||'days'}</td>
           <td style="text-align:right;padding:8px"><button class="btn btn-xs btn-p" onclick="restoreTrashItem('${it.type}','${it.id}')">↩ ${t('trash_restore')||'Restore'}</button></td>
         </tr>`;
       }).join('')}
@@ -11145,7 +11147,7 @@ function renderAuditLog(searchTerm,actionFilter,filterCid){
   const reArgs=`document.getElementById('audit-search')?.value||'',document.getElementById('audit-action-filter')?.value||'','${filterCid||''}'`;
 
   const actionIcons={create:'➕',edit:'✏️',delete:'🗑️',restore:'↩️',plan_change:'💳',password_change:'🔐',login_failed:'⚠️',login_locked:'🚫',security:'🔒'};
-  const actionColors={create:'#2d7a4f',edit:'#1A4A2A',delete:'#B8860B',restore:'#4da876',plan_change:'#C89010',password_change:'#0F3025',login_failed:'#7A4A00',login_locked:'#B8860B',security:'#0F3025'};
+  const actionColors={create:'#2d7a4f',edit:'#1A4A2A',delete:'var(--red)',restore:'#4da876',plan_change:'#C89010',password_change:'#0F3025',login_failed:'#7A4A00',login_locked:'var(--red)',security:'#0F3025'};
 
   container.innerHTML=`<div class="card">
     <div class="ch" style="border-bottom:3px solid #0A2218"><span class="ct">${LICON('scroll-text',16)} ${filterCid?(t('activity_log_title')||'Activity Log'):(t('audit_log_title')||'Audit Log')} (${log.length})</span>
@@ -12127,7 +12129,7 @@ function openDailyRevenueEntry(){
       <div class="fg"><label>${t('lbl_date')||'Date'}</label><input type="date" id="dre-date" value="${TODAY()}" onchange="upDailyRevenueDateCheck()"/></div>
       <div class="fg"><label>${t('lbl_btw')}</label><select id="dre-r"><option value="21">21%</option><option value="9">9%</option><option value="0">0%</option></select></div>
     </div>
-    <div id="dre-date-warning" style="display:none;background:rgba(184,134,11,0.1);border-left:3px solid #B8860B;padding:8px 10px;border-radius:4px;font-size:11px;color:#8a6410;margin-bottom:8px">
+    <div id="dre-date-warning" style="display:none;background:rgba(184,134,11,0.1);border-left:3px solid var(--red);padding:8px 10px;border-radius:4px;font-size:11px;color:#8a6410;margin-bottom:8px">
       ⚠️ ${t('backdated_entry_warning')||'This is more than 1 day old. The Belastingdienst expects cash takings to be logged daily — enter each day\u2019s total on the same day whenever possible.'}
     </div>
     <div class="fg"><label>${t('daily_takings_label')||'Total takings for the day, excl. BTW (€)'} *</label><input type="number" id="dre-amount" step="0.01" placeholder="${t('daily_takings_placeholder')||'e.g. 450.00'}" oninput="upDailyRevenueTotal()"/></div>
@@ -12148,7 +12150,7 @@ function openDailyRevenueEntry(){
     </div>
     <div id="dre-cash-wrap" style="display:none">
       <div class="fg"><label>${t('cash_amount_received')||'Cash amount received now (€)'}</label><input type="number" id="dre-cash-amount" step="0.01" oninput="upDailyRevenuePaymentMethod()"/></div>
-      <div id="dre-cash-warning" style="display:none;background:rgba(184,134,11,0.1);border-left:3px solid #B8860B;padding:8px 10px;border-radius:4px;font-size:11px;color:#8a6410;margin-bottom:8px">
+      <div id="dre-cash-warning" style="display:none;background:rgba(184,134,11,0.1);border-left:3px solid var(--red);padding:8px 10px;border-radius:4px;font-size:11px;color:#8a6410;margin-bottom:8px">
         ⚠️ ${t('cash_ratio_warning')||'Cash portion is over 50% of the invoice total — double-check this is correct.'}
       </div>
     </div>
@@ -12336,7 +12338,7 @@ function openInvoiceModal(inv){
     </div>
     <div id="if-cash-wrap" style="display:none">
       <div class="fg"><label>${t('cash_amount_received')||'Cash amount received now (€)'}</label><input type="number" id="if-cash-amount" step="0.01" oninput="upInvoicePaymentMethod()"/></div>
-      <div id="if-cash-warning" style="display:none;background:rgba(184,134,11,0.1);border-left:3px solid #B8860B;padding:8px 10px;border-radius:4px;font-size:11px;color:#8a6410;margin-bottom:8px">
+      <div id="if-cash-warning" style="display:none;background:rgba(184,134,11,0.1);border-left:3px solid var(--red);padding:8px 10px;border-radius:4px;font-size:11px;color:#8a6410;margin-bottom:8px">
         ⚠️ ${t('cash_ratio_warning')||'Cash portion is over 50% of the invoice total — double-check this is correct.'}
       </div>
     </div>
@@ -12595,7 +12597,7 @@ function addInvoiceItemRow(){
     <input class="if-item-desc" placeholder="Item/service name" style="flex:2;padding:8px;border:1px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:12px" oninput="uITMulti()"/>
     <input class="if-item-qty" type="number" placeholder="Qty" value="1" min="0" step="1" style="width:55px;padding:8px;border:1px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:12px" oninput="uITMulti()"/>
     <input class="if-item-price" type="number" placeholder="Price €" step="0.01" style="width:80px;padding:8px;border:1px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:12px" oninput="uITMulti()"/>
-    <button type="button" onclick="document.getElementById('${rowId}').remove();uITMulti()" style="background:none;border:none;color:#a83232;font-size:16px;cursor:pointer;padding:0 4px">✕</button>
+    <button type="button" onclick="document.getElementById('${rowId}').remove();uITMulti()" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:0 4px">✕</button>
   `;
   list.appendChild(row);
 }
@@ -12743,7 +12745,7 @@ function openNewExpense(){
       </div>
       <div id="ex-cash-wrap" style="display:none">
         <div class="fg"><label>${t('cash_amount_paid')||'Cash amount paid now (€)'}</label><input type="number" id="ex-cash-amount" step="0.01" oninput="upExpensePaymentMethod()"/></div>
-        <div id="ex-cash-warning" style="display:none;background:rgba(184,134,11,0.1);border-left:3px solid #B8860B;padding:8px 10px;border-radius:4px;font-size:11px;color:#8a6410;margin-bottom:8px">
+        <div id="ex-cash-warning" style="display:none;background:rgba(184,134,11,0.1);border-left:3px solid var(--red);padding:8px 10px;border-radius:4px;font-size:11px;color:#8a6410;margin-bottom:8px">
           ⚠️ ${t('cash_ratio_warning')||'Cash portion is over 50% of the invoice total — double-check this is correct.'}
         </div>
       </div>
@@ -13507,7 +13509,7 @@ function openExplainMissingDay(cid,missingDate){
     <div style="font-size:12px;color:var(--t1);margin-bottom:6px;font-weight:700">${FD(missingDate)}</div>
     <div style="font-size:11px;color:var(--t3);margin-bottom:16px;line-height:1.6">${t('missing_day_hint')||'No cashier activity was recorded for this day. Please explain why before opening today\u2019s journal.'}</div>
     <button class="btn" onclick="resolveMissingDayNoActivity('${cid}','${missingDate}')" style="width:100%;margin-bottom:8px;padding:12px">🚫 ${t('no_activity_that_day')||'No activity that day (closed / did not work)'}</button>
-    <button class="btn" onclick="resolveMissingDayRecordingError('${cid}','${missingDate}')" style="width:100%;padding:12px;background:rgba(168,50,50,0.1);color:#a83232">⚠️ ${t('recording_error_that_day')||'There was a recording error'}</button>
+    <button class="btn" onclick="resolveMissingDayRecordingError('${cid}','${missingDate}')" style="width:100%;padding:12px;background:var(--danger-bg);color:var(--danger)">⚠️ ${t('recording_error_that_day')||'There was a recording error'}</button>
   `,()=>{},'');
   // ⚠️ لا زر حفظ افتراضي هنا إطلاقًا - القرار فقط عبر أحد الخيارين أعلاه،
   // ونُخفي كل أزرار الإغلاق كما في بوابة جرد الكاش - لا مخرج إلا اختيار صريح
@@ -13631,7 +13633,7 @@ function openCashierServiceEntry(cid,serviceId){
     </div>
     <div id="cse-cash-wrap" style="display:none">
       <div class="fg"><label>${t('cash_amount_received')||'Cash amount received now (€)'}</label><input type="number" id="cse-cash-amount" step="0.01" oninput="upCashierEntryPaymentMethod()"/></div>
-      <div id="cse-cash-warning" style="display:none;background:rgba(184,134,11,0.1);border-left:3px solid #B8860B;padding:8px 10px;border-radius:4px;font-size:11px;color:#8a6410;margin-bottom:8px">
+      <div id="cse-cash-warning" style="display:none;background:rgba(184,134,11,0.1);border-left:3px solid var(--red);padding:8px 10px;border-radius:4px;font-size:11px;color:#8a6410;margin-bottom:8px">
         ⚠️ ${t('cash_ratio_warning')||'Cash portion is over 50% of the invoice total — double-check this is correct.'}
       </div>
     </div>
@@ -13691,7 +13693,7 @@ async function openCardPaymentQR(cid,serviceId,svc,price){
     });
     const data=await res.json();
     if(!res.ok){
-      document.getElementById('qr-payment-content').innerHTML=`<div style="color:#a83232;font-size:12px">⚠ ${escapeHtml(data.message||data.error||'Could not create payment')}</div>`;
+      document.getElementById('qr-payment-content').innerHTML=`<div style="color:var(--danger);font-size:12px">⚠ ${escapeHtml(data.message||data.error||'Could not create payment')}</div>`;
       return;
     }
     await ensureQRCodeLib();
@@ -13746,7 +13748,7 @@ async function openCardPaymentQR(cid,serviceId,svc,price){
     },3000);
   }catch(e){
     const content=document.getElementById('qr-payment-content');
-    if(content)content.innerHTML=`<div style="color:#a83232;font-size:12px">⚠ Network error - please try again</div>`;
+    if(content)content.innerHTML=`<div style="color:var(--danger);font-size:12px">⚠ Network error - please try again</div>`;
   }
 }
 
@@ -13825,7 +13827,7 @@ function openCashCountGate(cid){
   showModal('🔢 '+(t('count_your_cash')||'Count Your Cash'),`
     <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">${t('cash_count_hint')||'Before posting today, count the actual cash you physically have and enter it below.'}</div>
     <div class="fg"><label>${t('actual_cash_amount')||'Actual cash amount (€)'}</label><input type="number" id="ccg-amount" step="0.01"/></div>
-    <div id="ccg-error" style="display:none;background:rgba(168,50,50,0.08);border-left:3px solid #a83232;padding:8px 10px;border-radius:4px;font-size:11px;color:#a83232;margin-bottom:8px">
+    <div id="ccg-error" style="display:none;background:rgba(168,50,50,0.08);border-left:3px solid var(--danger);padding:8px 10px;border-radius:4px;font-size:11px;color:var(--danger);margin-bottom:8px">
       ⚠️ ${t('cash_discrepancy_message')||'There\u2019s a discrepancy with your cash count. Please recount your cash carefully and try again.'}
     </div>
   `,()=>{
@@ -13947,7 +13949,7 @@ function rCashierLog(el,cid){
   el.innerHTML=backBtnHtml+`<div class="card">
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('receipt',16)} ${t('cashier_log_title')||'Cashier Log'} — ${c?.name||''}</span>
     </div>
-    ${pendingExceptions.length>0?`<div style="margin:12px 14px;padding:12px;background:rgba(184,134,11,0.08);border:1.5px solid #B8860B;border-radius:10px">
+    ${pendingExceptions.length>0?`<div style="margin:12px 14px;padding:12px;background:rgba(184,134,11,0.08);border:1.5px solid var(--red);border-radius:10px">
       <div style="font-size:11px;font-weight:700;color:#8a6410;margin-bottom:8px">⏳ ${t('pending_exceptions_title')||'Missing Days Awaiting Your Review'}</div>
       ${pendingExceptions.map(exc=>`
         <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--white);border-radius:6px;margin-bottom:6px">
@@ -14026,8 +14028,8 @@ function rCashLedger(el,cid){
     </div>
     <div class="kgrid">
       <div class="kcard"><div class="kl">${t('cash_in')||'Cash In'}</div><div class="kv" style="color:var(--green)">${FMT(totalIn)}</div></div>
-      <div class="kcard"><div class="kl">${t('cash_out')||'Cash Out'}</div><div class="kv" style="color:#a83232">${FMT(totalOut)}</div></div>
-      <div class="kcard"><div class="kl">${t('net_cash_balance')||'Net Cash Balance'}</div><div class="kv" style="color:${netCash>=0?'var(--green)':'#a83232'}">${FMT(netCash)}</div></div>
+      <div class="kcard"><div class="kl">${t('cash_out')||'Cash Out'}</div><div class="kv" style="color:var(--danger)">${FMT(totalOut)}</div></div>
+      <div class="kcard"><div class="kl">${t('net_cash_balance')||'Net Cash Balance'}</div><div class="kv" style="color:${netCash>=0?'var(--green)':'var(--danger)'}">${FMT(netCash)}</div></div>
     </div>
     ${payments.length>0?`<div style="padding:10px 14px;display:flex;gap:8px">
       <input type="text" id="cash-ledger-search" placeholder="🔍 ${t('search')||'Search'}..."
@@ -14087,7 +14089,7 @@ function renderCashLedgerTable(cid,searchTerm){
       return `<tr>
         <td style="color:var(--t3)">${FD(p.date)}</td>
         <td style="font-size:11px">${icon}${getCashPaymentRefLabel(p)}</td>
-        <td style="font-weight:600;color:${isOut?'#a83232':'var(--green)'}">${isOut?'-':'+'}${FMT(p.amount)}</td>
+        <td style="font-weight:600;color:${isOut?'var(--danger)':'var(--green)'}">${isOut?'-':'+'}${FMT(p.amount)}</td>
         <td style="color:var(--t3);font-size:11px">${escapeHtml(p.note||'')}</td>
         <td style="font-size:11px">${p.recordedBy==='admin'?'👤 Admin':'🧑 Client'}</td>
       </tr>`;
@@ -14169,7 +14171,7 @@ function renderBankTable(cid,searchTerm){
       const canEdit=isAdmin();
       let statusBadge;
       if(matchStatus==='full')statusBadge=`<span class="bdg b-paid">✓ ${allocatedCount>1?allocatedCount+'× ':''}${t('matched')||'Matched'}</span>${canEdit?` <button class="btn btn-xs" onclick="unmatchTransaction('${tx.id}')" title="Undo match">↩</button>`:''}`;
-      else if(matchStatus==='partial')statusBadge=`<span class="bdg" style="background:rgba(184,134,11,0.15);color:#B8860B">◐ ${t('partial')||'Partial'} (${FMT(getTxRemaining(tx))} ${t('left')||'left'})</span>${canEdit?` <button class="btn btn-xs" onclick="unmatchTransaction('${tx.id}')" title="Undo match">↩</button>`:''}`;
+      else if(matchStatus==='partial')statusBadge=`<span class="bdg" style="background:rgba(184,134,11,0.15);color:var(--red)">◐ ${t('partial')||'Partial'} (${FMT(getTxRemaining(tx))} ${t('left')||'left'})</span>${canEdit?` <button class="btn btn-xs" onclick="unmatchTransaction('${tx.id}')" title="Undo match">↩</button>`:''}`;
       else if(matchStatus==='no_match_needed'){
         const label=tx.matchType==='cash_transfer'?'🔄 '+(tx.amount<0?(t('cash_withdrawal')||'Cash Withdrawal'):(t('cash_deposit')||'Cash Deposit')):
           tx.matchType==='personal_drawing'?'🏠 '+(t('personal_drawing')||'Personal Drawing'):
@@ -14693,7 +14695,7 @@ function rReportEmployeeFinancial(el,cid){
   html+='</div>';
 
   if(hourlyCount>0){
-    html+='<div style="margin-bottom:16px;padding:10px 14px;background:rgba(184,134,11,0.08);border-left:3px solid #B8860B;border-radius:4px;font-size:11px;color:#8a6410">';
+    html+='<div style="margin-bottom:16px;padding:10px 14px;background:rgba(184,134,11,0.08);border-left:3px solid var(--red);border-radius:4px;font-size:11px;color:#8a6410">';
     html+='ℹ️ '+hourlyCount+' '+(t('hourly_employees_note')||'employee(s) on variable hourly pay — not included in fixed monthly total above (depends on hours worked each month)');
     html+='</div>';
   }
@@ -14702,17 +14704,17 @@ function rReportEmployeeFinancial(el,cid){
   html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+theme.border+'">'+curYear+' '+(t('ytd_summary')||'Summary')+'</div>';
   html+='<table><thead><tr><th></th><th style="text-align:right">'+(t('lbl_amount')||'Amount')+'</th></tr></thead><tbody>';
   html+='<tr><td>'+(t('ytd_gross_paid')||'Gross paid this year (taxable)')+'</td><td style="text-align:right;font-weight:600">'+FMT(ytdGrossPaid)+'</td></tr>';
-  html+='<tr><td>'+(t('ytd_loonheffing')||'Loonheffing withheld this year')+'</td><td style="text-align:right;font-weight:600;color:#B8860B">−'+FMT(ytdLoonheffing)+'</td></tr>';
-  html+='<tr><td>'+(t('ytd_pension')||'Pension deducted this year')+'</td><td style="text-align:right;font-weight:600;color:#B8860B">−'+FMT(ytdPension)+'</td></tr>';
+  html+='<tr><td>'+(t('ytd_loonheffing')||'Loonheffing withheld this year')+'</td><td style="text-align:right;font-weight:600;color:var(--red)">−'+FMT(ytdLoonheffing)+'</td></tr>';
+  html+='<tr><td>'+(t('ytd_pension')||'Pension deducted this year')+'</td><td style="text-align:right;font-weight:600;color:var(--red)">−'+FMT(ytdPension)+'</td></tr>';
   html+='<tr style="border-top:2px solid '+theme.border+'"><td style="font-weight:700">'+(t('ytd_net_paid')||'Net paid this year')+'</td><td style="text-align:right;font-weight:700;color:'+theme.border+'">'+FMT(ytdNetPaid)+'</td></tr>';
   html+='</tbody></table></div>';
 
   html+='<div style="margin-bottom:16px">';
   html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+theme.border+'">'+(t('outstanding_liabilities')||'Outstanding Liabilities (Accrued, Unpaid)')+'</div>';
   html+='<table><thead><tr><th></th><th style="text-align:right">'+(t('lbl_amount')||'Amount')+'</th></tr></thead><tbody>';
-  html+='<tr><td>'+(t('accrued_vacation_total')||'Accrued vacation allowance (unpaid)')+'</td><td style="text-align:right;font-weight:600;color:#B8860B">'+FMT(accruedVacationTotal)+'</td></tr>';
-  html+='<tr><td>'+(t('accrued_13th_total')||'Accrued 13th month (unpaid)')+'</td><td style="text-align:right;font-weight:600;color:#B8860B">'+FMT(accrued13thTotal)+'</td></tr>';
-  html+='<tr style="border-top:2px solid '+theme.border+'"><td style="font-weight:700">'+(t('total_liability')||'Total accrued liability')+'</td><td style="text-align:right;font-weight:700;color:#B8860B">'+FMT(accruedVacationTotal+accrued13thTotal)+'</td></tr>';
+  html+='<tr><td>'+(t('accrued_vacation_total')||'Accrued vacation allowance (unpaid)')+'</td><td style="text-align:right;font-weight:600;color:var(--red)">'+FMT(accruedVacationTotal)+'</td></tr>';
+  html+='<tr><td>'+(t('accrued_13th_total')||'Accrued 13th month (unpaid)')+'</td><td style="text-align:right;font-weight:600;color:var(--red)">'+FMT(accrued13thTotal)+'</td></tr>';
+  html+='<tr style="border-top:2px solid '+theme.border+'"><td style="font-weight:700">'+(t('total_liability')||'Total accrued liability')+'</td><td style="text-align:right;font-weight:700;color:var(--red)">'+FMT(accruedVacationTotal+accrued13thTotal)+'</td></tr>';
   html+='</tbody></table></div>';
 
   html+='<div>';
@@ -14727,7 +14729,7 @@ function rReportEmployeeFinancial(el,cid){
       const empTax=empSlips.reduce((s,p)=>s+(p.loonheffing||0),0);
       const empNet=empSlips.reduce((s,p)=>s+(p.netPay||0),0);
       const salaryLabel=e.salaryType==='hourly'?FMT(e.hourlyRate)+'/hr':FMT(e.grossMonthlySalary)+'/mo';
-      html+='<tr><td style="font-weight:500">'+e.name+(e.employmentStatus==='ended'?' <span class="bdg b-draft" style="font-size:9px">Ended</span>':'')+'</td><td>'+salaryLabel+'</td><td style="text-align:right">'+FMT(empGross)+'</td><td style="text-align:right;color:#B8860B">'+FMT(empTax)+'</td><td style="text-align:right;font-weight:600">'+FMT(empNet)+'</td></tr>';
+      html+='<tr><td style="font-weight:500">'+e.name+(e.employmentStatus==='ended'?' <span class="bdg b-draft" style="font-size:9px">Ended</span>':'')+'</td><td>'+salaryLabel+'</td><td style="text-align:right">'+FMT(empGross)+'</td><td style="text-align:right;color:var(--red)">'+FMT(empTax)+'</td><td style="text-align:right;font-weight:600">'+FMT(empNet)+'</td></tr>';
     });
     html+='</tbody></table>';
   }
@@ -14836,13 +14838,13 @@ function rReportEmployeeStats(el,cid){
   }
 
   html+='<div>';
-  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+(expiringSoon.length>0?'#B8860B':theme.border)+'">'+(expiringSoon.length>0?'🔔 ':'')+(t('contracts_expiring_soon')||'Fixed-Term Contracts Ending Within 90 Days')+'</div>';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid '+(expiringSoon.length>0?'var(--red)':theme.border)+'">'+(expiringSoon.length>0?'🔔 ':'')+(t('contracts_expiring_soon')||'Fixed-Term Contracts Ending Within 90 Days')+'</div>';
   if(expiringSoon.length===0){
     html+='<div style="padding:12px;color:var(--t3);font-size:11px">'+(t('none_expiring')||'None — all fixed-term contracts have more than 90 days remaining.')+'</div>';
   }else{
     html+='<table><thead><tr><th>'+(t('lbl_name')||'Name')+'</th><th>'+(t('job_title')||'Job Title')+'</th><th style="text-align:right">'+(t('contract_end_date')||'Contract End')+'</th></tr></thead><tbody>';
     expiringSoon.forEach(e=>{
-      html+='<tr><td style="font-weight:500">'+e.name+'</td><td style="color:var(--t3)">'+(e.jobTitle||'—')+'</td><td style="text-align:right;font-weight:600;color:#B8860B">'+FD(e.contractEndDate)+'</td></tr>';
+      html+='<tr><td style="font-weight:500">'+e.name+'</td><td style="color:var(--t3)">'+(e.jobTitle||'—')+'</td><td style="text-align:right;font-weight:600;color:var(--red)">'+FD(e.contractEndDate)+'</td></tr>';
     });
     html+='</tbody></table>';
   }
@@ -14884,7 +14886,7 @@ function rReportCashFlow(el,cid){
   html+='</div>';
   html+='</div>';
   
-  html+=heroNumberBox('NET CASH FLOW',netCashFlow,netCashFlow>=0?'#2d7a4f':'#B8860B',netCashFlow>=0?'rgba(45,122,79,0.15)':'rgba(184,134,11,0.15)',true);
+  html+=heroNumberBox('NET CASH FLOW',netCashFlow,netCashFlow>=0?'#2d7a4f':'var(--red)',netCashFlow>=0?'rgba(45,122,79,0.15)':'rgba(184,134,11,0.15)',true);
   html+='<div style="margin-bottom:16px"></div>';
   
   html+='<div style="margin-bottom:16px">';
@@ -15230,7 +15232,7 @@ function rReportTaxLiability(el,cid){
     html+='</div>';
   }else{
     const ptInputs=(S.personalTaxInputs||{})[cid];
-    html+='<div style="padding:12px;background:rgba(184,134,11,.08);border-radius:var(--r);border-left:3px solid #B8860B;margin-bottom:12px">';
+    html+='<div style="padding:12px;background:rgba(184,134,11,.08);border-radius:var(--r);border-left:3px solid var(--red);margin-bottom:12px">';
     html+='<div style="font-size:11px;color:var(--t3);line-height:1.6;margin-bottom:10px">⚠️ '+(t('personal_tax_note')||'This legal form is subject to personal income tax (Inkomstenbelasting), which depends on the total personal income and deductions of the owner (zelfstandigenaftrek, MKB-winstvrijstelling, etc.).')+'</div>';
     if(!ptInputs){
       html+='<button class="btn btn-p btn-xs" onclick="openPersonalTaxCalculator(\''+cid+'\')">🧮 '+(t('calculate_personal_tax')||'Calculate Personal Income Tax')+'</button>';
@@ -15243,7 +15245,7 @@ function rReportTaxLiability(el,cid){
       if(ptInputs.otherIncome>0)html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:3px 0"><span>+ '+(t('other_personal_income')||'Other Personal Income')+'</span><span>'+FMT(ptInputs.otherIncome)+'</span></div>';
       if(ptInputs.otherDeductions>0)html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:3px 0"><span>− '+(t('other_personal_deductions')||'Other Personal Deductions')+'</span><span>-'+FMT(ptInputs.otherDeductions)+'</span></div>';
       html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--gr2);margin-top:4px;font-weight:700"><span>'+(t('total_box1_income')||'Total Box 1 Income')+'</span><span>'+FMT(pt.totalBox1Income)+'</span></div>';
-      html+='<div style="font-size:20px;font-weight:700;color:#B8860B;margin-top:8px">'+FMT(pt.totalTax)+'</div>';
+      html+='<div style="font-size:20px;font-weight:700;color:var(--red);margin-top:8px">'+FMT(pt.totalTax)+'</div>';
       html+='<button class="btn btn-xs" style="margin-top:8px" onclick="openPersonalTaxCalculator(\''+cid+'\')">🧮 '+(t('recalculate')||'Recalculate')+'</button>';
     }
     html+='</div>';
@@ -17022,8 +17024,8 @@ function renderDangerZoneChecklist(client){
   ];
   window._dangerZoneChecks=categories.map(c=>c.key); // الكل محدَّد افتراضيًا
   return `
-    <div style="margin-top:16px;padding:14px;background:rgba(168,50,50,0.06);border:2px solid #a83232;border-radius:10px">
-      <div style="font-size:12px;font-weight:700;color:#a83232;margin-bottom:10px">${(t('will_be_permanently_deleted')||'Will be permanently deleted for')} "${escapeHtml(client.name)}":</div>
+    <div style="margin-top:16px;padding:14px;background:rgba(168,50,50,0.06);border:2px solid var(--danger);border-radius:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:10px">${(t('will_be_permanently_deleted')||'Will be permanently deleted for')} "${escapeHtml(client.name)}":</div>
       <div id="danger-checklist" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
         ${categories.map(c=>`
           <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--white);border-radius:6px;cursor:pointer;font-size:12px;color:var(--t1)">
@@ -17031,12 +17033,12 @@ function renderDangerZoneChecklist(client){
             ${c.icon} ${c.label} <span style="color:var(--t3);margin-left:auto">(${c.count})</span>
           </label>
         `).join('')}
-        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(168,50,50,0.1);border-radius:6px;font-size:12px;color:#a83232;font-weight:700">
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--danger-bg);border-radius:6px;font-size:12px;color:var(--danger);font-weight:700">
           🏢 ${t('the_client_record_itself')||'The client account itself'}
         </label>
       </div>
       <div class="fg"><label>${(t('type_delete_to_confirm')||'Type DELETE to confirm')}</label>
-        <input type="text" id="danger-confirm-text" oninput="updateDangerZoneChecks()" placeholder="DELETE" style="width:100%;padding:10px;border:2px solid #a83232;border-radius:6px;background:var(--white);color:var(--t1);font-family:var(--fm);letter-spacing:2px"/>
+        <input type="text" id="danger-confirm-text" oninput="updateDangerZoneChecks()" placeholder="DELETE" style="width:100%;padding:10px;border:2px solid var(--danger);border-radius:6px;background:var(--white);color:var(--t1);font-family:var(--fm);letter-spacing:2px"/>
       </div>
       <button class="btn btn-danger" id="danger-delete-btn" disabled onclick="confirmExecuteClientDeletion('${client.id}')" style="width:100%;padding:12px;opacity:0.5;cursor:not-allowed">
         🗑️ ${(t('permanently_delete_client')||'Permanently Delete This Client')}
@@ -17472,13 +17474,13 @@ function renderMatchModalContent(txId){
           <span style="font-size:12px">${a.targetLabel}</span>
           <span style="display:flex;align-items:center;gap:8px">
             <b style="font-size:12px">${FMT(a.amount)}</b>
-            <button onclick="removeAllocation('${tx.id}','${a.id}')" style="background:none;border:none;cursor:pointer;color:#B8860B;font-size:14px" title="${t('remove')||'Remove'}">✕</button>
+            <button onclick="removeAllocation('${tx.id}','${a.id}')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px" title="${t('remove')||'Remove'}">✕</button>
           </span>
         </div>
       `).join('')}
     </div>`:''}
 
-    <div style="text-align:center;padding:10px;background:${remaining>0.01?'rgba(184,134,11,0.1)':'rgba(45,122,79,0.1)'};border-radius:6px;margin-bottom:14px;font-weight:700;color:${remaining>0.01?'#B8860B':'#2d7a4f'}">
+    <div style="text-align:center;padding:10px;background:${remaining>0.01?'rgba(184,134,11,0.1)':'rgba(45,122,79,0.1)'};border-radius:6px;margin-bottom:14px;font-weight:700;color:${remaining>0.01?'var(--red)':'#2d7a4f'}">
       ${remaining>0.01?(t('remaining_to_allocate')||'Remaining to allocate')+': '+FMT(remaining):'✓ '+(t('fully_matched')||'Fully matched')}
     </div>
 
