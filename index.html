@@ -240,17 +240,6 @@ body.rtl .lang-switch{right:auto;left:14px}
     max-height: 150px !important;
     max-width: 350px !important;
   }
-  /* Step indicators container */
-  .login-step-indicators { 
-    margin-top: 20px !important;
-    margin-bottom: 24px !important; 
-    gap: 8px !important;
-  }
-  /* Individual indicators */
-  #sd1, #sd2, #sd3 { 
-    width: 6px !important; 
-    height: 6px !important; 
-  }
   /* Auth step containers */
   .auth-step {
     margin: 0 !important;
@@ -779,24 +768,28 @@ var S = {lang:'en', role:null, clients:[]};
   </div>
 
     <!-- Logo - Centered -->
-    <div style="text-align:center;margin-bottom:12px;animation:fadeInDown 0.8s ease-out;width:100%;display:flex;justify-content:center" class="login-logo-container">
-      <div id="ll-logo" style="display:flex;justify-content:center;align-items:center;min-height:100px;width:100%;max-width:300px"></div>
+    <div style="text-align:center;margin-bottom:0;animation:fadeInDown 0.8s ease-out;width:100%;display:flex;justify-content:center" class="login-logo-container">
+      <div id="ll-logo" style="display:flex;justify-content:center;align-items:center;min-height:210px;width:100%;max-width:300px;overflow:visible"></div>
     </div>
 
-    <!-- Step Indicators -->
-    <div style="display:flex;justify-content:center;gap:12px;margin-bottom:28px;margin-top:16px;animation:fadeInUp 0.8s ease-out 0.1s both;width:100%" class="login-step-indicators">
-      <div id="sd1" style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);transition:all 0.35s;box-shadow:0 0 12px rgba(200,144,16,0.5)"></div>
-      <div id="sd2" style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);transition:all 0.35s;box-shadow:0 0 8px rgba(255,255,255,0.1)"></div>
-      <div id="sd3" style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);transition:all 0.35s;box-shadow:0 0 8px rgba(255,255,255,0.1)"></div>
+    <!-- زخرفة أندلسية ثابتة (نجمة ثمانية الرؤوس عبر تراكب مربَّعين) - بديل عن
+         مؤشرات الخطوات الديناميكية السابقة، عنصر تزييني فقط بلا وظيفة تفاعلية -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px;margin-top:2px;animation:fadeInUp 0.8s ease-out 0.1s both;width:100%">
+      <div style="flex:1;max-width:70px;height:1px;background:linear-gradient(90deg,transparent,rgba(200,144,16,.55))"></div>
+      <svg width="24" height="24" viewBox="0 0 24 24" style="flex-shrink:0;opacity:.9">
+        <rect x="4" y="4" width="16" height="16" fill="none" stroke="#C89010" stroke-width="1"/>
+        <rect x="4" y="4" width="16" height="16" fill="none" stroke="#C89010" stroke-width="1" transform="rotate(45 12 12)"/>
+        <circle cx="12" cy="12" r="1.4" fill="#FFD700"/>
+      </svg>
+      <div style="flex:1;max-width:70px;height:1px;background:linear-gradient(90deg,rgba(200,144,16,.55),transparent)"></div>
     </div>
 
     <!-- STEP 1: Identify -->
     <div class="auth-step active" id="step-1" style="animation:fadeInUp 0.8s ease-out 0.15s both">
       
-      <!-- Title & Subtitle -->
+      <!-- Title -->
       <div style="text-align:center;margin-bottom:30px">
-        <h1 data-i18n="welcome_back" style="font-size:42px;font-weight:800;color:#C89010;margin:0 0 10px 0;letter-spacing:-0.3px;line-height:1.2;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Welcome back</h1>
-        <p data-i18n="sign_in_sub" style="color:rgba(255,255,255,0.6);font-size:15px;margin:0;line-height:1.5">Sign in with your email or phone number</p>
+        <h1 data-i18n="welcome_back" style="font-size:42px;font-weight:800;color:#C89010;margin:0;letter-spacing:-0.3px;line-height:1.2;background:linear-gradient(135deg,#C89010 0%,#D4A520 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Welcome back</h1>
       </div>
 
       <!-- Role Selection Cards -->
@@ -3446,7 +3439,7 @@ let authState={role:null,identifier:'',clientId:null,isFirstTime:false};
   if(logoEl&&imgs.length>0){
     // Use the login-size logo (first one found)
     const clone=imgs[0].cloneNode();
-    clone.style.cssText='width:180px;height:180px;object-fit:contain;display:block;margin:0 auto 4px';
+    clone.style.cssText='width:236px;height:236px;object-fit:contain;display:block;margin:0 auto 4px';
     logoEl.appendChild(clone);
   }
 })();
@@ -3503,11 +3496,6 @@ function goStep(n){
   [1,2,3,'2fa','ok'].forEach(s=>{
     const el=document.getElementById('step-'+s);
     if(el)el.className='auth-step'+(s===n?' active':'');
-  });
-  // Update dots
-  [1,2,3].forEach(i=>{
-    const d=document.getElementById('sd'+i);
-    if(d)d.className='sd'+(i<=(n==='ok'||n==='2fa'?3:n)?' on':'');
   });
 }
 
@@ -5850,7 +5838,7 @@ function renderQuickDashboard(el,quickActions,cards,styleOpts){
   const calm=cards.filter(c=>!c.alertText);
 
   if(attention.length){
-    html+='<div style="font-size:10px;font-weight:800;letter-spacing:.5px;color:#8a6410;text-transform:uppercase;margin:14px 0 8px">🔔 '+(t('needs_attention')||'Needs Attention')+'</div>';
+    html+='<div style="font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--red);text-transform:uppercase;margin:14px 0 8px">🔔 '+(t('needs_attention')||'Needs Attention')+'</div>';
     attention.forEach(c=>{
       html+='<div onclick="'+c.onclickAttr+'" style="padding:11px 14px;border-radius:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;color:'+(c.textColor||'#ffffff')+';background:'+c.color+';cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.12)">';
       html+='<div style="display:flex;align-items:center;gap:10px"><div style="font-size:19px">'+c.icon+'</div><div style="font-size:12.5px;font-weight:700">'+c.name+'</div></div>';
@@ -5858,16 +5846,16 @@ function renderQuickDashboard(el,quickActions,cards,styleOpts){
       html+='</div>';
     });
   }else{
-    html+='<div style="font-size:10px;font-weight:800;color:#2A6040;text-transform:uppercase;margin:14px 0 8px">✓ '+(t('nothing_needs_attention')||'Nothing needs attention right now')+'</div>';
+    html+='<div style="font-size:10px;font-weight:800;color:var(--green);text-transform:uppercase;margin:14px 0 8px">✓ '+(t('nothing_needs_attention')||'Nothing needs attention right now')+'</div>';
   }
 
   if(calm.length){
-    html+='<div style="font-size:10px;font-weight:800;color:#2A6040;text-transform:uppercase;margin:14px 0 8px">'+(t('for_reference')||'For Reference')+'</div>';
+    html+='<div style="font-size:10px;font-weight:800;color:var(--green);text-transform:uppercase;margin:14px 0 8px">'+(t('for_reference')||'For Reference')+'</div>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
     calm.forEach(c=>{
-      html+='<div onclick="'+c.onclickAttr+'" style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:9px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden">';
+      html+='<div onclick="'+c.onclickAttr+'" style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:9px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden">';
       html+='<div style="font-size:17px;flex-shrink:0">'+c.icon+'</div>';
-      html+='<div style="min-width:0;overflow:hidden"><div style="font-size:10.5px;font-weight:700;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:13px;font-weight:800;color:#0A2218">'+c.value+'</div></div>';
+      html+='<div style="min-width:0;overflow:hidden"><div style="font-size:10.5px;font-weight:700;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:13px;font-weight:800;color:var(--t1)">'+c.value+'</div></div>';
       html+='</div>';
     });
     html+='</div>';
@@ -6032,12 +6020,12 @@ function renderStyledCard(cd,opts){
   const anbBg='linear-gradient(135deg,#FBF3DE 0%,#F5E8C8 100%)';
   const anbShadow='0 0 0 1px #C89010, 0 0 0 3px rgba(200,144,16,0.15), 0 2px 5px rgba(10,34,24,0.10)';
   const plainShadow=cd.alertText?'0 0 0 1.5px var(--red), 0 1px 3px rgba(10,34,24,0.07)':'0 1px 3px rgba(10,34,24,0.07)';
-  return `<div class="dash-card" onclick="${cd.onclickAttr}" style="position:relative;background:${isANB?anbBg:'#FBF8F1'};border-radius:10px;padding:10px 10px 10px 13px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden;box-shadow:${isANB?anbShadow:plainShadow}">
+  return `<div class="dash-card" onclick="${cd.onclickAttr}" style="position:relative;background:${isANB?anbBg:'var(--white)'};border-radius:10px;padding:10px 10px 10px 13px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;overflow:hidden;box-shadow:${isANB?anbShadow:plainShadow}">
     <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${accentColor}"></div>
     <div style="font-size:18px;flex-shrink:0;color:${accentColor};display:flex;align-items:center">${cd.icon}</div>
     <div style="min-width:0;overflow:hidden;flex:1">
-      <div style="font-size:10.5px;font-weight:700;color:#5a5346;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cd.name}</div>
-      <div style="font-size:14px;font-weight:800;color:#0A2218;font-family:var(--fm);font-variant-numeric:tabular-nums">${cd.val!==undefined?cd.val:cd.value}</div>
+      <div style="font-size:10.5px;font-weight:700;color:${isANB?'#5a5346':'var(--t2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cd.name}</div>
+      <div style="font-size:14px;font-weight:800;color:${isANB?'#0A2218':'var(--t1)'};font-family:var(--fm);font-variant-numeric:tabular-nums">${cd.val!==undefined?cd.val:cd.value}</div>
       ${cd.alertText?`<div style="font-size:8.5px;color:var(--red);font-weight:700;margin-top:1px">${cd.alertText}</div>`:''}
     </div>
     ${cd.alertText?'<div class="notif-pulse" style="width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0"></div>':''}
@@ -6227,16 +6215,16 @@ function rClientDash(el,cid){
   ${renderTimerWidget(cid)}
 
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
-    <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
-      <div style="font-size:15px;font-weight:800;color:#0A2218">${pending+overdue}</div>
+    <div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:15px;font-weight:800;color:var(--t1)">${pending+overdue}</div>
       <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('pending_invoices')||'Pending Invoices'}</div>
     </div>
-    <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
-      <div style="font-size:15px;font-weight:800;color:#0A2218">${unreadMsgs}</div>
+    <div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:15px;font-weight:800;color:var(--t1)">${unreadMsgs}</div>
       <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('new_messages')||'New Messages'}</div>
     </div>
-    <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
-      <div style="font-size:15px;font-weight:800;color:#0A2218">${billableHrs}</div>
+    <div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:15px;font-weight:800;color:var(--t1)">${billableHrs}</div>
       <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('unbilled_hours')||'Unbilled Hours'}</div>
     </div>
   </div>
@@ -6435,26 +6423,26 @@ function rANBOverview(el,cid){
   ${renderTimerWidget(cid)}
 
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
-    <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
-      <div style="font-size:15px;font-weight:800;color:#0A2218">${activeClients}</div>
+    <div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:15px;font-weight:800;color:var(--t1)">${activeClients}</div>
       <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('active_clients')||'Active Clients'}</div>
     </div>
-    <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
-      <div style="font-size:15px;font-weight:800;color:#0A2218">${FMT(monthRevenue)}</div>
+    <div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:15px;font-weight:800;color:var(--t1)">${FMT(monthRevenue)}</div>
       <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('this_month_revenue')||'This Month Revenue'}</div>
     </div>
-    <div style="background:#fff;border:1.5px solid #ddd6c4;border-radius:10px;padding:10px 6px;text-align:center">
-      <div style="font-size:15px;font-weight:800;color:#0A2218">${FMT(pendingExpenses)}</div>
+    <div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:15px;font-weight:800;color:var(--t1)">${FMT(pendingExpenses)}</div>
       <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('pending_expenses')||'Pending Expenses'}</div>
     </div>
   </div>
 
-  <div style="font-size:10px;font-weight:800;letter-spacing:.5px;color:#2A6040;text-transform:uppercase;margin:0 0 8px;display:flex;align-items:center;gap:6px">💰 ${t('financial_operations')||'Financial Operations'}<div style="flex:1;height:1px;background:#ddd6c4"></div></div>
+  <div style="font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--green);text-transform:uppercase;margin:0 0 8px;display:flex;align-items:center;gap:6px">💰 ${t('financial_operations')||'Financial Operations'}<div style="flex:1;height:1px;background:var(--gr2)"></div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
     ${financialCards.map(cardHtml).join('')}
   </div>
 
-  <div style="font-size:10px;font-weight:800;letter-spacing:.5px;color:#2A6040;text-transform:uppercase;margin:0 0 8px;display:flex;align-items:center;gap:6px">🏢 ${t('company_management')||'Company Management'}<div style="flex:1;height:1px;background:#ddd6c4"></div></div>
+  <div style="font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--green);text-transform:uppercase;margin:0 0 8px;display:flex;align-items:center;gap:6px">🏢 ${t('company_management')||'Company Management'}<div style="flex:1;height:1px;background:var(--gr2)"></div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     ${companyCards.map(cardHtml).join('')}
   </div>`;
@@ -8408,7 +8396,7 @@ function showReceiptComparisonPanel(dataUrl){
         <button onclick="document.getElementById('receipt-compare-panel')?.remove()" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--t3);line-height:1;padding:2px 6px" aria-label="${t('close')||'Close'}">✕</button>
       </div>
     </div>
-    <div style="flex:1;overflow:auto;padding:10px;background:#f4f1ea">
+    <div style="flex:1;overflow:auto;padding:10px;background:var(--gr1)">
       <img src="${dataUrl}" onclick="openReceiptFullscreenZoom('${dataUrl.replace(/'/g,"\\'")}')" style="width:100%;height:auto;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.12);cursor:zoom-in;display:block"/>
     </div>
     <div style="padding:6px 14px;font-size:10px;color:var(--t3);text-align:center;border-top:1px solid var(--gr1);flex-shrink:0">${t('tap_to_zoom')||'Tap image to zoom in for fine print'}</div>
@@ -13599,7 +13587,7 @@ function rCashier(el,cid){
       ${services.map(svc=>`
         <button onclick="openCashierServiceEntry('${cid}','${svc.id}')" style="position:relative;background:${svc.color||'#1A4A2A'}0D;border:1px solid ${svc.color||'#1A4A2A'}33;border-radius:12px;padding:14px 12px 14px 16px;text-align:left;cursor:pointer;overflow:hidden;transition:transform .12s;-webkit-tap-highlight-color:transparent" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
           <div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:${svc.color||'#1A4A2A'}"></div>
-          <div style="font-size:12.5px;font-weight:700;color:#0A2218;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(svc.name)}</div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(svc.name)}</div>
           <div style="display:inline-block;font-size:11px;font-weight:800;color:${svc.color||'#1A4A2A'};background:#fff;padding:3px 9px;border-radius:20px">${svc.priceEditable?(t('editable')||'Editable'):FMT(svc.price)}</div>
         </button>
       `).join('')}
