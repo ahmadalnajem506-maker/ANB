@@ -10178,9 +10178,9 @@ function rSettings(el){
       <div style="padding:14px">
         <div class="sec-desc">${t('manage_admins_hint')||'People who can manage every client, settings, and billing.'}</div>
         ${activeAdmins.map(admin=>`
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--gr2)">
+          <div class="admin-list-row" style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--gr2);flex-wrap:wrap">
             <div class="cb-av" style="width:34px;height:34px;font-size:12px;background:${admin.role==='super_admin'?'rgba(200,144,16,.15)':'rgba(77,168,118,.15)'};color:${admin.role==='super_admin'?'var(--gold)':'#2d7a4f'};flex-shrink:0">${INI(admin.name||'?')}</div>
-            <div style="flex:1;min-width:0">
+            <div class="admin-list-name" style="flex:1;min-width:120px">
               <div style="font-size:12px;font-weight:600;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(admin.name||'')}</div>
               <div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(admin.email||'')}</div>
             </div>
@@ -10232,8 +10232,8 @@ function rSettings(el){
         <div class="sec-desc">${t('client_accounts_hint')||'Reset a client\u2019s password (they\u2019ll be required to set a new one on next login), or view a copy of their signed contract.'}</div>
         ${activeClients.map(c=>{
           const con=(S.contracts||[]).find(ct=>ct.cid===c.id&&!ct.deleted);
-          return `<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--gr2)">
-            <div style="flex:1;min-width:0">
+          return `<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--gr2);flex-wrap:wrap">
+            <div style="flex:1;min-width:120px">
               <div style="font-size:12px;font-weight:600;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.name||'')}</div>
               <div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.email||'')}</div>
             </div>
