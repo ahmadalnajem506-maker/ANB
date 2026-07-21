@@ -727,7 +727,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=4.07').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=4.08').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
