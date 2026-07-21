@@ -216,6 +216,13 @@ body.rtl .lang-switch{right:auto;left:14px}
 
 /* ═══ MOBILE LOGIN OPTIMIZATION ═══ */
 @media (max-width: 540px) {
+  /* إزاحة كل عناصر صفحة الدخول للأسفل بمقدار 2سم (باستثناء أزرار اللغة
+     التي تبقى مثبَّتة (position:fixed) بمعزل عن هذا التغيير) لتبدو العناصر
+     مركزية بدل التمركز الحالي الذي يترك فراغًا كبيرًا أسفل وضيقًا أعلى */
+  #login-page {
+    align-items: flex-start !important;
+    padding-top: 2cm !important;
+  }
   .login-main-container {
     padding-top: 0 !important;
     padding-left: 8px !important;
