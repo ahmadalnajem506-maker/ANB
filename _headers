@@ -1,0 +1,28 @@
+# ⚠️ ملف رؤوس أمان HTTP فعلية - يُطبَّق تلقائيًا فقط إن كان هذا الموقع مُستضافًا
+# على Cloudflare Pages أو Netlify (كلاهما يدعم اصطلاح ملف _headers هذا). إن كانت
+# الاستضافة الفعلية مكانًا آخر (خادم مخصص، GitHub Pages، إلخ)، فهذا الملف لن يُطبَّق
+# تلقائيًا، ويجب ضبط نفس الرؤوس يدويًا في إعدادات ذلك الخادم/CDN.
+#
+# لماذا هذا الملف ضروري رغم وجود Content-Security-Policy عبر <meta> في index.html؟
+# لأن توجيه frame-ancestors (يمنع تضمين التطبيق داخل iframe في موقع خبيث -
+# clickjacking) لا يعمل إطلاقًا عبر meta tag، ويتطلب رأس HTTP حقيقي فقط.
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(self)
+  Content-Security-Policy: frame-ancestors 'none'
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# ⚠️ إصلاح خلل حقيقي: لم يكن هناك أي سياسة Cache-Control صريحة لملف
+# index.html تحديدًا - ما يعني الاعتماد على سلوك افتراضي غير مضمون من CDN،
+# قد يُخزِّن الصفحة الرئيسية لفترة أطول من المتوقع على بعض الأجهزة/الشبكات
+# (وهذا يُطابق بالضبط شكوى "التغييرات لا تظهر على الموبايل رغم رفعها فعليًا").
+# القاعدتان أدناه تُجبران أي متصفح أو خادم CDN وسيط على التحقق من الخادم في
+# كل مرة قبل استخدام أي نسخة مخزَّنة، بدل الاعتماد عليها بشكل أعمى.
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/
+  Cache-Control: no-cache, must-revalidate
