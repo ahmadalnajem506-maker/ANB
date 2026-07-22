@@ -751,7 +751,8 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.dash-card { animation: cardEnter .35s ease-out backwards; -webkit-tap-highlight-color: transparent; }
+.dash-card { animation: cardEnter .35s ease-out backwards; -webkit-tap-highlight-color: transparent; transition: transform .15s ease, box-shadow .15s ease; }
+.dash-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(10,34,24,0.12) !important; }
 .dash-card:nth-child(1){animation-delay:.02s}
 .dash-card:nth-child(2){animation-delay:.06s}
 .dash-card:nth-child(3){animation-delay:.10s}
@@ -2148,9 +2149,41 @@ if(!window._syncBadgeTicker){
     if(cloudSyncStatus==='synced')updateSyncBadge();
   },30000);
 }
+// ⭐ تتبّع "تغييرات غير محفوظة" على مستوى الشاشة الرئيسية (بخلاف تتبّع النافذة
+// المنبثقة الموجود أصلًا لـ#mo) - أي إدخال/تغيير داخل #content يُعلِّمها
+// "متسخة"، فيُطلَب تأكيد قبل مغادرتها عبر setTab بلا حفظ. يُعاد تصفيرها
+// تلقائيًا عند كل رسم جديد فعلي للمحتوى (renderContent) - سواء بالتنقل
+// (تنقّل ناجح = شاشة جديدة نظيفة) أو بعد حفظ ناجح يُعيد رسم نفس القسم.
+window._contentDirty=false;
+document.addEventListener('input',(e)=>{
+  if(document.getElementById('content')?.contains(e.target))window._contentDirty=true;
+});
+document.addEventListener('change',(e)=>{
+  if(document.getElementById('content')?.contains(e.target))window._contentDirty=true;
+});
+
 // إعادة المحاولة فورًا عند عودة الاتصال بالإنترنت (بدل انتظار الجدولة المتصاعدة)
 window.addEventListener('online',()=>{
   if(cloudSyncStatus==='offline'||cloudSyncStatus==='error')retrySyncNow();
+});
+
+// ⚠️ إصلاح خلل حقيقي: شاشة الرسائل كانت تحسب isMobile مرة واحدة فقط عند
+// الرسم (window.innerWidth<=860)، فلو دار المستخدم جهازه أو غيَّر حجم
+// النافذة بعد فتح الرسائل، يبقى التخطيط (عمود واحد موبايل / عمودين ديسكتوب)
+// على حاله القديمة حتى يحدث تنقّل آخر بين التبويبات يُعيد الرسم من جديد.
+// الحل: مستمع resize مع تأخير بسيط (debounce) يعيد رسم شاشة الرسائل تحديدًا
+// فقط عند عبور حد الـ860px الفعلي، بلا أي تأثير على أي شاشة أخرى.
+let _lastKnownIsMobile=window.innerWidth<=860;
+let _resizeDebounceTimer=null;
+window.addEventListener('resize',()=>{
+  clearTimeout(_resizeDebounceTimer);
+  _resizeDebounceTimer=setTimeout(()=>{
+    const nowMobile=window.innerWidth<=860;
+    if(nowMobile!==_lastKnownIsMobile){
+      _lastKnownIsMobile=nowMobile;
+      if(S.tab==='messages')renderContent();
+    }
+  },200);
 });
 
 (function ld(){
@@ -3685,6 +3718,7 @@ function renderSidebar(){
       const hasArchived=['invoices','expenses','hours','docs'].some(k=>(S[k]||[]).some(x=>x.deleted&&x.archived));
       const adminMainTabs=[
         {id:'dashboard',icon:LICON('layout-dashboard',15),key:'dashboard'},
+        {id:'clients',icon:LICON('briefcase',15),key:'clients'},
         {id:'trash',icon:LICON('trash-2',15),key:'trash_title',dot:hasArchived},
         {id:'settings',icon:LICON('settings',15),key:'settings'}
       ];
@@ -3727,6 +3761,7 @@ function renderSidebar(){
     const hasArchived2=['invoices','expenses','hours','docs'].some(k=>(S[k]||[]).some(x=>x.deleted&&x.archived));
     const adminMainTabs=[
       {id:'dashboard',icon:'◼',key:'dashboard'},
+      {id:'clients',icon:'💼',key:'clients'},
       {id:'trash',icon:'🗑️',key:'trash_title',dot:hasArchived2},
       {id:'settings',icon:'⚙',key:'settings'}
     ];
@@ -3785,7 +3820,22 @@ function gotoOverview(){
   renderTopbar();   // ✅ إعادة رسم الـ topbar لإزالة اسم العميل
   renderContent();
 }
-function setTab(t){
+// ⚠️ نقطة الدخول العامة لكل تنقّل بين التبويبات (تشمل زر "العملاء" الجديد في
+// القائمة الجانبية) - تُحقِّق أولًا من عدم وجود تغييرات غير محفوظة في الشاشة
+// الحالية (window._contentDirty) قبل التنفيذ الفعلي. إن وُجدت، تعرض نافذة
+// تأكيد وتنتظر رد المستخدم؛ المتابعة الفعلية تحدث فقط بعد موافقته الصريحة.
+function setTab(tabName){
+  if(window._contentDirty){
+    showConfirmDialog(
+      t('discard_changes_title')||'Discard Changes?',
+      t('discard_changes_confirm')||'You have unsaved changes. Discard them?',
+      ()=>{ window._contentDirty=false; _setTabImpl(tabName); }
+    );
+    return;
+  }
+  _setTabImpl(tabName);
+}
+function _setTabImpl(t){
   // ✅ إذا كان أدمن يعرض عميلاً معينًا وانتقل لتبويب 'clients'، يعود لقائمة العملاء الكاملة
   if(t==='clients'&&S.currentClient&&isAdmin()){
     gotoOverview();
@@ -3896,6 +3946,7 @@ function renderTopbar(){
 /* ── CONTENT ROUTER ── */
 function renderContent(){
   const el=document.getElementById('content');
+  window._contentDirty=false;
   // ⭐ حركة انتقال عامة عند كل تنقل بين الشاشات - تُعاد إعادة تشغيلها في كل
   // مرة عبر إزالة الفئة أولًا ثم إجبار "إعادة تدفق" المتصفح قبل إضافتها من
   // جديد (نفس أسلوب اهتزاز الحقول الخاطئة)، وإلا لا يُعاد تشغيل نفس الـCSS
@@ -5689,13 +5740,26 @@ function rAdminDash(el){
     <div style="font-size:16px;color:#FFD700">→</div>
   </div>`;
 
-  const cardsWrap=document.createElement('div');
-  renderQuickDashboard(cardsWrap,[
-    {icon:'💼',label:t('clients_list')||'Clients List',onclickAttr:"setTab('clients')"},
-    {icon:'💬',label:t('messages')||'Messages',onclickAttr:"goToAdminStat('messages')"}
-  ],cards,{styled:true});
+  const hour=new Date().getHours();
+  const greetingByLang={
+    en:{morning:'Good morning',afternoon:'Good afternoon',evening:'Good evening'},
+    nl:{morning:'Goedemorgen',afternoon:'Goedemiddag',evening:'Goedenavond'},
+    ar:{morning:'صباح الخير',afternoon:'مساء الخير',evening:'مساء الخير'}
+  }[S.lang]||{morning:'Good morning',afternoon:'Good afternoon',evening:'Good evening'};
+  const greeting=hour<12?greetingByLang.morning:hour<18?greetingByLang.afternoon:greetingByLang.evening;
+  const adminName=S.settings?.adminName||(t('role_admin')||'Admin');
+  const todayLabel=new Date().toLocaleDateString(S.lang==='ar'?'ar':S.lang==='nl'?'nl-NL':'en-US',{weekday:'long',day:'numeric',month:'long'});
+  const greetingHtml=`<div style="margin-bottom:16px">
+    <div style="font-size:17px;font-weight:800;color:var(--t1)">${greeting}, ${escapeHtml(adminName)} 👋</div>
+    <div style="font-size:11.5px;color:var(--t3);margin-top:2px">${todayLabel}</div>
+  </div>`;
+  const overviewLabel={en:'Overview',nl:'Overzicht',ar:'نظرة عامة'}[S.lang]||'Overview';
+  const overviewLabelHtml=`<div style="font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--t3);text-transform:uppercase;margin:16px 0 8px">${overviewLabel}</div>`;
 
-  el.innerHTML=renderRemindersSection()+cardsWrap.innerHTML+anbCardHtml;
+  const cardsWrap=document.createElement('div');
+  renderQuickDashboard(cardsWrap,[],cards,{styled:true});
+
+  el.innerHTML=greetingHtml+renderRemindersSection()+overviewLabelHtml+cardsWrap.innerHTML+anbCardHtml;
 }
 
 
@@ -8593,7 +8657,7 @@ function rMessages(el,cid){
       const term=(S.msgSearchTerm||'').toLowerCase().trim();
       const filteredMsgs=S.messages.filter(m=>m.cid===selectedClient&&!m.deleted&&(!term||(m.text||'').toLowerCase().includes(term)));
       el.innerHTML=`
-      <div style="display:flex;flex-direction:column;height:600px;background:var(--gr2);border-radius:8px;overflow:hidden;border:2px solid ${theme.border}">
+      <div style="display:flex;flex-direction:column;height:calc(100dvh - 140px);min-height:380px;background:var(--gr2);border-radius:8px;overflow:hidden;border:2px solid ${theme.border}">
         <div style="padding:12px;border-bottom:3px solid ${theme.border};display:flex;align-items:center;gap:12px;background:${theme.bg}">
           <button onclick="goBackToOverview()" style="background:transparent;border:none;color:${theme.text};font-size:18px;cursor:pointer;padding:0">←</button>
           <div style="font-weight:600;color:${theme.text};flex:1">${clientName}</div>
@@ -8616,7 +8680,7 @@ function rMessages(el,cid){
     } else if(isMobile&&!selectedClient){
       // Mobile: Show only clients list (full width)
       el.innerHTML=`
-      <div style="border:1px solid var(--gr1);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;height:600px;background:var(--white)">
+      <div style="border:1px solid var(--gr1);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;height:calc(100dvh - 140px);min-height:380px;background:var(--white)">
         <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1)">💼 Clients</div>
         <div style="flex:1;overflow-y:auto">
           ${_clientsSortedByMsg.length===0?`<div style="padding:12px;color:var(--t3);font-size:12px">No clients</div>`:
@@ -8632,7 +8696,7 @@ function rMessages(el,cid){
     } else {
       // Desktop: Show both clients and messages (side by side)
       el.innerHTML=`
-      <div style="display:grid;grid-template-columns:minmax(200px,300px) 1fr;gap:8px;height:600px">
+      <div style="display:grid;grid-template-columns:minmax(200px,300px) 1fr;gap:8px;height:calc(100dvh - 140px);min-height:380px">
         <div style="border:1px solid var(--gr1);border-radius:8px;overflow:hidden;display:flex;flex-direction:column">
           <div style="padding:12px;border-bottom:1px solid var(--gr1);font-weight:600;color:var(--t1)">💼 Clients</div>
           <div style="flex:1;overflow-y:auto">
