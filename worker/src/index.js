@@ -512,6 +512,8 @@ ROLES: Admin (ANB staff) sees and manages everything for every client, including
 
 GLOBAL SEARCH (admin-only): A "🔍" button pinned permanently in the topbar (always visible regardless of which screen/tab is open) opens a unified search across clients, invoices, expenses, documents, and contracts at once — also reachable via Ctrl/Cmd+K. Not available to clients, since it searches across every client's data.
 
+UNSAVED CHANGES PROTECTION: If you (or a client) type into a form or field and then try to navigate away — switching tabs, selecting a different client, going back, or logging out — before saving, the app shows a "Discard changes?" confirmation first. Nothing is lost silently; you must explicitly confirm to discard. This applies across the whole app (both admin and client views) at every main navigation action, not just one screen.
+
 AI ASSISTANT: This chatbot itself (admin-only, via a floating "🤖" button) — free via Cloudflare Workers AI, for accounting/tax/admin guidance including "how do I record X in this app" questions.`;
 
 const ADMIN_ASSISTANT_SYSTEM_PROMPT = `You are an internal assistant for ANB Financial Services, a Dutch bookkeeping and financial administration firm serving freelancers (ZZP) and small businesses. You help the firm's own admin staff think through accounting, tax (Dutch BTW/Belastingdienst rules), and general business-administration questions they run into during daily work — including questions about how to record something in their own ANB FinAdmin Pro application.
