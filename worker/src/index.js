@@ -58,7 +58,6 @@ const MAX_ATTEMPTS_PER_WINDOW = 8;
 const TOTP_STEP_SECONDS = 30;
 const TOTP_DIGITS = 6;
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-
 const attemptLog = new Map();
 
 export default {
