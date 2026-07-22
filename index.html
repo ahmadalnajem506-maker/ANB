@@ -26,8 +26,8 @@
   worker-src 'self' blob: https://cdnjs.cloudflare.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com;
-  img-src 'self' data: blob: https://anb.ahmad-alnajem506.workers.dev https://staging.ahmad-alnajem506.workers.dev;
-  connect-src 'self' https://anb.ahmad-alnajem506.workers.dev https://staging.ahmad-alnajem506.workers.dev;
+  img-src 'self' data: blob: https://anb.ahmad-alnajem506.workers.dev;
+  connect-src 'self' https://anb.ahmad-alnajem506.workers.dev;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
@@ -7471,7 +7471,7 @@ function humanSize(bytes){
 // ⚠️ لا سرّ ثابت هنا، ولا كلمة مرور، ولا سرّ TOTP يصل للمتصفح إطلاقًا الآن.
 // يُمنح التوكن من نقاط /login أو /verify-2fa أو /set-password بعد أن يتحقق
 // الـWorker من كل شيء بنفسه مقابل D1 مباشرة (انظر doLogin/doVerify2FA/doSetPassword).
-const R2_WORKER_URL='https://staging.ahmad-alnajem506.workers.dev';
+const R2_WORKER_URL='https://anb.ahmad-alnajem506.workers.dev';
 
 // يحفظ التوكن في الذاكرة و localStorage معًا، ويجدول تجديده. هذا توكن موقّع
 // قصير الصلاحية (٨ ساعات) - وليس كلمة مرور ولا سرّ TOTP - تخزينه محليًا هنا
@@ -14258,7 +14258,8 @@ async function connectBankAccount(cid){
     });
     const data=await res.json();
     if(!res.ok||!data.authUrl){
-      toast('⚠ '+(data.error||'تعذّر بدء الربط - تحقق من إعداد الأسرار في Staging'),'ti-alert-circle');
+      const detailMsg=data.detail?(typeof data.detail==='string'?data.detail:(data.detail.error_description||data.detail.message||JSON.stringify(data.detail))):'';
+      toast('⚠ '+(data.error||'تعذّر بدء الربط')+(detailMsg?': '+detailMsg:''),'ti-alert-circle');
       return;
     }
     window.location.href=data.authUrl;
