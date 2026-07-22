@@ -6264,16 +6264,20 @@ function rClientDash(el,cid){
   </div>
 
   ${isCardVisibleForClient(cid,'hours')?renderTimerWidget(cid):''}
+
+  <div style="display:grid;grid-template-columns:${isCardVisibleForClient(cid,'hours')?'1fr 1fr 1fr':'1fr 1fr'};gap:8px;margin-bottom:16px">
+    <div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:15px;font-weight:800;color:var(--t1)">${pending+overdue}</div>
       <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('pending_invoices')||'Pending Invoices'}</div>
     </div>
     <div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
       <div style="font-size:15px;font-weight:800;color:var(--t1)">${unreadMsgs}</div>
       <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('new_messages')||'New Messages'}</div>
     </div>
-    <div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
+    ${isCardVisibleForClient(cid,'hours')?`<div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
       <div style="font-size:15px;font-weight:800;color:var(--t1)">${billableHrs}</div>
       <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('unbilled_hours')||'Unbilled Hours'}</div>
-    </div>
+    </div>`:''}
   </div>
 
   <div style="display:inline-flex;align-items:center;gap:6px;background:#0A2218;color:#FFD700;padding:6px 12px;border-radius:20px;font-size:11.5px;font-weight:800;letter-spacing:.4px;margin-bottom:10px">💰 ${t('my_finances')||'My Finances'}</div>
