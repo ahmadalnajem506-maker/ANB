@@ -1120,7 +1120,7 @@ html { scroll-behavior: smooth; }
 <div id="mo" style="display:none" class="overlay">
   <div class="modal">
     <div class="mh"><span class="mt" id="mo-t">Modal</span>
-      <button class="btn btn-xs" onclick="closeModal()"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✕</span></button></div>
+      <button class="btn btn-xs" id="mo-x" onclick="closeModal()"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✕</span></button></div>
     <div class="mb" id="mo-b"></div>
     <div class="mf" id="mo-f">
       <button class="btn btn-xs" onclick="closeModal()">Cancel</button>
@@ -1953,7 +1953,7 @@ function saveLocalCache(){
     localStorage.setItem('anb5',JSON.stringify(c));
   }catch{}
 }
-function sv(){saveLocalCache();scheduleSync();}
+function sv(){window._contentDirty=false;saveLocalCache();scheduleSync();}
 
 /* ═══ CLOUD SYNC (Cloudflare D1 عبر الـWorker — كان Supabase سابقًا) ═══ */
 // ⚠️ 04 يوليو 2026: انتقلنا من Supabase إلى D1. القراءة (GET) تبقى عامة بلا
@@ -7038,8 +7038,11 @@ function renderClientInfoCard(c){
 }
 function callClientPhone(phone,name){
   const callLabel={en:'Call',nl:'Bel',ar:'اتصال بـ'}[S.lang]||'Call';
-  if(!confirm(`${callLabel} ${name} — ${phone}؟`))return;
-  window.location.href='tel:'+phone.replace(/[^\d+]/g,'');
+  showConfirmDialog(
+    callLabel,
+    `${callLabel} ${name} — ${phone}؟`,
+    ()=>{ window.location.href='tel:'+phone.replace(/[^\d+]/g,''); }
+  );
 }
 function renderClientHealthBadge(cid){
   const health=getClientHealthScore(cid);
@@ -10502,9 +10505,20 @@ async function loadBackupsList(){
   }
 }
 
-async function restoreBackup(backupKey){
-  if(!confirm((t('restore_backup_confirm')||'This will REPLACE all current data with this backup. A safety backup of the current state will be taken first, but this action is significant. Continue?')))return;
-  if(!confirm((t('restore_backup_confirm2')||'Are you absolutely sure? Type-confirm by clicking OK once more.')))return;
+function restoreBackup(backupKey){
+  showConfirmDialog(
+    t('confirm_restore')||'Restore Backup',
+    t('restore_backup_confirm')||'This will REPLACE all current data with this backup. A safety backup of the current state will be taken first, but this action is significant. Continue?',
+    ()=>{
+      showConfirmDialog(
+        t('confirm_restore')||'Restore Backup',
+        t('restore_backup_confirm2')||'Are you absolutely sure? Confirm by clicking OK once more.',
+        ()=>_restoreBackupImpl(backupKey)
+      );
+    }
+  );
+}
+async function _restoreBackupImpl(backupKey){
   toast('⏳ '+(t('restoring')||'Restoring...'));
   try{
     const res=await fetch(R2_WORKER_URL+'/admin/restore-backup',{
@@ -11341,7 +11355,7 @@ function closeModalWithDirtyCheck(){
   }
   closeModal();
 }
-function closeModal(){document.getElementById('mo').style.display='none';document.getElementById('receipt-compare-panel')?.remove();}
+function closeModal(){document.getElementById('mo').style.display='none';document.getElementById('receipt-compare-panel')?.remove();document.getElementById('mo-f').style.display='';document.getElementById('mo-x').style.display='';}
 
 async function viewReceipt(docId){
   const doc=(S.docs||[]).find(d=>d.id===docId);
@@ -18613,7 +18627,8 @@ function showConfirmDialog(title,message,onConfirm,onCancel){
   document.getElementById('mo-t').textContent='';
   document.getElementById('mo-b').innerHTML=html;
   document.getElementById('mo').style.display='flex';
-  document.getElementById('mo-s').style.display='none';
+  document.getElementById('mo-f').style.display='none';
+  document.getElementById('mo-x').style.display='none';
 }
 
 // Handle hardware back button
