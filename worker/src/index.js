@@ -680,7 +680,7 @@ async function handleBankConnect(request, env, cors) {
       method: 'POST',
       body: JSON.stringify({
         access: { valid_until: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString() },
-        aspsp: { name: 'ING', country: 'NL' }, // ⚠️ مثبَّت للنموذج الأولي فقط - بنك واحد
+        aspsp: { name: 'Mock ASPSP', country: 'NL' }, // ⚠️ Sandbox لا تدعم ING فعليًا - Mock ASPSP هو البنك التجريبي المخصَّص للاختبار في هذه البيئة
         state,
         redirect_url: env.BANK_REDIRECT_URL,
         psu_type: 'business',
@@ -726,7 +726,7 @@ async function handleBankCallback(request, env, cors, url) {
       id: crypto.randomUUID(),
       cid,
       provider: 'enablebanking',
-      aspspName: 'ING',
+      aspspName: 'Mock ASPSP',
       aspspCountry: 'NL',
       sessionId: data.session_id || data.sessionId,
       accountIds: (data.accounts || []).map((a) => a.uid || a.account_id || a.id),
