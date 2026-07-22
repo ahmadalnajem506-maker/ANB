@@ -5393,17 +5393,23 @@ function rClientsLis(el){
   const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'};
   const initialContractFilter=S.clientsContractFilter||'';
   S.clientsContractFilter=null; // ⭐ تُستخدَم مرة واحدة فقط عند الدخول من كرت لوحة التحكم
+  const filtersOpenByDefault=!!initialContractFilter; // افتح اللوحة تلقائيًا لو دخلنا بفلتر جاهز من كرت آخر
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
       ← ${t('back_to_overview')||'Back'}
     </button>
   </div>
-  <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+  <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
     <input type="text" id="client-search" placeholder="${t('search')} ${t('clients_list')}..." 
-      style="flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--white);color:var(--t1)"
+      style="flex:1;min-width:0;padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--white);color:var(--t1)"
       oninput="filterClients(this.value)">
-    <select id="plan-filter" style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--white);color:var(--t1);cursor:pointer"
+    <button id="clients-filters-toggle" onclick="toggleClientsFiltersPanel()" style="flex-shrink:0;padding:10px 12px;border:1px solid var(--gr2);border-radius:8px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px;position:relative">
+      ⚙️ <span id="clients-filters-badge" style="display:none;position:absolute;top:-4px;right:-4px;width:8px;height:8px;border-radius:50%;background:#C89010"></span>
+    </button>
+  </div>
+  <div id="clients-filters-panel" style="display:${filtersOpenByDefault?'flex':'none'};gap:8px;margin-bottom:16px;flex-wrap:wrap;background:var(--gr1);padding:10px;border-radius:8px">
+    <select id="plan-filter" style="flex:1;min-width:110px;padding:9px 10px;border:1px solid var(--gr2);border-radius:8px;font-size:12.5px;background:var(--white);color:var(--t1);cursor:pointer"
       onchange="filterClients(document.getElementById('client-search').value)">
       <option value="">All Plans</option>
       <option value="100">Basic</option>
@@ -5411,7 +5417,7 @@ function rClientsLis(el){
       <option value="200">Pro</option>
       <option value="none">${t('no_subscription')||'No subscription'}</option>
     </select>
-    <select id="contract-status-filter" style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--white);color:var(--t1);cursor:pointer"
+    <select id="contract-status-filter" style="flex:1;min-width:110px;padding:9px 10px;border:1px solid var(--gr2);border-radius:8px;font-size:12.5px;background:var(--white);color:var(--t1);cursor:pointer"
       onchange="filterClients(document.getElementById('client-search').value)">
       <option value="" ${initialContractFilter===''?'selected':''}>${t('all_contracts')||'All Contracts'}</option>
       <option value="needsAttention" ${initialContractFilter==='needsAttention'?'selected':''}>⚠️ ${t('needs_attention')||'Needs Attention (all)'}</option>
@@ -5422,7 +5428,7 @@ function rClientsLis(el){
       <option value="cancelled" ${initialContractFilter==='cancelled'?'selected':''}>🚫 ${t('cancelled')||'Cancelled'}</option>
       <option value="none" ${initialContractFilter==='none'?'selected':''}>${t('no_contract')||'No Contract'}</option>
     </select>
-    <select id="client-sort" style="padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--white);color:var(--t1);cursor:pointer"
+    <select id="client-sort" style="flex:1;min-width:110px;padding:9px 10px;border:1px solid var(--gr2);border-radius:8px;font-size:12.5px;background:var(--white);color:var(--t1);cursor:pointer"
       onchange="S.tableSort.clients={field:this.value.split('|')[0],dir:this.value.split('|')[1]};filterClients(document.getElementById('client-search').value)">
       <option value="name|asc">${t('sort_name_az')||'Name (A-Z)'}</option>
       <option value="name|desc">${t('sort_name_za')||'Name (Z-A)'}</option>
@@ -5433,7 +5439,16 @@ function rClientsLis(el){
   </div>
   <div id="clients-list-container"></div>`;
   
+  if(initialContractFilter){
+    const badge=document.getElementById('clients-filters-badge');
+    if(badge)badge.style.display='block';
+  }
   renderClientsList('');
+}
+function toggleClientsFiltersPanel(){
+  const panel=document.getElementById('clients-filters-panel');
+  if(!panel)return;
+  panel.style.display=panel.style.display==='none'?'flex':'none';
 }
 
 function renderClientsList(searchTerm){
@@ -5506,19 +5521,21 @@ function renderClientsList(searchTerm){
     // حساب التنبيهات
     const inv=S.invoices.filter(i=>i.cid===c.id&&!i.deleted);
     const overdue=inv.filter(i=>isInvoiceOverdue(i)).length;
-    const pending=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).length;
-    const exp=S.expenses.filter(e=>e.cid===c.id&&!e.deleted).length;
     const msgs=getUnreadMsgCount(c.id,'admin');
     const clientContract=(S.contracts||[]).find(x=>x.cid===c.id&&!x.deleted);
     const awaitingSignature=clientContract?.status==='draft';
     const contractNeedsRenewal=clientContract?.status==='active'&&isContractExpired(clientContract);
     const contractSuspended=clientContract?.status==='suspended';
+    // ⭐ شارة عقد واحدة فقط (لا تتداخل) بترتيب أولوية واضح: معلَّق > بانتظار توقيع > بحاجة تجديد
+    const contractChip=contractSuspended
+      ?{icon:'⏸',label:t('suspended')||'Suspended',bg:'rgba(184,134,11,0.15)',color:'var(--red)'}
+      :awaitingSignature
+      ?{icon:'📝',label:t('awaiting_signature')||'Awaiting Signature',bg:'#FEF3E2',color:'#7A4A00'}
+      :contractNeedsRenewal
+      ?{icon:'🔔',label:t('needs_renewal')||'Needs Renewal',bg:'#FDF8EC',color:'#8a6410'}
+      :null;
 
-    // حساب إجمالي التنبيهات
-    const totalAlerts=overdue+pending+(exp>0?1:0)+(msgs>0?1:0);
-    
     // نوع الباقة
-    // خريطة الأسماء
     const planNames={100:'Basic',150:'Plus',200:'Pro'};
     const monthlyFeeInt=parseInt(c.monthlyFee)||0;
     const hasSubscription=monthlyFeeInt>0;
@@ -5528,13 +5545,13 @@ function renderClientsList(searchTerm){
     const planColor=isExpired?'#7A4A00':hasSubscription?(planColors[monthlyFeeInt]||'#0A2218'):'#888070';
     const planBg=isExpired?'#FEF3E2':hasSubscription?(planBgColors[monthlyFeeInt]||'#E8F4F0'):'#F4F2EC';
     const planBorder=isExpired?'var(--red)':hasSubscription?(planBorderColors[monthlyFeeInt]||'#2d7a4f'):'#C4C0B0';
-    
+
     return `
-    <div onclick="selClient('${c.id}')" style="padding:10px 12px;background:var(--white);border:1px solid var(--gr2);border-left:3px solid ${planColor};border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .15s ease;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,0.05)"
+    <div onclick="selClient('${c.id}')" style="padding:10px 12px;background:var(--white);border:1px solid var(--gr2);border-left:3px solid ${planBorder};border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .15s ease;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,0.05)"
       onmouseover="this.style.boxShadow='0 3px 8px rgba(0,0,0,0.1)'"
       onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.05)'">
 
-      <div class="cb-av" style="width:32px;height:32px;font-size:12px;flex-shrink:0;background:${c.color}22;color:${c.color};border:2px solid ${c.color}">${INI(c.name)}</div>
+      <div class="cb-av" style="width:32px;height:32px;font-size:12px;flex-shrink:0;background:${planBg};color:${planColor}">${INI(c.name)}</div>
 
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px">
@@ -5545,12 +5562,9 @@ function renderClientsList(searchTerm){
       </div>
 
       <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
-        ${awaitingSignature?'<span style="background:#FEF3E2;color:#7A4A00;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600">📝'+(t('awaiting_signature')||'Awaiting Signature')+'</span>':''}
-        ${contractNeedsRenewal?'<span style="background:#FDF8EC;color:#8a6410;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600">🔔'+(t('needs_renewal')||'Needs Renewal')+'</span>':''}
-        ${contractSuspended?'<span style="background:rgba(184,134,11,0.15);color:var(--red);font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600">⏸'+(t('suspended')||'Suspended')+'</span>':''}
-        ${overdue>0?'<span style="background:#FDF8EC;color:#7A4A00;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600">⚠️'+overdue+'</span>':''}
-        ${msgs>0?'<span style="background:#c8e6c9;color:#1b5e20;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600">💬'+msgs+'</span>':''}
-        ${totalAlerts>0?'<span style="background:#1a4d2e;color:white;font-weight:700;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px">'+totalAlerts+'</span>':''}
+        ${contractChip?`<span style="background:${contractChip.bg};color:${contractChip.color};font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600;white-space:nowrap">${contractChip.icon} ${contractChip.label}</span>`:''}
+        ${overdue>0?`<span style="background:#FDF8EC;color:#7A4A00;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600;white-space:nowrap" title="${t('health_overdue',{n:overdue})||overdue+' overdue invoice(s)'}">⚠️ ${overdue}</span>`:''}
+        ${msgs>0?`<span style="background:#c8e6c9;color:#1b5e20;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600;white-space:nowrap" title="${msgs+' unread message(s)'}">💬 ${msgs}</span>`:''}
       </div>
     </div>`;
   }).join('');
