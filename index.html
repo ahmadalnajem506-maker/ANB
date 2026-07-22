@@ -601,7 +601,7 @@ tr:hover td{background:var(--gr1)}
    الأصغر يبقيان على التخطيط الرأسي الحالي بلا أي تغيير. */
 @media (min-width: 861px){
   .login-main-container {
-    max-width: 920px !important;
+    max-width: 960px !important;
     display: grid !important;
     grid-template-columns: 1fr 1px 1fr !important;
     grid-template-areas: "lang divider steps" "logo divider steps" !important;
@@ -618,6 +618,10 @@ tr:hover td{background:var(--gr1)}
     grid-area: logo;
     justify-self: center;
     align-self: center;
+  }
+  .ll-new-logo {
+    width: 92% !important;
+    max-width: 420px !important;
   }
   .login-divider {
     grid-area: divider;
@@ -642,6 +646,7 @@ tr:hover td{background:var(--gr1)}
     grid-area: steps;
     align-self: center;
     width: 100%;
+    margin-left: 40px;
   }
 }
 
