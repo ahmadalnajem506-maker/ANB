@@ -432,6 +432,7 @@ HOURS:
 - Timer-based logging (start/pause/stop & log) with a task description, or manual entry.
 - Categories are customizable per client (Settings → Manage Categories) to match their actual work (photography, consulting, construction, etc.)
 - Tracks progress toward the Dutch "urencriterium" — 1,225 hours/year required for the self-employed deduction (Zelfstandigenaftrek). The app shows whether the client is on pace and whether the criterion is currently met.
+- The floating timer widget and the "Unbilled Hours" dashboard indicator only appear on a client's dashboard if the Hours section is enabled for that client (Edit Client → Configuration → Visible Sections). If Hours is disabled for a client, neither the timer nor the unbilled-hours count shows up for them at all.
 
 CASH LEDGER (distinct from Cashier — for businesses that occasionally get paid in cash, not walk-in service businesses):
 - Record Cash Payment: settles a specific existing invoice partially or fully in cash; invoice only shows "Paid" once fully covered.
@@ -508,6 +509,8 @@ TRASH & ARCHIVE: Deleted items go to Trash first; after 30 days they move to a s
 CLIENT-SIDE FEATURES: A first-time Welcome onboarding (3 short animated slides) shown once per client account, plus a "Quick Start" checklist on their dashboard (log first hours/expense, create first invoice, message ANB) that tracks real progress and disappears once complete or dismissed. A searchable Help Center (collapsible FAQ topics: invoices, expenses, hours, cashier, BTW report, messaging, documents) automatically filtered to only show topics for sections that client actually has enabled — accessed via a floating "❓" button visible on every screen. Clients can manage their own Cashier services and their own Electronic Payment provider connection.
 
 ROLES: Admin (ANB staff) sees and manages everything for every client, including a company-wide dashboard, messages, documents, and contracts overview across all clients. Clients only see their own data; which optional sections they can see (Reports, Employees, Bank, Assets, Client Activity log, Cashier, etc.) is individually toggled per client by the admin in Edit Client → Configuration → Visible Sections.
+
+GLOBAL SEARCH (admin-only): A "🔍" button pinned permanently in the topbar (always visible regardless of which screen/tab is open) opens a unified search across clients, invoices, expenses, documents, and contracts at once — also reachable via Ctrl/Cmd+K. Not available to clients, since it searches across every client's data.
 
 AI ASSISTANT: This chatbot itself (admin-only, via a floating "🤖" button) — free via Cloudflare Workers AI, for accounting/tax/admin guidance including "how do I record X in this app" questions.`;
 
