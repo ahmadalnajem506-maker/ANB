@@ -7011,6 +7011,17 @@ function getClientHourCriterionAlert(cid){
 function renderClientInfoCard(c){
   if(!c)return '';
   const notSet=`<span style="color:rgba(255,255,255,0.4);font-style:italic">${t('not_set')||'Not set'}</span>`;
+  // ⭐ الاتصال بالضغط على رقم الهاتف: للموبايل فقط (وليس الديسكتوب)، ويبقى
+  // نصًا عاديًا غير قابل للنقر إن كان الرقم "Not set"
+  const isMobileWidth=window.innerWidth<=860;
+  const phoneClickable=isMobileWidth&&c.phone;
+  const phoneCell=phoneClickable
+    ?`<div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:7px 10px;font-size:11.5px;color:#e8e6df;cursor:pointer" onclick="callClientPhone('${escapeHtml(c.phone)}','${escapeHtml(c.name||'')}')" onmouseover="this.style.background='rgba(212,181,126,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+        <span style="font-size:13px;opacity:.85">📞</span>${escapeHtml(c.phone)}
+      </div>`
+    :`<div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:7px 10px;font-size:11.5px;color:#e8e6df">
+        <span style="font-size:13px;opacity:.85">📞</span>${c.phone?escapeHtml(c.phone):notSet}
+      </div>`;
   return `<div style="position:relative;background-image:linear-gradient(135deg,rgba(10,34,24,0.72) 0%,rgba(15,48,37,0.72) 100%),url('${LEATHER_BG_DATA_URI}');background-size:cover;background-position:center;border-radius:14px;padding:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 4px 14px rgba(10,34,24,0.25)">
     <div style="position:absolute;top:-30%;right:-10%;width:140px;height:140px;background:radial-gradient(circle,rgba(212,181,126,0.12) 0%,transparent 70%);pointer-events:none"></div>
     <div style="display:flex;align-items:center;gap:12px;position:relative;z-index:1">
@@ -7018,14 +7029,17 @@ function renderClientInfoCard(c){
       <div style="font-size:16px;font-weight:800;color:#fff;letter-spacing:.2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.name||'—')}</div>
     </div>
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;position:relative;z-index:1">
-      <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:7px 10px;font-size:11.5px;color:#e8e6df">
-        <span style="font-size:13px;opacity:.85">📞</span>${c.phone?escapeHtml(c.phone):notSet}
-      </div>
+      ${phoneCell}
       <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:7px 10px;font-size:11.5px;color:#e8e6df">
         <span style="font-size:13px;opacity:.85">🏦</span>${c.iban?`<b style="font-family:var(--fm);font-weight:600;color:#fff">${escapeHtml(c.iban)}</b>`:notSet}
       </div>
     </div>
   </div>`;
+}
+function callClientPhone(phone,name){
+  const callLabel={en:'Call',nl:'Bel',ar:'اتصال بـ'}[S.lang]||'Call';
+  if(!confirm(`${callLabel} ${name} — ${phone}؟`))return;
+  window.location.href='tel:'+phone.replace(/[^\d+]/g,'');
 }
 function renderClientHealthBadge(cid){
   const health=getClientHealthScore(cid);
