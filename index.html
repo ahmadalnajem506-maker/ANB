@@ -6263,11 +6263,7 @@ function rClientDash(el,cid){
     </div>
   </div>
 
-  ${renderTimerWidget(cid)}
-
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
-    <div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
-      <div style="font-size:15px;font-weight:800;color:var(--t1)">${pending+overdue}</div>
+  ${isCardVisibleForClient(cid,'hours')?renderTimerWidget(cid):''}
       <div style="font-size:8.5px;color:var(--t3);font-weight:600;margin-top:2px">${t('pending_invoices')||'Pending Invoices'}</div>
     </div>
     <div style="background:var(--white);border:1.5px solid var(--gr2);border-radius:10px;padding:10px 6px;text-align:center">
