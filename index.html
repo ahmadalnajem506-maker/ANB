@@ -583,6 +583,68 @@ tr:hover td{background:var(--gr1)}
   .card{overflow-x:auto}
   .card table{min-width:640px}
 }
+/* ⭐ في الديسكتوب فقط: أزرار اللغة تصبح ضمن التدفق العادي فوق الشعار مباشرة
+   (توازي طولي/عمودي) بدل موضعها الحالي العائم في الزاوية العلوية اليمنى
+   (توازي عرضي بجانب الشعار). الموبايل يبقى كما هو (زاوية ثابتة). */
+@media (min-width: 541px){
+  .login-lang-switch {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    margin: 0 auto 20px auto !important;
+  }
+}
+
+/* ⭐ في الديسكتوب فقط: تخطيط جانبي — الشعار على اليسار، وباقي المكونات
+   (العنوان، بطاقات الأدوار، نموذج الدخول) على اليمين، والفاصل (النجمة)
+   نفسه يصبح خطًا عموديًا بينهما بدل الأفقي الحالي. الموبايل والتابلت
+   الأصغر يبقيان على التخطيط الرأسي الحالي بلا أي تغيير. */
+@media (min-width: 861px){
+  .login-main-container {
+    max-width: 920px !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1px 1fr !important;
+    grid-template-areas: "lang divider steps" "logo divider steps" !important;
+    grid-template-rows: auto 1fr !important;
+    align-items: center !important;
+    column-gap: 56px !important;
+  }
+  .login-lang-switch {
+    grid-area: lang;
+    justify-self: center;
+    margin: 0 0 20px 0 !important;
+  }
+  .login-logo-container {
+    grid-area: logo;
+    justify-self: center;
+    align-self: center;
+  }
+  .login-divider {
+    grid-area: divider;
+    flex-direction: column !important;
+    width: auto !important;
+    height: 100% !important;
+    min-height: 340px;
+    justify-content: center !important;
+    margin: 0 !important;
+  }
+  .login-divider-line {
+    width: 1px !important;
+    height: auto !important;
+    max-width: none !important;
+    flex: 1 !important;
+    background: linear-gradient(180deg, transparent, rgba(200,144,16,.55)) !important;
+  }
+  .login-divider-line:last-child {
+    background: linear-gradient(180deg, rgba(200,144,16,.55), transparent) !important;
+  }
+  .auth-step {
+    grid-area: steps;
+    align-self: center;
+    width: 100%;
+  }
+}
+
 @media (min-width: 861px){
   .sidebar-backdrop{display:none!important}
 }
@@ -795,14 +857,14 @@ var S = {lang:'en', role:null, clients:[]};
 
     <!-- زخرفة أندلسية ثابتة (نجمة ثمانية الرؤوس عبر تراكب مربَّعين) - بديل عن
          مؤشرات الخطوات الديناميكية السابقة، عنصر تزييني فقط بلا وظيفة تفاعلية -->
-    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;margin-top:-24px;animation:fadeInUp 0.8s ease-out 0.1s both;width:100%">
-      <div style="flex:1;max-width:70px;height:1px;background:linear-gradient(90deg,transparent,rgba(200,144,16,.55))"></div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;margin-top:-24px;animation:fadeInUp 0.8s ease-out 0.1s both;width:100%" class="login-divider">
+      <div style="flex:1;max-width:70px;height:1px;background:linear-gradient(90deg,transparent,rgba(200,144,16,.55))" class="login-divider-line"></div>
       <svg width="24" height="24" viewBox="0 0 24 24" style="flex-shrink:0;opacity:.9">
         <rect x="4" y="4" width="16" height="16" fill="none" stroke="#C89010" stroke-width="1"/>
         <rect x="4" y="4" width="16" height="16" fill="none" stroke="#C89010" stroke-width="1" transform="rotate(45 12 12)"/>
         <circle cx="12" cy="12" r="1.4" fill="#FFD700"/>
       </svg>
-      <div style="flex:1;max-width:70px;height:1px;background:linear-gradient(90deg,rgba(200,144,16,.55),transparent)"></div>
+      <div style="flex:1;max-width:70px;height:1px;background:linear-gradient(90deg,rgba(200,144,16,.55),transparent)" class="login-divider-line"></div>
     </div>
 
     <!-- STEP 1: Identify -->
