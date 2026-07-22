@@ -14041,6 +14041,7 @@ function rBank(el,cid){
         <button class="btn btn-xs" onclick="openAddBankTx()">${t('btn_add_manual')}</button>
         ${cid!==ANB_SELF_ID?`<button class="btn btn-xs" style="background:var(--gold);color:#0A2218" onclick="openImportDataModal('bank','${cid}')">📋 ${t('import_previous_data')||'Import Previous Data'}</button>`:''}
         <button class="btn btn-xs" style="background:#8a6410;color:#fff" onclick="connectBankAccount('${cid}')">🏦 Connect Bank (Beta)</button>
+        <button class="btn btn-xs" onclick="debugListBankAspsps()">🔍 List NL Banks (debug)</button>
       </div>`:''}
     </div>
     <div style="font-size:11px;color:var(--t3);padding:6px 14px 8px">
@@ -14248,6 +14249,25 @@ function parseBunqCsv(raw,cid){
  * ربط بنكي تلقائي عبر Enable Banking بدل استيراد CSV يدوي. بنك واحد فقط
  * (ING هولندا) للتجربة الأولى، قراءة فقط. راجع النقاش السابق قبل التوسّع.
  */
+async function debugListBankAspsps(){
+  toast('⏳ جارِ جلب قائمة البنوك...','ti-refresh');
+  try{
+    const res=await fetch(R2_WORKER_URL+'/bank/aspsps?country=NL',{
+      headers:{'Authorization':'Bearer '+getValidR2Token()}
+    });
+    const data=await res.json();
+    console.log('NL ASPSPs from Enable Banking:',data);
+    if(!res.ok){
+      alert('Error: '+JSON.stringify(data,null,2));
+      return;
+    }
+    const list=(data.aspsps||[]).map(a=>a.name).join('\n');
+    alert('أسماء البنوك الهولندية بالضبط كما تتوقعها Enable Banking:\n\n'+list);
+  }catch(e){
+    toast('⚠ Network error: '+e.message,'ti-alert-circle');
+  }
+}
+
 async function connectBankAccount(cid){
   if(!confirm('(Beta/Staging) هل تريد بدء ربط حساب ING لهذا العميل عبر Enable Banking؟ سيُعاد توجيهك لصفحة تسجيل الدخول لدى البنك.'))return;
   try{
