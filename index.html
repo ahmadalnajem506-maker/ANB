@@ -2154,6 +2154,22 @@ if(!window._syncBadgeTicker){
 // "متسخة"، فيُطلَب تأكيد قبل مغادرتها عبر setTab بلا حفظ. يُعاد تصفيرها
 // تلقائيًا عند كل رسم جديد فعلي للمحتوى (renderContent) - سواء بالتنقل
 // (تنقّل ناجح = شاشة جديدة نظيفة) أو بعد حفظ ناجح يُعيد رسم نفس القسم.
+// ⚠️ حارس عام وقابل لإعادة الاستخدام لكل نقاط التنقّل في التطبيق: إن وُجدت
+// تغييرات غير محفوظة في الشاشة الحالية (window._contentDirty)، يعرض تأكيدًا
+// قبل تنفيذ أي إجراء تنقّل فعليًا (يُصفِّر العلَم أولًا عند الموافقة). إن لم
+// توجد تغييرات، ينفِّذ الإجراء فورًا بلا أي تأخير أو نافذة.
+function withUnsavedGuard(actionFn){
+  if(window._contentDirty){
+    showConfirmDialog(
+      t('discard_changes_title')||'Discard Changes?',
+      t('discard_changes_confirm')||'You have unsaved changes. Discard them?',
+      ()=>{ window._contentDirty=false; actionFn(); }
+    );
+  } else {
+    actionFn();
+  }
+}
+
 window._contentDirty=false;
 document.addEventListener('input',(e)=>{
   if(document.getElementById('content')?.contains(e.target))window._contentDirty=true;
@@ -2807,10 +2823,10 @@ function renderGlobalSearchResults(results){
   if(!container)return;
   const sections=[
     {key:'clients',icon:'💼',label:t('clients')||'Clients',items:results.clients,render:c=>({title:c.name,sub:c.email||c.kvk||'',onclick:`closeGlobalSearch();selClient('${c.id}')`})},
-    {key:'invoices',icon:'📄',label:t('tab_invoices')||'Invoices',items:results.invoices,render:i=>({title:i.num||i.desc,sub:(S.clients.find(c=>c.id===i.cid)?.name||'')+' · €'+(i.total||0).toFixed(2),onclick:`closeGlobalSearch();selClient('${i.cid}');S.tab='invoices';renderApp()`})},
-    {key:'expenses',icon:'🧾',label:t('tab_expenses')||'Expenses',items:results.expenses,render:e=>({title:e.desc,sub:(S.clients.find(c=>c.id===e.cid)?.name||'')+' · €'+(e.amount||0).toFixed(2),onclick:`closeGlobalSearch();selClient('${e.cid}');S.tab='expenses';renderApp()`})},
-    {key:'documents',icon:'📁',label:t('documents')||'Documents',items:results.documents,render:d=>({title:d.name,sub:S.clients.find(c=>c.id===d.cid)?.name||'',onclick:`closeGlobalSearch();selClient('${d.cid}');S.tab='documents';renderApp()`})},
-    {key:'contracts',icon:'📋',label:t('contracts')||'Contracts',items:results.contracts,render:cn=>({title:cn.title,sub:S.clients.find(c=>c.id===cn.cid)?.name||'',onclick:`closeGlobalSearch();selClient('${cn.cid}');S.tab='contracts';renderApp()`})},
+    {key:'invoices',icon:'📄',label:t('tab_invoices')||'Invoices',items:results.invoices,render:i=>({title:i.num||i.desc,sub:(S.clients.find(c=>c.id===i.cid)?.name||'')+' · €'+(i.total||0).toFixed(2),onclick:`closeGlobalSearch();selClientAndGoto('${i.cid}','invoices')`})},
+    {key:'expenses',icon:'🧾',label:t('tab_expenses')||'Expenses',items:results.expenses,render:e=>({title:e.desc,sub:(S.clients.find(c=>c.id===e.cid)?.name||'')+' · €'+(e.amount||0).toFixed(2),onclick:`closeGlobalSearch();selClientAndGoto('${e.cid}','expenses')`})},
+    {key:'documents',icon:'📁',label:t('documents')||'Documents',items:results.documents,render:d=>({title:d.name,sub:S.clients.find(c=>c.id===d.cid)?.name||'',onclick:`closeGlobalSearch();selClientAndGoto('${d.cid}','documents')`})},
+    {key:'contracts',icon:'📋',label:t('contracts')||'Contracts',items:results.contracts,render:cn=>({title:cn.title,sub:S.clients.find(c=>c.id===cn.cid)?.name||'',onclick:`closeGlobalSearch();selClientAndGoto('${cn.cid}','contracts')`})},
   ];
   const totalCount=sections.reduce((s,sec)=>s+sec.items.length,0);
   if(totalCount===0){
@@ -3535,6 +3551,9 @@ function launchApp(){
 }
 
 function doLogout(){
+  withUnsavedGuard(()=>_doLogoutImpl());
+}
+function _doLogoutImpl(){
   S.role=null;S.currentClient=null;S.tab='dashboard';S.lang='en';
   authState={role:null,identifier:'',clientId:null};
   if(typeof setR2Token==='function')setR2Token(null); // يمسح التوكن من الذاكرة و localStorage معًا
@@ -3785,6 +3804,23 @@ function renderSidebar(){
 }
 
 function selClient(id){
+  withUnsavedGuard(()=>_selClientImpl(id));
+}
+// ⚠️ إصلاح خلل حقيقي أدخلته إضافة الحارس: عشرات الأماكن كانت تستدعي
+// selClient(cid) ثم مباشرة S.tab='...';renderApp() على نفس السطر، بافتراض
+// أن selClient يُنفَّذ فورًا (متزامن). بعد أن أصبح selClient يُؤجَّل عبر نافذة
+// تأكيد عند وجود تغييرات غير محفوظة، كان هذا "التسلسل المتزامن" سيُنفَّذ
+// فورًا بغض النظر عن قرار المستخدم في النافذة (يتجاوز الحارس فعليًا). الحل:
+// دالة واحدة تُنفِّذ كامل الإجراء المُركَّب (تبديل العميل + تبويب محدَّد) خلف
+// حارس واحد فقط.
+function selClientAndGoto(id,tabName){
+  withUnsavedGuard(()=>{
+    _selClientImpl(id);
+    S.tab=tabName;
+    renderApp();
+  });
+}
+function _selClientImpl(id){
   S.currentClient=id;
   S.tab='client_overview';  // ✅ عرض البطاقات الذكية بدلاً من الـ Sidebar
   S.reportTab=null;  // ✅ Reset report tab when switching clients
@@ -3806,6 +3842,9 @@ function selClient(id){
   renderApp();
 }
 function gotoOverview(){
+  withUnsavedGuard(()=>_gotoOverviewImpl());
+}
+function _gotoOverviewImpl(){
   S.currentClient=null;  // ✅ مسح العميل المختار
   S.tab='dashboard';     // ✅ العودة للـ Dashboard
   // ✅ Close sidebar on mobile
@@ -3825,15 +3864,7 @@ function gotoOverview(){
 // الحالية (window._contentDirty) قبل التنفيذ الفعلي. إن وُجدت، تعرض نافذة
 // تأكيد وتنتظر رد المستخدم؛ المتابعة الفعلية تحدث فقط بعد موافقته الصريحة.
 function setTab(tabName){
-  if(window._contentDirty){
-    showConfirmDialog(
-      t('discard_changes_title')||'Discard Changes?',
-      t('discard_changes_confirm')||'You have unsaved changes. Discard them?',
-      ()=>{ window._contentDirty=false; _setTabImpl(tabName); }
-    );
-    return;
-  }
-  _setTabImpl(tabName);
+  withUnsavedGuard(()=>_setTabImpl(tabName));
 }
 function _setTabImpl(t){
   // ✅ إذا كان أدمن يعرض عميلاً معينًا وانتقل لتبويب 'clients'، يعود لقائمة العملاء الكاملة
@@ -4042,7 +4073,7 @@ function rAdminReports(el){
       invoices.map(i=>{
         const c=S.clients.find(x=>x.id===i.cid);
         return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);cursor:pointer;transition:all .2s" 
-          onclick="selClient('${i.cid}');S.tab='invoices';renderApp()"
+          onclick="selClientAndGoto('${i.cid}','invoices')"
           onmouseover="this.style.background='rgba(200,144,16,.08)'"
           onmouseout="this.style.background='transparent'">
           <div style="display:flex;justify-content:space-between;align-items:center">
@@ -4083,7 +4114,7 @@ function rAdminReports(el){
       overdue.map(i=>{
         const c=S.clients.find(x=>x.id===i.cid);
         return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);border-left:3px solid var(--red);cursor:pointer;transition:all .2s"
-          onclick="selClient('${i.cid}');S.tab='invoices';renderApp()"
+          onclick="selClientAndGoto('${i.cid}','invoices')"
           onmouseover="this.style.background='rgba(184,134,11,.05)'"
           onmouseout="this.style.background='transparent'">
           <div style="display:flex;justify-content:space-between;align-items:center">
@@ -4127,7 +4158,7 @@ function rAdminReports(el){
       hours.map(h=>{
         const c=S.clients.find(x=>x.id===h.cid);
         return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);cursor:pointer;transition:all .2s"
-          onclick="selClient('${h.cid}');S.tab='hours';renderApp()"
+          onclick="selClientAndGoto('${h.cid}','hours')"
           onmouseover="this.style.background='rgba(200,144,16,.08)'"
           onmouseout="this.style.background='transparent'">
           <div style="display:flex;justify-content:space-between;align-items:center">
@@ -4164,7 +4195,7 @@ function rAdminMessages(el){
       const c=S.clients.find(x=>x.id===m.cid);
       const isNewToAdmin=!m.isRead&&m.from==='client'; // "جديد" هنا تعني: لم يقرأها الأدمن بعد (رسالة واردة من عميل)
       return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);background:${isNewToAdmin?'rgba(200,144,16,.08)':'transparent'};cursor:pointer;transition:all .2s"
-        onclick="S.currentClient='${m.cid}';S.tab='messages';selectMsgClient('${m.cid}')"
+        onclick="withUnsavedGuard(()=>{S.currentClient='${m.cid}';S.tab='messages';selectMsgClient('${m.cid}');})"
         onmouseover="this.style.background='rgba(200,144,16,.12)'"
         onmouseout="this.style.background='${isNewToAdmin?'rgba(200,144,16,.08)':'transparent'}'">
         <div style="display:flex;justify-content:space-between;align-items:start">
@@ -4231,7 +4262,7 @@ function rAdminDocuments(el){
     allDocs.map(d=>{
       const c=S.clients.find(x=>x.id===d.cid);
       return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);border-left:3px solid ${d.isNew?'var(--orange)':'var(--gr2)'};cursor:pointer;transition:all .2s"
-        onclick="selClient('${d.cid}');S.tab='documents';renderApp()"
+        onclick="selClientAndGoto('${d.cid}','documents')"
         onmouseover="this.style.background='rgba(200,144,16,.08)'"
         onmouseout="this.style.background='transparent'">
         <div style="display:flex;justify-content:space-between;align-items:start">
@@ -5764,6 +5795,9 @@ function rAdminDash(el){
 
 
 function goToAdminStat(type){
+  withUnsavedGuard(()=>_goToAdminStatImpl(type));
+}
+function _goToAdminStatImpl(type){
   // الشارات داخل كرت Contracts الموحّد ترسل 'contracts_filter:<status>' - نستخرج الفلتر منها
   const isContractsFilter=type.startsWith('contracts_filter:');
   const baseType=isContractsFilter?'contracts':type;
@@ -6157,6 +6191,9 @@ async function saveClientOwnPassword(){
 
 /* ═══════════════════════════ CLIENT ACTION CARDS ═══════════════════════════ */
 function selectCard(cardId){
+  withUnsavedGuard(()=>_selectCardImpl(cardId));
+}
+function _selectCardImpl(cardId){
   const adminThemes={
     'edit_client':{bg:'rgba(224,245,237,0.08)',border:'#E0F5ED',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
     'client_activity':{bg:'rgba(224,184,48,0.08)',border:'#E0B830',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
@@ -6181,7 +6218,15 @@ function selectCard(cardId){
     'hours':{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'documents':{bg:'rgba(42,96,64,0.08)',border:'#2A6040',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
     'messages':{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
-    'security':{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'}
+    'security':{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'cash_ledger':{bg:'rgba(90,159,125,0.08)',border:'#5a9f7d',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
+    'bank':{bg:'rgba(63,143,120,0.08)',border:'#3f8f78',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'},
+    'assets':{bg:'rgba(107,184,154,0.08)',border:'#6bb89a',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'reports':{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'contracts':{bg:'rgba(184,230,209,0.08)',border:'#B8E6D1',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'client_activity':{bg:'rgba(224,184,48,0.08)',border:'#E0B830',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'cashier_log':{bg:'rgba(200,144,16,0.08)',border:'#C89010',textDefault:'#0A2218',text:'#0A2218',accent:'#FFD700'},
+    'edit_client':{bg:'rgba(138,100,16,0.08)',border:'#8a6410',textDefault:'#ffffff',text:'#0A2218',accent:'#FFD700'}
   };
   const cardThemes=isAdmin()?adminThemes:clientThemes;
   
@@ -6309,7 +6354,7 @@ function rClientActionCards(el,cid){
       <div style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:6px">${t('client_account_pending_title')||'Accounting Tabs Locked'}</div>
       <div style="font-size:12px;color:var(--t3);max-width:360px;margin:0 auto 18px;line-height:1.6">${t('client_account_pending_desc')||'The contract for this client has not been signed and approved yet. All accounting tabs (invoices, expenses, bank, etc.) stay hidden until activation.'}</div>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-p btn-xs" onclick="selectCard('clients')">📋 ${t('contracts')||'Contracts'}</button>
+        <button class="btn btn-p btn-xs" onclick="selectCard('contracts')">📋 ${t('contracts')||'Contracts'}</button>
         <button class="btn btn-xs" onclick="selectCard('documents')">📁 ${t('documents')||'Documents'}</button>
       </div>
       ${clientContract?`<div style="margin-top:14px;font-size:11px;color:var(--t3)">${t('status')||'Status'}: <strong style="color:${theme.border}">${clientContract.status}</strong></div>`:''}
@@ -6375,8 +6420,10 @@ function rClientActionCards(el,cid){
 
 /* ═══════════════════════════ SHARED VIEWS ═══════════════════════════ */
 function goBackToOverview(){
-  S.tab=isAdmin()?'client_overview':'dashboard';
-  renderApp();
+  withUnsavedGuard(()=>{
+    S.tab=isAdmin()?'client_overview':'dashboard';
+    renderApp();
+  });
 }
 
 // ⚠️ إصلاح: كانت getOrCreateGeneralDebtor لا تُفلتر بـ cid إطلاقًا - يعني كل
@@ -6401,10 +6448,12 @@ function getOrCreateANBSelfClient(){
   return anb;
 }
 function openANBSelfAccounts(){
-  const anb=getOrCreateANBSelfClient();
-  S.currentClient=anb.id;
-  S.tab='client_overview';
-  renderApp();
+  withUnsavedGuard(()=>{
+    const anb=getOrCreateANBSelfClient();
+    S.currentClient=anb.id;
+    S.tab='client_overview';
+    renderApp();
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -6799,7 +6848,7 @@ function getUpcomingReminders(){
       title:(t('reminder_contract_title')||'Contract expiring soon')+': '+client.name,
       detail:(t('reminder_contract_detail')||'Expires')+' '+FD(con.endDate)+' ('+daysLeft+' '+(t('days_left')||'days left')+')',
       urgency:daysLeft<=7?'high':'medium',
-      onclickAttr:`selClient('${con.cid}');S.tab='contracts';renderApp()`,
+      onclickAttr:`selClientAndGoto('${con.cid}','contracts')`,
     });
   });
 
@@ -6817,7 +6866,7 @@ function getUpcomingReminders(){
       title:'ANB — '+(t('reminder_hours_title')||'Behind on urencriterium pace'),
       detail:actualHours.toFixed(0)+' / '+expectedPace.toFixed(0)+' '+(t('expected_hours_by_now')||'hours expected by now')+' (1,225 '+(t('target_for_year')||'target for the year')+')',
       urgency:'medium',
-      onclickAttr:`selClient('${ANB_SELF_ID}');renderApp()`,
+      onclickAttr:`selClient('${ANB_SELF_ID}')`,
     });
   }
 
@@ -6839,7 +6888,7 @@ function getUpcomingReminders(){
           title:(t('reminder_limit_exceeded_title')||'Invoice limit exceeded')+': '+cl.name,
           detail:countThisMonth+' / '+cl.monthlyInvoiceLimit+' '+(t('reminder_limit_detail')||'this month')+' — '+(countThisMonth-cl.monthlyInvoiceLimit)+' '+(t('reminder_limit_extra')||'extra to bill'),
           urgency:'medium',
-          onclickAttr:`selClient('${cl.id}');S.tab='invoices';renderApp()`,
+          onclickAttr:`selClientAndGoto('${cl.id}','invoices')`,
         });
       }
     }
@@ -6851,7 +6900,7 @@ function getUpcomingReminders(){
           title:(t('reminder_expense_limit_exceeded_title')||'Expense limit exceeded')+': '+cl.name,
           detail:countThisMonth+' / '+cl.monthlyExpenseLimit+' '+(t('reminder_limit_detail')||'this month')+' — '+(countThisMonth-cl.monthlyExpenseLimit)+' '+(t('reminder_limit_extra')||'extra to bill'),
           urgency:'medium',
-          onclickAttr:`selClient('${cl.id}');S.tab='expenses';renderApp()`,
+          onclickAttr:`selClientAndGoto('${cl.id}','expenses')`,
         });
       }
     }
@@ -6875,7 +6924,7 @@ function getUpcomingReminders(){
       title:(t('reminder_cashier_exception_title')||'Cashier recording issue needs your approval')+': '+client.name,
       detail:exceptions.length===1?FD(exceptions[0].missingDate):exceptions.length+' '+(t('reminder_cashier_exception_detail_plural')||'days awaiting review'),
       urgency:'high', // العميل مقفل تمامًا عن الكاشير حتى تُحَل - إلحاح عالٍ فعليًا
-      onclickAttr:`selClient('${clientId}');S.tab='cashier_log';renderApp()`,
+      onclickAttr:`selClientAndGoto('${clientId}','cashier_log')`,
     });
   });
 
@@ -8936,7 +8985,7 @@ function rEmployeeDetail(el){
 
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
-    <button class="btn" onclick="S.tab='employees';renderApp()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='#ffffff'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
+    <button class="btn" onclick="withUnsavedGuard(()=>{S.tab='employees';renderApp();})" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='#ffffff'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
       ← ${t('back_to_employees')||'Back to Employees'}
     </button>
   </div>
@@ -11349,9 +11398,11 @@ if(document.readyState==='loading'){
 
 function openAddClient(){openClientModal(null);}
 function openEditClient(id){
-  S.currentClient=id;
-  setTab('edit_client');
-  renderApp();
+  withUnsavedGuard(()=>{
+    S.currentClient=id;
+    setTab('edit_client');
+    renderApp();
+  });
 }
 
 // ⚠️ توسيع نظام التحكم بالرؤية ليشمل كل التبويبات (وليس فقط الثمانية الأساسية):
