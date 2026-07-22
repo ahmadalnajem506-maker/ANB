@@ -150,6 +150,7 @@ export default {
       if (url.pathname === '/admin/assistant' && request.method === 'POST') return await handleAdminAssistant(request, env, cors);
       // ⚠️ نموذج أولي (Staging فقط) - ربط بنكي تلقائي عبر Enable Banking
       if (url.pathname === '/bank/connect' && request.method === 'POST') return await handleBankConnect(request, env, cors);
+      if (url.pathname === '/bank/aspsps' && request.method === 'GET') return await handleBankAspsps(request, env, cors, url);
       if (url.pathname === '/bank/callback' && request.method === 'GET') return await handleBankCallback(request, env, cors, url);
       if (url.pathname === '/bank/sync' && request.method === 'POST') return await handleBankSync(request, env, cors);
       if (url.pathname === '/bank/connections' && request.method === 'GET') return await handleBankConnectionsList(request, env, cors, url);
@@ -631,6 +632,28 @@ async function handleAdminAssistant(request, env, cors) {
 
 async function handleBankNotFoundOrConfigured(env) {
   return !env.ENABLE_BANKING_APP_ID || !env.ENABLE_BANKING_PRIVATE_KEY;
+}
+
+// GET /bank/aspsps?country=NL → قائمة تشخيصية بأسماء البنوك الهولندية بالضبط
+// كما تتوقعها Enable Banking (لحل مشكلة "Wrong ASPSP name provided")
+async function handleBankAspsps(request, env, cors, url) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
+  if (await handleBankNotFoundOrConfigured(env)) {
+    return json({ error: 'Enable Banking is not configured on this environment yet' }, 501, cors);
+  }
+  const country = url.searchParams.get('country') || 'NL';
+  try {
+    const resp = await enableBankingFetch(env, `/aspsps?country=${country}`, { method: 'GET' });
+    const data = await resp.json();
+    if (!resp.ok) return json({ error: 'enable_banking_error', detail: data }, 502, cors);
+    // ⚠️ نُرجع فقط الاسم والبلد لتسهيل القراءة، بدل الكائن الكامل الضخم
+    const names = (data.aspsps || data || []).map((a) => ({ name: a.name, country: a.country }));
+    return json({ aspsps: names }, 200, cors);
+  } catch (err) {
+    return json({ error: 'network_error', detail: String(err && err.message || err) }, 502, cors);
+  }
 }
 
 // POST /bank/connect  {cid} → يبدأ تدفّق الموافقة لدى Enable Banking، يُرجع
