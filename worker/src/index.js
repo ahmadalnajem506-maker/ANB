@@ -59,6 +59,63 @@ const TOTP_STEP_SECONDS = 30;
 const TOTP_DIGITS = 6;
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
+/* ═══════════════════ ⚠️ نموذج أولي (Prototype) — Staging فقط ═══════════════════
+ * ربط بنكي تلقائي عبر Enable Banking (PSD2 AISP) بدل استيراد CSV يدوي.
+ * حسب النقاش: بنك واحد فقط (ING هولندا) للتجربة الأولى، قراءة فقط (بدون
+ * أي تهيئة دفع/PISP)، ولا يُرفَع للإنتاج إلا بموافقة صريحة بعد اختبار كافٍ.
+ *
+ * الأسرار المطلوبة (Staging فقط حاليًا):
+ *   - ENABLE_BANKING_APP_ID       (معرِّف التطبيق من لوحة تحكم Enable Banking)
+ *   - ENABLE_BANKING_PRIVATE_KEY  (المفتاح الخاص RSA بصيغة PEM، تم توليده
+ *                                  وربطه بالتطبيق عند التسجيل - راجع توثيقهم)
+ *   - BANK_REDIRECT_URL           (رابط العودة المسجَّل لدى Enable Banking،
+ *                                  مثال: https://staging.anb-1cw.pages.dev/?bank_callback=1)
+ *
+ * ⚠️ ملاحظة أمانة: أسماء الحقول بالضبط في أجسام الطلبات أدناه (POST /auth
+ * و POST /sessions) مبنية على توثيق Enable Banking العام المتاح وقت كتابة
+ * هذا الكود - يُرجى تأكيدها حرفيًا من "API Reference" الفعلي في لوحة تحكمهم
+ * بعد التسجيل، قبل أول اختبار حقيقي، لأن تفاصيل حقول الـJSON الدقيقة يجب
+ * التحقق منها من التوثيق الرسمي المباشر وليس افتراضًا.
+ */
+const ENABLE_BANKING_API_BASE = 'https://api.enablebanking.com';
+
+// توقيع JWT بخوارزمية RS256 عبر Web Crypto (المتاحة أصلًا في Cloudflare Workers
+// بلا أي حزمة إضافية) - نفس مبدأ signToken الموجود لتوكنات الدخول، لكن هنا
+// بخوارزمية RSA غير متماثلة كما يتطلب Enable Banking تحديدًا (وليس HMAC)
+async function importRsaPrivateKey(pem) {
+  const pemBody = pem.replace(/-----BEGIN PRIVATE KEY-----/, '')
+                     .replace(/-----END PRIVATE KEY-----/, '')
+                     .replace(/\s+/g, '');
+  const binaryDer = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+  return await crypto.subtle.importKey(
+    'pkcs8', binaryDer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false, ['sign']
+  );
+}
+function base64url(input) {
+  let str = typeof input === 'string' ? input : String.fromCharCode(...new Uint8Array(input));
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function signEnableBankingJWT(env) {
+  const header = { alg: 'RS256', typ: 'JWT', kid: env.ENABLE_BANKING_APP_ID };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = { iss: 'enablebanking.com', aud: 'api.enablebanking.com', iat: now, exp: now + 3600 };
+  const encHeader = base64url(JSON.stringify(header));
+  const encPayload = base64url(JSON.stringify(payload));
+  const signingInput = `${encHeader}.${encPayload}`;
+  const key = await importRsaPrivateKey(env.ENABLE_BANKING_PRIVATE_KEY);
+  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(signingInput));
+  return `${signingInput}.${base64url(sig)}`;
+}
+async function enableBankingFetch(env, path, options = {}) {
+  const jwt = await signEnableBankingJWT(env);
+  return fetch(ENABLE_BANKING_API_BASE + path, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}`, ...(options.headers || {}) },
+  });
+}
+
 const attemptLog = new Map();
 
 export default {
@@ -74,6 +131,7 @@ export default {
       if (url.pathname === '/verify-2fa' && request.method === 'POST') return await handleVerify2FA(request, env, cors);
       if (url.pathname === '/set-password' && request.method === 'POST') return await handleSetPassword(request, env, cors);
       if (url.pathname === '/admin/set-password' && request.method === 'POST') return await handleAdminSetPassword(request, env, cors);
+      if (url.pathname === '/account/set-own-password' && request.method === 'POST') return await handleSetOwnPassword(request, env, cors);
       if (url.pathname === '/admin/generate-temp-password' && request.method === 'POST') return await handleGenerateTempPassword(request, env, cors);
       if (url.pathname === '/refresh-token' && request.method === 'POST') return await handleRefreshToken(request, env, cors);
       if (url.pathname === '/sync' && request.method === 'GET') return await handleSyncGet(request, env, cors);
@@ -85,6 +143,17 @@ export default {
       if (url.pathname === '/admin/backup-now' && request.method === 'POST') return await handleBackupNow(request, env, cors);
       if (url.pathname === '/admin/backups' && request.method === 'GET') return await handleListBackups(request, env, cors);
       if (url.pathname === '/admin/restore-backup' && request.method === 'POST') return await handleRestoreBackup(request, env, cors);
+      if (url.pathname === '/payment/save-provider' && request.method === 'POST') return await handleSavePaymentProvider(request, env, cors);
+      if (url.pathname === '/payment/provider-status' && request.method === 'GET') return await handlePaymentProviderStatus(request, env, cors);
+      if (url.pathname === '/payment/create' && request.method === 'POST') return await handleCreatePayment(request, env, cors);
+      if (url.pathname === '/payment/status' && request.method === 'GET') return await handlePaymentStatus(request, env, cors, url);
+      if (url.pathname === '/admin/assistant' && request.method === 'POST') return await handleAdminAssistant(request, env, cors);
+      // ⚠️ نموذج أولي (Staging فقط) - ربط بنكي تلقائي عبر Enable Banking
+      if (url.pathname === '/bank/connect' && request.method === 'POST') return await handleBankConnect(request, env, cors);
+      if (url.pathname === '/bank/callback' && request.method === 'GET') return await handleBankCallback(request, env, cors, url);
+      if (url.pathname === '/bank/sync' && request.method === 'POST') return await handleBankSync(request, env, cors);
+      if (url.pathname === '/bank/connections' && request.method === 'GET') return await handleBankConnectionsList(request, env, cors, url);
+      if (url.pathname === '/bank/disconnect' && request.method === 'POST') return await handleBankDisconnect(request, env, cors);
       return json({ error: 'Not found' }, 404, cors);
     } catch (err) {
       return json({ error: 'Internal error', detail: String(err && err.message || err) }, 500, cors);
@@ -94,9 +163,98 @@ export default {
   // ⭐ نسخ احتياطي تلقائي - يُستدعى تلقائيًا في الموعد المحدَّد في wrangler.toml
   // (crons)، بلا أي طلب HTTP أو تدخل بشري إطلاقًا
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(performBackup(env, 'scheduled'));
+    // ⭐ جدولتان منفصلتان الآن: النسخ الاحتياطي (3 صباحًا) وترحيل أيام الكاشير
+    // المتروكة تلقائيًا (منتصف الليل بالضبط) - event.cron يُميِّز بينهما
+    if (event.cron === '0 0 * * *') {
+      ctx.waitUntil(autoPostStaleCashierDaysServer(env));
+    } else {
+      ctx.waitUntil(performBackup(env, 'scheduled'));
+    }
   },
 };
+
+/* ═══════════════════════ ترحيل أيام الكاشير المتروكة تلقائيًا ═══════════════════════ */
+// ⭐ يعمل بجدولة خادم مستقلة عند منتصف الليل بالضبط - وليس معتمدًا على أن
+// يُسجِّل أحد الدخول (بعكس المحاولة الأولى للميزة، التي كانت تعمل فقط عند
+// تسجيل الدخول). يُعيد استخدام بالضبط نفس المنطق المحاسبي الذي يستخدمه العميل
+// (postCashierDayForDate) لكن مُعاد كتابته هنا للعمل مباشرة على كائن البيانات
+// الكامل (payload) بدل الاعتماد على حالة متصفح العميل S.
+async function autoPostStaleCashierDaysServer(env) {
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return; // لا داعي للمحاولة إن تعذَّر الوصول لقاعدة البيانات هذه المرة - ستُعالَج تلقائيًا في الدورة القادمة (أو عند دخول أي مستخدم لاحقًا)
+  const payload = cloud.payload;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const cashierLog = payload.cashierLog || [];
+  const staleGroups = new Map(); // "cid|date" -> true
+  cashierLog.forEach((e) => {
+    if (!e.posted && e.date && e.date < today) staleGroups.set(e.cid + '|' + e.date, true);
+  });
+  if (staleGroups.size === 0) return;
+
+  if (!payload.invoices) payload.invoices = [];
+  if (!payload.cashPayments) payload.cashPayments = [];
+  if (!payload.contacts) payload.contacts = [];
+  const now = new Date().toISOString();
+  let postedCount = 0;
+
+  for (const key of staleGroups.keys()) {
+    const [cid, date] = key.split('|');
+    const unposted = cashierLog.filter((e) => e.cid === cid && e.date === date && !e.posted);
+    if (unposted.length === 0) continue;
+    const alreadyPosted = cashierLog.some((e) => e.cid === cid && e.date === date && e.posted);
+    if (alreadyPosted) continue; // ⚠️ نفس القفل الصارم الموجود بالمنطق الأصلي: لا ترحيل مزدوج لنفس اليوم
+
+    const total = unposted.reduce((s, e) => s + (e.price || 0), 0);
+    const totalCash = unposted.reduce((s, e) => s + (e.cashAmount || 0), 0);
+    const r = 21;
+
+    // getOrCreateGeneralDebtor المكافئة
+    let gd = payload.contacts.find((c) => c.type === 'debtor' && c.isGeneral && c.cid === cid && !c.deleted);
+    if (!gd) {
+      gd = { id: genId(), cid, type: 'debtor', name: 'General Debtors', isGeneral: true, accountNumber: '4999' };
+      payload.contacts.push(gd);
+    }
+
+    // nextNum/getInvoiceCounter المكافئة
+    const client = (payload.clients || []).find((c) => c.id === cid);
+    if (client && typeof client.invoiceCounter !== 'number') {
+      client.invoiceCounter = payload.invoices.filter((i) => i.cid === cid).length;
+    }
+    const counter = client ? client.invoiceCounter : payload.invoices.filter((i) => i.cid === cid).length;
+    const clientName = client ? client.name.substring(0, 3).toUpperCase() : 'CLI';
+    const num = `${clientName}-${String(counter + 1).padStart(3, '0')}`;
+    if (client) client.invoiceCounter = counter + 1;
+
+    const ni = {
+      id: genId(), cid, num,
+      desc: 'Cashier daily takings — ' + date,
+      date, due: date, status: 'Openstaand',
+      amount: total / (1 + r / 100), btw: total - total / (1 + r / 100), total, btwRate: r,
+      amountPaid: 0, billTo: gd.name, billToId: gd.id, billToManual: null,
+      isDailyRevenue: true, isCashierPosting: true,
+    };
+    payload.invoices.push(ni);
+
+    if (totalCash > 0.005) {
+      payload.cashPayments.push({
+        id: genId(), cid: ni.cid, invoiceId: ni.id, direction: 'in', date: ni.date,
+        amount: totalCash, note: 'Auto-posted (day was left open)', recordedBy: 'system', createdAt: now,
+      });
+      // applyAllocationToTarget المكافئة (حالة الفاتورة فقط، بلا احتفال بصري هنا)
+      ni.amountPaid = (ni.amountPaid || 0) + totalCash;
+      if (ni.amountPaid >= ni.total - 0.005) { ni.status = 'Betaald'; ni.paidDate = ni.paidDate || date; }
+    }
+
+    unposted.forEach((e) => { e.posted = true; e.postedAt = now; e.postedInvoiceId = ni.id; e.autoPosted = true; });
+    postedCount++;
+  }
+
+  if (postedCount > 0) {
+    await writeCloudPayload(env, payload);
+  }
+}
+function genId() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
 
 /* ═══════════════════════ نظام النسخ الاحتياطي ═══════════════════════ */
 // ⚠️ لماذا هذا ضروري: كل بيانات العمل الحقيقية تعيش في صف واحد بقاعدة بيانات
@@ -128,6 +286,532 @@ async function performBackup(env, trigger) {
 
 // محمي بتوكن أدمن - يسمح بأخذ نسخة احتياطية فورية (مثلًا قبل إجراء خطر أو
 // تغيير جوهري)، بدل انتظار الموعد التلقائي التالي
+/* ═══════════════════════ نظام الدفع الإلكتروني ═══════════════════════ */
+// ⭐ طبقة تجريد عامة لمزوِّدي الدفع - Mollie مُفعَّل بالكامل الآن (الأنسب
+// لهولندا: توثيق ممتاز، iDEAL مدعوم أصلًا). Stripe وSumUp لهما نفس البنية
+// جاهزة أدناه (حالة إضافية في كل دالة + استدعاء API مكافئ) لإضافتهما لاحقًا
+// بلا أي تعديل على الواجهة أو منطق الحفظ - فقط تنفيذ استدعاء API الفعلي.
+const SUPPORTED_PAYMENT_PROVIDERS = {
+  mollie: { name: 'Mollie', live: true },
+  stripe: { name: 'Stripe', live: false },
+  sumup: { name: 'SumUp', live: true },
+};
+
+// حفظ إعداد مزوِّد الدفع لعميل مُحدَّد - العميل يعدِّل حسابه هو فقط، الأدمن يعدِّل أي عميل
+async function handleSavePaymentProvider(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { cid, provider, apiKey, merchantCode } = body || {};
+  if (!cid || !provider) return json({ error: 'cid and provider are required' }, 400, cors);
+  if (!SUPPORTED_PAYMENT_PROVIDERS[provider]) return json({ error: 'Unsupported provider' }, 400, cors);
+  if (auth.payload.at === 'client' && auth.payload.aid !== cid) {
+    return json({ error: 'Clients can only configure their own account' }, 403, cors);
+  }
+
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
+  const clients = cloud.payload.clients || [];
+  const idx = clients.findIndex((c) => c && c.id === cid);
+  if (idx === -1) return json({ error: 'Client not found' }, 404, cors);
+  clients[idx].paymentProvider = provider;
+  // ⚠️ لا نُفرِّغ مفتاحًا محفوظًا سابقًا لمجرد أن هذا الطلب لم يتضمَّن مفتاحًا
+  // جديدًا (مثلًا: تعديل عادي دون نية تغيير المفتاح نفسه)
+  if (apiKey) clients[idx].paymentApiKey = apiKey;
+  // ⭐ بعض المزوِّدين (SumUp) يحتاجون معرِّفًا إضافيًا غير سرّي (رمز التاجر)
+  // بجانب المفتاح - يُحفَظ مباشرة بلا حاجة لحمايته كسرّ
+  if (merchantCode !== undefined) clients[idx].paymentMerchantCode = merchantCode;
+  await writeCloudPayload(env, cloud.payload);
+  return json({ ok: true }, 200, cors);
+}
+
+// حالة الإعداد الحالية فقط (هل مُهيَّأ ولأي مزوِّد) - لا يُعاد المفتاح نفسه أبدًا
+async function handlePaymentProviderStatus(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  const reqUrl = new URL(request.url);
+  const cid = reqUrl.searchParams.get('cid');
+  if (!cid) return json({ error: 'cid is required' }, 400, cors);
+  if (auth.payload.at === 'client' && auth.payload.aid !== cid) {
+    return json({ error: 'Clients can only view their own configuration' }, 403, cors);
+  }
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
+  const client = (cloud.payload.clients || []).find((c) => c && c.id === cid);
+  if (!client) return json({ error: 'Client not found' }, 404, cors);
+  return json({
+    provider: client.paymentProvider || null,
+    configured: !!(client.paymentProvider && client.paymentApiKey),
+  }, 200, cors);
+}
+
+// إنشاء طلب دفع فعلي عبر مزوِّد العميل المحفوظ، يُعاد رابط دفع (يتحوَّل لرمز QR بالواجهة)
+async function handleCreatePayment(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { cid, amount, description } = body || {};
+  if (!cid || !amount) return json({ error: 'cid and amount are required' }, 400, cors);
+  if (auth.payload.at === 'client' && auth.payload.aid !== cid) {
+    return json({ error: 'Clients can only create payments for their own account' }, 403, cors);
+  }
+
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
+  const client = (cloud.payload.clients || []).find((c) => c && c.id === cid);
+  if (!client || !client.paymentProvider || !client.paymentApiKey) {
+    return json({ error: 'no_provider_configured', message: 'No payment provider configured for this account yet.' }, 400, cors);
+  }
+
+  const originHeader = request.headers.get('Origin') || env.ALLOWED_ORIGIN || 'https://anb-1cw.pages.dev';
+
+  if (client.paymentProvider === 'mollie') {
+    try {
+      const res = await fetch('https://api.mollie.com/v2/payments', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + client.paymentApiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: { currency: 'EUR', value: Number(amount).toFixed(2) },
+          description: description || 'Payment',
+          redirectUrl: originHeader,
+          method: 'ideal,creditcard,bancontact,applepay',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return json({ error: 'provider_error', message: data.detail || 'Payment provider rejected the request' }, 502, cors);
+      return json({ paymentId: data.id, checkoutUrl: data._links && data._links.checkout && data._links.checkout.href }, 200, cors);
+    } catch (err) {
+      return json({ error: 'provider_error', message: String(err && err.message || err) }, 502, cors);
+    }
+  }
+
+  // ⭐ SumUp - Hosted Checkout: SumUp يستضيف صفحة الدفع بنفسه (نفس مبدأ Mollie)،
+  // لكنه يحتاج merchant_code إضافيًا بجانب مفتاح API (رمز حساب التاجر نفسه،
+  // وليس سرًّا يجب حمايته بنفس درجة المفتاح، لذا يُحفَظ كحقل عادي)
+  if (client.paymentProvider === 'sumup') {
+    if (!client.paymentMerchantCode) {
+      return json({ error: 'no_provider_configured', message: 'SumUp requires a Merchant Code in addition to the API key — please add it in the client\'s payment settings.' }, 400, cors);
+    }
+    try {
+      const checkoutRef = 'anb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+      const res = await fetch('https://api.sumup.com/v0.1/checkouts', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + client.paymentApiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          checkout_reference: checkoutRef,
+          amount: Number(amount),
+          currency: 'EUR',
+          merchant_code: client.paymentMerchantCode,
+          description: description || 'Payment',
+          redirect_url: originHeader,
+          hosted_checkout: { enabled: true },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return json({ error: 'provider_error', message: (data && (data.message || data.error_message)) || 'Payment provider rejected the request' }, 502, cors);
+      return json({ paymentId: data.id, checkoutUrl: data.hosted_checkout_url }, 200, cors);
+    } catch (err) {
+      return json({ error: 'provider_error', message: String(err && err.message || err) }, 502, cors);
+    }
+  }
+
+  // ⚠️ Stripe: نقطة التوسعة - أضِف حالة هنا تستدعي Stripe Checkout Sessions
+  // وتُعيد نفس الشكل {paymentId, checkoutUrl} بالضبط - لا حاجة لتغيير أي شيء آخر
+  return json({ error: 'provider_not_implemented', message: `${SUPPORTED_PAYMENT_PROVIDERS[client.paymentProvider]?.name || client.paymentProvider} support is coming soon — Mollie and SumUp are fully supported now.` }, 501, cors);
+}
+
+// التحقق من حالة دفع سابق - تُستقصى دوريًا من الواجهة حتى تصبح 'paid'
+async function handlePaymentStatus(request, env, cors, url) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  const cid = url.searchParams.get('cid');
+  const paymentId = url.searchParams.get('paymentId');
+  if (!cid || !paymentId) return json({ error: 'cid and paymentId are required' }, 400, cors);
+  if (auth.payload.at === 'client' && auth.payload.aid !== cid) {
+    return json({ error: 'Clients can only check their own payments' }, 403, cors);
+  }
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
+  const client = (cloud.payload.clients || []).find((c) => c && c.id === cid);
+  if (!client || !client.paymentApiKey) return json({ error: 'no_provider_configured' }, 400, cors);
+
+  if (client.paymentProvider === 'mollie') {
+    try {
+      const res = await fetch('https://api.mollie.com/v2/payments/' + paymentId, {
+        headers: { 'Authorization': 'Bearer ' + client.paymentApiKey },
+      });
+      const data = await res.json();
+      if (!res.ok) return json({ error: 'provider_error' }, 502, cors);
+      return json({ status: data.status }, 200, cors); // 'open' | 'paid' | 'expired' | 'canceled' | 'failed'...
+    } catch (err) {
+      return json({ error: 'provider_error', message: String(err && err.message || err) }, 502, cors);
+    }
+  }
+
+  // ⭐ SumUp: مفردات حالة مختلفة عن Mollie (PENDING/PAID/FAILED) - نُحوِّلها
+  // لنفس المفردات التي يتوقعها كود الاستقصاء بالواجهة بالفعل، فلا حاجة لتعديل
+  // منطق الاستقصاء نفسه إطلاقًا
+  if (client.paymentProvider === 'sumup') {
+    try {
+      const res = await fetch('https://api.sumup.com/v0.1/checkouts/' + paymentId, {
+        headers: { 'Authorization': 'Bearer ' + client.paymentApiKey },
+      });
+      const data = await res.json();
+      if (!res.ok) return json({ error: 'provider_error' }, 502, cors);
+      const statusMap = { PAID: 'paid', FAILED: 'failed', EXPIRED: 'expired', PENDING: 'open' };
+      return json({ status: statusMap[data.status] || 'open' }, 200, cors);
+    } catch (err) {
+      return json({ error: 'provider_error', message: String(err && err.message || err) }, 502, cors);
+    }
+  }
+  return json({ error: 'provider_not_implemented' }, 501, cors);
+}
+
+/* ═══════════════════════ مساعد الأدمن بالذكاء الاصطناعي ═══════════════════════ */
+// ⭐ يستخدم Cloudflare Workers AI (مجاني ضمن 10,000 طلب/يوم تقريبًا) - لا
+// يحتاج مفتاح API خارجي أو حساب منفصل، يعمل مباشرة عبر ربط env.AI. مخصَّص
+// لمساعدة الأدمن في حالات محاسبية/ضريبية/قانونية غامضة - وليس بديلًا عن
+// استشاري حقيقي لأي قرار نهائي فعلي.
+const ADMIN_ASSISTANT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+
+// ⭐ دليل مرجعي بميزات تطبيق ANB الفعلية - بدونه، المساعد يُخمِّن إجابات عامة
+// قد لا تطابق التطبيق إطلاقًا (خطر توجيه لزر/شاشة غير موجودة). يُحدَّث هذا
+// النص يدويًا كلما أُضيفت ميزة جوهرية جديدة للتطبيق.
+const ANB_APP_REFERENCE = `ANB FinAdmin Pro — comprehensive reference of how the app actually works (verified against its source code), organized by section. Use this to give specific, accurate guidance about where and how to record things — never invent screens, buttons, fields, or numbers not listed here.
+
+INVOICES (per client):
+- BTW/VAT types on each invoice: "normal" (standard rate applied), "verlegd_nl" (domestic reverse charge, must state "BTW verlegd — art. 12 lid 3 Wet OB 1968", goes in rubriek 1e, no VAT charged), "eu_b2b" (EU business customer reverse charge, must state "BTW verlegd" + customer's valid EU VAT number, rubriek 3b), "export" (outside EU, outside scope of Dutch VAT, rubriek 3a).
+- Status tracked as paid/unpaid; can be settled by cash payment (see Cash Ledger) or matched against a bank transaction.
+- Recurring invoice schedules can be set up and stopped (already-generated invoices are kept when stopped).
+
+EXPENSES (per client):
+- Has a category and supplier. Reverse-charge purchases received (domestic or foreign supplier) are their own BTW type: "verlegd_received" — no VAT was actually paid to the supplier; the rate is used only to self-assess VAT for the return (net effect €0 on the return, appears in reverse-charge-received rubrieken 2a/4b).
+- Receipts can be photographed and read automatically via OCR (Google Cloud Vision). The system "learns" per-supplier typical VAT rate and amount over time (Settings → Manage Learned Suppliers) and flags amounts that deviate significantly from what's usually paid to that supplier, asking for manual verification.
+- OCR confidence is shown per field (color-coded); low-quality scans are flagged for careful manual review.
+
+HOURS:
+- Timer-based logging (start/pause/stop & log) with a task description, or manual entry.
+- Categories are customizable per client (Settings → Manage Categories) to match their actual work (photography, consulting, construction, etc.)
+- Tracks progress toward the Dutch "urencriterium" — 1,225 hours/year required for the self-employed deduction (Zelfstandigenaftrek). The app shows whether the client is on pace and whether the criterion is currently met.
+- The floating timer widget and the "Unbilled Hours" dashboard indicator only appear on a client's dashboard if the Hours section is enabled for that client (Edit Client → Configuration → Visible Sections). If Hours is disabled for a client, neither the timer nor the unbilled-hours count shows up for them at all.
+
+CASH LEDGER (distinct from Cashier — for businesses that occasionally get paid in cash, not walk-in service businesses):
+- Record Cash Payment: settles a specific existing invoice partially or fully in cash; invoice only shows "Paid" once fully covered.
+- Daily Revenue Entry: for businesses with many small daily payments (retail counters) — one total takings figure per day (excl. BTW) instead of itemizing every sale, ready to match against the bank. This is ONLY available/shown when Cashier is NOT enabled for that client — if Cashier is enabled, this button is hidden and blocked (with an explanatory message if somehow triggered anyway), because daily income is already posted from the Cashier itself; having both active at once would double-count the same day's revenue.
+- Cash Withdrawal / Cash Deposit: recording money moved between the bank and the physical cash till.
+- Personal Drawing: money taken from the till for personal (non-business) use — affects the owner's capital account, NOT the profit & loss statement, and is NOT a business expense.
+- A warning appears if a cash entry is backdated by more than 1 day, since the Belastingdienst expects daily logging of cash takings.
+- Cash amounts that came from a Cashier day posting are labeled clearly (e.g. "🧾 Cashier — 18/07/2026 (invoice number)") in the Cash Ledger list, not just a bare invoice number, so the connection between the two features is visible at a glance.
+
+CASHIER (separate feature, for walk-in/service businesses — driving instructors, hairdressers, barbers, etc.):
+- Admin (or the client themselves) configures quick-tap "Services" with a name, a color (chosen from a preset palette, shown as a left accent stripe and tinted card background — not an emoji), and price (which can be marked editable at time of use, e.g. for a custom amount).
+- Payment methods per transaction: cash (fully paid now), bank transfer (pending, matched later), split (part cash / part pending bank), or card/QR (only shown if the client has connected their own Mollie or SumUp account — see Electronic Payment below).
+- "Post Today" performs the daily reconciliation: requires counting the actual physical cash on hand first (flags a discrepancy if it doesn't match expected), then creates one invoice for the day's takings and locks the entries. Can only be done once per day.
+- AUTOMATIC POSTING OF FORGOTTEN DAYS: if a day's Cashier entries are never manually posted, they are posted automatically — a scheduled server job runs exactly at midnight and posts any previous day (never the current day) that still has unposted entries, for every client, using the exact same accounting logic as the manual "Post Today" button (invoice + cash-ledger entry), marked internally as auto-posted. As a backup safety net, the same check also runs client-side the next time anyone logs in, in case the midnight job was ever missed — both are safe to run repeatedly (a day already posted is simply skipped, never posted twice).
+- If a day has zero entries when trying to post manually, the client must explain why first (no activity that day, or a genuine recording error) — a "missing day exception" that requires ANB admin approval before the client can continue using the Cashier. (The automatic midnight/login posting only ever acts on days that DO have unposted entries — empty days are a separate manual-only flow.)
+- Cashier Log (admin-only screen): full history of all cashier transactions with a reprint button per entry.
+- Receipt printing: after any cashier sale, the app offers to print a physical receipt via the browser's native print dialog (works with AirPrint on iOS or any connected printer on Android) — this is not a direct Bluetooth connection, it uses standard printing so it works across devices without special hardware pairing.
+
+ELECTRONIC PAYMENT (Cashier add-on):
+- Either the admin or the client themselves can connect the CLIENT's OWN payment provider account (their money goes directly to them, never through ANB): Mollie (live) or SumUp (live, additionally requires a "Merchant Code" alongside the API key) — Stripe is not yet implemented.
+- Generates a real payment request with the provider, shown to the customer as a QR code; the app polls for payment confirmation and auto-logs the Cashier entry once paid.
+
+BANK:
+- Bank statement transactions are reconciled against invoices/expenses via suggested matches, manual search, or marking "no match needed" (internal transfers, bank fees).
+
+ASSETS (Vaste Activa — any purchased asset, not just vehicles):
+- Categories include Equipment, Furniture, Vehicle, Goodwill, and others.
+- Any asset costing under €450 (excl. BTW) must be expensed immediately as a regular expense, NOT capitalized/depreciated as an asset (Dutch tax rule) — the app flags this and suggests using "Add Expense" instead.
+- Dutch tax law's minimum useful life for depreciation: 5 years for ordinary assets, 10 years for Goodwill. The app auto-adjusts a shorter entered life up to this legal minimum.
+- Depreciation is straight-line: (acquisition cost − residual value) ÷ useful life years. A "Generate Depreciation" button creates the year's journal entries per client (skips ones already created).
+- KIA (Kleinschaligheidsinvesteringsaftrek / Small-Scale Investment Deduction) is flagged as potentially applicable when total investment for the period falls within the current range (app shows a hint; exact percentage must be checked against the current official Belastingdienst table).
+- LOAN FINANCING (applies to ANY asset type, not just vehicles): mark an asset as financed by a loan with a remaining balance and annual interest rate. Logging a payment (one total amount entered) automatically splits it into interest (tax-deductible, posted as an actual journal entry) and principal (reduces the loan balance only, never expensed) using standard amortization: interest = remaining balance × annual rate ÷ 12.
+- VEHICLE-specific fields (only for category = Vehicle): a private-use percentage, and a mileage-log note. Private use above a de-minimis threshold typically triggers "Bijtelling" (added taxable income) under Dutch rules — the app flags this but does NOT calculate the exact amount (needs confirmation from a tax advisor); a detailed mileage log can support a claim of under 500 km/year private use.
+- "Loan Overview" report (under Reports, not the Assets screen itself) aggregates every financed asset for a client: total outstanding balance, interest paid this year and all-time, a progress bar per loan, and full payment history.
+
+EMPLOYEES / PAYROLL:
+- Salary types: Fixed Monthly or Variable Hourly.
+- Benefits: Vacation money (Vakantiegeld, 8% of gross annual salary, typically paid out once in May, or accrued monthly and shown as a running liability until then), 13th month bonus (accrues 1/12 of gross monthly, paid as a lump sum in December, same accrual principle as vacation money), homework allowance (tax-free up to the official rate, based on homework days per month), travel allowance (tax-free per-km rate or fixed monthly amount), pension percentage.
+- Payroll tax (Loonheffing) is estimated using official tax brackets — the app explicitly disclaims this needs verification before official use.
+- Payslips can be generated (status: CONCEPT while the month hasn't ended yet, then CONFIRMED) and exported as PDF, alongside a payslip history per employee.
+- Contract types: Permanent (Onbepaalde tijd) or Fixed-term (Bepaalde tijd) — fixed-term contracts ending within 90 days are flagged in the Employee Statistics report.
+- Reports: "Employee Financial Report" (payroll costs & payments, YTD gross/loonheffing/pension, outstanding accrued liabilities, per-employee breakdown) and "Employee Statistics Report" (headcount, average cost/tenure, contract-type/salary-type/job-title/nationality breakdowns, upcoming fixed-term contract endings). There's also a general "Payroll Report".
+
+CONTRACTS & SERVICE AGREEMENTS:
+- Per-client service contracts (monthly or annual rate, start/end dates, subscription package). New clients go through a signing workflow (agreement sent → client reviews & can request changes or sign → admin approves) before their accounting tabs unlock — while pending, the client only sees a waiting screen plus the ability to review/sign the agreement.
+- "Add Contract" always creates a brand-new client together with the contract (all the same required legal fields as "Add Client" — see NEW CLIENT CREATION below) — it does NOT offer a way to attach a new contract to an already-existing client. An existing client who needs a new/updated contract uses the 🔁 Renew or ✏ Edit buttons on their own current contract instead, never "Add Contract".
+- Subscription packages themselves are customizable (Settings) — existing signed contracts keep their price even if package definitions change later.
+
+DEBTORS / CREDITORS:
+- Contacts are tagged as "debtor" (customer who owes money) or "creditor" (supplier owed money), each with a ledger account number. A "General Debtors"/"General Creditors" catch-all contact exists per client for entries not tied to a specific named contact.
+
+REPORTS available (Reports screen, grouped): Summary, Profit & Loss (P&L), BTW report (VAT return by official Belastingdienst rubrieken — 1e domestic reverse charge issued, 2a/4b reverse charge received self-assessed [combined for simplicity in the UI, admin should verify the exact box before filing], 3a export outside EU, 3b EU B2B reverse charge), Tax Liability (estimated personal Inkomstenbelasting or corporate Vennootschapsbelasting — includes urencriterium/starter-status detection, KVK registration date auto-detects starter status for startersaftrek eligibility within first 5 years, customer-base setting [mostly B2B vs 90%+ B2C] determines VAT accounting basis: invoice-basis/factuurstelsel for B2B vs cash-basis/kasstelsel eligibility for mostly-consumer businesses), Cash Flow, Debtors, Expenses, Employee Financial, Employee Statistics, Payroll, and Loan Overview (only appears if the client has at least one financed asset).
+
+PERIOD LOCKING: Once a year or quarter is "closed" for a client (after filing that period's BTW return), transactions dated within it are protected — clients can no longer edit/delete them, and admins must explicitly confirm an override for any genuine correction. Periods can be reopened if needed.
+
+IMPORT: A template-based workflow (download template → fill with data from the client's previous accounting office → upload) to migrate historical data in, with required supporting files (bank statements, prior reports) and a full import history that can be reversed (removes all records + the journal entry created by that batch).
+
+NEW CLIENT CREATION & PASSWORD SECURITY:
+- Every new client (created via "Add Client" or "Add Contract" — both require the exact same legal fields: company name, email, contact person, KVK number, BTW number, IBAN, full address) automatically gets a one-time, randomly-generated temporary password immediately after creation, shown once to the admin in a dialog to copy and share with the client through a trusted channel (phone, in person) — it is never shown again after that.
+- The exact same one-time-password mechanism is used whenever an admin resets an existing client's password (Settings → Clients tab, or the client's own screen → "Reset Password") for a forgotten-password situation — self-service "forgot password" is NOT available; only an admin can issue a new temporary password.
+- Any account that logs in with such a temporary password is immediately shown a mandatory, non-dismissible "Set Your Password" screen before anything else in the app becomes usable — there is no way to skip, close, or work around this screen; the account cannot proceed until a new password (min. 6 characters, confirmed twice) is successfully saved. This applies identically whether the temporary password came from brand-new client creation or from an admin-initiated password reset.
+- Separately, a client can voluntarily change their own password any time from their dashboard's Security card ("Change Password") — this requires entering their CURRENT password correctly first (server-verified) before the new password (min. 6 characters, confirmed twice) is accepted. This is a self-service option distinct from the admin-issued temporary-password flow above, and does not require contacting ANB.
+
+APPEARANCE: A dark mode toggle (🌙/☀️ icon) sits next to the language switcher (EN/NL/AR) at the bottom of the sidebar, available to both admins and clients on every screen. It is a personal, per-device preference saved in the browser (not synced across devices or shared with other users), and takes effect immediately without needing to reload. ANB's core brand colors (dark green, gold) stay the same in both modes — only backgrounds, borders, and body text switch between light and dark. Note: a few specialized screens (e.g. the login page) use fixed colors by design and are unaffected by this toggle either way, since they are already dark-themed.
+
+SETTINGS is organized into three tabs now (the previous separate "Company" tab was removed):
+- Admins tab: the list of admin accounts (add/remove — Super Admin role is protected from being reset or removed by regular admins), each admin's password reset button, and Two-Factor Authentication (2FA) setup for the currently logged-in admin's own account.
+- Clients tab: the list of client accounts with a password-reset button per client and a button to view a copy of their signed contract (PDF), plus Subscription Packages management (the plans offered when creating new client contracts).
+- Danger Zone tab: automatic daily Backups (stored completely separately from the live database, with manual "Backup Now", a list of available backups, and Restore which takes an automatic safety backup of the current state first), and permanent client deletion (gated by re-entering the admin's own password).
+- ANB's own company details (company name, KVK, BTW, IBAN, address, tagline, website, and Professional Indemnity Insurance details referenced in service agreement liability clauses) now live in ANB's own record under Edit Client — reached the same way as editing any other client (ANB is modeled as a special client itself) — rather than a separate Settings tab. Saving this screen for ANB automatically keeps the underlying data used by invoice/contract generation in sync, with no separate step needed.
+
+TRASH & ARCHIVE: Deleted items go to Trash first; after 30 days they move to a separate Archived view (kept for the legal 7-year retention period from the record date, even though no longer in Trash).
+
+CLIENT-SIDE FEATURES: A first-time Welcome onboarding (3 short animated slides) shown once per client account, plus a "Quick Start" checklist on their dashboard (log first hours/expense, create first invoice, message ANB) that tracks real progress and disappears once complete or dismissed. A searchable Help Center (collapsible FAQ topics: invoices, expenses, hours, cashier, BTW report, messaging, documents) automatically filtered to only show topics for sections that client actually has enabled — accessed via a floating "❓" button visible on every screen. Clients can manage their own Cashier services and their own Electronic Payment provider connection.
+
+ROLES: Admin (ANB staff) sees and manages everything for every client, including a company-wide dashboard, messages, documents, and contracts overview across all clients. Clients only see their own data; which optional sections they can see (Reports, Employees, Bank, Assets, Client Activity log, Cashier, etc.) is individually toggled per client by the admin in Edit Client → Configuration → Visible Sections.
+
+GLOBAL SEARCH (admin-only): A "🔍" button pinned permanently in the topbar (always visible regardless of which screen/tab is open) opens a unified search across clients, invoices, expenses, documents, and contracts at once — also reachable via Ctrl/Cmd+K. Not available to clients, since it searches across every client's data.
+
+UNSAVED CHANGES PROTECTION: If you (or a client) type into a form or field and then try to navigate away — switching tabs, selecting a different client, going back, or logging out — before saving, the app shows a "Discard changes?" confirmation first. Nothing is lost silently; you must explicitly confirm to discard. This applies across the whole app (both admin and client views) at every main navigation action, not just one screen.
+
+AI ASSISTANT: This chatbot itself (admin-only, via a floating "🤖" button) — free via Cloudflare Workers AI, for accounting/tax/admin guidance including "how do I record X in this app" questions.`;
+
+const ADMIN_ASSISTANT_SYSTEM_PROMPT = `You are an internal assistant for ANB Financial Services, a Dutch bookkeeping and financial administration firm serving freelancers (ZZP) and small businesses. You help the firm's own admin staff think through accounting, tax (Dutch BTW/Belastingdienst rules), and general business-administration questions they run into during daily work — including questions about how to record something in their own ANB FinAdmin Pro application.
+
+${ANB_APP_REFERENCE}
+
+Important rules you must always follow:
+- You are a helpful starting point for reasoning through a question, NOT a substitute for a qualified accountant, tax advisor, or lawyer for any final decision with real financial, tax, or legal consequences.
+- Always end your answer with a brief reminder to verify anything consequential with a qualified professional before acting on it, especially for Dutch tax filings or legal matters.
+- Be concise, practical, and specific. If the question is about Dutch tax rules (BTW, KOR, aftrekbaarheid, etc.), reason from general principles you're confident about, and clearly flag anything you are not fully certain about instead of guessing confidently.
+- If a question is about where/how to do something in the app, use the app reference above precisely — do not invent screens, buttons, or fields that aren't described there.
+- If the admin writes in Arabic or Dutch, reply in the same language they used.`;
+
+async function handleAdminAssistant(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
+
+  // ⚠️ حماية بسيطة من إساءة استخدام سريعة تستنزف الحصة اليومية المجانية
+  // بالكامل خلال دقائق - ليست بديلًا عن حد Cloudflare اليومي نفسه، فقط طبقة
+  // إضافية ضد الاستهلاك السريع غير المقصود (كضغط متكرر بالخطأ)
+  const bucketKey = `assistant:${auth.payload.aid}`;
+  if (await isRateLimited(env, bucketKey)) {
+    return json({ error: 'Too many requests, please wait a bit before asking again' }, 429, cors);
+  }
+  await registerAttempt(env, bucketKey);
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { question } = body || {};
+  if (!question || typeof question !== 'string' || !question.trim()) {
+    return json({ error: 'question is required' }, 400, cors);
+  }
+  if (question.length > 2000) {
+    return json({ error: 'Question is too long (max 2000 characters)' }, 400, cors);
+  }
+
+  try {
+    const aiResponse = await env.AI.run(ADMIN_ASSISTANT_MODEL, {
+      messages: [
+        { role: 'system', content: ADMIN_ASSISTANT_SYSTEM_PROMPT },
+        { role: 'user', content: question.trim() },
+      ],
+    });
+    const answer = (aiResponse && (aiResponse.response || aiResponse.result)) || '';
+    if (!answer) return json({ error: 'assistant_error', message: 'No response from the assistant — please try again.' }, 502, cors);
+    return json({ answer }, 200, cors);
+  } catch (err) {
+    return json({ error: 'assistant_error', message: String(err && err.message || err) }, 502, cors);
+  }
+}
+
+async function handleBankNotFoundOrConfigured(env) {
+  return !env.ENABLE_BANKING_APP_ID || !env.ENABLE_BANKING_PRIVATE_KEY;
+}
+
+// POST /bank/connect  {cid} → يبدأ تدفّق الموافقة لدى Enable Banking، يُرجع
+// رابط تفويض المستخدم لإعادة توجيه المتصفح إليه (بنك واحد فقط - ING/هولندا -
+// مثبَّت مؤقتًا للنموذج الأولي، بدل قائمة بنوك كاملة)
+async function handleBankConnect(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required for this prototype' }, 403, cors);
+  if (await handleBankNotFoundOrConfigured(env)) {
+    return json({ error: 'Enable Banking is not configured on this environment yet (missing app secrets)' }, 501, cors);
+  }
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { cid } = body || {};
+  if (!cid) return json({ error: 'cid is required' }, 400, cors);
+
+  // ⚠️ state يحمل cid + قيمة عشوائية للتحقق من عدم التلاعب عند العودة (CSRF)
+  const state = `${cid}.${crypto.randomUUID()}`;
+
+  try {
+    const resp = await enableBankingFetch(env, '/auth', {
+      method: 'POST',
+      body: JSON.stringify({
+        access: { valid_until: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString() },
+        aspsp: { name: 'ING', country: 'NL' }, // ⚠️ مثبَّت للنموذج الأولي فقط - بنك واحد
+        state,
+        redirect_url: env.BANK_REDIRECT_URL,
+        psu_type: 'business',
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) return json({ error: 'enable_banking_error', detail: data }, 502, cors);
+    // ⚠️ حسب توثيق Enable Banking: الاستجابة تحوي رابط تفويض (اسم الحقل
+    // الدقيق يُرجى تأكيده من API Reference الفعلي؛ url شائع لهذا الغرض)
+    return json({ authUrl: data.url || data.authorization_url, state }, 200, cors);
+  } catch (err) {
+    return json({ error: 'network_error', detail: String(err && err.message || err) }, 502, cors);
+  }
+}
+
+// GET /bank/callback?code=...&state=... ← Enable Banking تُعيد توجيه متصفح
+// المستخدم لهذا الرابط بعد موافقته لدى بنكه. نُبادل code بجلسة، ونخزّن سجل
+// اتصال جديد، ثم نُعيد توجيه المتصفح فعليًا للتطبيق نفسه (وليس JSON خام،
+// لأن هذا الطلب يصل من متصفح المستخدم مباشرة لا من كود التطبيق)
+async function handleBankCallback(request, env, cors, url) {
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
+  const appUrl = env.ALLOWED_ORIGIN || 'https://anb-1cw.pages.dev';
+  if (!code || !state) {
+    return Response.redirect(`${appUrl}/?bank_connect_error=missing_code`, 302);
+  }
+  const cid = state.split('.')[0];
+
+  try {
+    const resp = await enableBankingFetch(env, '/sessions', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      return Response.redirect(`${appUrl}/?bank_connect_error=session_exchange_failed`, 302);
+    }
+
+    const cloud = await fetchCloudPayload(env);
+    const payload = (cloud && cloud.payload) || {};
+    if (!payload.bankConnections) payload.bankConnections = [];
+    payload.bankConnections.push({
+      id: crypto.randomUUID(),
+      cid,
+      provider: 'enablebanking',
+      aspspName: 'ING',
+      aspspCountry: 'NL',
+      sessionId: data.session_id || data.sessionId,
+      accountIds: (data.accounts || []).map((a) => a.uid || a.account_id || a.id),
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      lastSyncAt: null,
+    });
+    await writeCloudPayload(env, payload);
+
+    return Response.redirect(`${appUrl}/?bank_connected=1&cid=${encodeURIComponent(cid)}`, 302);
+  } catch (err) {
+    return Response.redirect(`${appUrl}/?bank_connect_error=${encodeURIComponent(String(err && err.message || err))}`, 302);
+  }
+}
+
+// GET /bank/connections?cid=... → قائمة الاتصالات البنكية النشطة لعميل معيّن
+async function handleBankConnectionsList(request, env, cors, url) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  const cid = url.searchParams.get('cid');
+  if (!cid) return json({ error: 'cid is required' }, 400, cors);
+  if (auth.payload.at === 'client' && auth.payload.aid !== cid) {
+    return json({ error: 'Forbidden' }, 403, cors);
+  }
+  const cloud = await fetchCloudPayload(env);
+  const all = (cloud && cloud.payload && cloud.payload.bankConnections) || [];
+  return json({ connections: all.filter((c) => c.cid === cid) }, 200, cors);
+}
+
+// POST /bank/sync {connectionId} → يسحب الحركات الجديدة لكل حساب مرتبط بهذا
+// الاتصال، ويُنشئ سجلات bankTx بنفس الشكل تمامًا الذي ينتجه استيراد CSV
+// (id, cid, date, desc, amount, matched:false, source) - بلا أي تعديل على
+// منطق العرض/التسوية الحالي في الواجهة الأمامية، فقط source مختلفة للتمييز
+async function handleBankSync(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required for this prototype' }, 403, cors);
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { connectionId } = body || {};
+  if (!connectionId) return json({ error: 'connectionId is required' }, 400, cors);
+
+  const cloud = await fetchCloudPayload(env);
+  const payload = (cloud && cloud.payload) || {};
+  const conn = (payload.bankConnections || []).find((c) => c.id === connectionId);
+  if (!conn) return json({ error: 'Connection not found' }, 404, cors);
+  if (conn.status !== 'active') return json({ error: 'Connection is not active', status: conn.status }, 409, cors);
+
+  try {
+    const existingTx = (payload.bankTx || []).filter((tx) => tx.cid === conn.cid);
+    const existingKeys = new Set(existingTx.map((tx) => `${tx.date}|${tx.amount}|${(tx.desc || '').slice(0, 20)}`));
+    const newTx = [];
+
+    for (const accountId of conn.accountIds || []) {
+      const resp = await enableBankingFetch(env, `/accounts/${accountId}/transactions`, { method: 'GET' });
+      const data = await resp.json();
+      if (!resp.ok) continue; // ⚠️ نُكمل لبقية الحسابات حتى لو فشل واحد منها
+      const transactions = data.transactions || data.booked || [];
+      for (const rawTx of transactions) {
+        // ⚠️ حقول الاستجابة الدقيقة (transaction_amount.amount، booking_date...)
+        // تتبع اصطلاح Berlin Group NextGenPSD2 الشائع - يُرجى تأكيدها من
+        // استجابة حقيقية فعلية في الـSandbox قبل أول مزامنة تجريبية
+        const amount = parseFloat(rawTx.transaction_amount?.amount ?? rawTx.amount ?? 0);
+        const date = rawTx.booking_date || rawTx.bookingDate || rawTx.value_date;
+        const desc = (rawTx.remittance_information_unstructured || rawTx.description || 'Bank transaction').slice(0, 100);
+        if (!date || !amount) continue;
+        const key = `${date}|${amount}|${desc.slice(0, 20)}`;
+        if (existingKeys.has(key)) continue; // تجنُّب التكرار (نفس منطق CSV تمامًا)
+        existingKeys.add(key);
+        newTx.push({ id: crypto.randomUUID(), cid: conn.cid, date, desc, amount, matched: false, source: 'enablebanking' });
+      }
+    }
+
+    if (newTx.length > 0) {
+      payload.bankTx = [...(payload.bankTx || []), ...newTx];
+    }
+    conn.lastSyncAt = new Date().toISOString();
+    await writeCloudPayload(env, payload);
+
+    return json({ ok: true, imported: newTx.length, newTx }, 200, cors);
+  } catch (err) {
+    return json({ error: 'sync_error', detail: String(err && err.message || err) }, 502, cors);
+  }
+}
+
+// POST /bank/disconnect {connectionId} → يُلغي الاتصال محليًا (يُعلَّم كـ
+// 'revoked')؛ لا يستدعي حذف الجلسة لدى Enable Banking تلقائيًا بعد في هذا
+// النموذج الأولي - يُضاف عند الانتقال للإنتاج (DELETE /sessions/{id})
+async function handleBankDisconnect(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== 'admin') return json({ error: 'Admin access required' }, 403, cors);
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { connectionId } = body || {};
+  if (!connectionId) return json({ error: 'connectionId is required' }, 400, cors);
+
+  const cloud = await fetchCloudPayload(env);
+  const payload = (cloud && cloud.payload) || {};
+  const conn = (payload.bankConnections || []).find((c) => c.id === connectionId);
+  if (!conn) return json({ error: 'Connection not found' }, 404, cors);
+  conn.status = 'revoked';
+  await writeCloudPayload(env, payload);
+  return json({ ok: true }, 200, cors);
+}
+
 async function handleBackupNow(request, env, cors) {
   const auth = await requireValidToken(request, env);
   if (!auth.ok) return json({ error: auth.error }, 401, cors);
@@ -273,10 +957,10 @@ function listFor(payload, role) {
  * الدور (فالتحقق يتم في الخادم فقط أصلًا)، وفلترة نطاق البيانات التجارية
  * ليرى كل عميل بيانات حسابه فقط عند الدور 'client'.
  */
-const SENSITIVE_ACCOUNT_FIELDS = ['passwordHash', 'passwordSalt', 'totpSecret'];
+const SENSITIVE_ACCOUNT_FIELDS = ['passwordHash', 'passwordSalt', 'totpSecret', 'paymentApiKey'];
 // المصفوفات المرتبطة بعميل واحد عبر حقل cid (غير clients/admins، اللذين
 // يُصفَّيان بقاعدة مختلفة تعتمد على id مباشرة بدل cid)
-const CLIENT_SCOPED_ARRAY_KEYS = ['invoices', 'expenses', 'hours', 'docs', 'messages', 'journal', 'bankTx', 'recurring', 'yearClosings', 'contracts', 'assets', 'serviceAgreements', 'importBatches', 'employees', 'contacts', 'cashPayments', 'cashierLog', 'cashierDayExceptions', 'supplierOcrProfiles', 'auditLog'];
+const CLIENT_SCOPED_ARRAY_KEYS = ['invoices', 'expenses', 'hours', 'docs', 'messages', 'journal', 'bankTx', 'recurring', 'yearClosings', 'contracts', 'assets', 'serviceAgreements', 'importBatches', 'employees', 'contacts', 'cashPayments', 'cashierLog', 'cashierDayExceptions', 'supplierOcrProfiles', 'auditLog', 'bankConnections'];
 // ⚠️ يجب أن يُعرَّفا هنا تحديدًا - بعد CLIENT_SCOPED_ARRAY_KEYS مباشرة وليس
 // قبله - وإلا يقع الكود في نفس فخ "استخدام قبل التعريف" (TDZ) الذي واجهناه
 // سابقًا مع كلمة async اليتيمة: أي ثابت من نوع const يُحسَب فورًا لحظة
@@ -529,7 +1213,7 @@ async function handleLogin(request, env, cors) {
 
   const exp = Date.now() + TOKEN_TTL_MS;
   const token = await signToken({ at: role, aid: account.id, exp }, env.R2_HMAC_SECRET);
-  return json({ step: 'done', token, exp }, 200, cors);
+  return json({ step: 'done', token, exp, mustChangePassword: !!account.mustChangePassword }, 200, cors);
 }
 
 /* ═══════════════════════ /verify-2fa ═══════════════════════ */
@@ -573,7 +1257,7 @@ async function handleVerify2FA(request, env, cors) {
 
   const exp = Date.now() + TOKEN_TTL_MS;
   const token = await signToken({ at: role, aid: account.id, exp }, env.R2_HMAC_SECRET);
-  return json({ token, exp }, 200, cors);
+  return json({ token, exp, mustChangePassword: !!account.mustChangePassword }, 200, cors);
 }
 
 /* ═══════════════════════ التحقق من كلمة المرور + الترقية من نص صريح ═══════════════════════ */
@@ -710,7 +1394,51 @@ async function handleSetPassword(request, env, cors) {
   }, 410, cors);
 }
 
-/* ═══════════════════════ /admin/set-password ═══════════════════════ */
+/* ═══════════════════════ /account/set-own-password ═══════════════════════ */
+// ⭐ نقطة منفصلة تمامًا عن /admin/set-password: هذه للمستخدم نفسه (أدمن أو
+// عميل، بحسب هويته في التوكن الخاص به فقط - لا يُقرَأ أي معرِّف حساب من نص
+// الطلب إطلاقًا) ليُعيِّن كلمة مرور جديدة خاصة به. تُستخدَم تحديدًا في شاشة
+// "حدِّد كلمة مرورك" الإلزامية عند أول دخول بكلمة مرور مؤقتة.
+async function handleSetOwnPassword(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const { newPassword, currentPassword } = body || {};
+  if (!newPassword || newPassword.length < 6) return json({ error: 'Password must be at least 6 characters' }, 400, cors);
+
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: 'Could not reach database' }, 502, cors);
+
+  const list = listFor(cloud.payload, auth.payload.at);
+  const idx = list.findIndex((a) => a && a.id === auth.payload.aid);
+  if (idx === -1) return json({ error: 'Account not found' }, 404, cors);
+  const account = list[idx];
+
+  // ⭐ لو أُرسلت كلمة المرور الحالية (تغيير طوعي أثناء جلسة عادية)، تحقَّق
+  // منها أولًا - يمنع أي شخص يستولي على جهاز مفتوح من تغيير كلمة المرور
+  // بلا معرفة القديمة. لا يُطلَب هذا التحقق في تدفق "التغيير الإلزامي" بعد
+  // كلمة مرور مؤقتة (لا توجد "قديمة" منطقية هناك، والمستخدم أثبت هويته للتو
+  // باستخدام تلك الكلمة المؤقتة نفسها بنجاح قبل لحظات).
+  if (currentPassword) {
+    const verdict = await verifyPasswordServerSide(currentPassword, account);
+    if (!verdict.ok) return json({ error: 'Current password is incorrect' }, 401, cors);
+  }
+
+  const rec = await makePasswordRecord(newPassword);
+  account.passwordSalt = rec.passwordSalt;
+  account.passwordHash = rec.passwordHash;
+  account.passwordIterations = rec.passwordIterations;
+  delete account.password; delete account.pwCustom; delete account.pw;
+  if (auth.payload.at === 'client') account.pwSet = true;
+  account.mustChangePassword = false; // ⚠️ هذا هو ما يُنهي فرض شاشة التغيير الإلزامية
+  clearFailedAttempts(account);
+  list[idx] = account;
+  await writeCloudPayload(env, cloud.payload);
+
+  return json({ ok: true }, 200, cors);
+}
 // محمية بتوكن أدمن حقيقي - النقطة الوحيدة الآن القادرة على تعيين/إعادة تعيين
 // كلمة مرور أي حساب (أدمن أو عميل). تحلّ محل كل من: النقطة العامة الملغاة
 // أعلاه، وآلية "Reset" في شاشة الإعدادات التي كانت تعتمد خطأً على مزامنة
@@ -753,6 +1481,11 @@ async function handleAdminSetPassword(request, env, cors) {
   account.passwordIterations = rec.passwordIterations;
   delete account.password; delete account.pwCustom; delete account.pw;
   if (targetRole === 'client') account.pwSet = true;
+  // ⭐ كلمة مرور مؤقتة مُولَّدة عشوائيًا (وليست كلمة مرور مُحدَّدة يدويًا من
+  // الأدمن) تعني أن الحساب يجب أن يُجبَر على تعيين كلمة مرور خاصة به في أول
+  // تسجيل دخول - يُفحَص هذا العلم عند تسجيل الدخول (handleLogin) لعرض شاشة
+  // "حدِّد كلمة مرورك" الإلزامية قبل السماح بالدخول للتطبيق
+  account.mustChangePassword = !newPassword;
   clearFailedAttempts(account);
   list[idx] = account;
   await writeCloudPayload(env, cloud.payload);
