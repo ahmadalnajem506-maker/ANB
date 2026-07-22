@@ -5663,16 +5663,16 @@ function rAdminDash(el){
   const contractsNeedingAttention=contractsNeedingRenewal+contractsPendingSignature+contractsSuspended;
 
   const cards=[
-    {icon:'📄',name:t('dashboard_pending_invoices'),alertText:pendingInvoices>0?pendingInvoices:null,value:pendingInvoices,color:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',onclickAttr:"goToAdminStat('invoices')"},
-    {icon:'⚠️',name:t('dashboard_overdue'),alertText:overdueInvoices>0?overdueInvoices:null,value:overdueInvoices,color:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',onclickAttr:"goToAdminStat('overdue')"},
-    {icon:'📁',name:t('dashboard_new_documents'),alertText:newDocuments>0?newDocuments:null,value:newDocuments,color:'linear-gradient(135deg, #1B5E35 0%, #2d7a4f 100%)',onclickAttr:"goToAdminStat('documents')"},
-    {icon:'💬',name:t('dashboard_new_messages'),alertText:newMessages>0?newMessages:null,value:newMessages,color:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',textColor:'#0A2218',onclickAttr:"goToAdminStat('messages')"},
-    {icon:'💼',name:t('active_clients'),value:totalClients,onclickAttr:"goToAdminStat('clients')"},
-    {icon:'🕐',name:t('dashboard_hours_logged'),value:totalHours.toFixed(0),onclickAttr:"goToAdminStat('hours')"},
+    {id:'invoices',icon:'📄',name:t('dashboard_pending_invoices'),alertText:pendingInvoices>0?pendingInvoices:null,value:pendingInvoices,color:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',onclickAttr:"goToAdminStat('invoices')"},
+    {id:'invoices',icon:'⚠️',name:t('dashboard_overdue'),alertText:overdueInvoices>0?overdueInvoices:null,value:overdueInvoices,color:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',onclickAttr:"goToAdminStat('overdue')"},
+    {id:'documents',icon:'📁',name:t('dashboard_new_documents'),alertText:newDocuments>0?newDocuments:null,value:newDocuments,color:'linear-gradient(135deg, #1B5E35 0%, #2d7a4f 100%)',onclickAttr:"goToAdminStat('documents')"},
+    {id:'messages',icon:'💬',name:t('dashboard_new_messages'),alertText:newMessages>0?newMessages:null,value:newMessages,color:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',textColor:'#0A2218',onclickAttr:"goToAdminStat('messages')"},
+    {id:'clients',icon:'💼',name:t('active_clients'),value:totalClients,onclickAttr:"goToAdminStat('clients')"},
+    {id:'hours',icon:'🕐',name:t('dashboard_hours_logged'),value:totalHours.toFixed(0),onclickAttr:"goToAdminStat('hours')"},
     // ⭐ حذفت بطاقة "Active Contracts" - عميل نشط (Active Clients أعلاه) يعني
     // عمليًا عقدًا نشطًا في كل الحالات تقريبًا، فتكرار الرقم ببطاقة منفصلة لا
     // يضيف معلومة جديدة فعلية، فقط ازدحامًا بصريًا لنفس المفهوم
-    ...(contractsNeedingAttention>0?[{icon:'🔔',name:t('dashboard_contracts_attention')||'Contracts Needing Attention',alertText:contractsNeedingAttention,value:contractsNeedingAttention,color:'linear-gradient(135deg, var(--red) 0%, #d4a017 100%)',onclickAttr:"goToAdminStat('contracts_filter:needsAttention')"}]:[])
+    ...(contractsNeedingAttention>0?[{id:'contracts',icon:'🔔',name:t('dashboard_contracts_attention')||'Contracts Needing Attention',alertText:contractsNeedingAttention,value:contractsNeedingAttention,color:'linear-gradient(135deg, var(--red) 0%, #d4a017 100%)',onclickAttr:"goToAdminStat('contracts_filter:needsAttention')"}]:[])
   ];
 
   const anbCardHtml=`
@@ -5693,7 +5693,7 @@ function rAdminDash(el){
   renderQuickDashboard(cardsWrap,[
     {icon:'💼',label:t('clients_list')||'Clients List',onclickAttr:"setTab('clients')"},
     {icon:'💬',label:t('messages')||'Messages',onclickAttr:"goToAdminStat('messages')"}
-  ],cards);
+  ],cards,{styled:true});
 
   el.innerHTML=renderRemindersSection()+cardsWrap.innerHTML+anbCardHtml;
 }
@@ -7315,34 +7315,34 @@ function renderDocsList(cid,searchTerm,sortValue){
         const agreement=(S.serviceAgreements||[]).find(a=>a.id===d.agreementId);
         const status=agreement?.status||d.status||'pending_review';
         const meta=agreementStatusMeta[status]||agreementStatusMeta.pending_review;
-        return `<div class="doc-item">
+        return `<div class="doc-item" style="cursor:pointer" onclick="reviewAgreementDoc('${d.id}')" onmouseover="this.style.background='var(--gr1)'" onmouseout="this.style.background='transparent'">
           <div class="doc-icon"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📝</span></div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.name)}</div>
             <div style="font-size:11px;margin-top:2px"><span style="background:${meta.bg};color:${meta.color};font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px">${meta.label}</span></div>
           </div>
-          <button class="btn btn-xs" onclick="reviewAgreementDoc('${d.id}')">👁 Review</button>
+          <button class="btn btn-xs" onclick="event.stopPropagation();reviewAgreementDoc('${d.id}')">👁 Review</button>
         </div>`;
       }
       if(d.category==='anb_invoice'){
         const meta=billStatusMeta[d.status]||billStatusMeta.pending_review;
-        return `<div class="doc-item">
+        return `<div class="doc-item" style="cursor:pointer" onclick="reviewIncomingBillDoc('${d.id}')" onmouseover="this.style.background='var(--gr1)'" onmouseout="this.style.background='transparent'">
           <div class="doc-icon"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🧾</span></div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.name)}</div>
             <div style="font-size:11px;margin-top:2px"><span style="background:${meta.bg};color:${meta.color};font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px">${meta.label}</span></div>
           </div>
-          <button class="btn btn-xs" onclick="reviewIncomingBillDoc('${d.id}')">👁 Review</button>
+          <button class="btn btn-xs" onclick="event.stopPropagation();reviewIncomingBillDoc('${d.id}')">👁 Review</button>
         </div>`;
       }
-      return `<div class="doc-item">
+      return `<div class="doc-item" style="cursor:pointer" onclick="viewDoc('${d.id}')" onmouseover="this.style.background='var(--gr1)'" onmouseout="this.style.background='transparent'">
       <div class="doc-icon">${d.type&&d.type.startsWith('image')?`<img src="${authenticatedFileUrl(d.url)||d.data}" style="width:32px;height:32px;object-fit:cover;border-radius:6px"/>`:'<span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">📄</span>'}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.name)}</div>
         <div style="font-size:11px;color:var(--t3)">${FD(d.date)} · ${d.size} · from ${d.from==='anb'?'ANB':'you'}</div>
       </div>
-      <button class="btn btn-xs" onclick="viewDoc('${d.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬇</span>${d.type&&d.type.startsWith('image')?'View':'Download'}</button>
-      ${isAdmin()?`<button class="btn btn-xs btn-danger" onclick="delDoc('${d.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🗑</span></button>`:''}
+      <button class="btn btn-xs" onclick="event.stopPropagation();viewDoc('${d.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬇</span>${d.type&&d.type.startsWith('image')?'View':'Download'}</button>
+      ${isAdmin()?`<button class="btn btn-xs btn-danger" onclick="event.stopPropagation();delDoc('${d.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🗑</span></button>`:''}
     </div>`;
     }).join('');
 }
@@ -13788,10 +13788,8 @@ function renderCashierLogTable(cid,searchTerm){
   container.innerHTML=entries.length===0?`<div class="empty">🧾 ${term?(t('no_results')||'No matching results'):(t('no_cashier_entries_yet')||'No cashier entries yet')}</div>`:
     `<table><thead><tr>
       ${sortTh(t('lbl_date')||'Date','date','cashierLog',`renderCashierLogTable(${reArgs})`)}
-      <th>${t('lbl_time')||'Time'}</th>
       <th>${t('service')||'Service'}</th>
       ${sortTh(t('lbl_amount')||'Amount','price','cashierLog',`renderCashierLogTable(${reArgs})`)}
-      <th>${t('payment_method')||'Payment'}</th>
       <th>${t('lbl_status')||'Status'}</th>
       <th></th>
     </tr></thead>
@@ -13799,12 +13797,10 @@ function renderCashierLogTable(cid,searchTerm){
       const time=new Date(e.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
       const paymentLabel=e.cashAmount>=e.price-0.005?(t('cash')||'Cash'):e.bankAmount>=e.price-0.005?(t('tab_bank')||'Bank'):(t('split')||'Split')+' ('+FMT(e.cashAmount)+' 💵)';
       return `<tr>
-        <td style="color:var(--t3)">${FD(e.date)}</td>
-        <td style="color:var(--t3);font-size:11px">${time}</td>
+        <td style="color:var(--t3)">${FD(e.date)}<div style="font-size:9.5px;color:var(--t3);opacity:.8">${time}</div></td>
         <td>${e.serviceIcon||''} ${escapeHtml(e.serviceName)}</td>
         <td style="font-weight:600">${FMT(e.price)}</td>
-        <td style="font-size:11px">${paymentLabel}</td>
-        <td>${e.posted?`<span class="bdg b-paid">✓ ${t('posted')||'Posted'}</span>`:`<span class="bdg b-open">${t('pending_post')||'Pending'}</span>`}</td>
+        <td>${e.posted?`<span class="bdg b-paid">✓ ${t('posted')||'Posted'}</span>`:`<span class="bdg b-open">${t('pending_post')||'Pending'}</span>`}<div style="font-size:9.5px;color:var(--t3);margin-top:2px">${paymentLabel}</div></td>
         <td><button class="btn btn-xs" onclick="printCashierReceipt('${e.id}')" title="${t('print_receipt')||'Print Receipt'}">🖨️</button></td>
       </tr>`;
     }).join('')}</tbody></table>`;
