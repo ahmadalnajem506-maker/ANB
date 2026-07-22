@@ -1212,9 +1212,20 @@ const FD=d=>{  if(!d)return'—';
 const UID=()=>Math.random().toString(36).slice(2,8).toUpperCase();
 function addInterval(dateStr,freq){
   const d=new Date(dateStr||TODAY());
+  const originalDay=d.getDate();
   if(freq==='monthly')d.setMonth(d.getMonth()+1);
   else if(freq==='quarterly')d.setMonth(d.getMonth()+3);
   else if(freq==='yearly')d.setFullYear(d.getFullYear()+1);
+  // ⚠️ إصلاح خلل حقيقي وخطير: setMonth في JavaScript "ينزلق" للشهر التالي
+  // بدل التثبيت على آخر يوم فيه، إذا لم يكن رقم اليوم موجودًا في الشهر
+  // الجديد (مثال: 31 يناير + شهر واحد يصبح 2 أو 3 مارس بدل 28 فبراير -
+  // فيتخطّى فبراير بالكامل!). لعميل باشتراك شهري يبدأ يوم 29-31 من الشهر،
+  // هذا كان يعني تخطّي دورات فوترة كاملة وانزلاق دائم لتاريخ الفوترة بعيدًا
+  // عن "نهاية الشهر" الأصلي. الحل: لو حدث الانزلاق، نُثبِّت على آخر يوم
+  // فعلي في الشهر المستهدف بدل السماح للتاريخ بالتقدّم لشهر آخر.
+  if(d.getDate()!==originalDay&&(freq==='monthly'||freq==='quarterly')){
+    d.setDate(0);
+  }
   return d.toISOString().slice(0,10);
 }
 const INI=n=>(n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -1267,7 +1278,7 @@ var I18N={
     // Tab labels
     tab_invoices:'Invoices', tab_debtors:'Debtors',
     tab_expenses:'Expenses', tab_hours:'Hours',
-    card_invoices_title:'Invoices - Cash In', card_expenses_title:'Expenses - Cash Out', lbl_customer:'Customer', just_now:'just now', search:'Search', no_results:'No matching results', generating_pdf:'Generating PDF…', generating_excel:'Generating Excel…', reading_receipt:'Reading receipt…', deleted_to_trash:'Moved to Trash — restorable for 30 days', no_subscription:'No subscription', expired:'Expired', subscription_information:'Subscription', plan:'Plan', subscription_end:'Subscription end date', subscription_end_hint:'Leave empty for an ongoing subscription with no fixed end date', audit_log_title:'Audit Log', audit_log_hint:'Tracks who did what, and when', audit_log_empty:'No activity recorded yet', all_actions:'All actions', audit_create:'Created', audit_edit:'Edited', audit_delete:'Deleted', audit_restore:'Restored', audit_plan_change:'Plan changed', audit_password_change:'Password changed', audit_login_failed:'Failed login', audit_login_locked:'Account locked', audit_actor:'Who', audit_action:'Action', activity_log_title:'Activity Log', card_activity_log_desc:'Who Changed What, and When', trash_title:'Trash', trash_hint:'Deleted items are kept for 30 days, then permanently removed', trash_empty:'Trash is empty', trash_days_left:'Days left', trash_days:'days', trash_restore:'Restore', trash_restored:'Restored', actions:'Actions',
+    card_invoices_title:'Invoices - Cash In', card_expenses_title:'Expenses - Cash Out', lbl_customer:'Customer', just_now:'just now', search:'Search', no_results:'No matching results', generating_pdf:'Generating PDF…', generating_excel:'Generating Excel…', reading_receipt:'Reading receipt…', deleted_to_trash:'Moved to Trash — restorable for 30 days', no_subscription:'No subscription', expired:'Expired', subscription_information:'Subscription', plan:'Plan', subscription_end:'Subscription end date', subscription_end_hint:'Leave empty for an ongoing subscription with no fixed end date', audit_log_title:'Audit Log', audit_log_hint:'Tracks who did what, and when', audit_log_empty:'No activity recorded yet', all_actions:'All actions', audit_create:'Created', audit_edit:'Edited', audit_delete:'Deleted', audit_restore:'Restored', audit_plan_change:'Plan changed', audit_password_change:'Password changed', audit_login_failed:'Failed login', audit_login_locked:'Account locked', audit_actor:'Who', audit_action:'Action', activity_log_title:'Activity Log', card_activity_log_desc:'Who Changed What, and When', trash_title:'Trash', trash_hint:'Deleted items are kept for 30 days. Non-financial records are then permanently removed — but invoices, expenses, hours, and documents are archived instead and kept for the legal 7-year retention period', trash_empty:'Trash is empty', trash_days_left:'Days left', trash_days:'days', trash_restore:'Restore', trash_restored:'Restored', actions:'Actions',
     tab_journal:'Journal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Reports', tab_documents:'Documents', tab_contacts:'Contacts', tab_messages:'Messages', tab_client:'Client',
     // Card descriptions
@@ -1463,7 +1474,7 @@ var I18N={
     contracts:'Overeenkomsten', assets:'Activa',
     tab_invoices:'Facturen', tab_debtors:'Debiteuren',
     tab_expenses:'Onkosten', tab_hours:'Uren',
-    card_invoices_title:'Facturen - Geld in', card_expenses_title:'Onkosten - Geld uit', lbl_customer:'Klant', just_now:'zojuist', search:'Zoeken', no_results:'Geen resultaten gevonden', generating_pdf:'PDF genereren…', generating_excel:'Excel genereren…', reading_receipt:'Bon lezen…', deleted_to_trash:'Verplaatst naar Prullenbak — 30 dagen herstelbaar', no_subscription:'Geen abonnement', expired:'Verlopen', subscription_information:'Abonnement', plan:'Pakket', subscription_end:'Einddatum abonnement', subscription_end_hint:'Laat leeg voor een doorlopend abonnement zonder vaste einddatum', audit_log_title:'Auditlogboek', audit_log_hint:'Volgt wie wat deed, en wanneer', audit_log_empty:'Nog geen activiteit geregistreerd', all_actions:'Alle acties', audit_create:'Aangemaakt', audit_edit:'Bewerkt', audit_delete:'Verwijderd', audit_restore:'Hersteld', audit_plan_change:'Pakket gewijzigd', audit_password_change:'Wachtwoord gewijzigd', audit_login_failed:'Mislukte aanmelding', audit_login_locked:'Account vergrendeld', audit_actor:'Wie', audit_action:'Actie', activity_log_title:'Activiteitenlogboek', card_activity_log_desc:'Wie Wat Wijzigde, en Wanneer', trash_title:'Prullenbak', trash_hint:'Verwijderde items blijven 30 dagen bewaard en worden daarna definitief verwijderd', trash_empty:'Prullenbak is leeg', trash_days_left:'Dagen resterend', trash_days:'dagen', trash_restore:'Herstellen', trash_restored:'Hersteld', actions:'Acties',
+    card_invoices_title:'Facturen - Geld in', card_expenses_title:'Onkosten - Geld uit', lbl_customer:'Klant', just_now:'zojuist', search:'Zoeken', no_results:'Geen resultaten gevonden', generating_pdf:'PDF genereren…', generating_excel:'Excel genereren…', reading_receipt:'Bon lezen…', deleted_to_trash:'Verplaatst naar Prullenbak — 30 dagen herstelbaar', no_subscription:'Geen abonnement', expired:'Verlopen', subscription_information:'Abonnement', plan:'Pakket', subscription_end:'Einddatum abonnement', subscription_end_hint:'Laat leeg voor een doorlopend abonnement zonder vaste einddatum', audit_log_title:'Auditlogboek', audit_log_hint:'Volgt wie wat deed, en wanneer', audit_log_empty:'Nog geen activiteit geregistreerd', all_actions:'Alle acties', audit_create:'Aangemaakt', audit_edit:'Bewerkt', audit_delete:'Verwijderd', audit_restore:'Hersteld', audit_plan_change:'Pakket gewijzigd', audit_password_change:'Wachtwoord gewijzigd', audit_login_failed:'Mislukte aanmelding', audit_login_locked:'Account vergrendeld', audit_actor:'Wie', audit_action:'Actie', activity_log_title:'Activiteitenlogboek', card_activity_log_desc:'Wie Wat Wijzigde, en Wanneer', trash_title:'Prullenbak', trash_hint:'Verwijderde items blijven 30 dagen bewaard. Niet-financiële gegevens worden daarna definitief verwijderd — facturen, uitgaven, uren en documenten worden echter gearchiveerd en 7 jaar wettelijk bewaard', trash_empty:'Prullenbak is leeg', trash_days_left:'Dagen resterend', trash_days:'dagen', trash_restore:'Herstellen', trash_restored:'Hersteld', actions:'Acties',
     tab_journal:'Journaal', tab_bank:'Bank', tab_btw:'BTW',
     tab_reports:'Rapporten', tab_documents:'Documenten', tab_contacts:'Contacten', tab_messages:'Berichten', tab_client:'Klant',
     // Card descriptions
@@ -1647,7 +1658,7 @@ var I18N={
     // Tab labels with tab_ prefix (used in topbar & sidebar)
     tab_invoices:'الفواتير', tab_debtors:'الديون (Debiteuren)',
     tab_expenses:'المصاريف', tab_hours:'ساعات العمل',
-    card_invoices_title:'الفواتير - الوارد النقدي', card_expenses_title:'المصاريف - الصادر النقدي', lbl_customer:'العميل', just_now:'الآن', search:'بحث', no_results:'لا توجد نتائج مطابقة', generating_pdf:'جاري إنشاء PDF…', generating_excel:'جاري إنشاء Excel…', reading_receipt:'جاري قراءة الفاتورة…', deleted_to_trash:'نُقل إلى سلة المحذوفات — قابل للاسترجاع لمدة 30 يومًا', no_subscription:'بدون اشتراك', expired:'منتهي', subscription_information:'الاشتراك', plan:'الباقة', subscription_end:'تاريخ انتهاء الاشتراك', subscription_end_hint:'اتركه فارغًا للاشتراك المستمر بلا تاريخ انتهاء محدد', audit_log_title:'سجل التدقيق', audit_log_hint:'يتتبّع من فعل ماذا، ومتى', audit_log_empty:'لا يوجد نشاط مسجَّل بعد', all_actions:'كل الإجراءات', audit_create:'إنشاء', audit_edit:'تعديل', audit_delete:'حذف', audit_restore:'استرجاع', audit_plan_change:'تغيير باقة', audit_password_change:'تغيير كلمة مرور', audit_login_failed:'محاولة دخول فاشلة', audit_login_locked:'قفل حساب', audit_actor:'المستخدم', audit_action:'الإجراء', activity_log_title:'سجل النشاط', card_activity_log_desc:'من غيّر ماذا، ومتى', trash_title:'سلة المحذوفات', trash_hint:'العناصر المحذوفة تُحفظ لمدة 30 يومًا ثم تُحذف نهائيًا', trash_empty:'سلة المحذوفات فارغة', trash_days_left:'الأيام المتبقية', trash_days:'يومًا', trash_restore:'استرجاع', trash_restored:'تم الاسترجاع', actions:'إجراءات',
+    card_invoices_title:'الفواتير - الوارد النقدي', card_expenses_title:'المصاريف - الصادر النقدي', lbl_customer:'العميل', just_now:'الآن', search:'بحث', no_results:'لا توجد نتائج مطابقة', generating_pdf:'جاري إنشاء PDF…', generating_excel:'جاري إنشاء Excel…', reading_receipt:'جاري قراءة الفاتورة…', deleted_to_trash:'نُقل إلى سلة المحذوفات — قابل للاسترجاع لمدة 30 يومًا', no_subscription:'بدون اشتراك', expired:'منتهي', subscription_information:'الاشتراك', plan:'الباقة', subscription_end:'تاريخ انتهاء الاشتراك', subscription_end_hint:'اتركه فارغًا للاشتراك المستمر بلا تاريخ انتهاء محدد', audit_log_title:'سجل التدقيق', audit_log_hint:'يتتبّع من فعل ماذا، ومتى', audit_log_empty:'لا يوجد نشاط مسجَّل بعد', all_actions:'كل الإجراءات', audit_create:'إنشاء', audit_edit:'تعديل', audit_delete:'حذف', audit_restore:'استرجاع', audit_plan_change:'تغيير باقة', audit_password_change:'تغيير كلمة مرور', audit_login_failed:'محاولة دخول فاشلة', audit_login_locked:'قفل حساب', audit_actor:'المستخدم', audit_action:'الإجراء', activity_log_title:'سجل النشاط', card_activity_log_desc:'من غيّر ماذا، ومتى', trash_title:'سلة المحذوفات', trash_hint:'العناصر المحذوفة تُحفظ لمدة 30 يومًا. البيانات غير المالية تُحذف نهائيًا بعدها — أما الفواتير والمصاريف والساعات والمستندات فتُؤرشَف بدل حذفها، وتبقى محفوظة لمدة 7 سنوات وفق المدة القانونية المُلزِمة', trash_empty:'سلة المحذوفات فارغة', trash_days_left:'الأيام المتبقية', trash_days:'يومًا', trash_restore:'استرجاع', trash_restored:'تم الاسترجاع', actions:'إجراءات',
     tab_journal:'اليومية (Journal)', tab_bank:'البنك', tab_btw:'ضريبة القيمة المضافة (BTW)',
     tab_reports:'التقارير', tab_documents:'المستندات', tab_contacts:'جهات الاتصال', tab_messages:'الرسائل', tab_client:'العميل',
     // Card descriptions
@@ -2287,7 +2298,7 @@ function toast(msg,icon='ti-check',duration){
   if(/^(❌|🚫|⛔)/.test(msg)){
     el.classList.add('notif-error');
     dur=duration||4200;
-  }else if(/^(⚠️|⏳)/.test(msg)){
+  }else if(/^(⚠|⏳)/.test(msg)){
     el.classList.add('notif-warning');
     dur=duration||3400;
   }
@@ -2510,10 +2521,6 @@ function closeHelpCenter(){
 
 // ⭐ فتح مركز المساعدة مباشرة على موضوع مُحدَّد - تُستخدَم من أيقونات "؟"
 // الملاصقة لأزرار الإجراءات الرئيسية (فاتورة جديدة، مصروف جديد، الكاشير)
-function openHelpTopic(cid,topicId){
-  showHelpCenter(cid,topicId);
-}
-
 // ══════════════════════════════════════════════════════════════════
 // ⭐ مساعد الأدمن بالذكاء الاصطناعي - عبر Cloudflare Workers AI (مجاني).
 // مخصَّص لمساعدة الأدمن في حالات محاسبية/ضريبية/قانونية غامضة أثناء العمل
@@ -4295,196 +4302,6 @@ function getNextContractTitle(cid){
   });
   return 'Contract Extension '+(maxExt+1);
 }
-function openNewContractDialog(){
-  showModal('Add Contract',`
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:10px;border-radius:4px;font-size:11px;color:var(--t3)">
-        ℹ️ Adding a contract always creates a brand new client. An existing client who needs a new or updated contract should use the 🔁 Renew or ✏ Edit buttons on their current contract instead.
-      </div>
-
-      <div style="padding:12px;background:var(--gr1);border-radius:6px;border:1px dashed var(--gr2)">
-        <div style="font-size:11px;color:var(--t3);margin-bottom:8px">➕ A full client record will be created automatically when you save this contract — same details as the regular "Add Client" form.</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Company Name *</label>
-            <input type="text" id="contract-new-name" placeholder="New client name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;box-sizing:border-box">
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Client Type</label>
-            <select id="contract-new-type" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer;box-sizing:border-box">
-              ${['Eenmanszaak','VOF','Maatschap','CV','BV','NV','Stichting','Vereniging','Coöperatie','Overig'].map(tp=>`<option>${tp}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Email *</label>
-            <input type="email" id="contract-new-email" placeholder="client@email.com" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;box-sizing:border-box">
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Phone</label>
-            <input type="text" id="contract-new-phone" placeholder="+31 6 12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;box-sizing:border-box">
-          </div>
-        </div>
-        <div style="margin-bottom:10px">
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Contact Person *</label>
-          <input type="text" id="contract-new-contact" placeholder="Full name" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;box-sizing:border-box">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">KVK Number *</label>
-            <input type="text" id="contract-new-kvk" placeholder="12345678" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;box-sizing:border-box">
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">${t('kvk_registration_date')||'KVK Registration Date'}</label>
-            <input type="date" id="contract-new-kvkdate" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;box-sizing:border-box">
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">BTW/VAT Number *</label>
-            <input type="text" id="contract-new-btw" placeholder="NL123456789B01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;box-sizing:border-box">
-          </div>
-        </div>
-        <div style="margin-bottom:10px">
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">IBAN *</label>
-          <input type="text" id="contract-new-iban" placeholder="NL91ABNA0417164300" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;box-sizing:border-box">
-        </div>
-        <div style="margin-bottom:10px">
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Street Address *</label>
-          <input type="text" id="contract-new-addr" placeholder="Straatnaam 123" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;box-sizing:border-box">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Postal Code *</label>
-            <input type="text" id="contract-new-zip" placeholder="1234 AB" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;box-sizing:border-box">
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:6px">City *</label>
-            <input type="text" id="contract-new-city" placeholder="Amsterdam" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;box-sizing:border-box">
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📝 Description</label>
-        <textarea id="contract-desc" placeholder="Add any details about this contract..." 
-          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;height:70px;resize:none;font-family:inherit"></textarea>
-      </div>
-
-      <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan *</label>
-        <select id="contract-plan" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
-          <option value="">Select Plan</option>
-          ${renderPlanOptions()}
-        </select>
-      </div>
-
-      <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📅 Start Date</label>
-        <input type="date" id="contract-start" 
-          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
-      </div>
-
-      <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:10px;border-radius:4px;font-size:11px;color:var(--t3)">
-        ℹ️ Contracts are open-ended by default (no fixed end date) — they run until either side formally ends them, which requires at least one month's notice. Named automatically as "Contract"; a later renewal becomes "Contract Extension 1", the next "Contract Extension 2", and so on.
-      </div>
-
-      <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3)">
-        ℹ️ Fields marked with * are required
-      </div>
-
-    </div>
-  `, async function(){
-    const plan=parseInt(document.getElementById('contract-plan').value||'0')||0;
-    if(!plan){toast('❌ Please select a subscription plan');markFieldError('contract-plan');return;}
-
-    const newName=(document.getElementById('contract-new-name')?.value||'').trim();
-    const newEmail=(document.getElementById('contract-new-email')?.value||'').trim();
-    const newContact=(document.getElementById('contract-new-contact')?.value||'').trim();
-    const newKvk=(document.getElementById('contract-new-kvk')?.value||'').trim();
-    const newBtw=(document.getElementById('contract-new-btw')?.value||'').trim();
-    const newIban=(document.getElementById('contract-new-iban')?.value||'').trim();
-    const newAddr=(document.getElementById('contract-new-addr')?.value||'').trim();
-    const newZip=(document.getElementById('contract-new-zip')?.value||'').trim();
-    const newCity=(document.getElementById('contract-new-city')?.value||'').trim();
-    // ⚠️ نفس التحقق الإلزامي بالضبط المُطبَّق في نموذج "إضافة عميل" المستقل
-    if(!newName){toast('❌ New client name required');markFieldError('contract-new-name');return;}
-    if(!newEmail){toast('❌ Email required');markFieldError('contract-new-email');return;}
-    if(!newContact){toast('❌ Contact person name required');markFieldError('contract-new-contact');return;}
-    if(!newKvk){toast('❌ KVK registration number required');markFieldError('contract-new-kvk');return;}
-    if(!newBtw){toast('❌ BTW/VAT number required');markFieldError('contract-new-btw');return;}
-    if(!newIban){toast('❌ IBAN required');markFieldError('contract-new-iban');return;}
-    if(!newAddr){toast('❌ Street address required');markFieldError('contract-new-addr');return;}
-    if(!newZip){toast('❌ Postal code required');markFieldError('contract-new-zip');return;}
-    if(!newCity){toast('❌ City required');markFieldError('contract-new-city');return;}
-    const newClient={
-      id:UID(),
-      name:newName,
-      type:document.getElementById('contract-new-type')?.value||'Eenmanszaak',
-      email:newEmail,
-      phone:(document.getElementById('contract-new-phone')?.value||'').trim(),
-      contactPerson:newContact,
-      kvk:newKvk,
-      kvkDate:document.getElementById('contract-new-kvkdate')?.value||'',
-      btw:newBtw,
-      iban:newIban,
-      address:newAddr,
-      zipCode:newZip,
-      city:newCity,
-      country:'NL',
-      monthlyFee:plan,
-      createdDate:TODAY()
-    };
-    S.clients.push(newClient);
-    logAudit('create','client','Added client "'+newName+'" via new contract creation',newClient.id);
-    const cid=newClient.id;
-
-    const title=getNextContractTitle(cid); // ⭐ تسمية تلقائية - انظر الدالة المشتركة أعلى الملف
-    const desc=document.getElementById('contract-desc').value;
-    const type='Standard';
-    const start=document.getElementById('contract-start').value;
-
-    if(!S.contracts)S.contracts=[];
-    const newContract={
-      id:UID(),
-      cid,
-      title,
-      desc,
-      plan,
-      type,
-      startDate:start,
-      endDate:'', // ⭐ العقود مفتوحة المدة افتراضيًا الآن - انظر endContract() لكيفية إنهائها لاحقًا
-      status:'draft',
-      createdDate:TODAY()
-    };
-    S.contracts.push(newContract);
-    createContractAgreement(newClient,newContract);
-
-    sv();
-    renderApp();
-    closeModal();
-
-    // ⭐ توليد كلمة مرور مؤقتة لمرة واحدة للعميل الجديد فورًا - ليُزوِّده
-    // الأدمن بها؛ سيُجبَر العميل على تعيين كلمة مرور خاصة به عند أول دخول
-    try{
-      const res=await fetch(R2_WORKER_URL+'/admin/set-password',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
-        body:JSON.stringify({targetRole:'client',targetAccountId:cid}),
-      });
-      if(res.ok){
-        const data=await res.json();
-        showConfirmDialog('🔑 '+(t('temp_password_title')||'New Temporary Password'),
-          (t('temp_password_share_hint')||'Share this password with the client through a trusted channel (phone call, in person). It will not be shown again.')+'\n\n'+data.tempPassword,
-          ()=>{});
-      }
-    }catch(e){/* الفاتورة والعقد نجحا بالفعل - فشل توليد كلمة المرور هنا ليس كارثيًا، يمكن للأدمن استخدام "Reset Password" من الإعدادات لاحقًا */}
-
-    toast('✓ Contract created — service agreement sent for signature');
-  }, 'Create Contract');
-}
-
 function openAddContract(cid){
   showModal('Add Contract',`
     <div style="display:flex;flex-direction:column;gap:12px">
@@ -5169,7 +4986,7 @@ function saveLoanPayment(assetId){
   const total=parseFloat(document.getElementById('loanpay-amount')?.value)||0;
   if(total<=0){toast('❌ '+(t('enter_valid_amount')||'Enter a valid amount'));markFieldError('loanpay-amount');return;}
 
-  const interest=Math.min(total,a.loanRemainingAmount*(a.loanInterestRate/100)/12);
+  const interest=Math.round(Math.min(total,a.loanRemainingAmount*(a.loanInterestRate/100)/12)*100)/100;
   const principal=Math.max(0,total-interest);
 
   if(!a.loanPayments)a.loanPayments=[];
@@ -5452,7 +5269,7 @@ function generateDepreciationEntries(cid,year){
   assets.forEach(a=>{
     const alreadyExists=S.journal.some(j=>j.assetId===a.id&&j.year===year&&j.type==='depreciation');
     if(alreadyExists){skipped++;return;}
-    const amount=getDepreciationForPeriod(a,periodStart,periodEnd);
+    const amount=Math.round(getDepreciationForPeriod(a,periodStart,periodEnd)*100)/100;
     if(amount<=0){skipped++;return;}
     S.journal.push({
       id:UID(),cid,assetId:a.id,year,type:'depreciation',
@@ -10210,72 +10027,6 @@ function rSettings(el){
 }
 
 /* ═══ ACTIONS ═══ */
-async function saveAdminAuth(){
-  const newPw1=document.getElementById('s-ap')?.value;
-  const newPw2=document.getElementById('s-ap2')?.value;
-  const email=document.getElementById('s-aem')?.value;
-  const phone=document.getElementById('s-aph')?.value;
-  if(newPw1&&newPw1.length<6){toast('Password must be at least 6 characters','⚠');return;}
-  if(newPw1&&newPw1!==newPw2){toast('Passwords do not match','⚠');return;}
-  if(email)S.settings.email=email;
-  if(phone)S.settings.phone=phone;
-  // ⚠️ إصلاح: نفس مشكلة resetAdminPassword - تغيير الهاش محليًا ثم الاعتماد
-  // على /sync العادية لا يعمل فعليًا (الخادم يحمي حقل كلمة المرور من ذلك
-  // المسار). يستدعي الآن نفس النقطة الموثَّقة، مستهدفًا حساب المستخدم نفسه.
-  if(newPw1){
-    const admin=S.admins.find(a=>a.id===S.currentAdmin);
-    if(admin){
-      try{
-        const res=await fetch(R2_WORKER_URL+'/admin/set-password',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
-          body:JSON.stringify({targetRole:'admin',targetAccountId:admin.id,newPassword:newPw1}),
-        });
-        if(!res.ok){
-          const errData=await res.json().catch(()=>({}));
-          toast('⚠ '+(errData.error||'Could not change password'),'⚠');
-          return;
-        }
-        clearFailedAttempts(admin);
-        logAudit('password_change','account','Changed own password: '+admin.name);
-      }catch(e){
-        toast('⚠ Network error - please try again','⚠');
-        return;
-      }
-    }
-  }
-  sv();toast(t('btn_save_creds')+' ✓');renderContent();
-}
-
-// يُنشئ كلمة مرور مؤقتة فعلية للعميل عبر الخادم (بعد أن يتحقق الأدمن من
-// هويته بطريقته الخاصة خارج التطبيق) - بديل أسرع لـresetClientPw الذي يتطلب
-// من العميل إعادة "الإعداد الأول" بنفسه
-async function generateClientTempPassword(cid){
-  const client=S.clients.find(c=>c.id===cid);
-  if(!client)return;
-  showConfirmDialog('Generate Temporary Password','Have you verified this is really "'+client.name+'" (by phone/WhatsApp)? A temporary password will be generated for you to hand to them.',async()=>{
-    try{
-      const res=await fetch(R2_WORKER_URL+'/admin/generate-temp-password',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getValidR2Token()||'')},
-        body:JSON.stringify({clientAccountId:cid}),
-      });
-      if(!res.ok){toast('❌ Could not generate password — please try again');return;}
-      const data=await res.json();
-      logAudit('password_change','account','Generated a temporary password for client: '+client.name,cid);
-      closeModal();
-      showModal('🔑 Temporary Password',
-        '<div style="padding:4px">'+
-        '<div style="font-size:12px;color:var(--t3);margin-bottom:10px">Give this to <strong>'+escapeHtml(client.name)+'</strong> — it works immediately and they can change it afterwards from Security settings.</div>'+
-        '<div style="font-size:22px;font-weight:800;letter-spacing:2px;text-align:center;padding:16px;background:var(--white);border:2px dashed var(--gr2);border-radius:8px;font-family:monospace">'+escapeHtml(data.tempPassword)+'</div>'+
-        '</div>'
-      ,closeModal,'Done');
-    }catch(e){
-      toast('❌ Network error — please try again');
-    }
-  });
-}
-
 async function resetClientPw(cid){
   showConfirmDialog(t('confirm_reset_pw')||'Reset Password',t('confirm_reset_client_pw')||"Reset this client's password? A new temporary password will be generated for you to share with them.",async()=>{
     const client=S.clients.find(c=>c.id===cid);
@@ -10581,24 +10332,6 @@ async function resetAdminPassword(adminId){
   }catch(e){
     toast('⚠ Network error - please try again','⚠');
   }
-}
-
-function saveSettings(){
-  S.settings.companyName=document.getElementById('s-cn')?.value||S.settings.companyName;
-  S.settings.tagline=document.getElementById('s-tl')?.value||S.settings.tagline;
-  S.settings.address=document.getElementById('s-ad')?.value||S.settings.address;
-  S.settings.website=document.getElementById('s-web')?.value||'';
-  S.settings.email=document.getElementById('s-em')?.value||S.settings.email;
-  S.settings.phone=document.getElementById('s-ph')?.value||S.settings.phone;
-  S.settings.kvk=document.getElementById('s-kv')?.value||'';
-  S.settings.btw=document.getElementById('s-bt')?.value||'';
-  S.settings.iban=document.getElementById('s-ib')?.value||'';
-  // ⚠️ حقول تأمين المسؤولية المهنية (beroepsaansprakelijkheidsverzekering) -
-  // أُضيفت لربط بند المسؤولية في العقد بتغطية تأمينية فعلية بدل رقم اعتباطي
-  S.settings.insurerName=document.getElementById('s-ins-name')?.value||'';
-  S.settings.insurancePolicyNumber=document.getElementById('s-ins-policy')?.value||'';
-  S.settings.insuranceCoverage=document.getElementById('s-ins-cover')?.value||'';
-  sv();toast(t('settings_nav')+' ✓','ti-check');
 }
 
 
@@ -11198,7 +10931,7 @@ function generateRecurringInvoices(){
     let guard=0;
     while(rec.nextDate<=today&&guard<24){ // guard avoids any infinite loop on bad data
       const due=addInterval(rec.nextDate,'monthly'); // standard 30-day payment term regardless of recurrence frequency
-      const btw=rec.amount*(rec.btwRate/100);
+      const btw=Math.round(rec.amount*(rec.btwRate/100)*100)/100;
       S.invoices.push({id:UID(),cid:rec.cid,num:nextNum(rec.cid),desc:rec.desc+' ('+FD(rec.nextDate)+')',
         date:rec.nextDate,due,status:'Openstaand',amount:rec.amount,btw,
         total:rec.amount+btw,btwRate:rec.btwRate,btwType:rec.btwType||'normal',fromRecurring:rec.id});
@@ -12112,7 +11845,7 @@ function openDailyRevenueEntry(){
     const gd=getOrCreateGeneralDebtor(cid);
     const ni={id:UID(),cid,num:nextNum(cid),
       desc:note||('Daily takings — '+FD(date)),date,due:date,status:'Openstaand',
-      amount:a,btw:a*(r/100),total:a+a*(r/100),btwRate:r,
+      amount:a,btw:Math.round(a*(r/100)*100)/100,total:a+Math.round(a*(r/100)*100)/100,btwRate:r,
       amountPaid:0,billTo:gd.name,billToId:gd.id,billToManual:null,isDailyRevenue:true};
 
     S.invoices.push(ni);
@@ -12324,7 +12057,7 @@ function openInvoiceModal(inv){
       r=btwType!=='normal'?0:(parseFloat(document.getElementById('if-r').value)||21); // ⚠️ فترة معكوسة/تصدير = 0% دائمًا بغضّ النظر عن قيمة القائمة
       descVal=document.getElementById('if-desc').value;
     }
-    const btw=a*(r/100);
+    const btw=Math.round(a*(r/100)*100)/100;
     const mode=window._btMode||'select';
 
     let billToId='',billTo='',billToManual=null;
@@ -12741,8 +12474,8 @@ function openNewExpense(){
       const newExp={id:UID(),cid,date:document.getElementById('ex-d').value,
         supplier:payTo,payToId,desc:exDesc,
         cat:document.getElementById('ex-c').value,amount:a,
-        btw:btwType==='verlegd_received'?0:a*(r/100), // ⚠️ لا ضريبة فعلية مدفوعة للمورد في حالة الفترة المعكوسة
-        selfAssessedVat:btwType==='verlegd_received'?a*(r/100):0, // للإقرار فقط (رُبريك 2a/4b + 5b) - أثر نقدي صافٍ صفر
+        btw:btwType==='verlegd_received'?0:Math.round(a*(r/100)*100)/100, // ⚠️ لا ضريبة فعلية مدفوعة للمورد في حالة الفترة المعكوسة
+        selfAssessedVat:btwType==='verlegd_received'?Math.round(a*(r/100)*100)/100:0, // للإقرار فقط (رُبريك 2a/4b + 5b) - أثر نقدي صافٍ صفر
         btwType,receiptDocId:attachedDocId,
         amountPaid:0,paymentStatus:'Onbetaald'};
       S.expenses.push(newExp);
@@ -12894,7 +12627,7 @@ function openNewExpense(){
           toast('✓ Document added');
         }
       }catch(err){
-        toast('Error: '+err.message);
+        toast('❌ Error: '+err.message);
       }
     })();
   },false);
@@ -12936,7 +12669,7 @@ function openNewExpense(){
           hideLoading();
         }
       }catch(err){
-        toast('Error: '+err.message);
+        toast('❌ Error: '+err.message);
       }
     })();
   },false);
@@ -14168,7 +13901,7 @@ function importBankFile(ev,cid){
         }
       }
     }catch(err){
-      toast('Import error: '+err.message,'ti-alert-circle');
+      toast('❌ Import error: '+err.message,'ti-alert-circle');
       ev.target.value=''; return;
     }
     if(!txs.length){
