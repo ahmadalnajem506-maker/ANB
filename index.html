@@ -7130,7 +7130,6 @@ function rHours(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const hrs=S.hours.filter(h=>h.cid===cid&&!h.deleted);
   const totH=hrs.reduce((s,h)=>s+h.hrs,0);
-  const tmr=S.timer;
   const currentYear=new Date().getFullYear();
   // ⭐ لحساب ANB نفسه: كل أدمن له هدفه الخاص (نور 1,225 / الشريك المُساعِد
   // 525) وتقدُّمه الخاص (ساعاته هو فقط، لا كل ساعات ANB مجتمعة). لأي عميل
@@ -7155,7 +7154,8 @@ function rHours(el,cid){
 
   ${isCardVisibleForClient(cid,'hours')?renderTimerWidget(cid):''}
 
-  <!-- ⭐ معيار الساعات (Urencriterium) - الأهم لتحديد أهلية خصم صاحب العمل الفردي -->
+  <!-- ⭐ كرت موحَّد: معيار الساعات (Urencriterium/Meewerkaftrek) + إجمالي
+       الساعات المسجَّلة، بدل ثلاثة كروت منفصلة كانت مبعثرة على الشاشة -->
   <div style="background:${meetsUrencriterium?'rgba(45,122,79,0.1)':'var(--white)'};border:2px solid ${meetsUrencriterium?'var(--green)':theme.border};border-radius:10px;padding:14px;margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div style="font-size:12px;font-weight:700;color:var(--t1)">📊 ${isANBSelf?(adminTarget.isOwner?(t('urencriterium_title')||'Urencriterium'):(t('meewerkaftrek_title')||'Meewerkaftrek')):(t('urencriterium_title')||'Urencriterium')} (${currentYear})${isANBSelf?` — 👤 ${escapeHtml(adminTarget.name||'')}`:''}</div>
@@ -7166,27 +7166,12 @@ function rHours(el,cid){
       <div style="background:${meetsUrencriterium?'var(--green)':'var(--gold)'};height:100%;width:${urencriteriumPct}%;transition:width .3s"></div>
     </div>
     <div style="font-size:10px;color:var(--t3);margin-top:6px">${isANBSelf?(adminTarget.isOwner?(t('urencriterium_hint')||'Hours worked toward the 1,225-hour threshold required for the self-employed tax deduction (Zelfstandigenaftrek)'):(t('meewerkaftrek_hint_short')||'Hours worked toward the 525-hour threshold for the Meewerkaftrek helping-partner deduction')):(t('urencriterium_hint')||'Hours worked toward the 1,225-hour threshold required for the self-employed tax deduction (Zelfstandigenaftrek)')}</div>
+    <div style="border-top:1px solid ${theme.border}22;margin-top:12px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3)">${t('hours_logged')}</span>
+      <span style="font-size:16px;font-weight:800;color:var(--t1)">${totH.toFixed(1)}h</span>
+    </div>
   </div>
 
-  <div class="kgrid">
-    <div class="kcard"><div class="kl">${t('hours_logged')}</div><div class="kv">${totH.toFixed(1)}h</div></div>
-  </div>
-  <div style="background:var(--g1);border-radius:var(--r);padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;border:3px solid ${theme.border}">
-    <div>
-      <div style="font-family:var(--fm);font-size:28px;color:var(--white);letter-spacing:2px" id="timer-disp">${fmtT(tmr.seconds)}</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.8px">${tmr.running?'Tracking: '+tmr.task:'Timer stopped'}</div>
-    </div>
-    <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
-      <select id="t-cat" style="padding:6px 9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);border-radius:var(--rs);color:white;font-size:11px">
-        ${getClientHourCategories(cid).map(c=>`<option style="color:#000">${escapeHtml(c)}</option>`).join('')}
-      </select>
-      <input id="t-task" placeholder="Task..." style="padding:6px 9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);border-radius:var(--rs);color:white;font-size:11px;width:140px"/>
-      <button class="btn btn-xs" style="background:rgba(255,255,255,.15);color:white;border-color:rgba(255,255,255,.2)" onclick="timerToggle()">
-        <span style="font-size:13px">${tmr.running?'⏸':'▶'}</span>${tmr.running?'Pause':'Start'}
-      </button>
-      <button class="btn btn-xs" style="background:rgba(255,255,255,.08);color:white;border-color:rgba(255,255,255,.15)" onclick="timerStop(cid)"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⏹</span>Stop & log</button>
-    </div>
-  </div>
   <div class="card">
     <div class="ch"><span class="ct">${isAdmin()?c?.name+' — ':''}Hour log</span>
     </div>
