@@ -3567,7 +3567,47 @@ async function doSetPassword(){
   }
 }
 
+// ⭐ تسجيل خروج تلقائي بعد 5 دقائق من إخفاء التطبيق (تصغير، تبديل تبويب،
+// أو إغلاق كامل) - لحماية الحسابات المفتوحة على أجهزة مشتركة أو عامة.
+// طبقتان معًا: (1) طابع زمني محفوظ محليًا يبقى صالحًا حتى لو أُغلق
+// التبويب فعليًا وأُعيد فتحه لاحقًا، و(2) مؤقّت حيّ يعمل فقط إن ظل
+// التطبيق يعمل في الخلفية بلا إغلاق كامل
+const AUTO_LOGOUT_HIDDEN_MS=5*60*1000;
+let _autoLogoutTimer=null;
+function setupAutoLogoutOnHidden(){
+  if(window._autoLogoutHooked)return;
+  window._autoLogoutHooked=true;
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){
+      try{localStorage.setItem('anb5_hidden_at',String(Date.now()));}catch{}
+      if(_autoLogoutTimer)clearTimeout(_autoLogoutTimer);
+      _autoLogoutTimer=setTimeout(()=>{
+        if(S.role&&document.hidden)_doLogoutImpl();
+      },AUTO_LOGOUT_HIDDEN_MS);
+    }else{
+      if(_autoLogoutTimer){clearTimeout(_autoLogoutTimer);_autoLogoutTimer=null;}
+      try{localStorage.removeItem('anb5_hidden_at');}catch{}
+    }
+  });
+}
+// يُفحَص عند كل استئناف/تشغيل للتطبيق - يغطي حالة الإغلاق الكامل للتبويب
+// (حيث لا يمكن لأي مؤقّت JS أن يستمر بالعمل أصلًا)
+function wasHiddenTooLong(){
+  try{
+    const hiddenAt=parseInt(localStorage.getItem('anb5_hidden_at')||'0',10);
+    if(!hiddenAt)return false;
+    return (Date.now()-hiddenAt)>=AUTO_LOGOUT_HIDDEN_MS;
+  }catch{return false;}
+}
 function launchApp(){
+  // ⚠️ إن كان التطبيق قد بقي مخفيًا (مصغَّرًا أو مغلقًا) لأكثر من 5 دقائق منذ
+  // آخر مرة كان ظاهرًا فيها، نُسجِّل الخروج فورًا بدل استئناف الجلسة كالمعتاد
+  if(wasHiddenTooLong()){
+    try{localStorage.removeItem('anb5_hidden_at');}catch{}
+    _doLogoutImpl();
+    return;
+  }
+  setupAutoLogoutOnHidden();
   // ✅ الفتح يكون دائمًا على الداشبورد - سواء تسجيل دخول جديد أو استئناف جلسة قائمة مسبقًا
   S.tab='dashboard';
   if(isAdmin())S.currentClient=null;
@@ -9989,18 +10029,6 @@ function rSettings(el){
     const activeAdmins=S.admins.filter(admin=>!admin.deleted);
     html+=`
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('key',16)} ${t('my_profile_title')||'My Profile'}</span></div>
-      <div style="padding:14px">
-        <div class="sec-desc">${t('my_profile_hint')||'This is your own display name — it\u2019s what shows up next to hours you log (e.g. in the Hours by Category report and the urencriterium card). Applies only to your own account.'}</div>
-        <div class="fr2">
-          <div class="fg"><label>${t('lbl_name')||'Name'}</label><input type="text" id="my-profile-name" value="${escapeHtml(curAdmin?.name||'')}"/></div>
-          <div class="fg"><label>${t('lbl_email')||'Email'}</label><input type="email" id="my-profile-email" value="${escapeHtml(curAdmin?.email||'')}"/></div>
-        </div>
-        <button class="btn btn-p btn-xs" onclick="saveMyAdminProfile()">${t('save')||'Save'}</button>
-      </div>
-    </div>
-
-    <div class="card">
       <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('key',16)} ${t('manage_admins')||'Administrators'} (${activeAdmins.length})</span></div>
       <div style="padding:14px">
         <div class="sec-desc">${t('manage_admins_hint')||'People who can manage every client, settings, and billing.'}</div>
@@ -10152,22 +10180,6 @@ async function resetClientPw(cid){
 }
 
 // ─────────────────── MANAGE ADMINS ───────────────────
-// ⭐ يحفظ اسم/بريد الأدمن الحالي وحده - إصلاح جذري لمشكلة تسجيل الساعات
-// باسم عام "Admin" بدل الاسم الفعلي (نور/أحمد): الاسم المعروض في كل مكان
-// (سجل الساعات، تقرير الساعات حسب نوع العمل) يُقرَأ مباشرة من هذا الحقل
-function saveMyAdminProfile(){
-  const name=document.getElementById('my-profile-name')?.value?.trim();
-  const email=document.getElementById('my-profile-email')?.value?.trim();
-  if(!name){toast('⚠ '+(t('enter_valid_amount')||'Please enter a name'),'⚠');return;}
-  const admin=S.admins.find(a=>a.id===S.currentAdmin);
-  if(admin){
-    admin.name=name;
-    if(email)admin.email=email;
-    sv();
-    renderContent();
-    toast('✓ '+(t('services_saved')||'Saved'));
-  }
-}
 async function addNewAdmin(){
   const name=document.getElementById('new-admin-name')?.value?.trim();
   const email=document.getElementById('new-admin-email')?.value?.trim();
