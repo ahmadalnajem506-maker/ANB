@@ -1116,7 +1116,7 @@ async function verifyTotpCode(secret, userCode) {
   const clean = userCode.toString().replace(/\s/g, '');
   if (!/^\d{6}$/.test(clean)) return false;
   const now = Date.now();
-  for (const drift of [0, -1, 1]) {
+  for (const drift of [0, -1, 1, -2, 2]) {
     const code = await generateTotpCode(secret, now + drift * TOTP_STEP_SECONDS * 1000);
     if (timingSafeEqual(code, clean)) return true;
   }
