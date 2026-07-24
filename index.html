@@ -5592,11 +5592,6 @@ function rAdminDash(el){
   const totalClients=S.clients.filter(c=>!c.deleted&&!c.isANBSelf&&c.accountStatus!=='cancelled'&&c.accountStatus!=='suspended').length;
   const pendingInvoices=S.invoices.filter(i=>['Openstaand','Verzonden','Verlopen'].includes(i.status)).length;
   const newMessages=getUnreadMsgCount(null,'admin');
-  // ⚠️ إصلاح: هذه البطاقة كانت تجمع ساعات ANB نفسها مع ساعات كل العملاء معًا -
-  // وهذا مُربِك وغير ضروري، لأن ساعات ANB لها بالفعل تتبُّع منفصل خاص بها
-  // (عدّاد/تنبيه urencriterium). هذه البطاقة الآن تعكس فقط ساعات العملاء
-  // (الساعات القابلة للفوترة عبر الشركة ككل)، بمعزل تام عن ساعات ANB نفسها
-  const totalHours=S.hours.filter(h=>h.cid!==ANB_SELF_ID&&!h.deleted).reduce((s,h)=>s+h.hrs,0);
   const overdueInvoices=S.invoices.filter(i=>isInvoiceOverdue(i)).length;
   // ✅ لا يُحتسب ضمن "المستندات الجديدة" إيصالات المصاريف (category:'receipt') بما أنها مستبعدة أصلًا من شاشة Documents نفسها
   const newDocuments=S.docs.filter(d=>d.isNew&&d.category!=='receipt').length;
@@ -5617,7 +5612,7 @@ function rAdminDash(el){
     {id:'documents',icon:'📁',name:t('dashboard_new_documents'),alertText:newDocuments>0?newDocuments:null,value:newDocuments,color:'linear-gradient(135deg, #1B5E35 0%, #2d7a4f 100%)',onclickAttr:"goToAdminStat('documents')"},
     {id:'messages',icon:'💬',name:t('dashboard_new_messages'),alertText:newMessages>0?newMessages:null,value:newMessages,color:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',textColor:'#0A2218',onclickAttr:"goToAdminStat('messages')"},
     {id:'clients',icon:'💼',name:t('active_clients'),value:totalClients,onclickAttr:"goToAdminStat('clients')"},
-    {id:'hours',icon:'🕐',name:t('dashboard_hours_logged'),value:totalHours.toFixed(0),onclickAttr:"goToAdminStat('hours')"},
+    // ⭐ حذفت بطاقة "Client Hours Logged" - رآها أحمد غير ضرورية على الشاشة الرئيسية
     // ⭐ حذفت بطاقة "Active Contracts" - عميل نشط (Active Clients أعلاه) يعني
     // عمليًا عقدًا نشطًا في كل الحالات تقريبًا، فتكرار الرقم ببطاقة منفصلة لا
     // يضيف معلومة جديدة فعلية، فقط ازدحامًا بصريًا لنفس المفهوم
@@ -6140,20 +6135,20 @@ function rANBOverview(el,cid){
   const pendingExpenses=anbExpensesUnpaid.reduce((s,e)=>s+getExpenseRemaining(e),0);
 
   const financialCards=[
-    {id:'invoices',icon:'📄',name:t('card_invoices_title')||'Invoices',val:S.invoices.filter(i=>i.cid===cid&&!i.deleted).length,onclickAttr:"selectCard('invoices')"},
+    {id:'invoices',icon:'📄',name:t('card_invoices_title')||'Invoices',val:'→',onclickAttr:"selectCard('invoices')"},
     {id:'debtors',icon:'💵',name:t('card_debtors_title')||'Debtors',val:'→',onclickAttr:"selectCard('debtors')"},
-    {id:'expenses',icon:'🧾',name:t('card_expenses_title')||'Expenses',val:anbExpensesUnpaid.length,onclickAttr:"selectCard('expenses')"},
+    {id:'expenses',icon:'🧾',name:t('card_expenses_title')||'Expenses',val:'→',onclickAttr:"selectCard('expenses')"},
     {id:'creditors',icon:'🤝',name:t('card_creditors_title')||'Creditors',val:'→',onclickAttr:"selectCard('creditors')"},
-    {id:'hours',icon:'🕐',name:t('hours_time')||'Hours',val:(S.hours||[]).filter(h=>h.cid===cid&&!h.deleted).length,onclickAttr:"selectCard('hours')"},
+    {id:'hours',icon:'🕐',name:t('hours_time')||'Hours',val:'→',onclickAttr:"selectCard('hours')"},
     {id:'cash_ledger',icon:'💵',name:t('cash_ledger_title')||'Cash Ledger',val:'→',onclickAttr:"selectCard('cash_ledger')"},
     {id:'bank',icon:'🏦',name:t('tab_bank')||'Bank',val:'→',onclickAttr:"selectCard('bank')"},
     {id:'reports',icon:'📈',name:t('tab_reports')||'Reports',val:'→',onclickAttr:"selectCard('reports')"}
   ];
   const companyCards=[
     {id:'contracts',icon:'📋',name:'Client Contracts',val:'→',onclickAttr:"selectCard('clients')"},
-    {id:'documents',icon:'📁',name:t('documents')||'Documents',val:S.docs.filter(d=>d.cid===cid&&!d.deleted).length,onclickAttr:"selectCard('documents')"},
-    {id:'employees',icon:'👥',name:t('employees')||'Employees',val:(S.employees||[]).filter(e=>e.cid===cid&&e.employmentStatus==='active').length,onclickAttr:"selectCard('employees')"},
-    {id:'assets',icon:'🏢',name:t('assets')||'Assets',val:(S.assets||[]).filter(a=>a.cid===cid).length,onclickAttr:"selectCard('assets')"},
+    {id:'documents',icon:'📁',name:t('documents')||'Documents',val:'→',onclickAttr:"selectCard('documents')"},
+    {id:'employees',icon:'👥',name:t('employees')||'Employees',val:'→',onclickAttr:"selectCard('employees')"},
+    {id:'assets',icon:'🏢',name:t('assets')||'Assets',val:'→',onclickAttr:"selectCard('assets')"},
     {id:'client_activity',icon:'📜',name:t('activity_log_title')||'Activity Log',val:'→',onclickAttr:"selectCard('client_activity')"}
   ];
 
@@ -7152,10 +7147,8 @@ function rHours(el,cid){
     <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
   </div>
 
-  ${isCardVisibleForClient(cid,'hours')?renderTimerWidget(cid):''}
-
-  <!-- ⭐ كرت موحَّد: معيار الساعات (Urencriterium/Meewerkaftrek) + إجمالي
-       الساعات المسجَّلة، بدل ثلاثة كروت منفصلة كانت مبعثرة على الشاشة -->
+  <!-- ⭐ كرت موحَّد واحد: معيار الساعات (Urencriterium/Meewerkaftrek) + إجمالي
+       الساعات المسجَّلة + العدّاد نفسه، بدل عدة كروت منفصلة كانت مبعثرة -->
   <div style="background:${meetsUrencriterium?'rgba(45,122,79,0.1)':'var(--white)'};border:2px solid ${meetsUrencriterium?'var(--green)':theme.border};border-radius:10px;padding:14px;margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div style="font-size:12px;font-weight:700;color:var(--t1)">📊 ${isANBSelf?(adminTarget.isOwner?(t('urencriterium_title')||'Urencriterium'):(t('meewerkaftrek_title')||'Meewerkaftrek')):(t('urencriterium_title')||'Urencriterium')} (${currentYear})${isANBSelf?` — 👤 ${escapeHtml(adminTarget.name||'')}`:''}</div>
@@ -7169,6 +7162,9 @@ function rHours(el,cid){
     <div style="border-top:1px solid ${theme.border}22;margin-top:12px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3)">${t('hours_logged')}</span>
       <span style="font-size:16px;font-weight:800;color:var(--t1)">${totH.toFixed(1)}h</span>
+    </div>
+    <div style="border-top:1px solid ${theme.border}22;margin-top:12px;padding-top:12px">
+      ${renderTimerWidget(cid)}
     </div>
   </div>
 
