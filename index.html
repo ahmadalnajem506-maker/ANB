@@ -866,7 +866,7 @@ var S = {lang:'en', role:null, clients:[]};
 
     <!-- زخرفة أندلسية ثابتة (نجمة ثمانية الرؤوس عبر تراكب مربَّعين) - بديل عن
          مؤشرات الخطوات الديناميكية السابقة، عنصر تزييني فقط بلا وظيفة تفاعلية -->
-    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;margin-top:-24px;animation:fadeInUp 0.8s ease-out 0.1s both;width:100%" class="login-divider">
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;margin-top:16px;animation:fadeInUp 0.8s ease-out 0.1s both;width:100%" class="login-divider">
       <div style="flex:1;max-width:70px;height:1px;background:linear-gradient(90deg,transparent,rgba(176,141,90,.55))" class="login-divider-line"></div>
       <svg width="24" height="24" viewBox="0 0 24 24" style="flex-shrink:0;opacity:.9">
         <rect x="4" y="4" width="16" height="16" fill="none" stroke="#B08D5A" stroke-width="1"/>
@@ -1174,11 +1174,12 @@ function renderSearchSortBar(searchId,searchPlaceholder,searchValue,sortId,sortO
     </select>
   </div>`;
 }
-function heroNumberBox(label,rawValue,color,bgColor,showPlusSign){
+function heroNumberBox(label,rawValue,color,bgColor,showPlusSign,format){
   const id='hnb-'+(_heroBoxIdCounter++);
+  const initialDisplay=format==='hours'?'0.0h':FMT(0);
   return '<div style="padding:16px;background:'+(bgColor||'var(--gr1)')+';border-radius:var(--r);border-left:4px solid '+color+'">'
     +'<div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin-bottom:2px">'+label+'</div>'
-    +'<div id="'+id+'" class="anim-count" data-target="'+rawValue+'" data-sign="'+(showPlusSign?'1':'0')+'" style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:'+color+'">'+FMT(0)+'</div>'
+    +'<div id="'+id+'" class="anim-count" data-target="'+rawValue+'" data-sign="'+(showPlusSign?'1':'0')+'" data-format="'+(format||'currency')+'" style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:'+color+'">'+initialDisplay+'</div>'
     +'</div>';
 }
 // ⭐ رسم بار-تشارت أفقي بسيط (بلا مكتبات خارجية) - كل شريط بعرض نسبي لأكبر
@@ -1216,18 +1217,20 @@ function runNumberAnimations(){
     el.dataset.animated='1';
     const target=parseFloat(el.dataset.target)||0;
     const showSign=el.dataset.sign==='1';
+    const isHours=el.dataset.format==='hours';
     const duration=600,start=performance.now();
     function tick(now){
       const progress=Math.min(1,(now-start)/duration);
       const eased=1-Math.pow(1-progress,3); // ease-out cubic - يبدأ سريعًا ويهدأ قرب النهاية
       const current=target*eased;
-      el.textContent=(showSign&&current>=0?'+':'')+FMT(current);
+      el.textContent=(showSign&&current>=0?'+':'')+(isHours?current.toFixed(1)+'h':FMT(current));
       if(progress<1)requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
   });
 }
 const TODAY=()=>new Date().toISOString().slice(0,10);
+const NOWTIME=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
 
 // getLang must be defined before S so lang:getLang() works on init
 function getLang(){
@@ -2247,7 +2250,7 @@ window.addEventListener('resize',()=>{
     const d=localStorage.getItem('anb5');
     if(d){
       const p=JSON.parse(d);
-      ['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','contacts','recurring','yearClosings','contracts','assets','pendingClients','serviceAgreements','timer'].forEach(k=>{if(p[k])S[k]=p[k];});
+      ['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','contacts','recurring','yearClosings','contracts','assets','pendingClients','serviceAgreements','timer','admins'].forEach(k=>{if(p[k])S[k]=p[k];});
       if(p.role)S.role=p.role;
       if(p.currentClient)S.currentClient=p.currentClient;
       if(p.tab)S.tab=p.tab;
@@ -7150,6 +7153,8 @@ function rHours(el,cid){
     <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
   </div>
 
+  ${isCardVisibleForClient(cid,'hours')?renderTimerWidget(cid):''}
+
   <!-- ⭐ معيار الساعات (Urencriterium) - الأهم لتحديد أهلية خصم صاحب العمل الفردي -->
   <div style="background:${meetsUrencriterium?'rgba(45,122,79,0.1)':'var(--white)'};border:2px solid ${meetsUrencriterium?'var(--green)':theme.border};border-radius:10px;padding:14px;margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -7217,7 +7222,7 @@ function renderHoursTable(cid,searchTerm){
       ${sortTh(t('lbl_hours'),'hrs','hours',`renderHoursTable(${reArgs})`)}
       ${isAdmin()?'<th></th>':''}</tr></thead>
     <tbody>${hrs.map(h=>`<tr>
-      <td style="color:var(--t3)">${FD(h.date)}</td>
+      <td style="color:var(--t3)">${FD(h.date)}${h.time?` <span style="color:var(--t3);font-size:10.5px">${escapeHtml(h.time)}</span>`:''}</td>
       <td>${h.task}</td>
       <td><span class="bdg b-draft">${h.cat}</span></td>
       ${isAdmin()?`<td style="color:var(--t3);font-size:11.5px">${h.loggedBy?escapeHtml(h.loggedBy):'—'}</td>`:''}
@@ -9992,17 +9997,6 @@ function rSettings(el){
     </div>
 
     <div class="card">
-      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('clock',16)} ${t('timer_autostop_title')||'Hours Timer Auto-Stop'}</span></div>
-      <div style="padding:14px">
-        <div class="sec-desc">${t('timer_autostop_hint')||'If your own timer is left running and the app is closed, it\u2019s treated as forgotten after this many hours — you\u2019ll be asked to log or discard it next time you open the app, instead of it silently running forever. This is personal to your own account.'}</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <span style="font-size:12px;font-weight:600;color:var(--t1)">${(curAdmin?.timerAutoStopHours||12)} ${t('hours_short')||'hrs'}</span>
-          <button class="btn btn-xs" onclick="openTimerAutoStopSettings('${ANB_SELF_ID}')">${t('edit')||'Edit'}</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
       <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('plus',16)} ${t('add_new_admin')||'Add New Admin'}</span></div>
       <div style="padding:14px">
         <div class="fr2">
@@ -10433,7 +10427,7 @@ function timerStop(cid){
     Object.assign(S.timer,{running:false,seconds:0,task:'',cat:'',cid:null,_iv:null});sv();renderContent();
     return;
   }
-  S.hours.push({id:UID(),cid:c,date:TODAY(),task:tmr.task||'Work',cat:tmr.cat||'General',hrs,loggedBy:getCurrentAdminName()});
+  S.hours.push({id:UID(),cid:c,date:TODAY(),time:NOWTIME(),task:tmr.task||'Work',cat:tmr.cat||'General',hrs,loggedBy:getCurrentAdminName()});
   toast('✓ '+hrs+'h '+(t('logged_today')||'logged'));
   Object.assign(S.timer,{running:false,seconds:0,task:'',cat:'',cid:null,_iv:null});sv();renderContent();
 }
@@ -13043,12 +13037,13 @@ function openLogHours(){
     <div style="font-size:11px;font-weight:700;color:var(--green);background:var(--gr1);border:1px solid var(--gr2);border-radius:6px;padding:8px 10px;margin-bottom:12px">📁 ${t('logging_hours_for')||'Logging hours for'}: ${escapeHtml(client?.name||'—')}</div>
     <div class="fr2">
       <div class="fg"><label>Date</label><input type="date" id="hl-d" value="${TODAY()}"/></div>
-      <div class="fg"><label>${t('lbl_category')}</label><select id="hl-c">${categories.map(cat=>`<option>${escapeHtml(cat)}</option>`).join('')}</select></div>
+      <div class="fg"><label>${t('lbl_time')||'Time'}</label><input type="time" id="hl-tm" value="${NOWTIME()}"/></div>
     </div>
+    <div class="fg"><label>${t('lbl_category')}</label><select id="hl-c">${categories.map(cat=>`<option>${escapeHtml(cat)}</option>`).join('')}</select></div>
     <div class="fg"><label>Task description</label><input id="hl-t" placeholder="e.g. BTW aangifte preparation"/></div>
     <div class="fg"><label>Hours</label><input type="number" id="hl-h" step="0.25" min="0.25" value="1"/></div>
   `,()=>{
-    S.hours.push({id:UID(),cid,date:document.getElementById('hl-d').value,
+    S.hours.push({id:UID(),cid,date:document.getElementById('hl-d').value,time:document.getElementById('hl-tm').value||NOWTIME(),
       task:document.getElementById('hl-t').value||'Work',cat:document.getElementById('hl-c').value,
       hrs:parseFloat(document.getElementById('hl-h').value)||1,loggedBy:getCurrentAdminName()});
     sv();closeModal();renderContent();toast(t('hours_logged')+' ✓','ti-check');
@@ -15231,7 +15226,7 @@ function rReportHoursByCategory(el,cid){
   html+=renderReportPeriodSelector();
   html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">'+LICON('clock',16)+' '+(t('rep_hours_category_title')||'Hours by Category')+'</span><div style="display:flex;gap:6px"><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportPDF(\'hours_category\',\''+cid+'\')">📥 PDF</button><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportReportExcel(\'hours_category\',\''+cid+'\')">📊 Excel</button></div></div>';
   html+='<div style="padding:16px">';
-  html+='<div style="margin-bottom:16px">'+heroNumberBox(t('hours_logged')||'Hours Logged',totH,'var(--green)','rgba(45,122,79,.08)')+'</div>';
+  html+='<div style="margin-bottom:16px">'+heroNumberBox(t('hours_logged')||'Hours Logged',totH,'var(--green)','rgba(45,122,79,.08)',false,'hours')+'</div>';
 
   if(cid===ANB_SELF_ID){
     // مجموعة منفصلة لكل أدمن سجَّل ساعات
@@ -15609,7 +15604,8 @@ function _exportReportPDF(type,cid){
     'cashflow':rt('cashflowTitle'),
     'tax_liability':rt('taxLiabilityTitle'),
     'emp_financial':'Employee Financial Report',
-    'emp_stats':'Employee Statistics Report'
+    'emp_stats':'Employee Statistics Report',
+    'hours_category':t('rep_hours_category_title')||'Hours by Category'
   };
   
   setReportFont(doc,'bold');
@@ -16355,6 +16351,41 @@ function _exportReportPDF(type,cid){
         doc.text(note,M,y);
         y+=note.length*5+5;
       }
+    }
+  }
+  else if(type==='hours_category'){
+    const hrs=S.hours.filter(h=>h.cid===cid&&!h.deleted&&isDateInReportPeriod(h.date));
+    const totH=hrs.reduce((s,h)=>s+(h.hrs||0),0);
+    setReportFont(doc,'bold');doc.setFontSize(11);doc.setTextColor(10,34,24);
+    doc.text(`${t('hours_logged')||'Hours Logged'}: ${totH.toFixed(1)}h`,M,y);
+    y+=10;
+    if(isANBSelfReport){
+      const byAdmin={};
+      hrs.forEach(h=>{
+        const person=h.loggedBy||'Unspecified';
+        if(!byAdmin[person])byAdmin[person]={};
+        const cat=h.cat||'General';
+        byAdmin[person][cat]=(byAdmin[person][cat]||0)+(h.hrs||0);
+      });
+      Object.keys(byAdmin).sort().forEach(person=>{
+        if(y>260){doc.addPage();y=M;}
+        setReportFont(doc,'bold');doc.setFontSize(10);doc.setTextColor(10,34,24);
+        doc.text(`👤 ${person}`,M,y);y+=7;
+        setReportFont(doc,'normal');doc.setFontSize(9);doc.setTextColor(60,60,60);
+        Object.entries(byAdmin[person]).forEach(([cat,val])=>{
+          if(y>270){doc.addPage();y=M;}
+          doc.text(cat,M+3,y);doc.text(`${val.toFixed(1)}h`,W-M-20,y);y+=6;
+        });
+        y+=4;
+      });
+    } else {
+      const byCat={};
+      hrs.forEach(h=>{const cat=h.cat||'General';byCat[cat]=(byCat[cat]||0)+(h.hrs||0);});
+      setReportFont(doc,'normal');doc.setFontSize(9);doc.setTextColor(60,60,60);
+      Object.entries(byCat).forEach(([cat,val])=>{
+        if(y>270){doc.addPage();y=M;}
+        doc.text(cat,M,y);doc.text(`${val.toFixed(1)}h`,W-M-20,y);y+=6;
+      });
     }
   }
   y=270;
