@@ -2041,11 +2041,21 @@ async function cloudPull(){
 function mergeArraysById(localArr,cloudArr){
   localArr=localArr||[];cloudArr=cloudArr||[];
   const map=new Map();
-  cloudArr.forEach(it=>{if(it&&it.id&&!it.deleted)map.set(it.id,it);});
-  localArr.forEach(it=>{if(it&&it.id){
-    if(it.deleted)map.delete(it.id); // Remove deleted items
-    else map.set(it.id,it); // Local copy wins on same-id
-  }});
+  // ⚠️⚠️ إصلاح خلل جوهري وخطير: كانت هذه الدالة تحذف أي عنصر محلي عليه
+  // deleted:true من النتيجة النهائية بالكامل - بما أن هذه النتيجة تُعاد
+  // كتابتها فورًا في S[k] ثم تُرسَل كما هي في نفس دورة المزامنة التالية،
+  // فإن "شاهد الحذف" (deleted:true) كان يختفي محليًا قبل أن يصل للخادم
+  // إطلاقًا! فتظل نسخة الخادم غير محذوفة للأبد، وعند أي سحب خلفي لاحق
+  // (يحدث تلقائيًا وبشكل دوري) تعود نسخة الخادم القديمة غير المحذوفة
+  // لتندمج محليًا من جديد - وهذا بالضبط ما يجعل أي حذف (ساعات، فواتير،
+  // مصاريف، مستندات...) يبدو "مؤقتًا" ويعود بمجرد مغادرة الشاشة والعودة
+  // إليها. الحل: الأولوية دائمًا للنسخة المحلية (سواء محذوفة أو لا) - هذا
+  // يُبقي "شاهد الحذف" حيًّا محليًا حتى يُرسَل فعليًا ويُثبَّت في الخادم،
+  // ويطابق تمامًا كيف تعمل شاشة "المهملات" (Trash) أصلًا: العناصر المحذوفة
+  // تبقى موجودة في القائمة (بعلامة deleted:true) لأغراض الأرشفة والاستعادة
+  // خلال 30 يومًا - وليس مُفترَضًا حذفها فعليًا من المصفوفة نفسها بهذه الطريقة.
+  cloudArr.forEach(it=>{if(it&&it.id)map.set(it.id,it);});
+  localArr.forEach(it=>{if(it&&it.id)map.set(it.id,it);}); // النسخة المحلية تفوز دائمًا لنفس المعرِّف، بما فيها شواهد الحذف
   return Array.from(map.values());
 }
 
@@ -3229,7 +3239,7 @@ async function verifyTotpCode(secret,userCode){
   const clean=userCode.toString().replace(/\s/g,'');
   if(!/^\d{6}$/.test(clean))return false;
   const now=Date.now();
-  for(const drift of [0,-1,1]){
+  for(const drift of [0,-1,1,-2,2]){
     const code=await generateTotpCode(secret,now+drift*TOTP_STEP_SECONDS*1000);
     if(code===clean)return true;
   }
@@ -10186,7 +10196,10 @@ function delAdmin(adminId){
 async function open2FASetupModal(){
   const isAdminRole=isAdmin();
   const account=isAdminRole?S.admins.find(a=>a.id===S.currentAdmin):S.clients.find(c=>c.id===S.currentClient);
-  if(!account)return;
+  if(!account){
+    toast('❌ '+(t('network_error')||'Something went wrong — please reload and try again'));
+    return;
+  }
   const accountLabel=account.name||account.email;
 
   if(account.totpEnabled){
@@ -10249,10 +10262,20 @@ async function start2FAEnableFlow(account,isAdminRole,accountLabel){
       markFieldError('totp-confirm-code');
       return; // النافذة تبقى مفتوحة لإعادة المحاولة
     }
-    account.totpSecret=window._pending2FASecret;
-    account.totpEnabled=true;
+    // ⚠️ إصلاح دفاعي: نُعيد جلب الحساب من S من جديد (بدل الاعتماد على مرجع
+    // الإغلاق account المُلتقَط لحظة فتح النافذة) - فلو استُبدلت مصفوفة
+    // S.admins/S.clients بمصفوفة جديدة بين فتح النافذة وتأكيدها (مثلًا بفعل
+    // مزامنة خلفية مرّت في هذه الأثناء)، يبقى الحفظ يستهدف الكائن الفعلي
+    // الحالي بدل نسخة مفصولة قد لا تُحفَظ فعليًا
+    const freshAccount=isAdminRole?S.admins.find(a=>a.id===account.id):S.clients.find(c=>c.id===account.id);
+    if(!freshAccount){
+      toast('❌ '+(t('network_error')||'Something went wrong — please reload and try again'));
+      return;
+    }
+    freshAccount.totpSecret=window._pending2FASecret;
+    freshAccount.totpEnabled=true;
     delete window._pending2FASecret;
-    logAudit('security','account','Enabled 2FA for '+(isAdminRole?'admin':'client')+': '+accountLabel,isAdminRole?null:account.id);
+    logAudit('security','account','Enabled 2FA for '+(isAdminRole?'admin':'client')+': '+accountLabel,isAdminRole?null:freshAccount.id);
     sv();
     closeModal();
     renderContent();
