@@ -3818,7 +3818,7 @@ function renderSidebar(){
   </div>`;
 
   if(isAdmin()){
-    badge.innerHTML=`<span class="sb-role-badge badge-admin">🛡 ${S.settings?.adminName||'Administrator'}</span>`;
+    badge.innerHTML=`<span class="sb-role-badge badge-admin">🛡 ${getCurrentAdminName()||'Administrator'}</span>`;
     if(!S.currentClient || S.tab==='settings' || S.tab==='trash'){
       lbl.textContent='';
       clients.innerHTML='';
@@ -5664,7 +5664,7 @@ function rAdminDash(el){
     ar:{morning:'صباح الخير',afternoon:'مساء الخير',evening:'مساء الخير'}
   }[S.lang]||{morning:'Good morning',afternoon:'Good afternoon',evening:'Good evening'};
   const greeting=hour<12?greetingByLang.morning:hour<18?greetingByLang.afternoon:greetingByLang.evening;
-  const adminName=S.settings?.adminName||(t('role_admin')||'Admin');
+  const adminName=getCurrentAdminName()||(t('role_admin')||'Admin');
   const todayLabel=new Date().toLocaleDateString(S.lang==='ar'?'ar':S.lang==='nl'?'nl-NL':'en-US',{weekday:'long',day:'numeric',month:'long'});
   const greetingHtml=`<div style="margin-bottom:16px">
     <div style="font-size:17px;font-weight:800;color:var(--t1)">${greeting}, ${escapeHtml(adminName)} 👋</div>
