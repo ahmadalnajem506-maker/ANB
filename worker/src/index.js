@@ -433,6 +433,7 @@ EXPENSES (per client):
 - Has a category and supplier. Reverse-charge purchases received (domestic or foreign supplier) are their own BTW type: "verlegd_received" — no VAT was actually paid to the supplier; the rate is used only to self-assess VAT for the return (net effect €0 on the return, appears in reverse-charge-received rubrieken 2a/4b).
 - Receipts can be photographed and read automatically via OCR (Google Cloud Vision). The system "learns" per-supplier typical VAT rate and amount over time (Settings → Manage Learned Suppliers) and flags amounts that deviate significantly from what's usually paid to that supplier, asking for manual verification.
 - OCR confidence is shown per field (color-coded); low-quality scans are flagged for careful manual review.
+- Recurring expense schedules (e.g. rent, fixed monthly subscriptions) can be set up when adding a new manual expense (checkbox + monthly/quarterly/yearly frequency) and stopped later; already-generated expenses are kept when a schedule is stopped. Shown in a "Recurring expense schedules" table on the client's Expenses screen (admin-only), same pattern as recurring invoices.
 
 HOURS:
 - Timer-based logging (start/pause/stop & log) with a task description, or manual entry.
@@ -520,7 +521,9 @@ GLOBAL SEARCH (admin-only): A "🔍" button pinned permanently in the topbar (al
 
 UNSAVED CHANGES PROTECTION: If you (or a client) type into a form or field and then try to navigate away — switching tabs, selecting a different client, going back, or logging out — before saving, the app shows a "Discard changes?" confirmation first. Nothing is lost silently; you must explicitly confirm to discard. This applies across the whole app (both admin and client views) at every main navigation action, not just one screen.
 
-AI ASSISTANT: This chatbot itself (admin-only, via a floating "🤖" button) — free via Cloudflare Workers AI, for accounting/tax/admin guidance including "how do I record X in this app" questions.`;
+AI ASSISTANT: This chatbot itself (admin-only, via a floating "🤖" button) — free via Cloudflare Workers AI, for accounting/tax/admin guidance including "how do I record X in this app" questions.
+
+PUSH NOTIFICATIONS: Real device push notifications (via the browser's native notification system, not just an in-app reminder) can be enabled per device from a "Push Notifications" card — for admins in Settings → Admins tab, for clients in their Security screen. Once enabled, a daily server-side check (runs once a day) sends: admins get notified about contracts expiring within 7 days; clients get notified about their own overdue invoices. This works even if the app is completely closed, unlike the in-app reminders which only show while the app is open. Enabling requires the browser's notification permission prompt to be accepted; it can be disabled again from the same card at any time.`;
 
 const ADMIN_ASSISTANT_SYSTEM_PROMPT = `You are an internal assistant for ANB Financial Services, a Dutch bookkeeping and financial administration firm serving freelancers (ZZP) and small businesses. You help the firm's own admin staff think through accounting, tax (Dutch BTW/Belastingdienst rules), and general business-administration questions they run into during daily work — including questions about how to record something in their own ANB FinAdmin Pro application.
 
