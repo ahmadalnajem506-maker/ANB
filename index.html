@@ -3960,10 +3960,12 @@ function setTab(tabName){
   withUnsavedGuard(()=>_setTabImpl(tabName));
 }
 function _setTabImpl(t){
-  // ✅ إذا كان أدمن يعرض عميلاً معينًا وانتقل لتبويب 'clients'، يعود لقائمة العملاء الكاملة
+  // ⚠️ إصلاح خلل حقيقي: هذا كان يستدعي gotoOverview() التي تفرض S.tab='dashboard'
+  // (لوحة التحكم الرئيسية) بدل عرض قائمة العملاء فعليًا كما يوحي التعليق الأصلي/
+  // كما يتوقّع المستخدم من زر "Clients" أو كرت "Client Contracts" - فقط نُفرِغ
+  // العميل المختار هنا، ونترك التنفيذ يكمل أدناه ليضبط S.tab='clients' فعليًا
   if(t==='clients'&&S.currentClient&&isAdmin()){
-    gotoOverview();
-    return;
+    S.currentClient=null;
   }
   // ✅ إذا كان أدمن يعرض عميلاً معينًا وانتقل لـ'dashboard'، يعود للوحة الأدمن الرئيسية
   // ⚠️ يجب التحقق من isAdmin() هنا - العميل نفسه S.currentClient تكون دائمًا موجودة (هويته الدائمة)
