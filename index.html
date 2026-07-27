@@ -1877,43 +1877,19 @@ var S={
   role:null, // 'admin' | 'client'
   currentClient:null,
   tab:'dashboard',
-  clients:[
-    {id:'c1',name:'Expat Solutions BV',type:'B2B',email:'info@expatsol.nl',
-     kvk:'12345678',btw:'NL123456789B01',iban:'NL91ABNA0417164300',color:'#1B5E35'},
-    {id:'c2',name:'Maria van den Berg',type:'B2C',email:'maria@gmail.com',
-     kvk:'',btw:'',iban:'',color:'#1B5E35'},
-    {id:'c3',name:'TechStart Amsterdam',type:'B2B',email:'cfo@techstart.nl',
-     kvk:'87654321',btw:'NL987654321B01',iban:'NL02ABNA0123456789',color:'#B08D5A'},
-  ],
-  invoices:[
-    {id:'i1',cid:'c1',num:'ANB-2026-001',desc:'Power BI dashboard Q1',amount:2400,btw:504,total:2904,date:'2026-05-01',due:'2026-05-31',status:'Betaald',btwRate:21},
-    {id:'i2',cid:'c1',num:'ANB-2026-002',desc:'BTW aangifte Q1 2026',amount:350,btw:73.5,total:423.5,date:'2026-05-15',due:'2026-06-14',status:'Openstaand',btwRate:21},
-    {id:'i3',cid:'c2',num:'ANB-2026-003',desc:'Jaarrekening 2025',amount:800,btw:168,total:968,date:'2026-04-10',due:'2026-05-10',status:'Betaald',btwRate:21},
-    {id:'i4',cid:'c3',num:'ANB-2026-004',desc:'Financial modelling Q2',amount:3200,btw:672,total:3872,date:'2026-05-20',due:'2026-06-19',status:'Concept',btwRate:21},
-    {id:'i5',cid:'c2',num:'ANB-2026-005',desc:'Belastingaangifte IB 2025',amount:450,btw:94.5,total:544.5,date:'2026-05-10',due:'2026-05-25',status:'Verlopen',btwRate:21},
-  ],
-  expenses:[
-    {id:'e1',cid:'c1',date:'2026-05-03',supplier:'Microsoft',desc:'Power BI Pro',amount:15,btw:3.15,cat:'Software'},
-    {id:'e2',cid:'c2',date:'2026-05-05',supplier:'KPN',desc:'Internet zakelijk',amount:35,btw:7.35,cat:'Telecom'},
-    {id:'e3',cid:'c3',date:'2026-05-10',supplier:'Adobe',desc:'Creative Cloud',amount:55,btw:11.55,cat:'Software'},
-  ],
-  hours:[
-    {id:'h1',cid:'c1',date:'2026-05-17',task:'Power BI dashboard build',cat:'Development',hrs:3.5,rate:95},
-    {id:'h2',cid:'c2',date:'2026-05-19',task:'Tax return preparation',cat:'Accounting',hrs:4,rate:80},
-    {id:'h3',cid:'c3',date:'2026-05-20',task:'Financial model build',cat:'Consultancy',hrs:6,rate:110},
-  ],
-  docs:[
-    {id:'d1',cid:'c1',name:'KvK_uittreksel_2026.pdf',type:'pdf',date:'2026-05-01',from:'client',size:'142 KB'},
-    {id:'d2',cid:'c2',name:'Jaaropgave_2025.pdf',type:'pdf',date:'2026-04-15',from:'client',size:'89 KB'},
-    {id:'d3',cid:'c1',name:'BTW_Q1_2026_rapport.pdf',type:'pdf',date:'2026-05-15',from:'anb',size:'234 KB'},
-  ],
-  messages:[
-    {id:'m1',cid:'c1',from:'anb',text:'Goedemiddag! Uw Power BI dashboard voor Q1 is klaar. U kunt het bekijken in de documenten sectie.',date:'2026-05-15',time:'14:32'},
-    {id:'m2',cid:'c1',from:'client',text:'Dank u wel! Ziet er goed uit. Wanneer kan ik de BTW aangifte verwachten?',date:'2026-05-15',time:'15:10'},
-    {id:'m3',cid:'c1',from:'anb',text:'De BTW aangifte Q1 is ingediend. Factuur volgt spoedig.',date:'2026-05-16',time:'09:00'},
-    {id:'m4',cid:'c2',from:'anb',text:'Beste Maria, uw jaarrekening 2025 staat klaar voor goedkeuring.',date:'2026-04-10',time:'10:15'},
-    {id:'m5',cid:'c3',from:'anb',text:'Het financial model concept is gereed. We bespreken het volgende week.',date:'2026-05-21',time:'11:00'},
-  ],
+  // ⚠️⚠️ إصلاح جذري: كانت هذه المصفوفات تحتوي بيانات تجريبية (عملاء/فواتير/
+  // مصاريف/ساعات/مستندات/رسائل/قيود/حركات بنكية وهمية) مكتوبة مباشرة في كود
+  // المصدر نفسه! أي جهاز تُفرَّغ ذاكرته المحلية (localStorage) كان يُقلَع من
+  // جديد بهذه البيانات الوهمية بالضبط، ثم يرفعها تلقائيًا للخادم عبر
+  // المزامنة - وهذا بالضبط سبب "عودة العملاء المحذوفين" المتكرر مهما نظَّفنا
+  // الخادم. الحل: تبدأ كل المصفوفات فارغة تمامًا؛ البيانات الحقيقية الوحيدة
+  // تأتي من الخادم عبر المزامنة، لا من كود المصدر أبدًا.
+  clients:[],
+  invoices:[],
+  expenses:[],
+  hours:[],
+  docs:[],
+  messages:[],
   settings:{
     companyName:'ANB Financial Services',
     address:'Bussum, Netherlands',
@@ -1923,18 +1899,8 @@ var S={
   },
   admins:[],
   timer:{running:false,seconds:0,task:'',cat:'',_iv:null},
-  journal:[
-    {id:'j1',cid:'c1',date:'2026-05-01',desc:'Verkoopfactuur ANB-2026-001',db:'0200',cr:'1000',amount:2400,btw:504,type:'invoice'},
-    {id:'j2',cid:'c1',date:'2026-05-15',desc:'Betaling ontvangen',db:'0100',cr:'0200',amount:2904,btw:0,type:'payment'},
-    {id:'j3',cid:'c2',date:'2026-04-10',desc:'Verkoopfactuur ANB-2026-003',db:'0200',cr:'1000',amount:800,btw:168,type:'invoice'},
-  ],
-  bankTx:[
-    {id:'b1',cid:'c1',date:'2026-05-02',desc:'KPN Internet',amount:-45,matched:true},
-    {id:'b2',cid:'c1',date:'2026-05-15',desc:'Betaling factuur ANB-2026-001',amount:2904,matched:true},
-    {id:'b3',cid:'c1',date:'2026-05-20',desc:'Microsoft 365',amount:-19,matched:false},
-    {id:'b4',cid:'c2',date:'2026-04-12',desc:'Betaling jaarrekening',amount:968,matched:true},
-    {id:'b5',cid:'c3',date:'2026-05-22',desc:'Onbekende transactie',amount:-150,matched:false},
-  ],
+  journal:[],
+  bankTx:[],
   contacts:[],
   contracts:[],
   assets:[],
@@ -2255,12 +2221,33 @@ window.addEventListener('resize',()=>{
   },200);
 });
 
+// ⭐⭐ إصلاح جذري ودائم لمشكلة "عودة بيانات العملاء المحذوفين": بدل الاعتماد
+// على تفريغ يدوي لذاكرة كل جهاز على حدة (عرضة للخطأ وتكرار المشكلة من أي
+// جهاز نُسي)، نرفع رقم إصدار مخطط التخزين المحلي هنا. أي جهاز يحمل نسخة
+// محلية أقدم من هذا الرقم (كل الأجهزة الحالية) سيتجاهل تلقائيًا بيانات
+// العملاء المخزَّنة محليًا (المصفوفات الخاصة بالعملاء تحديدًا) عند أول
+// تشغيل بعد هذا التحديث، ويسحب نسخة نظيفة طازجة من الخادم بدلًا منها -
+// فيتوقف "تكرار الرفع" تلقائيًا من كل جهاز بمجرد تحميله لهذا الملف المُحدَّث،
+// بلا حاجة لأي إجراء يدوي من المستخدم على أي جهاز إطلاقًا.
+const LOCAL_CACHE_SCHEMA_VERSION=2;
+const CLIENT_DATA_KEYS_TO_RESET_ON_SCHEMA_BUMP=['clients','invoices','expenses','hours','docs','messages','journal','bankTx','contacts','recurring','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','cashPayments','cashierLog','cashierDayExceptions','supplierOcrProfiles'];
 (function ld(){
+  let forceResetClientData=false;
+  try{
+    const storedVersion=parseInt(localStorage.getItem('anb5_cache_schema_version')||'1',10);
+    if(storedVersion<LOCAL_CACHE_SCHEMA_VERSION){
+      forceResetClientData=true;
+      localStorage.setItem('anb5_cache_schema_version',String(LOCAL_CACHE_SCHEMA_VERSION));
+    }
+  }catch(e){}
   try{
     const d=localStorage.getItem('anb5');
     if(d){
       const p=JSON.parse(d);
-      ['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','contacts','recurring','yearClosings','contracts','assets','pendingClients','serviceAgreements','timer','admins'].forEach(k=>{if(p[k])S[k]=p[k];});
+      const keysToRestore=forceResetClientData
+        ?['settings','timer','admins'] // ⚠️ عند إعادة الضبط: لا نستعيد أي بيانات عملاء محلية إطلاقًا - فقط الإعدادات العامة والعدّاد وحسابات الأدمن
+        :['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','contacts','recurring','yearClosings','contracts','assets','pendingClients','serviceAgreements','timer','admins'];
+      keysToRestore.forEach(k=>{if(p[k])S[k]=p[k];});
       if(p.role)S.role=p.role;
       if(p.currentClient)S.currentClient=p.currentClient;
       if(p.tab)S.tab=p.tab;
@@ -2284,15 +2271,6 @@ window.addEventListener('resize',()=>{
   // Initialize pending clients and agreements
   if(!S.pendingClients)S.pendingClients=[];
   if(!S.serviceAgreements)S.serviceAgreements=[];
-  
-  // If contacts is empty, add test data
-  if(!S.contacts||S.contacts.length===0){
-    S.contacts=[
-      {id:'c1',cid:'maria@gmail.com',name:'ExpatSol BV',type:'debtor',email:'contact@expatsol.com',phone:'+31612345678',address:'Amsterdam, NL',kvk:'12345678',btw:'NL123456789B01',color:'#7A4A00'},
-      {id:'c2',cid:'maria@gmail.com',name:'TechStart Inc',type:'debtor',email:'info@techstart.nl',phone:'+31687654321',address:'Utrecht, NL',kvk:'87654321',btw:'NL987654321B01',color:'#7dbfa3'},
-      {id:'c3',cid:'jan@expatsol.nl',name:'Local Business Co',type:'debtor',email:'hello@localbiz.nl',phone:'+31612121212',address:'Rotterdam, NL',kvk:'11111111',btw:'NL111111111B01',color:'#7dbfa3'}
-    ];
-  }
 })();
 
 /* ═══════════════════════════ HELPERS ═══════════════════════════ */
