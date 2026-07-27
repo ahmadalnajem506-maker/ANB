@@ -1,8 +1,8 @@
-// ANB FinAdmin Pro - Service Worker v4.08
-// تاريخ الإنشاء: 26 يونيو 2026 (محدّث 04 يوليو 2026 - إزالة سرّ R2 المسرَّب من الكود)
-// الغرض: تفعيل PWA والعمل بدون إنترنت
+// ANB FinAdmin Pro - Service Worker v4.09
+// تاريخ الإنشاء: 26 يونيو 2026 (محدّث 27 يوليو 2026 - إضافة استقبال إشعارات Push حقيقية)
+// الغرض: تفعيل PWA والعمل بدون إنترنت + استقبال إشعارات Push
 
-const CACHE_NAME = 'anb-finadmin-v4.08';
+const CACHE_NAME = 'anb-finadmin-v4.09';
 const urlsToCache = [
   './',
   './index.html',
@@ -80,6 +80,33 @@ self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+});
+
+// ⭐ استقبال إشعار Push حقيقي وصل من الخادم (worker.js) - يعرضه كنافذة نظام
+// حتى لو كان التطبيق مغلقًا تمامًا (هذا هو الفرق عن التذكيرات الداخلية القديمة)
+self.addEventListener('push', event => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) {}
+  const title = data.title || 'ANB Financial Services';
+  const options = {
+    body: data.body || '',
+    data: { url: data.url || './' },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// عند الضغط على الإشعار: يفتح التطبيق، أو يُركِّز على تبويب مفتوح له بالفعل بدل فتح نسخة ثانية
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || './';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const c of clientList) {
+        if ('focus' in c) return c.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
+  );
 });
 
 console.log('✨ ANB FinAdmin Service Worker Loaded v4.08 - Cache Updated!');

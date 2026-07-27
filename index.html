@@ -819,7 +819,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=4.08').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=4.09').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -1978,7 +1978,7 @@ const CLOUD_ROW_ID='anb-main';
 // يعني: أي جلسة/جهاز مختلف (أو حتى نفس الجهاز بعد تحديث Service Worker
 // يُعيد التحميل من السحابة) يفقد كل الاتفاقيات الموقَّعة تمامًا - وهذا بالضبط
 // سبب ظهور "Agreement not found" عند محاولة مراجعة عقد مُوقَّع سابقًا.
-const CLOUD_SYNC_ARRAY_KEYS=['clients','admins','invoices','expenses','hours','docs','messages','journal','bankTx','recurring','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','contacts','cashPayments','cashierLog','cashierDayExceptions','supplierOcrProfiles','auditLog'];
+const CLOUD_SYNC_ARRAY_KEYS=['clients','admins','invoices','expenses','hours','docs','messages','journal','bankTx','recurring','recurringExpenses','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','contacts','cashPayments','cashierLog','cashierDayExceptions','supplierOcrProfiles','auditLog'];
 let cloudSyncTimer=null;
 let cloudSyncStatus='idle'; // idle | syncing | synced | error | offline
 let cloudSyncInFlight=false;
@@ -2027,7 +2027,7 @@ function mergeArraysById(localArr,cloudArr){
 
 // المصفوفات المرتبطة بعميل واحد عبر cid - تُطابق تمامًا القائمة نفسها في
 // الـWorker (CLIENT_SCOPED_ARRAY_KEYS) للفلترة الآمنة على مستوى العميل
-const CLIENT_SCOPED_ARRAY_KEYS=['invoices','expenses','hours','docs','messages','journal','bankTx','recurring','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','contacts','cashPayments','cashierLog','cashierDayExceptions','supplierOcrProfiles','auditLog'];
+const CLIENT_SCOPED_ARRAY_KEYS=['invoices','expenses','hours','docs','messages','journal','bankTx','recurring','recurringExpenses','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','contacts','cashPayments','cashierLog','cashierDayExceptions','supplierOcrProfiles','auditLog'];
 // ⚠️ تنقية دفاعية إضافية: حتى بعد إصلاح الخادم ليُرسل فقط بيانات هذا العميل،
 // قد يحتفظ المتصفح المحلي ببيانات عملاء آخرين مخبَّأة من قبل هذا الإصلاح
 // (بما أن الدمج المحلي اتحادي وليس استبدالًا). نُنقِّي الحالة المحلية هنا
@@ -2230,7 +2230,7 @@ window.addEventListener('resize',()=>{
 // فيتوقف "تكرار الرفع" تلقائيًا من كل جهاز بمجرد تحميله لهذا الملف المُحدَّث،
 // بلا حاجة لأي إجراء يدوي من المستخدم على أي جهاز إطلاقًا.
 const LOCAL_CACHE_SCHEMA_VERSION=2;
-const CLIENT_DATA_KEYS_TO_RESET_ON_SCHEMA_BUMP=['clients','invoices','expenses','hours','docs','messages','journal','bankTx','contacts','recurring','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','cashPayments','cashierLog','cashierDayExceptions','supplierOcrProfiles'];
+const CLIENT_DATA_KEYS_TO_RESET_ON_SCHEMA_BUMP=['clients','invoices','expenses','hours','docs','messages','journal','bankTx','contacts','recurring','recurringExpenses','yearClosings','contracts','assets','serviceAgreements','importBatches','employees','cashPayments','cashierLog','cashierDayExceptions','supplierOcrProfiles'];
 (function ld(){
   let forceResetClientData=false;
   try{
@@ -2246,7 +2246,7 @@ const CLIENT_DATA_KEYS_TO_RESET_ON_SCHEMA_BUMP=['clients','invoices','expenses',
       const p=JSON.parse(d);
       const keysToRestore=forceResetClientData
         ?['settings','timer','admins'] // ⚠️ عند إعادة الضبط: لا نستعيد أي بيانات عملاء محلية إطلاقًا - فقط الإعدادات العامة والعدّاد وحسابات الأدمن
-        :['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','contacts','recurring','yearClosings','contracts','assets','pendingClients','serviceAgreements','timer','admins'];
+        :['clients','invoices','expenses','hours','docs','messages','settings','journal','bankTx','contacts','recurring','recurringExpenses','yearClosings','contracts','assets','pendingClients','serviceAgreements','timer','admins'];
       keysToRestore.forEach(k=>{if(p[k])S[k]=p[k];});
       if(p.role)S.role=p.role;
       if(p.currentClient)S.currentClient=p.currentClient;
@@ -3080,6 +3080,92 @@ async function ensureQRCodeLib(){
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
   }
 }
+// ═══════════════════════ Push Notifications (Web Push حقيقي عبر VAPID) ═══════════════════════
+// ⚠️ يتطلب هذا فعليًا: (١) موافقة صريحة من المستخدم عبر نافذة المتصفح،
+// (٢) ملف sw.js يحوي معالج 'push' حقيقي (منفصل عن هذا الملف - راجع تعليمات
+// الدمج المرفقة)، (٣) نقاط /push/vapid-public-key و/push/subscribe و
+// /push/unsubscribe مُفعَّلة على الـ Worker. بدون الثلاثة معًا، الزر لن يعمل.
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const rawData=atob(base64);
+  const arr=new Uint8Array(rawData.length);
+  for(let i=0;i<rawData.length;i++)arr[i]=rawData.charCodeAt(i);
+  return arr;
+}
+async function getPushSubscriptionState(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window))return 'unsupported';
+  if(typeof Notification==='undefined')return 'unsupported';
+  if(Notification.permission==='denied')return 'denied';
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    return sub?'enabled':'disabled';
+  }catch(e){return 'disabled';}
+}
+async function enablePushNotifications(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)){toast('❌ Push notifications are not supported in this browser');return;}
+  try{
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){toast('❌ Notification permission was not granted');return;}
+    const keyRes=await fetch(R2_WORKER_URL+'/push/vapid-public-key');
+    if(!keyRes.ok){toast('❌ Could not reach the notification service');return;}
+    const keyData=await keyRes.json();
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(keyData.publicKey)});
+    const res=await fetch(R2_WORKER_URL+'/push/subscribe',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
+      body:JSON.stringify({subscription:sub.toJSON()}),
+    });
+    if(!res.ok){toast('❌ Could not save the subscription on the server');return;}
+    toast('✓ Push notifications enabled');
+  }catch(e){toast('❌ Network error - please try again');}
+  refreshPushNotifButton();
+}
+async function disablePushNotifications(){
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub){
+      try{
+        await fetch(R2_WORKER_URL+'/push/unsubscribe',{
+          method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
+          body:JSON.stringify({endpoint:sub.endpoint}),
+        });
+      }catch(e){/* حتى لو فشل إبلاغ الخادم، نُلغي الاشتراك محليًا لأن هذا ما يهم المستخدم فعليًا */}
+      await sub.unsubscribe();
+    }
+    toast('✓ Push notifications disabled');
+  }catch(e){toast('❌ Network error - please try again');}
+  refreshPushNotifButton();
+}
+// ⭐ يُستدعى بعد رسم أي شاشة فيها كرت الإشعارات - يفحص الحالة الفعلية من
+// المتصفح (لا حالة مخزَّنة محليًا يمكن أن تُصبح قديمة) ويُحدِّث الزر والنص تبعًا لها
+async function refreshPushNotifButton(){
+  const btn=document.getElementById('push-notif-btn');
+  const status=document.getElementById('push-notif-status');
+  if(!btn||!status)return;
+  const state=await getPushSubscriptionState();
+  if(state==='unsupported'){
+    status.textContent='⚪ Not supported on this browser/device';
+    btn.style.display='none';
+  }else if(state==='denied'){
+    status.textContent='🚫 Blocked — enable notifications for this site in your browser/device settings';
+    btn.style.display='none';
+  }else if(state==='enabled'){
+    status.textContent='✅ Enabled';
+    btn.textContent='Disable';
+    btn.className='btn btn-xs btn-danger';
+    btn.onclick=disablePushNotifications;
+    btn.style.display='';
+  }else{
+    status.textContent='⚪ Not enabled';
+    btn.textContent='Enable';
+    btn.className='btn btn-xs btn-p';
+    btn.onclick=enablePushNotifications;
+    btn.style.display='';
+  }
+}
 async function ensureJsPDF(){
   if(!(window.jsPDF?.jsPDF||window.jspdf?.jsPDF)){
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
@@ -3614,6 +3700,7 @@ function launchApp(){
   migrateOneTimeDebtors();
   purgeOldTrash();
   autoPostStaleCashierDays();
+  generateRecurringExpenses();
   renderApp();
   syncNow();
   maybeShowInstallPrompt();
@@ -6042,7 +6129,19 @@ function rClientSecurity(el,cid){
         <button class="btn btn-xs ${c?.totpEnabled?'btn-danger':'btn-p'}" onclick="open2FASetupModal()">${c?.totpEnabled?(t('disable_2fa')||'Disable 2FA'):(t('enable_2fa')||'Enable 2FA')}</button>
       </div>
     </div>
+  </div>
+
+  <div class="card" style="max-width:480px;margin-top:16px">
+    <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('bell',16)||'🔔'} Push Notifications</span></div>
+    <div style="padding:16px">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">Get a real device notification for overdue invoices and other important updates — even when the app is closed.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px;background:var(--gr1);border:2px solid var(--gr2);border-radius:8px">
+        <span id="push-notif-status" style="font-size:12px;font-weight:600;color:var(--t3)">Checking…</span>
+        <button id="push-notif-btn" class="btn btn-xs btn-p" style="display:none">Enable</button>
+      </div>
+    </div>
   </div>`;
+  setTimeout(refreshPushNotifButton,50);
 }
 
 async function saveClientOwnPassword(){
@@ -7152,7 +7251,23 @@ function rExpenses(el,cid){
       oninput="renderExpensesTable('${cid}',this.value)">
     ${isAdmin()?`<button class="btn btn-xs" onclick="exportSingleCategoryToExcel('${cid}','expenses',document.getElementById('exp-search')?.value||'')" title="${t('export_to_excel')||'Export to Excel'}">📊 ${t('export')||'Export'}</button>`:''}
   </div>`:''}
-  <div id="exp-table-container"></div>`;
+  <div id="exp-table-container"></div>
+  ${isAdmin()&&(S.recurringExpenses||[]).filter(r=>r.cid===cid).length?`
+  <div class="card">
+    <div class="ch"><span class="ct">${LICON('repeat',16)} Recurring expense schedules</span></div>
+    <table><thead><tr><th>${t('rec_desc')}</th><th>${t('rec_amount')}</th><th>${t('rec_freq')}</th><th>Next</th><th>${t('rec_status')}</th><th></th></tr></thead>
+    <tbody>${(S.recurringExpenses||[]).filter(r=>r.cid===cid).map(r=>`<tr>
+      <td>${escapeHtml(r.desc)}</td>
+      <td>${FMT(r.amount)}</td>
+      <td style="color:var(--t3)">${({monthly:'Monthly',quarterly:'Every 3 months',yearly:'Yearly'})[r.frequency]||r.frequency}</td>
+      <td style="color:var(--t3)">${FD(r.nextDate)}</td>
+      <td>${r.active?'<span class="bdg b-paid">Active</span>':'<span class="bdg b-draft">Paused</span>'}</td>
+      <td><div style="display:flex;gap:3px">
+        <button class="btn btn-xs" onclick="toggleRecurringExpense('${r.id}')">${r.active?'Pause':'Resume'}</button>
+        <button class="btn btn-xs btn-danger" onclick="deleteRecurringExpense('${r.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🗑</span></button>
+      </div></td>
+    </tr>`).join('')}</tbody></table>
+  </div>`:''}`;
   renderExpensesTable(cid,'');
 }
 
@@ -10232,6 +10347,17 @@ function rSettings(el){
     </div>
 
     <div class="card">
+      <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('bell',16)} Push Notifications</span></div>
+      <div style="padding:14px">
+        <div class="sec-desc">Get a real device notification for contract renewals and other reminders — even when the app is closed. Personal to your own account/device.</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span id="push-notif-status" style="font-size:12px;font-weight:600;color:var(--t3)">Checking…</span>
+          <button id="push-notif-btn" class="btn btn-xs btn-p" style="display:none">Enable</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('plus',16)} ${t('add_new_admin')||'Add New Admin'}</span></div>
       <div style="padding:14px">
         <div class="fr2">
@@ -10316,6 +10442,7 @@ function rSettings(el){
 
   html+=`</div></div>`;
   el.innerHTML=html;
+  setTimeout(refreshPushNotifButton,50);
 }
 
 /* ═══ ACTIONS ═══ */
@@ -11407,6 +11534,44 @@ function toggleRecurring(id){
 function deleteRecurring(id){
   showConfirmDialog(t('confirm_delete')||'Confirm',t('confirm_stop_recurring')||'Stop this recurring invoice schedule? Already-generated invoices stay.',()=>{
     S.recurring=(S.recurring||[]).filter(r=>r.id!==id);sv();renderContent();
+    toast(t('remove')+' ✓');
+  });
+}
+
+// ⭐ قوالب المصاريف المتكررة (إيجار، اشتراكات ثابتة شهرية...) - نفس منطق
+// generateRecurringInvoices() بالضبط لكن يُنشئ سجلات S.expenses بدل S.invoices.
+// نفس صندوق الأمان guard<24 لتفادي أي حلقة لا نهائية لو تلف تاريخ nextDate
+function generateRecurringExpenses(){
+  if(!S.recurringExpenses||!S.recurringExpenses.length)return;
+  const today=TODAY();
+  let created=0;
+  S.recurringExpenses.forEach(rec=>{
+    if(!rec.active)return;
+    let guard=0;
+    while(rec.nextDate<=today&&guard<24){
+      const btw=rec.btwType==='verlegd_received'?0:Math.round(rec.amount*(rec.btwRate/100)*100)/100;
+      const selfAssessedVat=rec.btwType==='verlegd_received'?Math.round(rec.amount*(rec.btwRate/100)*100)/100:0;
+      S.expenses.push({id:UID(),cid:rec.cid,date:rec.nextDate,
+        supplier:rec.supplier,payToId:rec.payToId,desc:rec.desc+' ('+FD(rec.nextDate)+')',
+        cat:rec.cat,amount:rec.amount,btw,selfAssessedVat,btwType:rec.btwType||'normal',
+        amountPaid:0,paymentStatus:'Onbetaald',fromRecurring:rec.id});
+      created++;
+      rec.nextDate=addInterval(rec.nextDate,rec.frequency);
+      guard++;
+    }
+  });
+  if(created>0)sv();
+  return created;
+}
+function toggleRecurringExpense(id){
+  const rec=(S.recurringExpenses||[]).find(r=>r.id===id);
+  if(!rec)return;
+  rec.active=!rec.active;sv();renderContent();
+  toast(t(rec.active?'rec_active':'rec_paused'));
+}
+function deleteRecurringExpense(id){
+  showConfirmDialog(t('confirm_delete')||'Confirm','Stop this recurring expense schedule? Already-generated expenses stay.',()=>{
+    S.recurringExpenses=(S.recurringExpenses||[]).filter(r=>r.id!==id);sv();renderContent();
     toast(t('remove')+' ✓');
   });
 }
@@ -12893,6 +13058,18 @@ function openNewExpense(exp){
         <div id="ex-cash-warning" style="display:none;background:rgba(184,134,11,0.1);border-left:3px solid var(--red);padding:8px 10px;border-radius:4px;font-size:11px;color:#8a6410;margin-bottom:8px">
           ⚠️ ${t('cash_ratio_warning')||'Cash portion is over 50% of the invoice total — double-check this is correct.'}
         </div>
+      </div>
+      <div class="msec">🔁 ${t('msec_recurring')||'Recurring'}</div>
+      <div class="fg" style="margin-top:-4px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;font-size:12px;color:var(--t1)">
+          <input type="checkbox" id="ex-rec" onchange="document.getElementById('ex-rec-freq-wrap').style.display=this.checked?'block':'none'" style="width:auto"/>
+          🔁 Make this a recurring expense (e.g. rent, subscriptions)
+        </label>
+      </div>
+      <div id="ex-rec-freq-wrap" style="display:none">
+        <div class="fg"><label>Repeats</label>
+          <select id="ex-rec-freq"><option value="monthly">Monthly</option><option value="quarterly">Every 3 months</option><option value="yearly">Yearly</option></select>
+        </div>
       </div>`:''}
     </div>
     ${isN?`<div id="ex-upload-msg" style="display:none;text-align:center;padding:20px;color:var(--t3)">
@@ -12970,6 +13147,17 @@ function openNewExpense(exp){
         S.cashPayments.push({id:UID(),cid:newExp.cid,expenseId:newExp.id,direction:'out',date:newExp.date,amount:cashAmount,note:'Recorded at expense creation',recordedBy:isAdmin()?'admin':'client',createdAt:new Date().toISOString()});
         applyAllocationToTarget('expense',newExp.id,cashAmount);
         logAudit('create','cash_payment','Recorded cash payment of '+FMT(cashAmount)+' for expense '+exDesc+' at creation',cid);
+      }
+
+      // ⭐ قالب مصروف متكرر (إيجار/اشتراكات) - نفس مبدأ الفاتورة المتكررة تمامًا:
+      // نسخة جديدة تُنشَأ تلقائيًا من generateRecurringExpenses() عند استحقاق كل موعد
+      if(document.getElementById('ex-rec')?.checked){
+        const recFreq=document.getElementById('ex-rec-freq').value;
+        if(!S.recurringExpenses)S.recurringExpenses=[];
+        S.recurringExpenses.push({id:UID(),cid,desc:exDesc,supplier:payTo,payToId,
+          cat:document.getElementById('ex-c').value,amount:a,btwRate:r,btwType,
+          frequency:recFreq,active:true,nextDate:addInterval(newExp.date,recFreq),createdFrom:newExp.id});
+        logAudit('create','recurring_expense','Set up recurring expense "'+exDesc+'" ('+recFreq+')',cid);
       }
 
       sv();closeModal();renderContent();toast(t('tab_expenses')+' ✓','ti-check');
