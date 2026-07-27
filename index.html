@@ -4132,7 +4132,7 @@ function rAdminReports(el){
   const reportType=S.reportType||'invoices';
   const allInvoices=S.invoices||[];
   const allHours=(S.hours||[]).filter(h=>h.cid!==ANB_SELF_ID&&!h.deleted);
-  const theme=S.cardTheme||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_0A2218;
   const backBtnHtml=`
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
       <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
@@ -4276,7 +4276,7 @@ function rAdminReports(el){
 /* ── ADMIN MESSAGES ── */
 function rAdminMessages(el){
   const allMessages=(S.messages||[]).filter(m=>!m.deleted);
-  const theme=S.cardTheme||{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.mint_7dbfa3;
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
@@ -4330,7 +4330,7 @@ function rAdminDocuments(el){
     allDocs=sortRows(allDocs,field,dir);
   }
   const newDocs=allDocs.filter(d=>d.isNew);
-  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_2d7a4f;
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="gotoOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
@@ -4702,8 +4702,7 @@ async function exportContractPDF(contractId){
   const con=(S.contracts||[]).find(c=>c.id===contractId);
   if(!con){toast('❌ Contract not found');return;}
   const client=(S.clients||[]).find(c=>c.id===con.cid);
-  await ensureJsPDF();
-  const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
+  const jsPDF=await ensureJsPDF();
   if(!jsPDF){toast('❌ Could not load PDF library');return;}
   const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=16;
 
@@ -4807,7 +4806,7 @@ function rContracts(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.mint_9dd4bf;
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -4842,7 +4841,7 @@ function renderClientContractsList(cid,searchTerm,sortValue){
   if(!container)return;
   // ⚠️ إصلاح خلل حقيقي: theme متغير محلي داخل rContracts، غير متاح هنا لأن
   // هذه دالة منفصلة - نُعيد حسابه بنفس منطق القيمة الافتراضية بالضبط
-  const theme=S.cardTheme||{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.mint_9dd4bf;
   const isANBSelfBook=cid===ANB_SELF_ID;
   const term=(searchTerm||'').toLowerCase().trim();
   let contracts=(isANBSelfBook?(S.contracts||[]).filter(c=>c.cid!==ANB_SELF_ID):(S.contracts?.filter(c=>c.cid===cid)||[]));
@@ -4914,7 +4913,7 @@ function rAssets(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1a4d2e;
   const totalCost=assets.reduce((s,a)=>s+(a.acquisitionCost||0),0);
   const totalBookValue=assets.reduce((s,a)=>s+getBookValue(a,TODAY()),0);
   const totalAnnualDep=assets.filter(a=>!a.isImmediatelyExpensable).reduce((s,a)=>s+getAnnualDepreciation(a),0);
@@ -5095,7 +5094,7 @@ function saveLoanPayment(assetId){
 // ══════════════════════════════════════════════════════════════════
 function rReportLoans(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_2d7a4f;
   const financed=(S.assets||[]).filter(a=>a.cid===cid&&a.loanFinanced&&!a.deleted);
   const currentYear=new Date().getFullYear();
   const totalRemaining=financed.reduce((s,a)=>s+(a.loanRemainingAmount||0),0);
@@ -5156,7 +5155,7 @@ function rImport(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1a4d2e;
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -5366,7 +5365,7 @@ function getRecordedDepreciationForPeriod(cid){
 
 /* ── BACK TO CLIENTS BUTTON IN SIDEBAR ── */
 function rClientsLis(el){
-  const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1a4d2e;
   const initialContractFilter=S.clientsContractFilter||'';
   S.clientsContractFilter=null; // ⭐ تُستخدَم مرة واحدة فقط عند الدخول من كرت لوحة التحكم
   const filtersOpenByDefault=!!initialContractFilter; // افتح اللوحة تلقائيًا لو دخلنا بفلتر جاهز من كرت آخر
@@ -6014,7 +6013,7 @@ function rClientDash(el,cid){
 
 function rClientSecurity(el,cid){
   const c=S.clients.find(x=>x.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.leaf_4da876_dark;
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
@@ -6240,7 +6239,7 @@ function rClientActionCards(el,cid){
   // "المستندات" (لمتابعة حالة الاتفاقية المُرسَلة) + رابط مباشر للعقد نفسه
   if(!isANBSelfBook&&!isClientAccountingActive(cid)){
     const clientContract=(S.contracts||[]).find(x=>x.cid===cid);
-    const theme=S.cardTheme||{bg:'rgba(184,134,11,0.08)',border:'var(--red)',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+    const theme=S.cardTheme||CARD_THEME_FALLBACKS.amber_red;
     el.innerHTML=`
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
       <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
@@ -6329,6 +6328,28 @@ function goBackToOverview(){
 // كل شاشات المحاسبة الجاهزة (فواتير/مصاريف/بنك/تقارير) لإدارة حسابات
 // الشركة نفسها، بدل بناء نظام منفصل. مخفي عن قائمة العملاء العادية.
 // ══════════════════════════════════════════════════════════════════
+// ⭐ جدول موحَّد لكل ألوان "الثيم الاحتياطي" (fallback) التي كانت متكررة حرفيًا
+// كنسخ مستقلة عبر 42 موضعًا مختلفًا في الملف (نفس القيم بالضبط) - تجميعها هنا
+// في مكان واحد يلغي التكرار بلا أي تغيير في أي قيمة لون فعلية (تحقَّقنا حرفيًا
+// أن كل نسخة كانت مطابقة تمامًا لنظيراتها في نفس المجموعة قبل الدمج)
+const CARD_THEME_FALLBACKS={
+  green_2d7a4f:{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'},
+  green_1A4A2A:{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'},
+  green_1a4d2e:{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'},
+  green_0A2218:{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'},
+  mint_7dbfa3:{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'},
+  green_0F3025:{bg:'rgba(15,48,37,0.08)',border:'#0F3025',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'},
+  mint_9dd4bf:{bg:'rgba(157,212,191,0.08)',border:'#9dd4bf',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'},
+  green_2A6040:{bg:'rgba(42,96,64,0.08)',border:'#2A6040',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'},
+  green_1B5E35:{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'},
+  mint_B8E6D1:{bg:'rgba(184,230,209,0.08)',border:'#B8E6D1',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'},
+  leaf_4da876_dark:{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'},
+  amber_red:{bg:'rgba(184,134,11,0.08)',border:'var(--red)',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'},
+  minimal_0A2218:{border:'#0A2218'},
+  gold_C7A876:{bg:'rgba(224,184,48,0.08)',border:'#C7A876',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'},
+  leaf_4da876_white:{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'},
+};
+
 const ANB_SELF_ID='anb-self';
 function getOrCreateANBSelfClient(){
   let anb=S.clients.find(c=>c.id===ANB_SELF_ID);
@@ -6999,7 +7020,7 @@ function rInvoices(el,cid){
   const open=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).reduce((s,i)=>s+i.total,0);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_0A2218;
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px;flex-wrap:wrap">
@@ -7045,7 +7066,7 @@ function rInvoices(el,cid){
 function renderInvoicesTable(cid,searchTerm){
   const container=document.getElementById('inv-table-container');
   if(!container)return;
-  const theme=S.cardTheme||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_0A2218;
   const term=(searchTerm||'').toLowerCase().trim();
   let inv=S.invoices.filter(i=>{
     if(i.cid!==cid||i.deleted)return false;
@@ -7112,7 +7133,7 @@ function rExpenses(el,cid){
   const bIn=exp.reduce((s,e)=>getClosingForDate(cid,e.date)?s:s+(e.btw||0),0);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(15,48,37,0.08)',border:'#0F3025',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_0F3025;
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -7138,7 +7159,7 @@ function rExpenses(el,cid){
 function renderExpensesTable(cid,searchTerm){
   const container=document.getElementById('exp-table-container');
   if(!container)return;
-  const theme=S.cardTheme||{bg:'rgba(15,48,37,0.08)',border:'#0F3025',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_0F3025;
   const term=(searchTerm||'').toLowerCase().trim();
   let exp=S.expenses.filter(e=>{
     if(e.cid!==cid||e.deleted)return false;
@@ -7202,7 +7223,7 @@ function rHours(el,cid){
   const meetsUrencriterium=hoursThisYear>=urTarget;
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(42,96,64,0.08)',border:'#2A6040',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_2A6040;
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -7284,7 +7305,7 @@ function rDocs(el,cid){
   // ⚠️ يستثني إيصالات المصاريف (category:'receipt') - هذه تُرفع من داخل نموذج المصاريف
   // نفسه وتبقى مرتبطة به فقط، وليست جزءًا من مستندات العميل العامة
   const docs=S.docs.filter(d=>d.cid===cid&&!d.deleted&&d.category!=='receipt');
-  const theme=S.cardTheme||{bg:'rgba(42,96,64,0.08)',border:'#2A6040',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_2A6040;
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}';this.style.transform='translateX(0)'">
@@ -8623,7 +8644,7 @@ function rMessages(el,cid){
   if(!S.messages)S.messages=[];
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.mint_7dbfa3;
   
   if(isAdmin()){
     // Admin: Simple list of clients + messages
@@ -8915,7 +8936,7 @@ function openEmployeeDetail(employeeId){
 
 function rEmployeeDetail(el){
   const emp=(S.employees||[]).find(e=>e.id===S.currentEmployeeId);
-  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_2d7a4f;
   if(!emp){el.innerHTML='<div class="empty">Employee not found</div>';return;}
   const isActive=emp.employmentStatus==='active';
 
@@ -9049,7 +9070,7 @@ function uploadSignedContract(employeeId){
 
 function rEmployees(el,cid){
   const c=S.clients.find(x=>x.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_2d7a4f;
   const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
 
   el.innerHTML=`
@@ -9088,7 +9109,7 @@ function renderEmployeesList(searchTerm,statusFilter){
   const container=document.getElementById('employees-list-container');
   if(!container)return;
   const cid=S.currentClient;
-  const theme=S.cardTheme||{border:'#0A2218'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.minimal_0A2218;
   const term=(searchTerm||'').toLowerCase().trim();
   let employees=(S.employees||[]).filter(e=>{
     if(e.cid!==cid)return false;
@@ -9497,8 +9518,7 @@ function updatePayslipNet(){
 }
 
 async function exportPayslipPDF(payslip,emp){
-  await ensureJsPDF();
-  const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
+  const jsPDF=await ensureJsPDF();
   if(!jsPDF){toast('❌ Could not load PDF library');return;}
   const c=S.clients.find(x=>x.id===payslip.cid);
   const co=S.settings;
@@ -9626,8 +9646,7 @@ async function exportPayslipPDF(payslip,emp){
 async function exportEmployeeContractPDF(employeeId){
   const emp=(S.employees||[]).find(e=>e.id===employeeId);
   if(!emp)return;
-  await ensureJsPDF();
-  const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
+  const jsPDF=await ensureJsPDF();
   if(!jsPDF){toast('❌ Could not load PDF library');return;}
   const c=S.clients.find(x=>x.id===emp.cid);
   const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=16;
@@ -9794,8 +9813,7 @@ async function exportContractAmendmentPDF(employeeId,amendmentId){
   if(!emp)return;
   const amendment=(emp.contractAmendments||[]).find(a=>a.id===amendmentId);
   if(!amendment)return;
-  await ensureJsPDF();
-  const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
+  const jsPDF=await ensureJsPDF();
   if(!jsPDF){toast('❌ Could not load PDF library');return;}
   const c=S.clients.find(x=>x.id===emp.cid);
   const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=16;
@@ -9849,7 +9867,7 @@ function endEmployment(employeeId){
 
 function rDebtors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1B5E35;
   const allDebtors=S.contacts.filter(c=>(c.cid===cid||(c.isGeneral&&c.cid==='GENERAL'))&&c.type==='debtor'&&!c.deleted);
 
   el.innerHTML=`
@@ -9871,7 +9889,7 @@ function rDebtors(el,cid){
 function renderDebtorsTable(cid,searchTerm){
   const container=document.getElementById('deb-table-container');
   if(!container)return;
-  const theme=S.cardTheme||{bg:'rgba(27,94,53,0.08)',border:'#1B5E35',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1B5E35;
   const term=(searchTerm||'').toLowerCase().trim();
   const isANBSelfBook=cid===ANB_SELF_ID;
 
@@ -9922,7 +9940,7 @@ function renderDebtorsTable(cid,searchTerm){
 /* ═══════════════════════════ CREDITORS ═══════════════════════════ */
 function rCreditors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_2d7a4f;
   const allCreditors=S.contacts.filter(c=>c.cid===cid&&c.type==='creditor'&&!c.deleted);
 
   el.innerHTML=`
@@ -9944,7 +9962,7 @@ function rCreditors(el,cid){
 function renderCreditorsTable(cid,searchTerm){
   const container=document.getElementById('cred-table-container');
   if(!container)return;
-  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_2d7a4f;
   const term=(searchTerm||'').toLowerCase().trim();
   let creditors=S.contacts.filter(c=>{
     if(!(c.cid===cid&&c.type==='creditor'&&!c.deleted))return false;
@@ -11189,7 +11207,7 @@ function restoreTrashItem(type,id){
 // ══════════ شاشة عرض سجل التدقيق ══════════
 function rAuditLog(el,filterCid){
   const c=filterCid?S.clients.find(x=>x.id===filterCid):null;
-  const theme=filterCid?(S.cardTheme||{bg:'rgba(224,184,48,0.08)',border:'#C7A876',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'}):{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=filterCid?(S.cardTheme||CARD_THEME_FALLBACKS.gold_C7A876):{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="${filterCid?'goBackToOverview()':'gotoOverview()'}" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}'">
@@ -11657,7 +11675,7 @@ function rEditClient(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   if(!c)return;
 
-  const theme=S.cardTheme||{bg:'rgba(184,230,209,0.08)',border:'#B8E6D1',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.mint_B8E6D1;
 
   el.innerHTML=`
   <div>
@@ -13768,7 +13786,7 @@ function approveCashierException(exceptionId){
 }
 
 function rCashier(el,cid){
-  const theme=S.cardTheme||{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1A4A2A;
   const backBtnHtml=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}';this.style.transform='translateX(0)'">
@@ -14150,7 +14168,7 @@ function autoPostStaleCashierDays(){
 // وغير مُرحَّلة) بحث/ترتيب/تصدير، كما طُلب صراحة ("جداول طويلة عادة")
 // ══════════════════════════════════════════════════════════════════
 function rCashierLog(el,cid){
-  const theme0=S.cardTheme||{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme0=S.cardTheme||CARD_THEME_FALLBACKS.green_1A4A2A;
   const backBtnHtml=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme0.bg};border-left:4px solid ${theme0.border};border-radius:6px">
     <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme0.border};color:${theme0.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme0.accent}';this.style.color='${theme0.text}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme0.border}';this.style.color='${theme0.textDefault}';this.style.transform='translateX(0)'">
@@ -14162,7 +14180,7 @@ function rCashierLog(el,cid){
     return;
   }
   const c=S.clients.find(cl=>cl.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1A4A2A;
   const entries=(S.cashierLog||[]).filter(e=>e.cid===cid);
   const pendingExceptions=(S.cashierDayExceptions||[]).filter(e=>e.cid===cid&&e.status==='pending_admin');
   el.innerHTML=backBtnHtml+`<div class="card">
@@ -14229,7 +14247,7 @@ function rCashLedger(el,cid){
   const totalIn=payments.filter(p=>(p.direction||'in')==='in').reduce((s,p)=>s+(p.amount||0),0);
   const totalOut=payments.filter(p=>p.direction==='out').reduce((s,p)=>s+(p.amount||0),0);
   const netCash=totalIn-totalOut;
-  const theme=S.cardTheme||{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1A4A2A;
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
     <button class="btn" onclick="goBackToOverview()" style="padding:8px 12px;font-size:12px;background:${theme.border};color:${theme.textDefault};border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s" onmouseover="this.style.background='${theme.accent}';this.style.color='${theme.text}';this.style.transform='translateX(-4px)'" onmouseout="this.style.background='${theme.border}';this.style.color='${theme.textDefault}';this.style.transform='translateX(0)'">
@@ -14318,7 +14336,7 @@ function rBank(el,cid){
   const unmatched=txs.filter(tx=>getTxMatchStatus(tx)==='none').length;
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
-  const theme=S.cardTheme||{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1A4A2A;
   
   el.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:${theme.bg};border-left:4px solid ${theme.border};border-radius:6px">
@@ -14884,7 +14902,7 @@ function resetReportPeriodFilter(){
 // ══════════════ تقرير الموظفين المالي ══════════════
 function rReportEmployeeFinancial(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(125,191,163,0.08)',border:'#7dbfa3',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.mint_7dbfa3;
   const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
   const active=allEmployees.filter(e=>e.employmentStatus==='active');
   const ended=allEmployees.filter(e=>e.employmentStatus==='ended');
@@ -14961,7 +14979,7 @@ function rReportEmployeeFinancial(el,cid){
 // ══════════════ تقرير الموظفين الإحصائي ══════════════
 function rReportEmployeeStats(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(184,230,209,0.08)',border:'#B8E6D1',textDefault:'#0A2218',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.mint_B8E6D1;
   const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
   const active=allEmployees.filter(e=>e.employmentStatus==='active');
   const ended=allEmployees.filter(e=>e.employmentStatus==='ended');
@@ -15076,7 +15094,7 @@ function rReportEmployeeStats(el,cid){
 
 function rReportCashFlow(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(77,168,118,0.08)',border:'#4da876',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.leaf_4da876_white;
   const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   // ✅ إصلاح: التدفق النقدي يجب أن يعكس النقد الفعلي المتحرك عبر الحساب
@@ -15136,7 +15154,7 @@ function rReportCashFlow(el,cid){
 /* ── REPORT: Summary ── */
 function rReportSummary(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(10,34,24,0.08)',border:'#0A2218',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_0A2218;
   const inv=getReportableInvoices(cid);
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
@@ -15173,7 +15191,7 @@ function rReportSummary(el,cid){
 /* ── REPORT: P&L ── */
 function rReportPL(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(15,48,37,0.08)',border:'#0F3025',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_0F3025;
   const inv=getReportableInvoices(cid);
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
@@ -15253,7 +15271,7 @@ function computeBtwRubrieken(inv,exp){
 
 function rReportBTW(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(26,74,42,0.08)',border:'#1A4A2A',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1A4A2A;
   const inv=getReportableInvoices(cid);
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const {r1a,r1b,r1e,r3a,r3b,r2a4b,r5b,btwPayable}=computeBtwRubrieken(inv,exp);
@@ -15438,7 +15456,7 @@ function openPersonalTaxCalculator(cid){
 
 function rReportTaxLiability(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1a4d2e;
   const inv=getReportableInvoices(cid);
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
@@ -15520,7 +15538,7 @@ function rReportTaxLiability(el,cid){
 }
 function rReportDebtors(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(26,77,46,0.08)',border:'#1a4d2e',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_1a4d2e;
   const today=new Date();
   const invoices=S.invoices.filter(i=>i.cid===cid&&['Openstaand','Verzonden','Verlopen'].includes(i.status));
   const aged=invoices.map(i=>{
@@ -15566,7 +15584,7 @@ function rReportDebtors(el,cid){
 /* ── REPORT: Expenses ── */
 function rReportExpenses(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_2d7a4f;
   const expenses=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date)).sort((a,b)=>new Date(b.date)-new Date(a.date));
   const total=expenses.reduce((s,e)=>s+e.amount,0);
   
@@ -15611,7 +15629,7 @@ function rReportExpenses(el,cid){
 // - لأي عميل آخر: رسم واحد مُجمَّع لكل الساعات بغض النظر عن مَن سجَّلها
 function rReportHoursByCategory(el,cid){
   const c=S.clients.find(c=>c.id===cid);
-  const theme=S.cardTheme||{bg:'rgba(45,122,79,0.08)',border:'#2d7a4f',textDefault:'#ffffff',text:'#0A2218',accent:'#D4B57E'};
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_2d7a4f;
   const hrs=S.hours.filter(h=>h.cid===cid&&!h.deleted&&isDateInReportPeriod(h.date));
   const totH=hrs.reduce((s,h)=>s+(h.hrs||0),0);
 
@@ -17675,9 +17693,8 @@ async function exportClientDataExcelInternal(cid){
 async function exportClientDataPDFInternal(cid){
   const client=S.clients.find(c=>c.id===cid);
   if(!client)return;
-  await ensureJsPDF();
+  const jsPDFClass=await ensureJsPDF();
   const summary=getClientDataSummary(cid);
-  const jsPDFClass=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
   const doc=new jsPDFClass({unit:'mm',format:'a4'});
   const M=15,W=210;
   let y=20;
