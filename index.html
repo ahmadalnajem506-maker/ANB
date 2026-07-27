@@ -3449,7 +3449,14 @@ async function pullFullDataThenLaunch(){
     if(res.ok){
       const cloud=await res.json();
       const cloudPayload=cloud.payload||{};
-      CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{S[k]=cloudPayload[k]||S[k]||[];});
+      // ⚠️⚠️ إصلاح خلل خطير: كان هذا يستبدل S[k] بالكامل بما لدى الخادم مباشرة
+      // (بلا أي دمج) - فأي تغيير محلي لم يكتمل رفعه بعد للخادم (مثلًا اسم
+      // أدمن غُيِّر للتو) كان يُمحى صامتًا ويُستبدَل بالنسخة القديمة من
+      // الخادم، عند كل تسجيل دخول جديد فقط! والأسوأ: بما أن هذه النسخة
+      // "المُتراجَعة" تُحفَظ محليًا بعدها، يصبح التلف دائمًا حتى يُصلَح يدويًا
+      // من جديد. الحل: نفس دمج mergeArraysById الآمن المُستخدَم في syncNow -
+      // النسخة المحلية تفوز دائمًا لنفس المعرِّف
+      CLOUD_SYNC_ARRAY_KEYS.forEach(k=>{S[k]=mergeArraysById(S[k],cloudPayload[k]);});
       if(cloudPayload.settings)S.settings=cloudPayload.settings;
       cloudSyncStatus='synced';
     }
@@ -4130,7 +4137,7 @@ function renderContent(){
       S.tab='dashboard';
     }
     // Client can see: dashboard + كل التبويبات القابلة للتخصيص (مفلترة أعلاه)
-    const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,documents:rDocs,messages:rMessages,debtors:rDebtors,creditors:rCreditors,security:rClientSecurity,reports:rReportsList,employees:rEmployees,bank:rBank,assets:rAssets,client_activity:(el,cid)=>rAuditLog(el,cid),cash_ledger:rCashLedger,cashier:rCashier};
+    const fn={dashboard:rClientDash,invoices:rInvoices,expenses:rExpenses,hours:rHours,documents:rDocs,messages:rMessages,debtors:rDebtors,creditors:rCreditors,security:rClientSecurity,reports:rReportsList,employees:rEmployees,employee_detail:(el,cid)=>rEmployeeDetail(el),bank:rBank,assets:rAssets,client_activity:(el,cid)=>rAuditLog(el,cid),cash_ledger:rCashLedger,cashier:rCashier};
     (fn[S.tab]||rClientDash)(el,S.currentClient);
   }
 }
@@ -7238,12 +7245,12 @@ function rHours(el,cid){
       <div style="font-size:11.5px;font-weight:700;color:var(--t1)">📊 ${isANBSelf?(adminTarget.isOwner?(t('urencriterium_title')||'Urencriterium'):(t('meewerkaftrek_title')||'Meewerkaftrek')):(t('urencriterium_title')||'Urencriterium')}${isANBSelf?` — 👤 ${escapeHtml(adminTarget.name||'')}`:''}</div>
       <div style="font-size:10.5px;font-weight:700;color:${meetsUrencriterium?'var(--green)':'var(--t3)'}">${meetsUrencriterium?'✓ '+(t('criterion_met')||'Met'):(t('criterion_not_met')||'Not yet met')}</div>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:baseline">
-      <div style="font-size:19px;font-weight:800;color:var(--t1)">${hoursThisYear.toFixed(1)} <span style="font-size:11px;font-weight:400;color:var(--t3)">/ ${urTarget.toLocaleString()} ${t('hours_short')||'hrs'}</span></div>
-      <div style="font-size:10px;color:var(--t3)">${t('hours_logged')}: <strong style="color:var(--t1)">${(isANBSelf?hrs.filter(h=>h.loggedBy===adminTarget.name).reduce((s,h)=>s+(h.hrs||0),0):totH).toFixed(1)}h</strong></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline" id="ur-live-wrap" data-base-year="${hoursThisYear}" data-base-logged="${(isANBSelf?hrs.filter(h=>h.loggedBy===adminTarget.name).reduce((s,h)=>s+(h.hrs||0),0):totH)}" data-target="${urTarget}" data-timer-cid="${cid}">
+      <div style="font-size:19px;font-weight:800;color:var(--t1)"><span id="ur-progress-num">${hoursThisYear.toFixed(1)}</span> <span style="font-size:11px;font-weight:400;color:var(--t3)">/ ${urTarget.toLocaleString()} ${t('hours_short')||'hrs'}</span></div>
+      <div style="font-size:10px;color:var(--t3)">${t('hours_logged')}: <strong style="color:var(--t1)" id="ur-hours-logged">${(isANBSelf?hrs.filter(h=>h.loggedBy===adminTarget.name).reduce((s,h)=>s+(h.hrs||0),0):totH).toFixed(1)}h</strong></div>
     </div>
     <div style="background:var(--gr2);border-radius:4px;height:6px;margin-top:6px;overflow:hidden">
-      <div style="background:${meetsUrencriterium?'var(--green)':'var(--gold)'};height:100%;width:${urencriteriumPct}%;transition:width .3s"></div>
+      <div id="ur-progress-bar" style="background:${meetsUrencriterium?'var(--green)':'var(--gold)'};height:100%;width:${urencriteriumPct}%;transition:width .3s"></div>
     </div>
     <div style="border-top:1px solid ${theme.border}22;margin-top:10px;padding-top:10px">
       ${renderTimerWidget(cid)}
@@ -10471,10 +10478,44 @@ async function resetAdminPassword(adminId){
 function fmtT(s){return[Math.floor(s/3600),Math.floor((s%3600)/60),s%60].map(v=>String(v).padStart(2,'0')).join(':');}
 // ⭐ يُعيد اسم الأدمن المسجِّل دخوله حاليًا (نور/أحمد/إلخ) - يُستخدَم لتسجيل
 // "مَن قام بالنشاط" في سجل الساعات تلقائيًا حسب الحساب المسجَّل به الدخول فعليًا
+// ⭐ الاسم يُشتَق مباشرة من بريد تسجيل الدخول (كل أدمن يسجّل دخوله ببريد
+// مختلف تمامًا) - بدل حقل "اسم" منفصل قابل للنسيان أو الخطأ. مثال:
+// "ahmad@anbfinancial.nl" → "Ahmad"، "ahmad.hassan@..." → "Ahmad Hassan"
+function deriveNameFromEmail(email){
+  if(!email)return null;
+  const local=email.split('@')[0];
+  if(!local)return null;
+  const words=local.split(/[._-]+/).filter(Boolean);
+  if(words.length===0)return null;
+  return words.map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' ');
+}
 function getCurrentAdminName(){
   if(!isAdmin())return null;
   const admin=(S.admins||[]).find(a=>a.id===S.currentAdmin);
-  return admin?.name||S.settings?.adminName||'Admin';
+  if(!admin)return 'Admin';
+  // ⭐ الاسم المُدخَل فعليًا عند إضافة الأدمن (نموذج "Add New Admin") له
+  // الأولوية دائمًا - فهو مرتبط بالحساب أصلًا ومقصود. الاشتقاق من البريد
+  // يبقى احتياطيًا فقط للحسابات القديمة التي لا تزال بالاسم العام "Admin"
+  if(admin.name&&admin.name!=='Admin')return admin.name;
+  return deriveNameFromEmail(admin.email)||admin.name||S.settings?.adminName||'Admin';
+}
+// ⭐ يُشغِّل نبضة العدّاد كل ثانية - تُحدِّث رقم العدّاد نفسه، وأيضًا كرت
+// التقدُّم (Urencriterium/Meewerkaftrek) بشكل لحظي إن كان معروضًا لنفس
+// عميل هذا العدّاد، بدل انتظار الضغط على Stop & Log لرؤية أي تغيير
+function startTimerTick(tmr){
+  return setInterval(()=>{
+    tmr.seconds=Math.floor((Date.now()-tmr._start)/1000);
+    const d=document.getElementById('timer-disp');if(d)d.textContent=fmtT(tmr.seconds);
+    const wrap=document.getElementById('ur-live-wrap');
+    if(wrap&&wrap.dataset.timerCid===String(tmr.cid||'')){
+      const liveHours=parseFloat(wrap.dataset.baseYear||'0')+tmr.seconds/3600;
+      const liveLogged=parseFloat(wrap.dataset.baseLogged||'0')+tmr.seconds/3600;
+      const target=parseFloat(wrap.dataset.target||'1');
+      const numEl=document.getElementById('ur-progress-num');if(numEl)numEl.textContent=liveHours.toFixed(1);
+      const loggedEl=document.getElementById('ur-hours-logged');if(loggedEl)loggedEl.textContent=liveLogged.toFixed(1)+'h';
+      const barEl=document.getElementById('ur-progress-bar');if(barEl)barEl.style.width=Math.min(100,(liveHours/target)*100)+'%';
+    }
+  },1000);
 }
 function timerToggle(){
   const tmr=S.timer;
@@ -10484,8 +10525,7 @@ function timerToggle(){
     tmr.cid=S.currentClient; // ⚠️ يُسجَّل عميل العدّاد وقت التشغيل - لضمان تسجيل الساعات للعميل الصحيح حتى لو انتقل المستخدم لشاشة أخرى قبل الإيقاف
     tmr.running=true;tmr._start=Date.now()-tmr.seconds*1000;
     sv(); // ⚠️ إصلاح: حفظ فوري عند التشغيل - كان العدّاد لا يُحفَظ إطلاقًا هنا، فيُفقَد بالكامل عند إغلاق التطبيق دون تسجيل خروج
-    tmr._iv=setInterval(()=>{tmr.seconds=Math.floor((Date.now()-tmr._start)/1000);
-      const d=document.getElementById('timer-disp');if(d)d.textContent=fmtT(tmr.seconds);},1000);
+    tmr._iv=startTimerTick(tmr);
   } else {tmr.running=false;clearInterval(tmr._iv);sv();}
   renderContent();
 }
@@ -10553,8 +10593,7 @@ function resumeTimerIfNeeded(){
       ()=>{Object.assign(S.timer,{running:false,seconds:0,task:'',cat:'',cid:null,_iv:null});sv();renderApp();}
     );
   } else {
-    tmr._iv=setInterval(()=>{tmr.seconds=Math.floor((Date.now()-tmr._start)/1000);
-      const d=document.getElementById('timer-disp');if(d)d.textContent=fmtT(tmr.seconds);},1000);
+    tmr._iv=startTimerTick(tmr);
   }
 }
 // ⭐ يفتح نافذة صغيرة لتعديل حد "اعتباره منسيًّا" الشخصي - لصاحب الحساب
