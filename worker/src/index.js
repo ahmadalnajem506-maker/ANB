@@ -90,6 +90,9 @@ export default {
       if (url.pathname === '/payment/create' && request.method === 'POST') return await handleCreatePayment(request, env, cors);
       if (url.pathname === '/payment/status' && request.method === 'GET') return await handlePaymentStatus(request, env, cors, url);
       if (url.pathname === '/admin/assistant' && request.method === 'POST') return await handleAdminAssistant(request, env, cors);
+      if (url.pathname === '/push/vapid-public-key' && request.method === 'GET') return await handlePushVapidKey(request, env, cors);
+      if (url.pathname === '/push/subscribe' && request.method === 'POST') return await handlePushSubscribe(request, env, cors);
+      if (url.pathname === '/push/unsubscribe' && request.method === 'POST') return await handlePushUnsubscribe(request, env, cors);
       return json({ error: 'Not found' }, 404, cors);
     } catch (err) {
       return json({ error: 'Internal error', detail: String(err && err.message || err) }, 500, cors);
@@ -99,10 +102,14 @@ export default {
   // ⭐ نسخ احتياطي تلقائي - يُستدعى تلقائيًا في الموعد المحدَّد في wrangler.toml
   // (crons)، بلا أي طلب HTTP أو تدخل بشري إطلاقًا
   async scheduled(event, env, ctx) {
-    // ⭐ جدولتان منفصلتان الآن: النسخ الاحتياطي (3 صباحًا) وترحيل أيام الكاشير
-    // المتروكة تلقائيًا (منتصف الليل بالضبط) - event.cron يُميِّز بينهما
+    // ⭐ ثلاث جدولات مستقلة الآن: النسخ الاحتياطي (3 صباحًا)، ترحيل أيام
+    // الكاشير المتروكة (منتصف الليل)، وفحص تذكيرات الـPush اليومي (7 صباحًا) -
+    // event.cron يُميِّز بين الثلاثة، كل واحدة تحتاج إضافة سطرها الخاص في
+    // wrangler.toml تحت [triggers] crons
     if (event.cron === '0 0 * * *') {
       ctx.waitUntil(autoPostStaleCashierDaysServer(env));
+    } else if (event.cron === '0 7 * * *') {
+      ctx.waitUntil(sendDailyReminderPushes(env));
     } else {
       ctx.waitUntil(performBackup(env, 'scheduled'));
     }
@@ -1596,6 +1603,229 @@ async function handleDeleteFile(request, env, cors, url) {
 }
 
 /* ═══════════════════════ توقيع/تحقق التوكن ═══════════════════════ */
+
+/* ═══════════════════════ Push Notifications (Web Push - VAPID) ═══════════════════════
+ * تنفيذ كامل لمعيار Web Push (RFC 8291 لتشفير المحتوى aes128gcm + VAPID لتوقيع
+ * الطلب) عبر Web Crypto API فقط - بلا أي مكتبة خارجية (لا حزمة npm)، لأن هذا
+ * الملف يُنشَر كسكربت Worker مباشر بلا خطوة بناء (bundler).
+ *
+ * المتغيرات السرية المطلوبة إضافةً لما هو موجود (أضِفها كـ Secrets عبر
+ * `wrangler secret put`، ولا تكتبها في wrangler.toml العادي):
+ *   - VAPID_PUBLIC_KEY   (نص base64url - نفس القيمة تُستخدَم في المتصفح أيضًا)
+ *   - VAPID_PRIVATE_JWK  (نص JSON لمفتاح EC خاص بصيغة JWK)
+ *   - VAPID_SUBJECT      (متغيّر عادي وليس سرًا - مثال: mailto:admin@example.com)
+ */
+
+async function handlePushVapidKey(request, env, cors) {
+  if (!env.VAPID_PUBLIC_KEY) return json({ error: 'Push notifications are not configured on the server yet' }, 503, cors);
+  return json({ publicKey: env.VAPID_PUBLIC_KEY }, 200, cors);
+}
+
+async function handlePushSubscribe(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const sub = body && body.subscription;
+  if (!sub || !sub.endpoint || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) {
+    return json({ error: 'Invalid subscription' }, 400, cors);
+  }
+  // ⭐ هاش رابط الاشتراك (endpoint) هو المعرِّف الثابت لهذا الجهاز تحديدًا - يمنع
+  // تكرار نفس الجهاز عدة مرات لو أعاد المستخدم تفعيل الإشعارات أكثر من مرة
+  const id = await sha256Hex(sub.endpoint);
+  await ensurePushTable(env);
+  await env.DB.prepare(
+    `INSERT INTO tbl_push_subscriptions (id, role, aid, endpoint, p256dh, auth, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET role = excluded.role, aid = excluded.aid, endpoint = excluded.endpoint,
+       p256dh = excluded.p256dh, auth = excluded.auth`
+  ).bind(id, auth.payload.at, auth.payload.aid, sub.endpoint, sub.keys.p256dh, sub.keys.auth, Date.now()).run();
+  return json({ ok: true }, 200, cors);
+}
+
+async function handlePushUnsubscribe(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400, cors); }
+  const endpoint = body && body.endpoint;
+  if (!endpoint) return json({ error: 'endpoint is required' }, 400, cors);
+  const id = await sha256Hex(endpoint);
+  await ensurePushTable(env);
+  // ⚠️ يحذف فقط اشتراكًا يخص نفس الحساب المُصادَق عليه بالتوكن - لا يستطيع أي
+  // مستخدم إلغاء اشتراك جهاز حساب آخر حتى لو خمَّن الرابط
+  await env.DB.prepare(`DELETE FROM tbl_push_subscriptions WHERE id = ? AND aid = ?`).bind(id, auth.payload.aid).run();
+  return json({ ok: true }, 200, cors);
+}
+
+// ⭐ ينشئ الجدول تلقائيًا إن لم يكن موجودًا بعد - يغني عن تشغيل هجرة SQL يدوية
+// منفصلة قبل أول استخدام (نفس مبدأ الأمان: لا يفشل الطلب الأول بعد النشر)
+let _pushTableEnsured = false;
+async function ensurePushTable(env) {
+  if (_pushTableEnsured) return;
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS tbl_push_subscriptions (
+      id TEXT PRIMARY KEY, role TEXT NOT NULL, aid TEXT NOT NULL,
+      endpoint TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created_at INTEGER NOT NULL
+    )`
+  ).run();
+  await env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_push_subs_aid ON tbl_push_subscriptions(role, aid)`).run();
+  _pushTableEnsured = true;
+}
+
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return bufToHex(buf);
+}
+function b64urlEncodeBytes(bytes) {
+  let bin = '';
+  bytes.forEach((b) => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlDecodeToBytes(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  const bin = atob(str);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+function concatBytes(...arrs) {
+  const total = arrs.reduce((s, a) => s + a.length, 0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const a of arrs) { out.set(a, offset); offset += a.length; }
+  return out;
+}
+async function hmacSha256Bytes(keyBytes, msgBytes) {
+  const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return new Uint8Array(await crypto.subtle.sign('HMAC', key, msgBytes));
+}
+
+// ── توقيع VAPID (JWT بخوارزمية ES256) - يثبت للمتصفح/متصفح-الدفع أن الطلب
+// فعلًا من نفس الخادم الذي سجَّل الاشتراك، بلا حاجة لأي سر مشترك مسبق ──
+async function buildVapidAuthHeader(endpoint, env) {
+  const endpointUrl = new URL(endpoint);
+  const aud = `${endpointUrl.protocol}//${endpointUrl.host}`;
+  const header = { typ: 'JWT', alg: 'ES256' };
+  const claims = { aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: env.VAPID_SUBJECT || 'mailto:admin@example.com' };
+  const encHeader = b64urlEncodeBytes(new TextEncoder().encode(JSON.stringify(header)));
+  const encClaims = b64urlEncodeBytes(new TextEncoder().encode(JSON.stringify(claims)));
+  const signingInput = `${encHeader}.${encClaims}`;
+  const privJwk = JSON.parse(env.VAPID_PRIVATE_JWK);
+  const key = await crypto.subtle.importKey('jwk', privJwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  // ⚠️ Web Crypto تُخرج توقيع ECDSA بصيغة raw (r||s) مباشرة - وهي بالضبط
+  // الصيغة المطلوبة لـJWT ES256، بعكس صيغة DER الشائعة في مكتبات أخرى
+  const sigBuf = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, new TextEncoder().encode(signingInput));
+  const sig = b64urlEncodeBytes(new Uint8Array(sigBuf));
+  return `vapid t=${signingInput}.${sig}, k=${env.VAPID_PUBLIC_KEY}`;
+}
+
+// ── تشفير محتوى الإشعار حسب RFC 8291 (aes128gcm) ثم إرساله فعليًا لخدمة الدفع
+// (FCM لكروم/إيدج، Mozilla لفايرفوكس، ...) المحدَّدة في subscription.endpoint ──
+async function sendWebPushToSubscription(sub, payloadObj, env) {
+  const plaintext = new TextEncoder().encode(JSON.stringify(payloadObj));
+  const uaPublicBytes = b64urlDecodeToBytes(sub.p256dh);
+  const authSecret = b64urlDecodeToBytes(sub.auth);
+
+  // زوج مفاتيح ECDH مؤقَّت (ephemeral) خاص بهذه الرسالة الواحدة فقط - لا يُخزَّن ولا يُعاد استخدامه أبدًا
+  const serverKeyPair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+  const asPublicRaw = new Uint8Array(await crypto.subtle.exportKey('raw', serverKeyPair.publicKey));
+  const uaPublicKey = await crypto.subtle.importKey('raw', uaPublicBytes, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  const ecdhSecret = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: uaPublicKey }, serverKeyPair.privateKey, 256));
+
+  const prkKey = await hmacSha256Bytes(authSecret, ecdhSecret); // HKDF-Extract(salt=auth_secret, ikm=ecdh_secret)
+  const keyInfo = concatBytes(new TextEncoder().encode('WebPush: info\0'), uaPublicBytes, asPublicRaw);
+  const ikm = (await hmacSha256Bytes(prkKey, concatBytes(keyInfo, new Uint8Array([1])))).slice(0, 32);
+
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const prk = await hmacSha256Bytes(salt, ikm); // HKDF-Extract(salt=عشوائي لكل رسالة, ikm)
+
+  const cek = (await hmacSha256Bytes(prk, concatBytes(new TextEncoder().encode('Content-Encoding: aes128gcm\0'), new Uint8Array([1])))).slice(0, 16);
+  const nonce = (await hmacSha256Bytes(prk, concatBytes(new TextEncoder().encode('Content-Encoding: nonce\0'), new Uint8Array([1])))).slice(0, 12);
+
+  // 0x02 = بايت فاصل نهاية آخر سجل حسب RFC 8188 - بلا أي حشو إضافي (رسائلنا قصيرة دائمًا، سجل واحد يكفي)
+  const paddedPlaintext = concatBytes(plaintext, new Uint8Array([2]));
+  const aesKey = await crypto.subtle.importKey('raw', cek, { name: 'AES-GCM' }, false, ['encrypt']);
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, aesKey, paddedPlaintext));
+
+  const recordSize = new Uint8Array(4);
+  new DataView(recordSize.buffer).setUint32(0, 4096, false);
+  const header = concatBytes(salt, recordSize, new Uint8Array([asPublicRaw.length]), asPublicRaw);
+  const body = concatBytes(header, ciphertext);
+
+  const authHeader = await buildVapidAuthHeader(sub.endpoint, env);
+  return fetch(sub.endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Content-Encoding': 'aes128gcm',
+      'TTL': '86400',
+      'Authorization': authHeader,
+    },
+    body,
+  });
+}
+
+// ── إرسال إشعار لكل أجهزة حساب واحد (أدمن أو عميل)، مع حذف أي اشتراك لم يعد
+// صالحًا تلقائيًا (404/410 تعني أن المتصفح ألغاه من جهته) بدل تكرار محاولات فاشلة للأبد ──
+async function sendPushToAccount(env, role, aid, notification) {
+  await ensurePushTable(env);
+  const { results } = await env.DB.prepare(`SELECT * FROM tbl_push_subscriptions WHERE role = ? AND aid = ?`).bind(role, aid).all();
+  for (const row of results) {
+    try {
+      const res = await sendWebPushToSubscription(row, notification, env);
+      if (res.status === 404 || res.status === 410) {
+        await env.DB.prepare(`DELETE FROM tbl_push_subscriptions WHERE id = ?`).bind(row.id).run();
+      }
+    } catch (err) { /* فشل جهاز واحد لا يجب أن يوقف إرسال بقية الأجهزة/الحسابات */ }
+  }
+}
+
+// ── الفحص اليومي (7 صباحًا، عبر scheduled أعلاه): نفس عتبات التذكيرات الظاهرة
+// أصلًا داخل التطبيق (reminder_contract_title، تأخُّر الفواتير) لكن كإشعار
+// Push فعلي يصل حتى لو التطبيق مغلقًا تمامًا، بدل انتظار فتحه لرؤيتها ──
+async function sendDailyReminderPushes(env) {
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return;
+  const payload = cloud.payload;
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+
+  // عقود بحاجة تجديد خلال ٧ أيام - إشعار لكل الأدمن (المسؤولية مشتركة، لا عميل بعينه)
+  const admins = payload.admins || [];
+  const contracts = payload.contracts || [];
+  const soonContracts = contracts.filter((c) => {
+    if (c.status !== 'active' || !c.endDate) return false;
+    const days = Math.floor((new Date(c.endDate) - today) / 86400000);
+    return days >= 0 && days <= 7;
+  });
+  if (soonContracts.length > 0) {
+    for (const admin of admins) {
+      if (admin.status !== 'active') continue;
+      await sendPushToAccount(env, 'admin', admin.id, {
+        title: 'ANB — عقود بحاجة تجديد',
+        body: `${soonContracts.length} عقد سينتهي خلال 7 أيام أو أقل`,
+      });
+    }
+  }
+
+  // فواتير متأخرة - إشعار للعميل نفسه (كل عميل يرى فواتيره فقط)
+  const invoices = payload.invoices || [];
+  const overdueByClient = {};
+  invoices.forEach((inv) => {
+    if (!inv.deleted && inv.due && inv.due < todayStr && ['Openstaand', 'Verzonden'].includes(inv.status)) {
+      overdueByClient[inv.cid] = (overdueByClient[inv.cid] || 0) + 1;
+    }
+  });
+  for (const cid of Object.keys(overdueByClient)) {
+    await sendPushToAccount(env, 'client', cid, {
+      title: 'ANB — فاتورة متأخرة السداد',
+      body: `لديك ${overdueByClient[cid]} فاتورة متأخرة السداد`,
+    });
+  }
+}
+
 
 async function signToken(claims, secret) {
   const payloadB64 = b64urlEncode(JSON.stringify(claims));
