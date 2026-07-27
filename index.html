@@ -13398,18 +13398,33 @@ function openEditHours(id){
 }
 
 /* ═══ PDF EXPORT ═══ */
+// ⭐ يبني نص كود QR وفق معيار EPC069-12 (SEPA Credit Transfer) - يُقرَأ
+// بواسطة تطبيق البنك (لا الكاميرا العادية للهاتف) ليُعبِّئ IBAN والاسم
+// والمبلغ والمرجع تلقائيًا في نموذج التحويل، فيوفِّر على العميل الكتابة اليدوية
+function buildEPCQRPayload(iban,beneficiaryName,amount,reference){
+  iban=(iban||'').replace(/\s+/g,'').toUpperCase();
+  const lines=[
+    'BCD','002','1','SCT','',
+    (beneficiaryName||'').slice(0,70),
+    iban,
+    'EUR'+(amount||0).toFixed(2),
+    '','',
+    (reference||'').slice(0,140)
+  ];
+  return lines.join('\n');
+}
 async function exportPDF(id){
   showLoading(t('generating_pdf')||'Generating PDF…');
   try{
     await ensureJsPDF();
-    _exportPDF(id);
+    await _exportPDF(id);
   }catch(err){
     toast('❌ '+(err.message||'Could not load PDF library'));
   }finally{
     hideLoading();
   }
 }
-function _exportPDF(id){
+async function _exportPDF(id){
   const jsPDF=window.jsPDF?.jsPDF||window.jspdf?.jsPDF||window.jsPDF;
   if(!jsPDF){toast(t('tab_reports')+'...','ti-loader');return;}
   const i=S.invoices.find(i=>i.id===id);
@@ -13553,12 +13568,28 @@ function _exportPDF(id){
   doc.text(FMT(i.total),W-M-3,y+6.3,{align:'right'});
   y+=22;
 
-  // ── صندوق "PAYMENT DETAILS" بخلفية كريمية ذهبية فاتحة
+  // ── صندوق "PAYMENT DETAILS" بخلفية كريمية ذهبية فاتحة + كود QR للدفع (EPC)
   const payLines=[];
-  if(co.iban||c.iban)payLines.push({label:'IBAN',value:co.iban||c.iban});
+  const qrIban=co.iban||c.iban;
+  const qrBeneficiary=co.iban?(co.companyName||c.name):c.name;
+  if(qrIban)payLines.push({label:'IBAN',value:qrIban});
   payLines.push({label:'Reference',value:i.num});
-  const payH=8+payLines.length*5;
-  doc.setFillColor(253,248,236);doc.roundedRect(M,y,W-M*2,payH,1.5,1.5,'F');
+  let qrDataUrl=null;
+  if(qrIban){
+    try{
+      const qrLib=await ensureQRCode();
+      if(qrLib){
+        const payload=buildEPCQRPayload(qrIban,qrBeneficiary,i.total,i.num);
+        const qr=qrLib(0,'M');
+        qr.addData(payload);
+        qr.make();
+        qrDataUrl=qr.createDataURL(4,2);
+      }
+    }catch(e){}
+  }
+  const payBoxW=qrDataUrl?W-M*2-32:W-M*2;
+  const payH=Math.max(8+payLines.length*5,qrDataUrl?26:0);
+  doc.setFillColor(253,248,236);doc.roundedRect(M,y,payBoxW,payH,1.5,1.5,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(138,100,16);
   doc.text('PAYMENT DETAILS',M+5,y+6);
   doc.setFontSize(8);let py=y+11.5;
@@ -13569,6 +13600,12 @@ function _exportPDF(id){
     doc.text(p.value,M+30,py);
     py+=5;
   });
+  if(qrDataUrl){
+    const qrX=M+payBoxW+4,qrSize=payH;
+    doc.addImage(qrDataUrl,'PNG',qrX,y,qrSize,qrSize);
+    doc.setFont('helvetica','normal');doc.setFontSize(5.5);doc.setTextColor(120,120,120);
+    doc.text('Scan via banking app',qrX+qrSize/2,y+qrSize+3.5,{align:'center'});
+  }
 
   if(i.status==='Betaald'){
     doc.setGState(doc.GState({opacity:.15}));
