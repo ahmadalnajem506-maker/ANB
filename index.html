@@ -2250,6 +2250,11 @@ const CLIENT_DATA_KEYS_TO_RESET_ON_SCHEMA_BUMP=['clients','invoices','expenses',
       keysToRestore.forEach(k=>{if(p[k])S[k]=p[k];});
       if(p.role)S.role=p.role;
       if(p.currentClient)S.currentClient=p.currentClient;
+      // ⚠️ إصلاح خلل حقيقي: currentAdmin كان يُحفَظ في anb5 (كجزء من نسخ S بالكامل
+      // في saveLocalCache) لكن لم يكن يُستعاد هنا إطلاقًا عند تحديث الصفحة - فيبقى
+      // فارغًا، فتفشل getCurrentAdminName() في إيجاد حساب الأدمن المطابق وترجع
+      // الاسم الاحتياطي المُشتَق من البريد أو 'Admin' بدل الاسم الحقيقي المحفوظ.
+      if(p.currentAdmin)S.currentAdmin=p.currentAdmin;
       if(p.tab)S.tab=p.tab;
       if(p.lang)S.lang=p.lang;
     }
