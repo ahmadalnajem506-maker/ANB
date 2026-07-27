@@ -4781,10 +4781,7 @@ async function exportContractPDF(contractId){
     doc.text('Nog niet ondertekend — dit exemplaar betreft een niet-ondertekend concept',M,y);
   }
 
-  doc.setFillColor(10,34,24);doc.rect(0,283,W,14,'F');
-  doc.setFillColor(200,144,16);doc.rect(0,283,W,1,'F');
-  doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(180,178,168);
-  doc.text('Issued via ANB Financial Services',W/2,290.5,{align:'center'});
+  renderANBLetterheadFooter(doc,W);
 
   doc.save((con.title||'Contract').replace(/[^a-zA-Z0-9]/g,'_')+'_'+(client?.name||'Client').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
   toast('✓ Contract PDF exported');
@@ -9612,10 +9609,7 @@ async function exportPayslipPDF(payslip,emp){
     doc.text('Generated via ANB Financial Services on '+new Date(payslip.generatedAt).toLocaleDateString(),M+4,y+11);
   }
 
-  doc.setFillColor(10,34,24);doc.rect(0,283,W,14,'F');
-  doc.setFillColor(200,144,16);doc.rect(0,283,W,1,'F');
-  doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(180,178,168);
-  doc.text('Issued via ANB Financial Services',W/2,290.5,{align:'center'});
+  renderANBLetterheadFooter(doc,W);
 
   doc.save(`Payslip_${emp.name.replace(/\s+/g,'_')}_${payslip.month}_${payslip.year}.pdf`);
   toast('✓ Payslip PDF generated');
@@ -9703,10 +9697,7 @@ async function exportEmployeeContractPDF(employeeId){
   doc.setFontSize(7);doc.setTextColor(150,150,150);
   doc.text('Generated via ANB Financial Services · '+new Date().toLocaleDateString(),M,ctx.y);
 
-  doc.setFillColor(10,34,24);doc.rect(0,283,W,14,'F');
-  doc.setFillColor(200,144,16);doc.rect(0,283,W,1,'F');
-  doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(180,178,168);
-  doc.text('Issued via ANB Financial Services',W/2,290.5,{align:'center'});
+  renderANBLetterheadFooter(doc,W);
 
   doc.save(`Contract_${emp.name.replace(/\s+/g,'_')}.pdf`);
   toast('✓ Contract PDF generated');
@@ -9832,10 +9823,7 @@ async function exportContractAmendmentPDF(employeeId,amendmentId){
   doc.setFontSize(7);doc.setTextColor(150,150,150);
   doc.text('Generated via ANB Financial Services · '+new Date().toLocaleDateString(),M,ctx.y);
 
-  doc.setFillColor(10,34,24);doc.rect(0,283,W,14,'F');
-  doc.setFillColor(200,144,16);doc.rect(0,283,W,1,'F');
-  doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(180,178,168);
-  doc.text('Issued via ANB Financial Services',W/2,290.5,{align:'center'});
+  renderANBLetterheadFooter(doc,W);
 
   doc.save(`Addendum_${emp.name.replace(/\s+/g,'_')}_${amendment.date}.pdf`);
   toast('✓ '+(t('amendment_pdf_exported')||'Addendum PDF exported'));
@@ -13614,11 +13602,16 @@ async function _exportPDF(id){
     doc.setGState(doc.GState({opacity:1}));
   }
 
-  // ── تذييل أخضر داكن بخط ذهبي علوي فاصل
-  doc.setFillColor(10,34,24);doc.rect(0,283,W,14,'F');
-  doc.setFillColor(200,144,16);doc.rect(0,283,W,1,'F');
-  doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(180,178,168);
-  doc.text('Issued via ANB Financial Services'+(co.tagline?' · '+co.tagline:''),W/2,290.5,{align:'center'});
+  // ── تذييل: نمط الترويسة الرسمية الكامل لفواتير ANB نفسها، أو التذييل
+  // المبسَّط المعتاد لفواتير أي عميل آخر
+  if(c.id===ANB_SELF_ID){
+    renderANBLetterheadFooter(doc,W);
+  }else{
+    doc.setFillColor(10,34,24);doc.rect(0,283,W,14,'F');
+    doc.setFillColor(200,144,16);doc.rect(0,283,W,1,'F');
+    doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(180,178,168);
+    doc.text('Issued via ANB Financial Services'+(co.tagline?' · '+co.tagline:''),W/2,290.5,{align:'center'});
+  }
 
   doc.save(`${i.num}.pdf`);
   toast('PDF ✓','ti-download');
@@ -15784,6 +15777,26 @@ function section2(doc,ctx,title){
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(245,220,112);
   doc.text(title,M+3,ctx.y+5);
   ctx.y+=11;
+}
+// ⭐ تذييل بنمط الترويسة الرسمية (letterhead) المعتمَدة لـANB - نفس تنسيق
+// السطرين المستخدَم في نموذج Word: السطر الأول (اسم الشركة · العنوان ·
+// KVK · BTW · IBAN)، السطر الثاني (البريد · الموقع · الهاتف). كل التفاصيل
+// تُقرأ حيًّا من S.settings دائمًا، فلا تحتاج تحديثًا يدويًا أبدًا
+function renderANBLetterheadFooter(doc,W){
+  const s=S.settings||{};
+  doc.setFillColor(10,34,24);doc.rect(0,283,W,14,'F');
+  doc.setFillColor(200,144,16);doc.rect(0,283,W,1,'F');
+  doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(180,178,168);
+  const line1Parts=[s.companyName||'ANB Financial Services',s.address||''].filter(Boolean);
+  const taxParts=[];
+  if(s.kvk)taxParts.push('KvK: '+s.kvk);
+  if(s.btw)taxParts.push('BTW: '+s.btw);
+  if(s.iban)taxParts.push('IBAN: '+s.iban);
+  const line1=line1Parts.join('   ·   ')+(taxParts.length?'    '+taxParts.join('   ·   '):'');
+  const line2Parts=[s.email,s.website,s.phone].filter(Boolean);
+  const line2=line2Parts.join('   ·   ');
+  doc.text(line1,W/2,288.5,{align:'center'});
+  if(line2){doc.setFontSize(6);doc.text(line2,W/2,292.5,{align:'center'});}
 }
 function renderLegalArticle(doc,ctx,num,title,body){
   const {M,W}=ctx;
