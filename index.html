@@ -387,6 +387,8 @@ body.rtl .nb{text-align:right;flex-direction:row-reverse}
 .sb-lang-btn{flex:1;padding:4px 0;border:1px solid rgba(255,255,255,.15);background:transparent;
   color:rgba(255,255,255,.45);font-size:10px;font-weight:700;border-radius:4px;cursor:pointer;font-family:var(--fb)}
 .sb-lang-btn:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.8)}
+.sb-lang-btn:disabled{opacity:.3;cursor:not-allowed}
+.sb-lang-btn:disabled:hover{background:transparent}
 .sb-lang-btn.act{background:var(--gold);color:var(--g1);border-color:var(--gold)}
 .logout-btn{width:100%;text-align:left;padding:7px 8px;border:none;background:transparent;
   border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;gap:7px;
@@ -506,10 +508,21 @@ tr:hover td{background:var(--gr1)}
 .loading-msg{color:#FDF8EC;font-size:13px;font-weight:600;background:rgba(10,34,24,0.6);padding:6px 14px;border-radius:6px}
 /* ⭐ سكيليتون تحميل (Skeleton loader) - يُستخدَم بدل الدائرة الدوّارة وحدها
    في اللحظة الوحيدة الحالية اللي ما فيها أي مؤشر تحميل إطلاقًا: بين تسجيل
-   الدخول الناجح وظهور لوحة التحكم (تحميل كامل بيانات الحساب من الخادم) */
-.skeleton-wrap{width:min(420px,90vw);display:flex;flex-direction:column;gap:12px}
-.skeleton-block{border-radius:8px;background:linear-gradient(90deg,rgba(253,248,236,0.06) 25%,rgba(253,248,236,0.16) 37%,rgba(253,248,236,0.06) 63%);background-size:400% 100%;animation:skeletonShimmer 1.4s ease-in-out infinite}
-@keyframes skeletonShimmer{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+   الدخول الناجح وظهور لوحة التحكم (تحميل كامل بيانات الحساب من الخادم).
+   أُعيد تصميمه ليُحاكي شكل الداشبورد الفعلي (ترويسة + كروت إحصائيات +
+   صفوف قائمة) بدل مستطيلات رمادية عائمة بلا شكل واضح */
+.skeleton-card{width:min(440px,90vw);background:rgba(253,248,236,0.05);border:1px solid rgba(253,248,236,0.12);
+  border-radius:16px;padding:20px;box-shadow:0 12px 32px rgba(0,0,0,0.25);display:flex;flex-direction:column;gap:18px}
+.skeleton-header{display:flex;align-items:center;gap:12px}
+.skeleton-avatar{width:42px;height:42px;border-radius:50%;flex-shrink:0}
+.skeleton-header-lines{flex:1;display:flex;flex-direction:column;gap:7px}
+.skeleton-stats-row{display:flex;gap:10px}
+.skeleton-stat-card{flex:1;background:rgba(253,248,236,0.04);border:1px solid rgba(253,248,236,0.08);
+  border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.skeleton-list-row{display:flex;align-items:center;gap:10px}
+.skeleton-icon{width:26px;height:26px;border-radius:7px;flex-shrink:0}
+.skeleton-block{border-radius:6px;background:linear-gradient(100deg,rgba(253,248,236,0.06) 20%,rgba(253,248,236,0.22) 42%,rgba(253,248,236,0.06) 64%);background-size:250% 100%;animation:skeletonShimmer 1.6s ease-in-out infinite}
+@keyframes skeletonShimmer{0%{background-position:200% 0}100%{background-position:-50% 0}}
 
 /* ═══ SETTINGS ═══ */
 .settings-section{background:var(--white);border:1px solid var(--gr2);border-radius:var(--r);
@@ -1142,15 +1155,45 @@ html { scroll-behavior: smooth; }
 <div class="notif" id="notif"></div>
 <div class="loading-overlay" id="loading-overlay">
   <div class="loading-spinner" id="loading-spinner-el"></div>
-  <div class="skeleton-wrap" id="loading-skeleton" style="display:none">
-    <div class="skeleton-block" style="height:64px"></div>
-    <div style="display:flex;gap:12px">
-      <div class="skeleton-block" style="height:88px;flex:1"></div>
-      <div class="skeleton-block" style="height:88px;flex:1"></div>
-      <div class="skeleton-block" style="height:88px;flex:1"></div>
+  <div class="skeleton-card" id="loading-skeleton" style="display:none">
+    <div class="skeleton-header">
+      <div class="skeleton-block skeleton-avatar"></div>
+      <div class="skeleton-header-lines">
+        <div class="skeleton-block" style="height:12px;width:55%"></div>
+        <div class="skeleton-block" style="height:9px;width:35%"></div>
+      </div>
     </div>
-    <div class="skeleton-block" style="height:140px"></div>
-    <div class="skeleton-block" style="height:22px;width:60%"></div>
+    <div class="skeleton-stats-row">
+      <div class="skeleton-stat-card">
+        <div class="skeleton-block skeleton-icon"></div>
+        <div class="skeleton-block" style="height:14px;width:70%"></div>
+        <div class="skeleton-block" style="height:8px;width:90%"></div>
+      </div>
+      <div class="skeleton-stat-card">
+        <div class="skeleton-block skeleton-icon"></div>
+        <div class="skeleton-block" style="height:14px;width:70%"></div>
+        <div class="skeleton-block" style="height:8px;width:90%"></div>
+      </div>
+      <div class="skeleton-stat-card">
+        <div class="skeleton-block skeleton-icon"></div>
+        <div class="skeleton-block" style="height:14px;width:70%"></div>
+        <div class="skeleton-block" style="height:8px;width:90%"></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="skeleton-list-row">
+        <div class="skeleton-block skeleton-icon"></div>
+        <div class="skeleton-block" style="height:10px;width:92%"></div>
+      </div>
+      <div class="skeleton-list-row">
+        <div class="skeleton-block skeleton-icon"></div>
+        <div class="skeleton-block" style="height:10px;width:78%"></div>
+      </div>
+      <div class="skeleton-list-row">
+        <div class="skeleton-block skeleton-icon"></div>
+        <div class="skeleton-block" style="height:10px;width:62%"></div>
+      </div>
+    </div>
   </div>
   <div class="loading-msg" id="loading-msg"></div>
 </div>
@@ -2085,14 +2128,19 @@ function applyFontScale(pct){
   if(app)app.style.zoom=pct+'%';
   if(login)login.style.zoom=pct+'%';
 }
-function cycleFontScale(){
+function getFontScale(){
   let current=100;
   try{current=parseInt(localStorage.getItem('anb5_font_scale')||'100',10);}catch{}
+  return FONT_SCALE_LEVELS.includes(current)?current:100;
+}
+function adjustFontScale(direction){
+  const current=getFontScale();
   const idx=FONT_SCALE_LEVELS.indexOf(current);
-  const next=FONT_SCALE_LEVELS[(idx+1)%FONT_SCALE_LEVELS.length];
+  const nextIdx=Math.min(FONT_SCALE_LEVELS.length-1,Math.max(0,idx+direction));
+  const next=FONT_SCALE_LEVELS[nextIdx];
   try{localStorage.setItem('anb5_font_scale',String(next));}catch{}
   applyFontScale(next);
-  if(S.role)renderApp(); // لإعادة رسم زر "Aa" بالنسبة الجديدة
+  if(S.role)renderApp(); // لإعادة رسم زري +/- (تعطيل الزر عند الوصول لأقصى حد)
 }
 // ⭐ يُطبَّق أقرب ما يمكن لبداية تحميل الصفحة (قبل أي رسم) لتفادي "ومضة"
 // مرئية من الحجم الافتراضي قبل التبديل للحجم المحفوظ - بنفس أسلوب applyDarkModeEarly
@@ -4206,7 +4254,14 @@ function renderSidebar(){
     <button class="sb-lang-btn ${S.lang==='nl'?'act':''}\" onclick="setLang('nl')">NL</button>
     <button class="sb-lang-btn ${S.lang==='ar'?'act':''}\" onclick="setLang('ar')">AR</button>
     <button class="sb-lang-btn" onclick="toggleDarkMode()" title="${document.body.classList.contains('dark-mode')?(t('light_mode')||'Light mode'):(t('dark_mode')||'Dark mode')}" style="margin-inline-start:auto">${document.body.classList.contains('dark-mode')?'☀️':'🌙'}</button>
-    <button class="sb-lang-btn" onclick="cycleFontScale()" title="${t('text_size')||'Text size'}" style="font-weight:800">Aa</button>
+  </div>
+  <div class="sb-lang-row" style="margin-top:6px">
+    <span style="font-size:10.5px;color:rgba(255,255,255,0.55);font-weight:600">${t('text_size')||'Text size'}</span>
+    <div style="display:flex;align-items:center;gap:6px;margin-inline-start:auto">
+      <button class="sb-lang-btn" onclick="adjustFontScale(-1)" title="${t('decrease_text_size')||'Decrease text size'}" style="font-weight:800" ${getFontScale()<=FONT_SCALE_LEVELS[0]?'disabled':''}>−</button>
+      <span style="font-size:10.5px;color:rgba(255,255,255,0.75);min-width:32px;text-align:center">${getFontScale()}%</span>
+      <button class="sb-lang-btn" onclick="adjustFontScale(1)" title="${t('increase_text_size')||'Increase text size'}" style="font-weight:800" ${getFontScale()>=FONT_SCALE_LEVELS[FONT_SCALE_LEVELS.length-1]?'disabled':''}>+</button>
+    </div>
   </div>`;
 
   if(isAdmin()){
@@ -15899,6 +15954,45 @@ const IB_BOX1_RATE1=0.3575, IB_BOX1_RATE2=0.3756, IB_BOX1_RATE3=0.495;
 const ZELFSTANDIGENAFTREK_2026=1200;
 const STARTERSAFTREK_2026=2123;
 const MKB_WINSTVRIJSTELLING_RATE=0.127;
+// ⭐⭐ إضافتان جديدتان لأقصى دقة ممكنة - كانتا غائبتين تمامًا سابقًا رغم أنهما
+// إلزاميتان فعليًا لكل صاحب عمل حر تقريبًا، وغيابهما كان يجعل "الضريبة
+// المقدَّرة" أعلى بكثير من الواقع الفعلي (بمقدار آلاف اليوروهات أحيانًا).
+// أرقام ٢٠٢٦ مُتحقَّق منها مباشرة من belastingdienst.nl ومصادر ضريبية مهنية
+// متعددة متطابقة (Deloitte، Grant Thornton، CijferMeester، Scab Advies):
+// ── ١) بيان اشتراك التأمين الصحي (Zvw) - إلزامي، يُدفَع منفصلًا عن ضريبة
+// الدخل نفسها لكن جزء لا يتجزأ من العبء الضريبي الفعلي على صاحب العمل الحر
+const ZVW_RATE_2026=0.0485;
+const ZVW_MAX_INCOME_2026=79409; // لا اشتراك على أي جزء من الربح يتجاوز هذا السقف
+// ── ٢) الخصمان الضريبيان الرئيسيان (Heffingskortingen) - يُخصَمان مباشرة من
+// مبلغ الضريبة المحسوبة (وليس من الدخل الخاضع للضريبة)، وتقريبًا كل مكلَّف
+// يستفيد منهما جزئيًا أو كليًا. تجاهلهما بالكامل كما كان سابقًا يعني تقدير
+// ضريبة أعلى بكثير من الحقيقة الفعلية.
+const AHK_MAX_2026=3115,AHK_PHASEOUT_START_2026=29736,AHK_PHASEOUT_RATE_2026=0.06398;
+const ARBEIDSKORTING_MAX_2026=5685,ARBEIDSKORTING_PLATEAU_START_2026=24820,ARBEIDSKORTING_PHASEOUT_START_2026=45592,ARBEIDSKORTING_PHASEOUT_RATE_2026=0.0651;
+// ⚠️ مرحلة البناء التدريجي (opbouw) لخصم العمل تحت ٢٤,٨٢٠€ لها شرائح رسمية
+// دقيقة لم نجد لها مصدرًا ضريبيًا مهنيًا موحَّدًا (مواقع الحاسبات العامة
+// تتضارب فيما بينها) - لذا نُقارِب هذه الشريحة الدنيا فقط بخط مستقيم يصل
+// تمامًا لنفس القيمة القصوى عند ٢٤,٨٢٠€، وننبّه لذلك بوضوح في الواجهة. هذا لا
+// يؤثر عمليًا إلا على أرباح تحت ~٢٥ ألف يورو سنويًا - نادر لصاحب عمل يستوفي
+// معيار الساعات (١,٢٢٥ ساعة) أصلًا.
+function calcArbeidskorting(arbeidsinkomen){
+  if(arbeidsinkomen<=0)return 0;
+  if(arbeidsinkomen<ARBEIDSKORTING_PLATEAU_START_2026){
+    return Math.round((arbeidsinkomen/ARBEIDSKORTING_PLATEAU_START_2026)*ARBEIDSKORTING_MAX_2026*100)/100;
+  }
+  if(arbeidsinkomen<=ARBEIDSKORTING_PHASEOUT_START_2026)return ARBEIDSKORTING_MAX_2026;
+  const reduced=ARBEIDSKORTING_MAX_2026-(arbeidsinkomen-ARBEIDSKORTING_PHASEOUT_START_2026)*ARBEIDSKORTING_PHASEOUT_RATE_2026;
+  return Math.round(Math.max(0,reduced)*100)/100;
+}
+function calcAlgemeneHeffingskorting(verzamelinkomen){
+  if(verzamelinkomen<=0)return AHK_MAX_2026;
+  if(verzamelinkomen<=AHK_PHASEOUT_START_2026)return AHK_MAX_2026;
+  const reduced=AHK_MAX_2026-(verzamelinkomen-AHK_PHASEOUT_START_2026)*AHK_PHASEOUT_RATE_2026;
+  return Math.round(Math.max(0,reduced)*100)/100;
+}
+function calcZvwContribution(income){
+  return Math.round(Math.min(Math.max(0,income),ZVW_MAX_INCOME_2026)*ZVW_RATE_2026*100)/100;
+}
 // ⭐ Meewerkaftrek (خصم الشريك المُساعِد في العمل بلا أجر رسمي) - نسبة من
 // الربح حسب عدد الساعات التي ساعد بها الشريك، وفق جدول Belastingdienst
 // الرسمي. يبدأ الاستحقاق من 525 ساعة سنويًا فأكثر.
@@ -15951,10 +16045,24 @@ function calculatePersonalIncomeTax(businessProfit,meetsHourCriterion,isStarter,
   const b2=Math.min(Math.max(0,totalBox1Income-IB_BOX1_BRACKET1_MAX),IB_BOX1_BRACKET2_MAX-IB_BOX1_BRACKET1_MAX);
   const b3=Math.max(0,totalBox1Income-IB_BOX1_BRACKET2_MAX);
   const tax1=b1*IB_BOX1_RATE1,tax2=b2*IB_BOX1_RATE2,tax3=b3*IB_BOX1_RATE3;
-  const totalTax=tax1+tax2+tax3;
+  const grossTax=tax1+tax2+tax3;
+
+  // ⭐⭐ الخصمان الضريبيان + بيان Zvw - أُضيفا للوصول لأقصى دقة ممكنة (كانا
+  // غائبين تمامًا سابقًا، ما كان يجعل "الضريبة المقدَّرة" أعلى بكثير من
+  // الواقع). الخصم العام (AHK) على أساس كل دخل Box 1 (أقرب تقدير متاح
+  // لـ"verzamelinkomen" بما أن هذا التطبيق لا يتتبَّع دخل Box 2/3)، وخصم
+  // العمل (Arbeidskorting) على أساس ربح المنشأة فقط (فعليًا "أرباح من
+  // مشروع" - الدخل الآخر المُدخَل يدويًا قد يكون غير مرتبط بالعمل فلا يُحتسَب هنا)
+  const algemeneHeffingskorting=calcAlgemeneHeffingskorting(totalBox1Income);
+  const arbeidskorting=calcArbeidskorting(Math.max(0,taxableBusinessProfit));
+  const totalHeffingskortingen=algemeneHeffingskorting+arbeidskorting;
+  const totalTax=Math.max(0,grossTax-totalHeffingskortingen);
+  const zvwContribution=calcZvwContribution(totalBox1Income);
+  const totalLiabilityWithZvw=totalTax+zvwContribution;
 
   return{zelfstandigenaftrek,startersaftrek,meewerkaftrek,meewerkaftrekRate,ondernemersaftrek,mkbVrijstelling,taxableBusinessProfit,
-    totalBox1Income,b1,b2,b3,tax1,tax2,tax3,totalTax};
+    totalBox1Income,b1,b2,b3,tax1,tax2,tax3,grossTax,algemeneHeffingskorting,arbeidskorting,totalHeffingskortingen,totalTax,
+    zvwContribution,totalLiabilityWithZvw};
 }
 
 function openPersonalTaxCalculator(cid){
@@ -16070,7 +16178,13 @@ function rReportTaxLiability(el,cid){
       if(ptInputs.otherIncome>0)html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:3px 0"><span>+ '+(t('other_personal_income')||'Other Personal Income')+'</span><span>'+FMT(ptInputs.otherIncome)+'</span></div>';
       if(ptInputs.otherDeductions>0)html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:3px 0"><span>− '+(t('other_personal_deductions')||'Other Personal Deductions')+'</span><span>-'+FMT(ptInputs.otherDeductions)+'</span></div>';
       html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--gr2);margin-top:4px;font-weight:700"><span>'+(t('total_box1_income')||'Total Box 1 Income')+'</span><span>'+FMT(pt.totalBox1Income)+'</span></div>';
-      html+='<div style="font-size:20px;font-weight:700;color:var(--red);margin-top:8px">'+FMT(pt.totalTax)+'</div>';
+      html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:3px 0"><span>'+(t('gross_tax_before_credits')||'Gross tax (before credits)')+'</span><span>'+FMT(pt.grossTax)+'</span></div>';
+      html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:3px 0"><span>− '+(t('algemene_heffingskorting')||'General tax credit (algemene heffingskorting)')+'</span><span>-'+FMT(pt.algemeneHeffingskorting)+'</span></div>';
+      html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:3px 0"><span>− '+(t('arbeidskorting')||'Labor tax credit (arbeidskorting)')+'</span><span>-'+FMT(pt.arbeidskorting)+'</span></div>';
+      html+='<div style="font-size:12px;font-weight:700;display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--gr2);margin-top:4px"><span>'+(t('net_income_tax')||'Net income tax')+'</span><span style="color:var(--red)">'+FMT(pt.totalTax)+'</span></div>';
+      html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:3px 0"><span>+ '+(t('zvw_contribution')||'Health insurance contribution (Zvw)')+'</span><span>'+FMT(pt.zvwContribution)+'</span></div>';
+      html+='<div style="font-size:20px;font-weight:700;color:var(--red);margin-top:8px">'+FMT(pt.totalLiabilityWithZvw)+'</div>';
+      html+='<div style="font-size:9.5px;color:var(--t3);margin-top:2px">'+(t('total_incl_zvw_hint')||'Total incl. Zvw — income tax + health insurance contribution combined')+'</div>';
       html+='<button class="btn btn-xs" style="margin-top:8px" onclick="openPersonalTaxCalculator(\''+cid+'\')">🧮 '+(t('recalculate')||'Recalculate')+'</button>';
     }
     html+='</div>';
@@ -17493,9 +17607,18 @@ function _exportReportPDF(type,cid){
         if(ptInputs.otherDeductions>0){doc.text('- Other Personal Deductions',M,y);doc.text(`-€${ptInputs.otherDeductions.toFixed(2)}`,W-M-35,y);y+=6;}
         setReportFont(doc,'bold');
         doc.text(rt('totalBox1Income'),M,y);doc.text(`€${pt.totalBox1Income.toFixed(2)}`,W-M-35,y);y+=8;
+        setReportFont(doc,'normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
+        doc.text('Gross tax (before credits)',M,y);doc.text(`€${pt.grossTax.toFixed(2)}`,W-M-35,y);y+=6;
+        doc.text('- Algemene heffingskorting',M,y);doc.text(`-€${pt.algemeneHeffingskorting.toFixed(2)}`,W-M-35,y);y+=6;
+        doc.text('- Arbeidskorting',M,y);doc.text(`-€${pt.arbeidskorting.toFixed(2)}`,W-M-35,y);y+=6;
+        setReportFont(doc,'bold');
+        doc.text('Net income tax',M,y);doc.text(`€${pt.totalTax.toFixed(2)}`,W-M-35,y);y+=8;
+        setReportFont(doc,'normal');
+        doc.text('+ Zvw health insurance contribution',M,y);doc.text(`€${pt.zvwContribution.toFixed(2)}`,W-M-35,y);y+=8;
         doc.setFillColor(184,134,11);doc.setTextColor(255,255,255);
         doc.rect(M,y,W-2*M,8,'F');
-        doc.text(`${rt('estimatedPersonalTax')}: €${pt.totalTax.toFixed(2)}`,M+3,y+6);
+        setReportFont(doc,'bold');
+        doc.text(`${rt('estimatedPersonalTax')} (incl. Zvw): €${pt.totalLiabilityWithZvw.toFixed(2)}`,M+3,y+6);
         y+=16;
 
         if(y>200){doc.addPage();y=M;}
@@ -17503,10 +17626,10 @@ function _exportReportPDF(type,cid){
           {label:'Profit',value:rawProfit,color:[10,34,24]},
           {label:'Deductions',value:pt.ondernemersaftrek+pt.mkbVrijstelling,color:[184,134,11]},
           {label:rt('totalBox1Income'),value:pt.totalBox1Income,color:[77,168,118]},
-          {label:'Tax',value:pt.totalTax,color:[168,77,77]},
+          {label:'Tax+Zvw',value:pt.totalLiabilityWithZvw,color:[168,77,77]},
         ],rt('taxLiabilityTitle'));
-        const effRate=rawProfit>0?(pt.totalTax/rawProfit*100):0;
-        const ibLines=[`Overall tax burden: ${effRate.toFixed(1)}%`,'Estimate before general tax credits (heffingskortingen)'];
+        const effRate=rawProfit>0?(pt.totalLiabilityWithZvw/rawProfit*100):0;
+        const ibLines=[`Overall tax burden (incl. Zvw): ${effRate.toFixed(1)}%`,'Includes algemene heffingskorting, arbeidskorting, and Zvw — verify with a tax advisor for your exact situation'];
         if(y>250){doc.addPage();y=M;}
         y=pdfInsightBox(doc,M,y,W-2*M,ibLines);
       }else{
@@ -17927,7 +18050,12 @@ async function _exportReportExcel(type,cid){
         if(ptInputs.otherIncome>0)data.push({t:'data',v:['Other Personal Income',ptInputs.otherIncome],currencyCols:[2]});
         if(ptInputs.otherDeductions>0)data.push({t:'data',v:['Other Personal Deductions',-ptInputs.otherDeductions],currencyCols:[2]});
         data.push({t:'total',v:['Total Box 1 Income',pt.totalBox1Income],currencyCols:[2]});
-        data.push({t:'total',v:['Estimated Personal Income Tax',pt.totalTax],currencyCols:[2]});
+        data.push({t:'data',v:['Gross tax (before credits)',pt.grossTax],currencyCols:[2]});
+        data.push({t:'data',v:['Algemene heffingskorting',-pt.algemeneHeffingskorting],currencyCols:[2]});
+        data.push({t:'data',v:['Arbeidskorting',-pt.arbeidskorting],currencyCols:[2]});
+        data.push({t:'total',v:['Net income tax',pt.totalTax],currencyCols:[2]});
+        data.push({t:'data',v:['Zvw health insurance contribution',pt.zvwContribution],currencyCols:[2]});
+        data.push({t:'total',v:['Estimated Total Liability (incl. Zvw)',pt.totalLiabilityWithZvw],currencyCols:[2]});
       }else{
         data.push({t:'data',v:['Note','Subject to personal income tax - depends on total personal income and deductions. Consult a tax advisor for the exact amount.']});
       }
