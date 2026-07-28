@@ -15949,6 +15949,52 @@ function rReportBTW(el,cid){
 // النهاية العليا للشريحة الثانية 79137 بدل 78426 الصحيحة (فرق 711 يورو تُحتسَب
 // بمعدل أقل من الصحيح)، ومعدل الشريحة الأولى 0.357 بدل 0.3575 الصحيح. تحقَّقنا
 // من الأرقام الصحيحة مباشرة من belastingdienst.nl (يوليو 2026).
+// ⭐⭐⭐ جدول ثوابت ضريبية بحسب السنة - التحضير لـ٢٠٢٧ ليكون جاهزًا للاستخدام
+// فورًا مع دخول السنة الجديدة، بدل انتظار تحديث يدوي للكود حينها.
+//
+// ⚠️ حقيقة مهمة يجب فهمها: الحكومة الهولندية تُقِرّ أرقام كل سنة ضريبية عبر
+// "Belastingplan" الذي يُعرَض في "Prinsjesdag" (منتصف سبتمبر) ويُصوَّت عليه
+// نهائيًا في ديسمبر من السنة السابقة. بمعنى: أرقام ٢٠٢٧ الكاملة **لن تُعرَف
+// رسميًا قبل سبتمبر-ديسمبر ٢٠٢٦**. لذلك، الجدول أدناه يحتوي:
+//   ✅ أرقام مؤكَّدة فعليًا لـ٢٠٢٧ (مُشرَّعة مسبقًا بجدول متعدد السنوات، أو
+//      معلَنة رسميًا من الحكومة بتاريخ محدَّد)
+//   ⚠️ أرقام "مرحَّلة" من ٢٠٢٦ كقيمة مؤقتة ريثما تُعلَن أرقام ٢٠٢٧ الفعلية -
+//      كل حقل من هذا النوع معلَّم بـ confirmed:false ويظهر تحذير في الواجهة
+// عند دخول ٢٠٢٧ فعليًا ونشر الأرقام الرسمية، فقط حدِّث القيم المعلَّمة
+// confirmed:false في هذا الجدول - كل شيء آخر بالتطبيق يتكيَّف تلقائيًا.
+const TAX_YEAR_RATES={
+  2026:{
+    confirmed:true, // كل أرقام ٢٠٢٦ نهائية ومُتحقَّق منها من belastingdienst.nl (يوليو ٢٠٢٦)
+    box1:{b1max:38883,b2max:78426,r1:0.3575,r2:0.3756,r3:0.495},
+    zelfstandigenaftrek:1200,
+    startersaftrek:2123,
+    mkbVrijstellingRate:0.127,
+    ahk:{max:3115,phaseoutStart:29736,phaseoutRate:0.06398},
+    arbeidskorting:{max:5685,plateauStart:24820,phaseoutStart:45592,phaseoutRate:0.0651},
+    zvw:{rate:0.0485,maxIncome:79409},
+    vpb:{bracket1Max:200000,rate1:0.19,rate2:0.258},
+  },
+  2027:{
+    confirmed:false, // ⚠️ بعض الحقول أدناه لسه مؤقتة - راجع unconfirmedFields
+    // الحقول المُعلَّمة هنا هي فقط التي لم تُنشَر أرقامها الرسمية بعد (حتى يوليو ٢٠٢٦)
+    unconfirmedFields:['box1','ahk','arbeidskorting','zvw','vpb','startersaftrek'],
+    box1:{b1max:38883,b2max:78426,r1:0.3575,r2:0.3756,r3:0.495}, // ⚠️ مرحَّل من ٢٠٢٦ - لم يُنشَر بعد
+    zelfstandigenaftrek:900, // ✅ مؤكَّد - جدول تخفيض متعدد السنوات مُشرَّع مسبقًا (كان أصلًا سيهبط من 1200 إلى 900)
+    startersaftrek:0, // ⚠️ الحكومة أعلنت إلغاءه بالكامل من 1 يناير 2027 (20 أبريل 2026)، لكنه لم يُصادَق عليه نهائيًا بعد (ينتظر تصويت مجلسي النواب والشيوخ الهولنديين)
+    mkbVrijstellingRate:0.127, // ✅ مؤكَّد - بلا تغيير معلَن
+    ahk:{max:3115,phaseoutStart:29736,phaseoutRate:0.06398}, // ⚠️ مرحَّل من ٢٠٢٦ - لم يُنشَر بعد
+    arbeidskorting:{max:5685,plateauStart:24820,phaseoutStart:45592,phaseoutRate:0.0651}, // ⚠️ مرحَّل من ٢٠٢٦ - لم يُنشَر بعد
+    zvw:{rate:0.0485,maxIncome:79409}, // ⚠️ مرحَّل من ٢٠٢٦ - لم يُنشَر بعد
+    vpb:{bracket1Max:200000,rate1:0.19,rate2:0.258}, // ⚠️ مرحَّل من ٢٠٢٦ - مستقر منذ ٢٠٢٣ لكن غير مؤكَّد رسميًا لـ٢٠٢٧ بعد
+  },
+};
+function getTaxYearRates(year){
+  if(TAX_YEAR_RATES[year])return TAX_YEAR_RATES[year];
+  // سنة غير موجودة بالجدول (أقدم من أول سنة مُدرَجة، أو أحدث من آخر سنة حضَّرنا
+  // لها) → نستخدم أحدث سنة متاحة كأفضل تقدير احتياطي بدل توقف الحساب بالكامل
+  const years=Object.keys(TAX_YEAR_RATES).map(Number).sort((a,b)=>b-a);
+  return TAX_YEAR_RATES[years[0]];
+}
 const IB_BOX1_BRACKET1_MAX=38883, IB_BOX1_BRACKET2_MAX=78426;
 const IB_BOX1_RATE1=0.3575, IB_BOX1_RATE2=0.3756, IB_BOX1_RATE3=0.495;
 const ZELFSTANDIGENAFTREK_2026=1200;
@@ -15975,23 +16021,26 @@ const ARBEIDSKORTING_MAX_2026=5685,ARBEIDSKORTING_PLATEAU_START_2026=24820,ARBEI
 // تمامًا لنفس القيمة القصوى عند ٢٤,٨٢٠€، وننبّه لذلك بوضوح في الواجهة. هذا لا
 // يؤثر عمليًا إلا على أرباح تحت ~٢٥ ألف يورو سنويًا - نادر لصاحب عمل يستوفي
 // معيار الساعات (١,٢٢٥ ساعة) أصلًا.
-function calcArbeidskorting(arbeidsinkomen){
+function calcArbeidskorting(arbeidsinkomen,rates){
+  rates=rates||TAX_YEAR_RATES[2026].arbeidskorting;
   if(arbeidsinkomen<=0)return 0;
-  if(arbeidsinkomen<ARBEIDSKORTING_PLATEAU_START_2026){
-    return Math.round((arbeidsinkomen/ARBEIDSKORTING_PLATEAU_START_2026)*ARBEIDSKORTING_MAX_2026*100)/100;
+  if(arbeidsinkomen<rates.plateauStart){
+    return Math.round((arbeidsinkomen/rates.plateauStart)*rates.max*100)/100;
   }
-  if(arbeidsinkomen<=ARBEIDSKORTING_PHASEOUT_START_2026)return ARBEIDSKORTING_MAX_2026;
-  const reduced=ARBEIDSKORTING_MAX_2026-(arbeidsinkomen-ARBEIDSKORTING_PHASEOUT_START_2026)*ARBEIDSKORTING_PHASEOUT_RATE_2026;
+  if(arbeidsinkomen<=rates.phaseoutStart)return rates.max;
+  const reduced=rates.max-(arbeidsinkomen-rates.phaseoutStart)*rates.phaseoutRate;
   return Math.round(Math.max(0,reduced)*100)/100;
 }
-function calcAlgemeneHeffingskorting(verzamelinkomen){
-  if(verzamelinkomen<=0)return AHK_MAX_2026;
-  if(verzamelinkomen<=AHK_PHASEOUT_START_2026)return AHK_MAX_2026;
-  const reduced=AHK_MAX_2026-(verzamelinkomen-AHK_PHASEOUT_START_2026)*AHK_PHASEOUT_RATE_2026;
+function calcAlgemeneHeffingskorting(verzamelinkomen,rates){
+  rates=rates||TAX_YEAR_RATES[2026].ahk;
+  if(verzamelinkomen<=0)return rates.max;
+  if(verzamelinkomen<=rates.phaseoutStart)return rates.max;
+  const reduced=rates.max-(verzamelinkomen-rates.phaseoutStart)*rates.phaseoutRate;
   return Math.round(Math.max(0,reduced)*100)/100;
 }
-function calcZvwContribution(income){
-  return Math.round(Math.min(Math.max(0,income),ZVW_MAX_INCOME_2026)*ZVW_RATE_2026*100)/100;
+function calcZvwContribution(income,rates){
+  rates=rates||TAX_YEAR_RATES[2026].zvw;
+  return Math.round(Math.min(Math.max(0,income),rates.maxIncome)*rates.rate*100)/100;
 }
 // ⭐ Meewerkaftrek (خصم الشريك المُساعِد في العمل بلا أجر رسمي) - نسبة من
 // الربح حسب عدد الساعات التي ساعد بها الشريك، وفق جدول Belastingdienst
@@ -16025,26 +16074,28 @@ function getSuggestedPartnerHours(cid,year){
   return sorted.length>=2?sorted[1][1]:0;
 }
 
-function calculatePersonalIncomeTax(businessProfit,meetsHourCriterion,isStarter,otherIncome,otherDeductions,partnerHours){
+function calculatePersonalIncomeTax(businessProfit,meetsHourCriterion,isStarter,otherIncome,otherDeductions,partnerHours,taxYear){
   otherIncome=otherIncome||0;otherDeductions=otherDeductions||0;partnerHours=partnerHours||0;
+  taxYear=taxYear||new Date().getFullYear();
+  const rates=getTaxYearRates(taxYear);
   const availableForDeduction=Math.max(0,businessProfit);
 
-  const zelfstandigenaftrek=meetsHourCriterion?Math.min(availableForDeduction,ZELFSTANDIGENAFTREK_2026):0;
-  const startersaftrek=(meetsHourCriterion&&isStarter)?Math.min(Math.max(0,availableForDeduction-zelfstandigenaftrek),STARTERSAFTREK_2026):0;
+  const zelfstandigenaftrek=meetsHourCriterion?Math.min(availableForDeduction,rates.zelfstandigenaftrek):0;
+  const startersaftrek=(meetsHourCriterion&&isStarter)?Math.min(Math.max(0,availableForDeduction-zelfstandigenaftrek),rates.startersaftrek):0;
   const meewerkaftrekRate=getMeewerkaftrekRate(partnerHours);
   const meewerkaftrek=meewerkaftrekRate>0?Math.round(availableForDeduction*meewerkaftrekRate*100)/100:0;
   const ondernemersaftrek=zelfstandigenaftrek+startersaftrek+meewerkaftrek;
 
   const profitAfterOndernemersaftrek=Math.max(0,businessProfit-ondernemersaftrek);
-  const mkbVrijstelling=profitAfterOndernemersaftrek*MKB_WINSTVRIJSTELLING_RATE;
+  const mkbVrijstelling=profitAfterOndernemersaftrek*rates.mkbVrijstellingRate;
   const taxableBusinessProfit=profitAfterOndernemersaftrek-mkbVrijstelling;
 
   const totalBox1Income=Math.max(0,taxableBusinessProfit+otherIncome-otherDeductions);
 
-  const b1=Math.min(totalBox1Income,IB_BOX1_BRACKET1_MAX);
-  const b2=Math.min(Math.max(0,totalBox1Income-IB_BOX1_BRACKET1_MAX),IB_BOX1_BRACKET2_MAX-IB_BOX1_BRACKET1_MAX);
-  const b3=Math.max(0,totalBox1Income-IB_BOX1_BRACKET2_MAX);
-  const tax1=b1*IB_BOX1_RATE1,tax2=b2*IB_BOX1_RATE2,tax3=b3*IB_BOX1_RATE3;
+  const b1=Math.min(totalBox1Income,rates.box1.b1max);
+  const b2=Math.min(Math.max(0,totalBox1Income-rates.box1.b1max),rates.box1.b2max-rates.box1.b1max);
+  const b3=Math.max(0,totalBox1Income-rates.box1.b2max);
+  const tax1=b1*rates.box1.r1,tax2=b2*rates.box1.r2,tax3=b3*rates.box1.r3;
   const grossTax=tax1+tax2+tax3;
 
   // ⭐⭐ الخصمان الضريبيان + بيان Zvw - أُضيفا للوصول لأقصى دقة ممكنة (كانا
@@ -16053,16 +16104,16 @@ function calculatePersonalIncomeTax(businessProfit,meetsHourCriterion,isStarter,
   // لـ"verzamelinkomen" بما أن هذا التطبيق لا يتتبَّع دخل Box 2/3)، وخصم
   // العمل (Arbeidskorting) على أساس ربح المنشأة فقط (فعليًا "أرباح من
   // مشروع" - الدخل الآخر المُدخَل يدويًا قد يكون غير مرتبط بالعمل فلا يُحتسَب هنا)
-  const algemeneHeffingskorting=calcAlgemeneHeffingskorting(totalBox1Income);
-  const arbeidskorting=calcArbeidskorting(Math.max(0,taxableBusinessProfit));
+  const algemeneHeffingskorting=calcAlgemeneHeffingskorting(totalBox1Income,rates.ahk);
+  const arbeidskorting=calcArbeidskorting(Math.max(0,taxableBusinessProfit),rates.arbeidskorting);
   const totalHeffingskortingen=algemeneHeffingskorting+arbeidskorting;
   const totalTax=Math.max(0,grossTax-totalHeffingskortingen);
-  const zvwContribution=calcZvwContribution(totalBox1Income);
+  const zvwContribution=calcZvwContribution(totalBox1Income,rates.zvw);
   const totalLiabilityWithZvw=totalTax+zvwContribution;
 
   return{zelfstandigenaftrek,startersaftrek,meewerkaftrek,meewerkaftrekRate,ondernemersaftrek,mkbVrijstelling,taxableBusinessProfit,
     totalBox1Income,b1,b2,b3,tax1,tax2,tax3,grossTax,algemeneHeffingskorting,arbeidskorting,totalHeffingskortingen,totalTax,
-    zvwContribution,totalLiabilityWithZvw};
+    zvwContribution,totalLiabilityWithZvw,taxYear,ratesConfirmed:rates.confirmed,unconfirmedFields:rates.unconfirmedFields||[]};
 }
 
 function openPersonalTaxCalculator(cid){
@@ -16070,24 +16121,35 @@ function openPersonalTaxCalculator(cid){
   const existing=(S.personalTaxInputs||{})[cid];
   // نُعبِّئ مبدئيًا من بيانات حقيقية (ساعات هذه السنة + تاريخ تسجيل KVK) عند
   // أول استخدام، أو من القيم المحفوظة سابقًا إن كان يعيد الحساب (Recalculate)
-  const autoHoursThisYear=getHoursWorkedInYear(cid,new Date().getFullYear());
+  const defaultTaxYear=existing?(existing.taxYear||new Date().getFullYear()):new Date().getFullYear();
+  const autoHoursThisYear=getHoursWorkedInYear(cid,defaultTaxYear);
   const defaultMeetsHours=existing?existing.meetsHourCriterion:(autoHoursThisYear>=1225);
   const defaultIsStarter=existing?existing.isStarter:isStarterBusiness(client);
   const defaultOtherIncome=existing?existing.otherIncome:0;
   const defaultOtherDeductions=existing?existing.otherDeductions:0;
-  const suggestedPartnerHours=getSuggestedPartnerHours(cid,new Date().getFullYear());
+  const suggestedPartnerHours=getSuggestedPartnerHours(cid,defaultTaxYear);
   const defaultPartnerHours=existing?(existing.partnerHours||0):suggestedPartnerHours;
+  // ⭐ سنوات متاحة للاختيار: أي سنة مُحضَّرة بالجدول + السنة الحالية دائمًا حتى
+  // لو لم تُحضَّر بعد (fallback تلقائي لأحدث سنة معروفة داخل الحساب نفسه)
+  const availableYears=[...new Set([...Object.keys(TAX_YEAR_RATES).map(Number),new Date().getFullYear()])].sort((a,b)=>b-a);
 
   showModal(t('calculate_personal_tax')||'Calculate Personal Income Tax',`
     <div style="font-size:11px;color:var(--t3);margin-bottom:12px;padding:8px;background:var(--gr1);border-radius:6px">${t('personal_tax_calc_hint')||'This is an estimate based on the figures you enter — it does not replace a tax advisor\u2019s exact calculation.'}</div>
+    <div class="fg"><label>${t('tax_year')||'Tax Year'}</label>
+      <select id="ptc-tax-year" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1)" onchange="document.getElementById('ptc-year-warning').style.display=(TAX_YEAR_RATES[this.value]&&!TAX_YEAR_RATES[this.value].confirmed)?'block':'none'">
+        ${availableYears.map(y=>`<option value="${y}" ${y===defaultTaxYear?'selected':''}>${y}${TAX_YEAR_RATES[y]&&!TAX_YEAR_RATES[y].confirmed?' ('+(t('provisional')||'provisional')+')':''}</option>`).join('')}
+      </select></div>
+    <div id="ptc-year-warning" style="display:${(TAX_YEAR_RATES[defaultTaxYear]&&!TAX_YEAR_RATES[defaultTaxYear].confirmed)?'block':'none'};font-size:10.5px;color:#8a6410;background:rgba(184,134,11,0.1);border-left:3px solid var(--red);padding:8px 10px;border-radius:4px;margin:-6px 0 10px">
+      ⚠️ ${t('tax_year_provisional_warning')||'Some figures for this year are not yet officially published by the Belastingdienst (usually confirmed around Prinsjesdag in September). Unpublished figures are carried forward from the latest confirmed year as a placeholder — update this app once official figures are out.'}
+    </div>
     <div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none">
       <input type="checkbox" id="ptc-hours" ${defaultMeetsHours?'checked':''} style="width:auto"/> ${t('meets_hour_criterion')||'Meets the 1,225-hour criterion (urencriterium)'}
     </label></div>
-    <div style="font-size:10px;color:var(--t3);margin:-6px 0 10px 26px">${t('auto_detected_from_hours')||'Auto-detected from Hours log'}: ${autoHoursThisYear.toFixed(1)} / 1,225 ${t('hours_short')||'hrs'} ${new Date().getFullYear()}</div>
+    <div style="font-size:10px;color:var(--t3);margin:-6px 0 10px 26px">${t('auto_detected_from_hours')||'Auto-detected from Hours log'}: ${autoHoursThisYear.toFixed(1)} / 1,225 ${t('hours_short')||'hrs'} ${defaultTaxYear}</div>
     <div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none">
       <input type="checkbox" id="ptc-starter" ${defaultIsStarter?'checked':''} style="width:auto"/> ${t('is_starter')||'Starting business (eligible for startersaftrek, first 3 of 5 years)'}
     </label></div>
-    <div style="font-size:10px;color:var(--t3);margin:-6px 0 10px 26px">${client?.kvkDate?(t('auto_detected_from_kvk')||'Auto-detected from KVK registration date')+': '+FD(client.kvkDate):(t('no_kvk_date_set')||'No KVK registration date on file — please verify manually, or add it in Edit Client')}</div>
+    <div style="font-size:10px;color:var(--t3);margin:-6px 0 10px 26px">${client?.kvkDate?(t('auto_detected_from_kvk')||'Auto-detected from KVK registration date')+': '+FD(client.kvkDate):(t('no_kvk_date_set')||'No KVK registration date on file — please verify manually, or add it in Edit Client')}${defaultTaxYear>=2027?'<br>⚠️ '+(t('startersaftrek_2027_note')||'The government has announced startersaftrek will be abolished from 2027 — not yet finally approved by parliament.'):''}</div>
     <div class="fg"><label>${t('partner_hours')||'Helping Partner Hours (Meewerkaftrek)'}</label>
       <input type="number" id="ptc-partner-hours" value="${defaultPartnerHours}" step="1" min="0" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1)"/></div>
     <div style="font-size:10px;color:var(--t3);margin:-6px 0 10px 2px">${t('partner_hours_hint')||'Hours logged by an unpaid helping partner. Suggested from the Hours log'}: ${suggestedPartnerHours.toFixed(1)} ${t('hours_short')||'hrs'}. ${t('partner_hours_threshold')||'Deduction starts at 525 hours/year.'}</div>
@@ -16097,13 +16159,14 @@ function openPersonalTaxCalculator(cid){
       <input type="number" id="ptc-other-deductions" value="${defaultOtherDeductions}" step="0.01" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1)"/></div>
     <div style="font-size:11px;color:var(--t3);padding:8px;background:var(--gr1);border-radius:6px;line-height:1.6">💡 ${t('deductions_explainer')||'Common deductible personal expenses: mortgage interest on your own home (hypotheekrenteaftrek), pension/annuity premiums (lijfrente), charitable donations above the threshold (giftenaftrek), uncovered medical costs, and professional education/training costs.'}</div>
   `,()=>{
+    const taxYear=parseInt(document.getElementById('ptc-tax-year')?.value,10)||new Date().getFullYear();
     const meetsHourCriterion=document.getElementById('ptc-hours')?.checked||false;
     const isStarter=document.getElementById('ptc-starter')?.checked||false;
     const partnerHours=parseFloat(document.getElementById('ptc-partner-hours')?.value)||0;
     const otherIncome=parseFloat(document.getElementById('ptc-other-income')?.value)||0;
     const otherDeductions=parseFloat(document.getElementById('ptc-other-deductions')?.value)||0;
     if(!S.personalTaxInputs)S.personalTaxInputs={};
-    S.personalTaxInputs[cid]={meetsHourCriterion,isStarter,otherIncome,otherDeductions,partnerHours};
+    S.personalTaxInputs[cid]={meetsHourCriterion,isStarter,otherIncome,otherDeductions,partnerHours,taxYear};
     sv();
     closeModal();
     renderContent();
@@ -16128,12 +16191,14 @@ function rReportTaxLiability(el,cid){
   // نظام متدرّج معقّد يعتمد على دخل الشخص الكامل وخصوماته الشخصية، وحساب
   // رقم تلقائي هنا قد يكون خاطئًا ومضلِّلًا.
   const isCorporate=c?.type==='BV'||c?.type==='NV';
+  const vpbTaxYear=new Date().getFullYear();
+  const vpbRates=getTaxYearRates(vpbTaxYear).vpb;
   let estimatedTax=0,bracket1Tax=0,bracket2Tax=0,bracket1Amt=0,bracket2Amt=0;
   if(isCorporate){
-    bracket1Amt=Math.min(taxableProfit,200000);
-    bracket2Amt=Math.max(0,taxableProfit-200000);
-    bracket1Tax=bracket1Amt*0.19;
-    bracket2Tax=bracket2Amt*0.258;
+    bracket1Amt=Math.min(taxableProfit,vpbRates.bracket1Max);
+    bracket2Amt=Math.max(0,taxableProfit-vpbRates.bracket1Max);
+    bracket1Tax=bracket1Amt*vpbRates.rate1;
+    bracket2Tax=bracket2Amt*vpbRates.rate2;
     estimatedTax=bracket1Tax+bracket2Tax;
   }
 
@@ -16157,9 +16222,12 @@ function rReportTaxLiability(el,cid){
 
   if(isCorporate){
     html+='<div style="padding:12px;background:rgba(176,141,90,.08);border-radius:var(--r);border-left:3px solid var(--gold);margin-bottom:12px">';
-    html+='<div style="font-size:11px;color:var(--t3);margin-bottom:8px">'+(t('vpb_estimate')||'Estimated Corporate Tax (Vennootschapsbelasting 2026)')+'</div>';
-    html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:4px 0"><span>19% × '+FMT(bracket1Amt)+' ('+(t('first_bracket')||'first €200,000')+')</span><span>'+FMT(bracket1Tax)+'</span></div>';
-    if(bracket2Amt>0)html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:4px 0"><span>25.8% × '+FMT(bracket2Amt)+'</span><span>'+FMT(bracket2Tax)+'</span></div>';
+    html+='<div style="font-size:11px;color:var(--t3);margin-bottom:8px">'+(t('vpb_estimate')||'Estimated Corporate Tax (Vennootschapsbelasting)')+' '+vpbTaxYear+'</div>';
+    if(!getTaxYearRates(vpbTaxYear).confirmed&&(getTaxYearRates(vpbTaxYear).unconfirmedFields||[]).includes('vpb')){
+      html+='<div style="font-size:10px;color:#8a6410;background:rgba(184,134,11,0.12);border-left:3px solid var(--red);padding:6px 8px;border-radius:4px;margin-bottom:8px">⚠️ '+(t('tax_year_provisional_warning')||'Some figures for this year are not yet officially published by the Belastingdienst — carried forward from the latest confirmed year as a placeholder.')+'</div>';
+    }
+    html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:4px 0"><span>'+(vpbRates.rate1*100)+'% × '+FMT(bracket1Amt)+' ('+(t('first_bracket')||'first €200,000')+')</span><span>'+FMT(bracket1Tax)+'</span></div>';
+    if(bracket2Amt>0)html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:4px 0"><span>'+(vpbRates.rate2*100)+'% × '+FMT(bracket2Amt)+'</span><span>'+FMT(bracket2Tax)+'</span></div>';
     html+='<div style="font-size:20px;font-weight:700;color:var(--gold);margin-top:8px">'+FMT(estimatedTax)+'</div>';
     html+='</div>';
   }else{
@@ -16169,7 +16237,11 @@ function rReportTaxLiability(el,cid){
     if(!ptInputs){
       html+='<button class="btn btn-p btn-xs" onclick="openPersonalTaxCalculator(\''+cid+'\')">🧮 '+(t('calculate_personal_tax')||'Calculate Personal Income Tax')+'</button>';
     }else{
-      const pt=calculatePersonalIncomeTax(rawProfit,ptInputs.meetsHourCriterion,ptInputs.isStarter,ptInputs.otherIncome,ptInputs.otherDeductions,ptInputs.partnerHours);
+      const pt=calculatePersonalIncomeTax(rawProfit,ptInputs.meetsHourCriterion,ptInputs.isStarter,ptInputs.otherIncome,ptInputs.otherDeductions,ptInputs.partnerHours,ptInputs.taxYear);
+      html+='<div style="font-size:11px;font-weight:700;color:var(--t1);margin-bottom:6px">'+(t('tax_year')||'Tax Year')+': '+pt.taxYear+'</div>';
+      if(!pt.ratesConfirmed){
+        html+='<div style="font-size:10px;color:#8a6410;background:rgba(184,134,11,0.12);border-left:3px solid var(--red);padding:6px 8px;border-radius:4px;margin-bottom:8px;line-height:1.5">⚠️ '+(t('tax_year_provisional_warning')||'Some figures for this year are not yet officially published by the Belastingdienst (usually confirmed around Prinsjesdag in September). Unpublished figures are carried forward from the latest confirmed year as a placeholder — update this app once official figures are out.')+'</div>';
+      }
       html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:3px 0"><span>'+(t('taxable_profit')||'Taxable Profit')+'</span><span>'+FMT(rawProfit)+'</span></div>';
       if(pt.zelfstandigenaftrek>0)html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:3px 0"><span>− Zelfstandigenaftrek</span><span>-'+FMT(pt.zelfstandigenaftrek)+'</span></div>';
       if(pt.startersaftrek>0)html+='<div style="font-size:11px;display:flex;justify-content:space-between;padding:3px 0"><span>− Startersaftrek</span><span>-'+FMT(pt.startersaftrek)+'</span></div>';
@@ -17573,9 +17645,10 @@ function _exportReportPDF(type,cid){
     doc.text(rt('taxableProfit'),M,y);doc.text(`€${rawProfit.toFixed(2)}`,W-M-35,y);y+=10;
 
     if(isCorporate){
-      const bracket1Amt=Math.min(taxableProfit,200000);
-      const bracket2Amt=Math.max(0,taxableProfit-200000);
-      const estimatedTax=bracket1Amt*0.19+bracket2Amt*0.258;
+      const vpbRates=getTaxYearRates(new Date().getFullYear()).vpb;
+      const bracket1Amt=Math.min(taxableProfit,vpbRates.bracket1Max);
+      const bracket2Amt=Math.max(0,taxableProfit-vpbRates.bracket1Max);
+      const estimatedTax=bracket1Amt*vpbRates.rate1+bracket2Amt*vpbRates.rate2;
       doc.setFillColor(200,144,16);doc.setTextColor(255,255,255);
       doc.rect(M,y,W-2*M,8,'F');
       doc.text(`${rt('estimatedCorporateTax')}: €${estimatedTax.toFixed(2)}`,M+3,y+6);
@@ -17597,7 +17670,7 @@ function _exportReportPDF(type,cid){
     }else{
       const ptInputs=(S.personalTaxInputs||{})[cid];
       if(ptInputs){
-        const pt=calculatePersonalIncomeTax(rawProfit,ptInputs.meetsHourCriterion,ptInputs.isStarter,ptInputs.otherIncome,ptInputs.otherDeductions,ptInputs.partnerHours);
+        const pt=calculatePersonalIncomeTax(rawProfit,ptInputs.meetsHourCriterion,ptInputs.isStarter,ptInputs.otherIncome,ptInputs.otherDeductions,ptInputs.partnerHours,ptInputs.taxYear);
         setReportFont(doc,'normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
         if(pt.zelfstandigenaftrek>0){doc.text('- Zelfstandigenaftrek',M,y);doc.text(`-€${pt.zelfstandigenaftrek.toFixed(2)}`,W-M-35,y);y+=6;}
         if(pt.startersaftrek>0){doc.text('- Startersaftrek',M,y);doc.text(`-€${pt.startersaftrek.toFixed(2)}`,W-M-35,y);y+=6;}
@@ -18032,17 +18105,18 @@ async function _exportReportExcel(type,cid){
       {t:'blank'},
     ];
     if(isCorporate){
-      const bracket1Amt=Math.min(taxableProfit,200000);
-      const bracket2Amt=Math.max(0,taxableProfit-200000);
-      const tax1=bracket1Amt*0.19;
-      const tax2=bracket2Amt*0.258;
-      data.push({t:'data',v:['Corporate Tax (VPB) — 19% bracket',tax1],currencyCols:[2]});
-      if(bracket2Amt>0)data.push({t:'data',v:['Corporate Tax (VPB) — 25.8% bracket',tax2],currencyCols:[2]});
+      const vpbRates=getTaxYearRates(new Date().getFullYear()).vpb;
+      const bracket1Amt=Math.min(taxableProfit,vpbRates.bracket1Max);
+      const bracket2Amt=Math.max(0,taxableProfit-vpbRates.bracket1Max);
+      const tax1=bracket1Amt*vpbRates.rate1;
+      const tax2=bracket2Amt*vpbRates.rate2;
+      data.push({t:'data',v:[`Corporate Tax (VPB) — ${(vpbRates.rate1*100)}% bracket`,tax1],currencyCols:[2]});
+      if(bracket2Amt>0)data.push({t:'data',v:[`Corporate Tax (VPB) — ${(vpbRates.rate2*100)}% bracket`,tax2],currencyCols:[2]});
       data.push({t:'total',v:['Estimated Total Corporate Tax',tax1+tax2],currencyCols:[2]});
     }else{
       const ptInputs=(S.personalTaxInputs||{})[cid];
       if(ptInputs){
-        const pt=calculatePersonalIncomeTax(rawProfit,ptInputs.meetsHourCriterion,ptInputs.isStarter,ptInputs.otherIncome,ptInputs.otherDeductions,ptInputs.partnerHours);
+        const pt=calculatePersonalIncomeTax(rawProfit,ptInputs.meetsHourCriterion,ptInputs.isStarter,ptInputs.otherIncome,ptInputs.otherDeductions,ptInputs.partnerHours,ptInputs.taxYear);
         if(pt.zelfstandigenaftrek>0)data.push({t:'data',v:['Zelfstandigenaftrek',-pt.zelfstandigenaftrek],currencyCols:[2]});
         if(pt.startersaftrek>0)data.push({t:'data',v:['Startersaftrek',-pt.startersaftrek],currencyCols:[2]});
         if(pt.meewerkaftrek>0)data.push({t:'data',v:[`Meewerkaftrek (${(pt.meewerkaftrekRate*100).toFixed(2)}%)`,-pt.meewerkaftrek],currencyCols:[2]});
