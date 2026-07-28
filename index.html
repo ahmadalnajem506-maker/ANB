@@ -19539,8 +19539,15 @@ function handleBackButton(){
   lastBackPressTime=0;
   _refillBackHistory();
   if(isAdmin()){
-    if(S.currentClient&&S.tab!=='client_overview'){
-      // داخل شاشة فرعية لعميل محدد (فواتير/مصروفات/تقارير...) → الرجوع لكروت العميل أولاً
+    if(S.tab==='reports'&&S.reportTab){
+      // ⚠️ إصلاح خلل حقيقي: كانت هذه الحالة تسقط في فرع "شاشة فرعية لعميل"
+      // أدناه وتُنفِّذ goBackToOverview() مباشرة - فتقفز من داخل تقرير معيَّن
+      // (مثلًا P&L) إلى كروت العميل كاملة، متجاوزة تمامًا خطوة "قائمة
+      // التقارير" الوسيطة. الآن: من داخل أي تقرير، الرجوع يذهب أولًا لقائمة
+      // التقارير (نفس ما يفعله زر "← Back to Reports" داخل الشاشة نفسها)
+      goBackToReportsList();
+    } else if(S.currentClient&&S.tab!=='client_overview'){
+      // داخل شاشة فرعية لعميل محدد (فواتير/مصروفات/قائمة التقارير...) → الرجوع لكروت العميل أولاً
       goBackToOverview();
     } else if(S.currentClient&&S.tab==='client_overview'){
       // على شاشة كروت العميل نفسها → الرجوع لقائمة كل العملاء
