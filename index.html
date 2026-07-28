@@ -504,6 +504,12 @@ tr:hover td{background:var(--gr1)}
   border-radius:50%;animation:loading-spin 0.8s linear infinite}
 @keyframes loading-spin{to{transform:rotate(360deg)}}
 .loading-msg{color:#FDF8EC;font-size:13px;font-weight:600;background:rgba(10,34,24,0.6);padding:6px 14px;border-radius:6px}
+/* ⭐ سكيليتون تحميل (Skeleton loader) - يُستخدَم بدل الدائرة الدوّارة وحدها
+   في اللحظة الوحيدة الحالية اللي ما فيها أي مؤشر تحميل إطلاقًا: بين تسجيل
+   الدخول الناجح وظهور لوحة التحكم (تحميل كامل بيانات الحساب من الخادم) */
+.skeleton-wrap{width:min(420px,90vw);display:flex;flex-direction:column;gap:12px}
+.skeleton-block{border-radius:8px;background:linear-gradient(90deg,rgba(253,248,236,0.06) 25%,rgba(253,248,236,0.16) 37%,rgba(253,248,236,0.06) 63%);background-size:400% 100%;animation:skeletonShimmer 1.4s ease-in-out infinite}
+@keyframes skeletonShimmer{0%{background-position:100% 50%}100%{background-position:0% 50%}}
 
 /* ═══ SETTINGS ═══ */
 .settings-section{background:var(--white);border:1px solid var(--gr2);border-radius:var(--r);
@@ -1134,7 +1140,20 @@ html { scroll-behavior: smooth; }
 
 <!-- NOTIFICATION -->
 <div class="notif" id="notif"></div>
-<div class="loading-overlay" id="loading-overlay"><div class="loading-spinner"></div><div class="loading-msg" id="loading-msg"></div></div>
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner" id="loading-spinner-el"></div>
+  <div class="skeleton-wrap" id="loading-skeleton" style="display:none">
+    <div class="skeleton-block" style="height:64px"></div>
+    <div style="display:flex;gap:12px">
+      <div class="skeleton-block" style="height:88px;flex:1"></div>
+      <div class="skeleton-block" style="height:88px;flex:1"></div>
+      <div class="skeleton-block" style="height:88px;flex:1"></div>
+    </div>
+    <div class="skeleton-block" style="height:140px"></div>
+    <div class="skeleton-block" style="height:22px;width:60%"></div>
+  </div>
+  <div class="loading-msg" id="loading-msg"></div>
+</div>
 
 <script>
 /* ═══════════════════════════ DATA ═══════════════════════════ */
@@ -1207,6 +1226,126 @@ function renderHorizontalBarChart(data,opts){
       </div>
     </div>`;
   }).join('');
+}
+// ⭐ رسم دائري (Pie/Donut) بلا أي مكتبة خارجية - SVG محسوب يدويًا. يُستخدَم
+// لتوزيع المصاريف حسب الفئة (أول رسم من نوعه في التطبيق غير الشريطي الأفقي)
+const PIE_CHART_PALETTE=['#0A2218','#2d7a4f','#B08D5A','#D4B57E','#7dbfa3','#1B5E35','#C7A876','#4da876','#9dd4bf','#8f7245'];
+function renderPieChart(data,opts){
+  opts=opts||{};
+  if(!data||data.length===0||data.every(d=>!d.value)){
+    return '<div style="text-align:center;padding:16px;color:var(--t3);font-size:11px">'+(opts.emptyLabel||t('no_data')||'No data')+'</div>';
+  }
+  const sorted=[...data].filter(d=>d.value>0).sort((a,b)=>b.value-a.value);
+  const total=sorted.reduce((s,d)=>s+d.value,0);
+  const r=70,cx=80,cy=80;
+  let angle=-90; // يبدأ من الأعلى
+  const slices=sorted.map((d,i)=>{
+    const sweep=(d.value/total)*360;
+    const x1=cx+r*Math.cos(angle*Math.PI/180),y1=cy+r*Math.sin(angle*Math.PI/180);
+    angle+=sweep;
+    const x2=cx+r*Math.cos(angle*Math.PI/180),y2=cy+r*Math.sin(angle*Math.PI/180);
+    const largeArc=sweep>180?1:0;
+    const color=PIE_CHART_PALETTE[i%PIE_CHART_PALETTE.length];
+    return `<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${largeArc} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${color}" stroke="var(--white)" stroke-width="1.5"/>`;
+  }).join('');
+  const legend=sorted.map((d,i)=>{
+    const color=PIE_CHART_PALETTE[i%PIE_CHART_PALETTE.length];
+    const pct=((d.value/total)*100).toFixed(1);
+    return `<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:6px">
+      <span style="width:10px;height:10px;border-radius:2px;background:${color};flex-shrink:0"></span>
+      <span style="color:var(--t1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.label)}</span>
+      <span style="color:var(--t3);font-weight:600;flex-shrink:0">${FMT(d.value)} (${pct}%)</span>
+    </div>`;
+  }).join('');
+  return `<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:center">
+    <svg width="160" height="160" viewBox="0 0 160 160" style="flex-shrink:0">${slices}</svg>
+    <div style="flex:1;min-width:160px">${legend}</div>
+  </div>`;
+}
+// ⭐ رسم اتجاه زمني (خط بياني) - أول رسم "أوسع" غير الشريط الأفقي أو
+// الدائري: يقارن سلسلتين (إيراد/مصروف) عبر أشهر متتالية. SVG محسوب يدويًا،
+// بلا مكتبة خارجية، بنفس منهج بقية الرسوم في هذا التطبيق.
+function renderTrendLineChart(labels,series,opts){
+  opts=opts||{};
+  const W=560,H=200,padL=44,padR=12,padT=12,padB=26;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+  const allValues=series.flatMap(s=>s.values);
+  if(!allValues.length||allValues.every(v=>!v)){
+    return '<div style="text-align:center;padding:16px;color:var(--t3);font-size:11px">'+(opts.emptyLabel||t('no_data')||'No data')+'</div>';
+  }
+  const max=Math.max(...allValues,0.0001);
+  const n=labels.length;
+  const xFor=i=>padL+(n<=1?0:(i/(n-1))*plotW);
+  const yFor=v=>padT+plotH-(v/max)*plotH;
+  const gridLines=[0,0.5,1].map(f=>{
+    const y=padT+plotH-(f*plotH);
+    return `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--gr2)" stroke-width="1"/>
+      <text x="${padL-6}" y="${y+3}" font-size="9" fill="var(--t3)" text-anchor="end">${FMT(max*f)}</text>`;
+  }).join('');
+  const xLabels=labels.map((lbl,i)=>{
+    if(n>8&&i%2!==0)return ''; // لا تُزدحم المحور الأفقي إن كان عدد الأشهر كبيرًا
+    return `<text x="${xFor(i).toFixed(1)}" y="${H-6}" font-size="9" fill="var(--t3)" text-anchor="middle">${escapeHtml(lbl)}</text>`;
+  }).join('');
+  const linesAndDots=series.map(s=>{
+    const pts=s.values.map((v,i)=>`${xFor(i).toFixed(1)},${yFor(v).toFixed(1)}`).join(' ');
+    const dots=s.values.map((v,i)=>`<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(v).toFixed(1)}" r="2.5" fill="${s.color}"/>`).join('');
+    return `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2"/>${dots}`;
+  }).join('');
+  const legend=series.map(s=>`<div style="display:flex;align-items:center;gap:5px;font-size:11px">
+    <span style="width:10px;height:10px;border-radius:2px;background:${s.color}"></span><span style="color:var(--t1)">${escapeHtml(s.name)}</span>
+  </div>`).join('');
+  return `<div>
+    <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${gridLines}${linesAndDots}${xLabels}</svg>
+    <div style="display:flex;gap:16px;justify-content:center;margin-top:6px">${legend}</div>
+  </div>`;
+}
+// ⭐ كرت مقارنة سنة بسنة - هذا السنة مقابل نفس الفترة تمامًا العام الماضي،
+// لكل من الإيراد والمصاريف والربح الصافي - أول مقياس YoY مرئي مباشرة في
+// الواجهة (لا مدفون داخل نص تصدير PDF فقط كما كان سابقًا)
+function renderYoyComparisonCard(cid){
+  const now=new Date();
+  const thisYear=now.getFullYear(),lastYear=thisYear-1;
+  // نفس نطاق الأيام بالضبط من بداية السنة حتى اليوم، لمقارنة عادلة (لا نقارن
+  // سنة كاملة سابقة مع جزء من السنة الحالية فقط)
+  const dayOfYear=Math.ceil((now-new Date(thisYear,0,0))/864e5);
+  const cutoffThis=new Date(thisYear,0,dayOfYear);
+  const cutoffLast=new Date(lastYear,0,dayOfYear);
+  const inRange=(dateStr,year,cutoff)=>{
+    if(!dateStr)return false;
+    const d=new Date(dateStr);
+    return d.getFullYear()===year&&d<=cutoff;
+  };
+  const basis=getClientVatBasis(cid);
+  const invForYear=(year,cutoff)=>{
+    if(basis==='cash')return S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&inRange(i.paidDate||i.date,year,cutoff));
+    return S.invoices.filter(i=>i.cid===cid&&!i.deleted&&inRange(i.date,year,cutoff));
+  };
+  const revThis=invForYear(thisYear,cutoffThis).reduce((s,i)=>s+(i.amount||0),0);
+  const revLast=invForYear(lastYear,cutoffLast).reduce((s,i)=>s+(i.amount||0),0);
+  const expThis=S.expenses.filter(e=>e.cid===cid&&inRange(e.date,thisYear,cutoffThis)).reduce((s,e)=>s+(e.amount||0),0);
+  const expLast=S.expenses.filter(e=>e.cid===cid&&inRange(e.date,lastYear,cutoffLast)).reduce((s,e)=>s+(e.amount||0),0);
+  const profThis=revThis-expThis,profLast=revLast-expLast;
+  const row=(label,icon,cur,prior)=>{
+    const pct=pctChange(cur,prior);
+    const pctTxt=formatPctChange(pct);
+    const up=pct!==null&&pct>=0;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gr2)">
+      <span style="font-size:12px;color:var(--t1)">${icon} ${label}</span>
+      <div style="text-align:right">
+        <div style="font-size:14px;font-weight:700;color:var(--t1)">${FMT(cur)} <span style="font-size:10px;font-weight:400;color:var(--t3)">(${lastYear}: ${FMT(prior)})</span></div>
+        ${pctTxt?`<div style="font-size:10.5px;font-weight:700;color:${up?'var(--green)':'var(--red)'}">${up?'▲':'▼'} ${pctTxt} ${t('vs_last_year')||'vs last year'}</div>`:''}
+      </div>
+    </div>`;
+  };
+  return `<div class="card" style="margin-top:14px">
+    <div class="ch"><span class="ct">${LICON('calendar-range',16)} ${t('yoy_comparison')||'Year-over-Year'} (${thisYear} vs ${lastYear})</span></div>
+    <div style="padding:6px 16px 4px">
+      <div style="font-size:10px;color:var(--t3);margin-bottom:4px">${t('yoy_hint')||'Same date range in both years (Jan 1 – today), for a fair comparison.'}</div>
+      ${row(t('revenue')||'Revenue','💰',revThis,revLast)}
+      ${row(t('expenses')||'Expenses','💸',expThis,expLast)}
+      ${row(t('netProfit')||'Net Profit','📈',profThis,profLast)}
+    </div>
+  </div>`;
 }
 // ⭐ يُحرِّك أي عنصر بفئة .anim-count من صفر إلى قيمته المستهدفة (data-target)
 // خلال نصف ثانية تقريبًا - يُستدعى مع كل رسم شاشة (بعد إدراج الـHTML فعليًا
@@ -1934,6 +2073,35 @@ function toggleDarkMode(){
   try{localStorage.setItem('anb5_dark_mode',isDark?'1':'0');}catch{}
   if(S.role)renderApp(); // لإعادة رسم زر القمر/الشمس والألوان الديناميكية المُحسَّبة عبر JS (كثيمة العميل)
 }
+// ⭐ تكبير/تصغير حجم الخط - بدل الاعتماد على حجم خط واحد ثابت (كثير من نصوص
+// التطبيق مكتوبة بأحجام px صريحة داخل آلاف القوالب، فتعديلها كلها يدويًا غير
+// عملي). الحل: تكبير الواجهة كاملة عبر CSS zoom على الحاوية الرئيسية - نفس
+// مبدأ تكبير المتصفح لكن كخيار داخل التطبيق، محفوظ كتفضيل شخصي لهذا الجهاز
+// فقط (بنفس أسلوب حفظ الوضع الداكن تمامًا)
+const FONT_SCALE_LEVELS=[90,100,115,130];
+function applyFontScale(pct){
+  const app=document.getElementById('app');
+  const login=document.getElementById('login-page');
+  if(app)app.style.zoom=pct+'%';
+  if(login)login.style.zoom=pct+'%';
+}
+function cycleFontScale(){
+  let current=100;
+  try{current=parseInt(localStorage.getItem('anb5_font_scale')||'100',10);}catch{}
+  const idx=FONT_SCALE_LEVELS.indexOf(current);
+  const next=FONT_SCALE_LEVELS[(idx+1)%FONT_SCALE_LEVELS.length];
+  try{localStorage.setItem('anb5_font_scale',String(next));}catch{}
+  applyFontScale(next);
+  if(S.role)renderApp(); // لإعادة رسم زر "Aa" بالنسبة الجديدة
+}
+// ⭐ يُطبَّق أقرب ما يمكن لبداية تحميل الصفحة (قبل أي رسم) لتفادي "ومضة"
+// مرئية من الحجم الافتراضي قبل التبديل للحجم المحفوظ - بنفس أسلوب applyDarkModeEarly
+(function applyFontScaleEarly(){
+  try{
+    const saved=localStorage.getItem('anb5_font_scale');
+    if(saved&&saved!=='100')applyFontScale(parseInt(saved,10));
+  }catch{}
+})();
 // ⭐ يُطبَّق أقرب ما يمكن لبداية تحميل الصفحة (قبل أي رسم) لتفادي "ومضة"
 // مرئية من الوضع الفاتح قبل التبديل للداكن عند من يُفضِّله
 (function applyDarkModeEarly(){
@@ -2991,7 +3159,23 @@ function clearFieldErrors(fieldIds){
 function showLoading(msg){
   const overlay=document.getElementById('loading-overlay');
   const msgEl=document.getElementById('loading-msg');
+  const spinner=document.getElementById('loading-spinner-el');
+  const skeleton=document.getElementById('loading-skeleton');
   if(msgEl)msgEl.textContent=msg||'';
+  if(spinner)spinner.style.display='';
+  if(skeleton)skeleton.style.display='none';
+  if(overlay)overlay.classList.add('show');
+}
+// ⭐ نسخة سكيليتون من التحميل - تُستخدَم تحديدًا لتحميل كامل بيانات الحساب
+// بعد تسجيل الدخول (أطول انتظار حقيقي في التطبيق، وكان بلا أي مؤشر إطلاقًا)
+function showLoadingSkeleton(msg){
+  const overlay=document.getElementById('loading-overlay');
+  const msgEl=document.getElementById('loading-msg');
+  const spinner=document.getElementById('loading-spinner-el');
+  const skeleton=document.getElementById('loading-skeleton');
+  if(msgEl)msgEl.textContent=msg||'';
+  if(spinner)spinner.style.display='none';
+  if(skeleton)skeleton.style.display='flex';
   if(overlay)overlay.classList.add('show');
 }
 function hideLoading(){
@@ -3504,8 +3688,10 @@ async function doLogin(){
     }else{
       S.role='client';S.currentClient=accountId;S.tab='dashboard';
     }
+    showLoadingSkeleton(t('loading_your_account')||'Loading your account…');
     await pullFullDataThenLaunch();
   }catch(e){
+    hideLoading();
     showErr('login-err-2','Network error - please check your connection and try again');
   }
 }
@@ -3560,8 +3746,10 @@ async function doVerify2FA(){
       S.role='client';S.currentClient=accountId;
     }
     S.tab='dashboard';
+    showLoadingSkeleton(t('loading_your_account')||'Loading your account…');
     await pullFullDataThenLaunch();
   }catch(e){
+    hideLoading();
     showErr('login-err-2fa','Network error - please check your connection and try again');
   }
 }
@@ -3693,6 +3881,7 @@ function launchApp(){
 
   document.getElementById('login-page').style.display='none';
   document.getElementById('app').style.display='flex';
+  hideLoading(); // ⭐ يُخفي سكيليتون تحميل بيانات الحساب (إن كان ظاهرًا) الآن أن الداشبورد الفعلي جاهز للعرض
   migrateInvoiceStatuses();
   checkExpiredContracts();
   generateRecurringInvoices();
@@ -3907,6 +4096,7 @@ function renderSidebar(){
     <button class="sb-lang-btn ${S.lang==='nl'?'act':''}\" onclick="setLang('nl')">NL</button>
     <button class="sb-lang-btn ${S.lang==='ar'?'act':''}\" onclick="setLang('ar')">AR</button>
     <button class="sb-lang-btn" onclick="toggleDarkMode()" title="${document.body.classList.contains('dark-mode')?(t('light_mode')||'Light mode'):(t('dark_mode')||'Dark mode')}" style="margin-inline-start:auto">${document.body.classList.contains('dark-mode')?'☀️':'🌙'}</button>
+    <button class="sb-lang-btn" onclick="cycleFontScale()" title="${t('text_size')||'Text size'}" style="font-weight:800">Aa</button>
   </div>`;
 
   if(isAdmin()){
@@ -7025,6 +7215,38 @@ function getClientHealthScore(cid){
   if(pendingInvoices.length>=3&&level==='green'){
     reasons.push({text:(t('health_pending_invoices')||'{n} invoices awaiting payment').replace('{n}',pendingInvoices.length),severity:'yellow'});
     level='yellow';
+  }
+
+  // ⭐ تنبيه استباقي حقيقي (وليس رجعيًا مثل بقية التنبيهات أعلاه) - يتوقَّع
+  // تجاوز الحد الشهري للفواتير/المصاريف بناءً على الوتيرة الحالية *قبل*
+  // حدوثه فعليًا، بدل انتظار التجاوز الفعلي ثم التنبيه (كما يفعل التنبيه
+  // الموجود مسبقًا في الداشبورد). لا معنى للتوقع أول 3 أيام من الشهر (وتيرة
+  // غير مستقرة بعد) أو إن لم يكن هناك حد أصلًا لهذا العميل.
+  const cl=S.clients.find(cl=>cl.id===cid);
+  if(cl&&level!=='red'){
+    const now=new Date();
+    const dayOfMonth=now.getDate();
+    const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    if(dayOfMonth>=4){
+      const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+      const projectPace=(countSoFar)=>Math.round((countSoFar/dayOfMonth)*daysInMonth);
+      if(cl.monthlyInvoiceLimit>0){
+        const invSoFar=(S.invoices||[]).filter(i=>i.cid===cid&&!i.deleted&&i.date&&new Date(i.date)>=monthStart).length;
+        const projected=projectPace(invSoFar);
+        if(invSoFar<=cl.monthlyInvoiceLimit&&projected>cl.monthlyInvoiceLimit){
+          reasons.push({text:(t('health_pace_invoice_limit')||'On pace to exceed invoice limit ({n} projected vs {limit}/month)').replace('{n}',projected).replace('{limit}',cl.monthlyInvoiceLimit),severity:'yellow'});
+          if(level==='green')level='yellow';
+        }
+      }
+      if(cl.monthlyExpenseLimit>0){
+        const expSoFar=(S.expenses||[]).filter(e=>e.cid===cid&&e.date&&new Date(e.date)>=monthStart).length;
+        const projectedExp=projectPace(expSoFar);
+        if(expSoFar<=cl.monthlyExpenseLimit&&projectedExp>cl.monthlyExpenseLimit){
+          reasons.push({text:(t('health_pace_expense_limit')||'On pace to exceed expense limit ({n} projected vs {limit}/month)').replace('{n}',projectedExp).replace('{limit}',cl.monthlyExpenseLimit),severity:'yellow'});
+          if(level==='green')level='yellow';
+        }
+      }
+    }
   }
 
   if(reasons.length===0)reasons.push({text:t('health_all_good')||'Everything looks good',severity:'green'});
@@ -15372,11 +15594,37 @@ function rReportSummary(el,cid){
   html+='<div style="font-size:11px;color:var(--t3);margin-bottom:4px">💵 Debtors</div>';
   html+='<div style="font-size:20px;font-weight:600;color:var(--blue)">'+FMT(debtors)+'</div></div>';
   html+='</div></div></div>';
-  
+
+  // ⭐ رسم اتجاه ١٢ شهرًا (إيراد مقابل مصروف) - مستقل عن فلتر الفترة المختار،
+  // يعرض دائمًا آخر ١٢ شهرًا لإعطاء صورة الاتجاه العام بغض النظر عن الفلتر
+  const monthLabels=[],revSeries=[],expSeries=[];
+  for(let i=11;i>=0;i--){
+    const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);
+    const y=d.getFullYear(),m=d.getMonth();
+    monthLabels.push(d.toLocaleDateString(S.lang==='ar'?'ar-EG':S.lang==='nl'?'nl-NL':'en-GB',{month:'short'}));
+    const monthInv=(basisFn=>basisFn==='cash'
+      ?S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&(i.paidDate||i.date)&&new Date(i.paidDate||i.date).getFullYear()===y&&new Date(i.paidDate||i.date).getMonth()===m)
+      :S.invoices.filter(i=>i.cid===cid&&!i.deleted&&i.date&&new Date(i.date).getFullYear()===y&&new Date(i.date).getMonth()===m)
+    )(getClientVatBasis(cid));
+    revSeries.push(monthInv.reduce((s,i)=>s+(i.amount||0),0));
+    const monthExp=S.expenses.filter(e=>e.cid===cid&&e.date&&new Date(e.date).getFullYear()===y&&new Date(e.date).getMonth()===m);
+    expSeries.push(monthExp.reduce((s,e)=>s+(e.amount||0),0));
+  }
+  html+='<div class="card" style="margin-top:14px"><div class="ch"><span class="ct">'+LICON('line-chart',16)+' '+(t('trend_12mo')||'Revenue vs Expenses (Last 12 Months)')+'</span></div><div style="padding:16px">'
+    +renderTrendLineChart(monthLabels,[{name:t('revenue')||'Revenue',color:'#2d7a4f',values:revSeries},{name:t('expenses')||'Expenses',color:'#B8860B',values:expSeries}])
+    +'</div></div>';
+
+  // ⭐ رسم دائري لتوزيع المصاريف حسب الفئة - لنفس فترة التقرير المختارة
+  const expByCatPie={};
+  exp.forEach(e=>{const k=e.cat||'Other';expByCatPie[k]=(expByCatPie[k]||0)+(e.amount||0);});
+  const pieData=Object.entries(expByCatPie).map(([label,value])=>({label,value}));
+  html+='<div class="card" style="margin-top:14px"><div class="ch"><span class="ct">'+LICON('pie-chart',16)+' '+(t('expense_breakdown')||'Expense Breakdown by Category')+'</span></div><div style="padding:16px">'
+    +renderPieChart(pieData)+'</div></div>';
+
+  html+=renderYoyComparisonCard(cid);
+
   el.innerHTML=html;
 }
-
-/* ── REPORT: P&L ── */
 function rReportPL(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_0F3025;
