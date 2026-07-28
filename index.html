@@ -3362,6 +3362,116 @@ async function ensureXLSX(){
   }
   return window.XLSX;
 }
+// ⭐ استُبدِلت SheetJS (xlsx.full.min.js) بـExcelJS لكل تصدير جديد للتنسيق -
+// SheetJS النسخة المجانية لا تدعم أي تنسيق شكلي فعلي عند الحفظ (ألوان/خط
+// عريض/حدود تُتجاهَل صامتة) لأن ذلك حصري لنسختها المدفوعة. ExcelJS مفتوحة
+// المصدر بالكامل وتدعم كل هذا فعليًا. أبقينا ensureXLSX أعلاه فقط للتوافق مع
+// أي كود قديم لم يُحوَّل بعد، لكن كل تصدير جديد يستخدم ExcelJS من الآن.
+async function ensureExcelJS(){
+  if(!window.ExcelJS){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js');
+  }
+  return window.ExcelJS;
+}
+// لوحة ألوان Excel موحَّدة تطابق هوية العلامة (نفس أخضر/ذهبي ANB المستخدَم بكل مكان آخر بالتطبيق)
+const XL_COLORS={
+  darkGreen:'FF0A2218',midGreen:'FF2D7A4F',gold:'FFC89010',lightGreen:'FFEAF4ED',
+  cream:'FFFDF8EC',red:'FFB8860B',white:'FFFFFFFF',textDark:'FF0A2218',textGray:'FF5B5348',borderGray:'FFE7E5DD',
+};
+// صف عنوان رئيسي (شريط أخضر داكن + نص ذهبي عريض) - يُستخدَم أعلى كل ورقة تقرير
+function xlAddTitleRow(ws,title,colSpan){
+  const row=ws.addRow([title]);
+  ws.mergeCells(row.number,1,row.number,colSpan||6);
+  row.height=26;
+  row.eachCell({includeEmpty:true},cell=>{
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:XL_COLORS.darkGreen}};
+    cell.font={bold:true,size:14,color:{argb:XL_COLORS.gold}};
+    cell.alignment={vertical:'middle',horizontal:'left',indent:1};
+  });
+  return row;
+}
+// صف عنوان قسم فرعي (خلفية خضراء فاتحة، نص أخضر داكن عريض)
+function xlAddSectionRow(ws,label,colSpan){
+  const row=ws.addRow([label]);
+  ws.mergeCells(row.number,1,row.number,colSpan||6);
+  row.height=18;
+  row.eachCell({includeEmpty:true},cell=>{
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:XL_COLORS.lightGreen}};
+    cell.font={bold:true,size:10,color:{argb:XL_COLORS.darkGreen}};
+    cell.alignment={vertical:'middle',horizontal:'left',indent:1};
+  });
+  return row;
+}
+// صف رؤوس أعمدة (خلفية ذهبية، نص أبيض عريض) - أول صف بيانات فعلي بكل جدول
+function xlAddHeaderRow(ws,labels){
+  const row=ws.addRow(labels);
+  row.height=16;
+  row.eachCell({includeEmpty:true},cell=>{
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:XL_COLORS.gold}};
+    cell.font={bold:true,size:9.5,color:{argb:XL_COLORS.white}};
+    cell.alignment={vertical:'middle',horizontal:'center'};
+    cell.border={bottom:{style:'thin',color:{argb:XL_COLORS.darkGreen}}};
+  });
+  return row;
+}
+// صف بيانات عادي مع تخطيط صفوف متبادلة (Zebra striping) خفيف لسهولة القراءة
+function xlAddDataRow(ws,values,opts){
+  opts=opts||{};
+  const row=ws.addRow(values);
+  const zebra=opts.zebra&&(row.number%2===0);
+  row.eachCell({includeEmpty:true},(cell,colNum)=>{
+    cell.font={bold:!!opts.bold,size:9.5,color:{argb:opts.color||XL_COLORS.textDark}};
+    if(zebra)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:XL_COLORS.cream}};
+    cell.border={bottom:{style:'hair',color:{argb:XL_COLORS.borderGray}}};
+    if(opts.currencyCols&&opts.currencyCols.includes(colNum)){cell.numFmt='€#,##0.00';cell.alignment={horizontal:'right'};}
+    if(opts.pctCols&&opts.pctCols.includes(colNum)){cell.alignment={horizontal:'right'};}
+  });
+  return row;
+}
+// صف إجمالي مميَّز (خط علوي مزدوج + خط عريض)
+function xlAddTotalRow(ws,values,currencyCols){
+  const row=ws.addRow(values);
+  row.eachCell({includeEmpty:true},(cell,colNum)=>{
+    cell.font={bold:true,size:10,color:{argb:XL_COLORS.darkGreen}};
+    cell.border={top:{style:'double',color:{argb:XL_COLORS.darkGreen}}};
+    if(currencyCols&&currencyCols.includes(colNum)){cell.numFmt='€#,##0.00';cell.alignment={horizontal:'right'};}
+  });
+  return row;
+}
+// ينشئ ملف الـExcel النهائي ويُنزِّله - نقطة خروج موحَّدة لكل تصديرات ExcelJS
+async function xlSaveWorkbook(workbook,filename){
+  const buffer=await workbook.xlsx.writeBuffer();
+  const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+// ⭐ مُصيِّر عام لتنسيق صفوف موصوفة بنوعها (title/section/header/data/total/blank)
+// - يسمح بتحويل كل تقرير من مصفوفة صفوف خام (كما كانت مع SheetJS) إلى ورقة
+// مُنسَّقة بالكامل بأقل تغيير ممكن على منطق تجميع البيانات نفسه (الذي يبقى
+// كما هو تمامًا، فقط يُوصَف كل صف بنوعه بدل مصفوفة قيم مجردة)
+function xlRenderRows(ws,rows,colCount){
+  rows.forEach(r=>{
+    if(r.t==='title')xlAddTitleRow(ws,r.v,colCount);
+    else if(r.t==='section')xlAddSectionRow(ws,r.v,colCount);
+    else if(r.t==='header')xlAddHeaderRow(ws,r.v);
+    else if(r.t==='data')xlAddDataRow(ws,r.v,{bold:r.bold,color:r.color,currencyCols:r.currencyCols,zebra:r.zebra!==false});
+    else if(r.t==='total')xlAddTotalRow(ws,r.v,r.currencyCols);
+    else ws.addRow([]);
+  });
+  // عرض أعمدة تلقائي معقول حسب أطول محتوى بكل عمود (حد أقصى معقول لتفادي عمود عريض جدًا لخطأ واحد طويل)
+  ws.columns.forEach(col=>{
+    let maxLen=10;
+    col.eachCell({includeEmpty:true},cell=>{
+      const len=(cell.value!==null&&cell.value!==undefined)?String(cell.value).length:0;
+      if(len>maxLen)maxLen=len;
+    });
+    col.width=Math.min(maxLen+3,42);
+  });
+  // تجميد الصف الأول (العنوان) عند التمرير لأسفل بجداول طويلة
+  ws.views=[{state:'frozen',ySplit:1}];
+}
 async function ensureTesseract(){
   if(typeof Tesseract==='undefined'){
     await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
@@ -13873,7 +13983,7 @@ async function _exportPDF(id){
   if(issuerBTW){doc.text('BTW '+issuerBTW,M,iy);iy+=5;}
 
   doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(10,34,24);
-  doc.text('INVOICE',W-M,16,{align:'right'});
+  doc.text('FACTUUR',W-M,16,{align:'right'});
   // شارة رقم الفاتورة (مستطيل مدوّر أخضر داكن بنص ذهبي)
   doc.setFontSize(9);
   const numW=doc.getTextWidth(i.num)+10;
@@ -13882,10 +13992,10 @@ async function _exportPDF(id){
   doc.setTextColor(245,220,112);doc.setFont('helvetica','bold');
   doc.text(i.num,W-M-numW/2,24.6,{align:'center'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100,100,100);
-  doc.text('Date',W-M-30,33);
+  doc.text('Datum',W-M-30,33);
   doc.setFont('helvetica','bold');doc.setTextColor(10,34,24);doc.text(FD(i.date),W-M,33,{align:'right'});
   doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
-  doc.text('Due',W-M-30,38);
+  doc.text('Vervaldatum',W-M-30,38);
   doc.setFont('helvetica','bold');doc.setTextColor(10,34,24);doc.text(FD(i.due),W-M,38,{align:'right'});
 
   doc.setDrawColor(231,229,221);doc.line(M,44,W-M,44);
@@ -13926,7 +14036,7 @@ async function _exportPDF(id){
   doc.setFillColor(234,244,237);doc.roundedRect(M,y,W-M*2,cardH,1.5,1.5,'F');
   doc.setFillColor(45,122,79);doc.rect(M,y,1.2,cardH,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(45,122,79);
-  doc.text('BILL TO',M+5,y+6);
+  doc.text('FACTUUR AAN',M+5,y+6);
   doc.setFontSize(11);doc.setTextColor(10,34,24);
   doc.text(recipientData.name,M+5,y+12);
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100,100,100);
@@ -13938,13 +14048,15 @@ async function _exportPDF(id){
   doc.setFillColor(10,34,24);doc.rect(M,y,W-M*2,8,'F');
   doc.setTextColor(245,220,112);doc.setFontSize(8);doc.setFont('helvetica','bold');
   if(i.items&&i.items.length){
-    doc.text('DESCRIPTION',M+3,y+5.3);
-    doc.text('QTY',W-M-58,y+5.3,{align:'right'});
-    doc.text('PRICE',W-M-32,y+5.3,{align:'right'});
-    doc.text('SUBTOTAL',W-M-3,y+5.3,{align:'right'});
+    doc.text('OMSCHRIJVING',M+3,y+5.3);
+    doc.text('AANTAL',W-M-58,y+5.3,{align:'right'});
+    doc.text('PRIJS',W-M-32,y+5.3,{align:'right'});
+    doc.text('SUBTOTAAL',W-M-3,y+5.3,{align:'right'});
     y+=8;
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(20,20,20);
-    i.items.forEach(it=>{
+    i.items.forEach((it,idx)=>{
+      // ⭐ تخطيط صفوف متبادلة خفيف (نفس لون الكريمي المستخدَم بالتصدير الآن في Excel) - يسهّل قراءة الجدول بصريًا عند وجود عدة بنود
+      if(idx%2===1){doc.setFillColor(253,248,236);doc.rect(M,y+1.3,W-M*2,6.5,'F');}
       doc.text(String(it.desc).slice(0,50),M+3,y+6);
       doc.text(String(it.qty),W-M-58,y+6,{align:'right'});
       doc.text(FMT(it.price),W-M-32,y+6,{align:'right'});
@@ -13954,7 +14066,7 @@ async function _exportPDF(id){
     doc.setDrawColor(231,229,221);doc.line(M,y+2,W-M,y+2);
     y+=11;
   }else{
-    doc.text('DESCRIPTION',M+3,y+5.3);doc.text('AMOUNT',W-M-3,y+5.3,{align:'right'});
+    doc.text('OMSCHRIJVING',M+3,y+5.3);doc.text('BEDRAG',W-M-3,y+5.3,{align:'right'});
     y+=8;
     doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(20,20,20);
     doc.text(i.desc,M+3,y+8);doc.text(FMT(i.amount),W-M-3,y+8,{align:'right'});
@@ -13965,7 +14077,7 @@ async function _exportPDF(id){
   // ── صندوق الإجمالي (يسار: subtotal/BTW رمادي، صف الإجمالي أخضر داكن بنص ذهبي)
   const bx=W-M-65;
   doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
-  doc.text('Subtotal (excl. BTW)',bx,y);doc.text(FMT(i.amount),W-M-3,y,{align:'right'});
+  doc.text('Subtotaal (excl. btw)',bx,y);doc.text(FMT(i.amount),W-M-3,y,{align:'right'});
   y+=6;
   const btwLineLabel=(i.btwType&&i.btwType!=='normal')?'BTW verlegd':('BTW '+i.btwRate+'%');
   doc.text(btwLineLabel,bx,y);doc.text(FMT(i.btw),W-M-3,y,{align:'right'});
@@ -13976,8 +14088,8 @@ async function _exportPDF(id){
     // المبيعات الهولندي (Wet OB 1968) تشترط ذكر هذا صراحة على الفاتورة
     const verlegdTexts={
       verlegd_nl:'BTW verlegd — art. 12 lid 3 Wet OB 1968',
-      eu_b2b:'BTW verlegd — reverse charge (intra-EU, art. 44 EU VAT Directive)',
-      export:'Outside the scope of Dutch VAT (export)'
+      eu_b2b:'BTW verlegd — art. 44 EU btw-richtlijn (intracommunautair)',
+      export:'Buiten het bereik van de Nederlandse btw (export)'
     };
     doc.setFontSize(7.5);doc.setTextColor(140,100,20);
     doc.text(verlegdTexts[i.btwType]||'BTW verlegd',bx,y+3);
@@ -13986,7 +14098,7 @@ async function _exportPDF(id){
   }
   doc.setFillColor(10,34,24);doc.roundedRect(bx-3,y,68,9.5,1.2,1.2,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(255,255,255);
-  doc.text('TOTAL',bx,y+6.3);
+  doc.text('TOTAAL',bx,y+6.3);
   doc.setFontSize(11);doc.setTextColor(245,220,112);
   doc.text(FMT(i.total),W-M-3,y+6.3,{align:'right'});
   y+=22;
@@ -13996,7 +14108,7 @@ async function _exportPDF(id){
   const qrIban=co.iban||c.iban;
   const qrBeneficiary=co.iban?(co.companyName||c.name):c.name;
   if(qrIban)payLines.push({label:'IBAN',value:qrIban});
-  payLines.push({label:'Reference',value:i.num});
+  payLines.push({label:'Kenmerk',value:i.num});
   let qrDataUrl=null;
   if(qrIban){
     try{
@@ -14014,7 +14126,7 @@ async function _exportPDF(id){
   const payH=Math.max(8+payLines.length*5,qrDataUrl?26:0);
   doc.setFillColor(253,248,236);doc.roundedRect(M,y,payBoxW,payH,1.5,1.5,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(138,100,16);
-  doc.text('PAYMENT DETAILS',M+5,y+6);
+  doc.text('BETAALGEGEVENS',M+5,y+6);
   doc.setFontSize(8);let py=y+11.5;
   payLines.forEach(p=>{
     doc.setFont('helvetica','normal');doc.setTextColor(91,83,72);
@@ -14027,13 +14139,13 @@ async function _exportPDF(id){
     const qrX=M+payBoxW+4,qrSize=payH;
     doc.addImage(qrDataUrl,'PNG',qrX,y,qrSize,qrSize);
     doc.setFont('helvetica','normal');doc.setFontSize(5.5);doc.setTextColor(120,120,120);
-    doc.text('Scan via banking app',qrX+qrSize/2,y+qrSize+3.5,{align:'center'});
+    doc.text('Scan via uw bank-app',qrX+qrSize/2,y+qrSize+3.5,{align:'center'});
   }
 
   if(i.status==='Betaald'){
     doc.setGState(doc.GState({opacity:.15}));
     doc.setFontSize(52);doc.setFont('helvetica','bold');doc.setTextColor(27,94,53);
-    doc.text('PAID',W/2,140,{align:'center',angle:30});
+    doc.text('BETAALD',W/2,140,{align:'center',angle:30});
     doc.setGState(doc.GState({opacity:1}));
   }
 
@@ -14045,7 +14157,7 @@ async function _exportPDF(id){
     doc.setFillColor(10,34,24);doc.rect(0,283,W,14,'F');
     doc.setFillColor(200,144,16);doc.rect(0,283,W,1,'F');
     doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(180,178,168);
-    doc.text('Issued via ANB Financial Services'+(co.tagline?' · '+co.tagline:''),W/2,290.5,{align:'center'});
+    doc.text('Uitgegeven via ANB Financial Services'+(co.tagline?' · '+co.tagline:''),W/2,290.5,{align:'center'});
   }
 
   doc.save(`${i.num}.pdf`);
@@ -16306,6 +16418,8 @@ const REPORT_I18N={
     summaryTitle:'Financial Summary Report',plTitle:'Profit & Loss Statement',btwTitle:'VAT/BTW Tax Return',
     debtorsTitle:'Debtors Aging Report',expensesTitle:'Expenses Report',cashflowTitle:'Cash Flow Analysis',
     taxLiabilityTitle:'Tax Liability Report',
+    monthlyTrend:'Revenue vs Expenses (Last 12 Months)',yoyComparison:'Year-over-Year Comparison',
+    yoyHint:'Same date range in both years (Jan 1 to today), for a fair comparison.',vsLastYear:'vs. last year',
   },
   nl:{
     client:'Klant',internalReport:'Interne Bedrijfsrapportage',generated:'Gegenereerd',financialYear:'Boekjaar',
@@ -16320,6 +16434,8 @@ const REPORT_I18N={
     summaryTitle:'Financieel Samenvattingsrapport',plTitle:'Winst- en Verliesrekening',btwTitle:'Btw-aangifte',
     debtorsTitle:'Debiteuren Ouderdomsrapport',expensesTitle:'Uitgavenrapport',cashflowTitle:'Kasstroomanalyse',
     taxLiabilityTitle:'Belastingverplichtingrapport',
+    monthlyTrend:'Omzet vs Kosten (Laatste 12 Maanden)',yoyComparison:'Vergelijking Jaar op Jaar',
+    yoyHint:'Zelfde datumbereik in beide jaren (1 januari tot vandaag), voor een eerlijke vergelijking.',vsLastYear:'t.o.v. vorig jaar',
   },
   ar:{
     client:'العميل',internalReport:'تقرير الشركة الداخلي',generated:'تاريخ الإصدار',financialYear:'السنة المالية',
@@ -16334,6 +16450,8 @@ const REPORT_I18N={
     summaryTitle:'تقرير الملخص المالي',plTitle:'قائمة الأرباح والخسائر',btwTitle:'إقرار ضريبة القيمة المضافة',
     debtorsTitle:'تقرير أعمار ديون المدينين',expensesTitle:'تقرير المصاريف',cashflowTitle:'تحليل التدفق النقدي',
     taxLiabilityTitle:'تقرير الخصوم الضريبية',
+    monthlyTrend:'الإيراد مقابل المصاريف (آخر ١٢ شهرًا)',yoyComparison:'مقارنة سنة بسنة',
+    yoyHint:'نفس نطاق الأيام في كلا السنتين (١ يناير حتى اليوم)، لمقارنة عادلة.',vsLastYear:'مقارنة بالعام الماضي',
   },
 };
 function rt(key){
@@ -16435,6 +16553,102 @@ function pdfDrawProportionBar(doc,x,y,width,barHeight,items,title){
   return legendY+6; // نُعيد الموضع y التالي المتاح بعد الرسم بالكامل
 }
 
+// ⭐ رسم اتجاه زمني (خط بياني) داخل PDF - نظير renderTrendLineChart المستخدَم
+// بالعرض المباشر داخل التطبيق، لكن مرسوم بوحدات jsPDF (mm) مباشرة بدل SVG.
+// يقارن سلسلتين (إيراد/مصروف) عبر 12 شهرًا متتاليين.
+function pdfDrawTrendLine(doc,x,y,width,chartHeight,labels,series,title){
+  const titleH=title?9:0;
+  const topPad=6,bottomPad=10,sidePad=6;
+  const cardHeight=titleH+topPad+chartHeight+bottomPad;
+
+  doc.setFillColor(250,249,246);
+  doc.setDrawColor(220,213,192);
+  doc.setLineWidth(0.4);
+  if(doc.roundedRect)doc.roundedRect(x,y,width,cardHeight,2,2,'FD');
+  else doc.rect(x,y,width,cardHeight,'FD');
+
+  if(title){
+    setReportFont(doc,'bold');doc.setFontSize(9);doc.setTextColor(10,34,24);
+    doc.text(title,x+sidePad,y+7);
+  }
+
+  const chartX=x+sidePad,chartY=y+titleH+topPad,chartW=width-2*sidePad;
+  const allValues=series.flatMap(s=>s.values);
+  const maxVal=Math.max(1,...allValues.map(v=>Math.abs(v)));
+  const n=labels.length;
+  const xFor=i=>chartX+(n<=1?0:(i/(n-1))*chartW);
+  const yFor=v=>chartY+chartHeight-(v/maxVal)*chartHeight;
+
+  // خطوط إرشادية أفقية خفيفة
+  doc.setDrawColor(232,227,212);doc.setLineWidth(0.2);
+  [0,0.5,1].forEach(f=>{
+    const gy=chartY+chartHeight-chartHeight*f;
+    doc.line(chartX,gy,chartX+chartW,gy);
+    setReportFont(doc,'normal');doc.setFontSize(6.5);doc.setTextColor(140,140,140);
+    doc.text(`€${Math.round(maxVal*f).toLocaleString()}`,chartX-2,gy+1,{align:'right'});
+  });
+
+  // خط شهري (تسمية كل شهرين لتفادي الازدحام على 12 عمودًا)
+  setReportFont(doc,'normal');doc.setFontSize(6.5);doc.setTextColor(120,120,120);
+  labels.forEach((lbl,i)=>{
+    if(n>8&&i%2!==0)return;
+    doc.text(lbl,xFor(i),chartY+chartHeight+5,{align:'center'});
+  });
+
+  series.forEach(s=>{
+    const [r,g,b]=s.color;
+    doc.setDrawColor(r,g,b);doc.setLineWidth(0.6);
+    for(let i=0;i<s.values.length-1;i++){
+      doc.line(xFor(i),yFor(s.values[i]),xFor(i+1),yFor(s.values[i+1]));
+    }
+    doc.setFillColor(r,g,b);
+    s.values.forEach((v,i)=>{doc.circle(xFor(i),yFor(v),0.8,'F');});
+  });
+
+  // وسيلة الإيضاح
+  let legendX=x+sidePad,legendY=y+cardHeight-3;
+  setReportFont(doc,'normal');doc.setFontSize(7.5);
+  series.forEach(s=>{
+    const [r,g,b]=s.color;
+    doc.setFillColor(r,g,b);doc.rect(legendX,legendY-3,3,3,'F');
+    doc.setTextColor(60,60,60);
+    doc.text(s.name,legendX+5,legendY);
+    legendX+=doc.getTextWidth(s.name)+14;
+  });
+
+  return y+cardHeight+8;
+}
+// ⭐ جدول مقارنة سنة بسنة داخل PDF - نظير renderYoyComparisonCard بالعرض
+// المباشر، بنفس منطق "نفس نطاق الأيام في كلا السنتين" لمقارنة عادلة
+function pdfDrawYoyTable(doc,x,y,width,rows,title){
+  const rowH=8,titleH=9,padTop=4;
+  const cardHeight=titleH+padTop+rows.length*rowH+4;
+  doc.setFillColor(250,249,246);
+  doc.setDrawColor(220,213,192);
+  doc.setLineWidth(0.4);
+  if(doc.roundedRect)doc.roundedRect(x,y,width,cardHeight,2,2,'FD');
+  else doc.rect(x,y,width,cardHeight,'FD');
+  setReportFont(doc,'bold');doc.setFontSize(9);doc.setTextColor(10,34,24);
+  doc.text(title,x+6,y+7);
+  let ry=y+titleH+padTop+4;
+  rows.forEach(r=>{
+    setReportFont(doc,'normal');doc.setFontSize(8.5);doc.setTextColor(60,60,60);
+    doc.text(r.label,x+6,ry);
+    setReportFont(doc,'bold');doc.setFontSize(9);doc.setTextColor(10,34,24);
+    doc.text(`€${Math.round(r.cur).toLocaleString()}`,x+width-6-40,ry,{align:'right'});
+    setReportFont(doc,'normal');doc.setFontSize(7);doc.setTextColor(140,140,140);
+    doc.text(`(${r.priorYear}: €${Math.round(r.prior).toLocaleString()})`,x+width-6,ry,{align:'right'});
+    if(r.pctTxt){
+      const [pr,pg,pb]=r.up?[45,122,79]:[168,77,77];
+      doc.setFontSize(7.5);doc.setTextColor(pr,pg,pb);setReportFont(doc,'bold');
+      doc.text(`${r.up?'▲':'▼'} ${r.pctTxt} ${rt('vsLastYear')}`,x+width-6-40,ry+4,{align:'right'});
+    }
+    ry+=rowH;
+  });
+  doc.setDrawColor(220,213,192);doc.setLineWidth(0.3);
+  doc.line(x+6,y+titleH+padTop,x+width-6,y+titleH+padTop);
+  return y+cardHeight+8;
+}
 // صندوق شروحات/نقاط تباين تلقائية (Insights) - نص توضيحي بلون مميَّز يشرح
 // أهم ما يلفت الانتباه في التقرير (نسبة الربح، أكبر بند مصاريف، إلخ)
 function pdfInsightBox(doc,x,y,width,lines){
@@ -16610,6 +16824,63 @@ function _exportReportPDF(type,cid){
     if(insightLines.length===0)insightLines.push(revenue>0?`${rt('profitMargin')}: ${((profit/revenue)*100).toFixed(1)}%`:rt('financialOverview'));
     if(y>250){doc.addPage();y=M;}
     y=pdfInsightBox(doc,M,y,W-2*M,insightLines);
+
+    // ⭐ تفصيل المصاريف حسب الفئة (لنفس فترة التقرير المختارة) - لم يكن موجودًا سابقًا في نسخة PDF لتقرير الملخص
+    const catBreakdown={};
+    exp.forEach(e=>{const k=e.cat||'Other';catBreakdown[k]=(catBreakdown[k]||0)+(e.amount||0);});
+    const catItemsSummary=Object.entries(catBreakdown).map(([label,value])=>({label,value}));
+    if(catItemsSummary.length>1){
+      if(y>230){doc.addPage();y=M;}
+      y=pdfDrawProportionBar(doc,M,y,W-2*M,10,catItemsSummary,rt('spendingBreakdown'));
+      y+=6;
+    }
+
+    // ⭐ رسم اتجاه ١٢ شهرًا (إيراد مقابل مصروف) - مستقل عن فلتر الفترة
+    // المختار، نفس منطق النسخة المباشرة داخل التطبيق (renderTrendLineChart)
+    const trendLabels=[],trendRev=[],trendExp=[];
+    const basisTrend=getClientVatBasis(cid);
+    for(let mi=11;mi>=0;mi--){
+      const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-mi);
+      const yy=d.getFullYear(),mm=d.getMonth();
+      const trendLang=S.reportExportLang||S.lang;
+      trendLabels.push(d.toLocaleDateString(trendLang==='ar'?'ar-EG':trendLang==='nl'?'nl-NL':'en-GB',{month:'short'}));
+      const monthInv=basisTrend==='cash'
+        ?S.invoices.filter(iv=>iv.cid===cid&&iv.status==='Betaald'&&(iv.paidDate||iv.date)&&new Date(iv.paidDate||iv.date).getFullYear()===yy&&new Date(iv.paidDate||iv.date).getMonth()===mm)
+        :S.invoices.filter(iv=>iv.cid===cid&&!iv.deleted&&iv.date&&new Date(iv.date).getFullYear()===yy&&new Date(iv.date).getMonth()===mm);
+      trendRev.push(monthInv.reduce((s,iv)=>s+(iv.amount||0),0));
+      const monthExp=S.expenses.filter(ex=>ex.cid===cid&&ex.date&&new Date(ex.date).getFullYear()===yy&&new Date(ex.date).getMonth()===mm);
+      trendExp.push(monthExp.reduce((s,ex)=>s+(ex.amount||0),0));
+    }
+    if(y>210){doc.addPage();y=M;}
+    y=pdfDrawTrendLine(doc,M,y,W-2*M,36,trendLabels,[
+      {name:rt('revenue'),color:[45,122,79],values:trendRev},
+      {name:rt('totalExpenses'),color:[184,134,11],values:trendExp},
+    ],rt('monthlyTrend'));
+
+    // ⭐ مقارنة سنة بسنة - نفس نطاق الأيام في كلا السنتين تمامًا، لمقارنة عادلة
+    const nowY=new Date();
+    const thisYr=nowY.getFullYear(),lastYr=thisYr-1;
+    const dayOfYr=Math.ceil((nowY-new Date(thisYr,0,0))/864e5);
+    const cutoffThisYr=new Date(thisYr,0,dayOfYr),cutoffLastYr=new Date(lastYr,0,dayOfYr);
+    const inYoyRange=(dStr,yr,cutoff)=>{if(!dStr)return false;const dd=new Date(dStr);return dd.getFullYear()===yr&&dd<=cutoff;};
+    const invForYr=(yr,cutoff)=>basisTrend==='cash'
+      ?S.invoices.filter(iv=>iv.cid===cid&&iv.status==='Betaald'&&inYoyRange(iv.paidDate||iv.date,yr,cutoff))
+      :S.invoices.filter(iv=>iv.cid===cid&&!iv.deleted&&inYoyRange(iv.date,yr,cutoff));
+    const revThisYr=invForYr(thisYr,cutoffThisYr).reduce((s,iv)=>s+(iv.amount||0),0);
+    const revLastYr=invForYr(lastYr,cutoffLastYr).reduce((s,iv)=>s+(iv.amount||0),0);
+    const expThisYr=S.expenses.filter(ex=>ex.cid===cid&&inYoyRange(ex.date,thisYr,cutoffThisYr)).reduce((s,ex)=>s+(ex.amount||0),0);
+    const expLastYr=S.expenses.filter(ex=>ex.cid===cid&&inYoyRange(ex.date,lastYr,cutoffLastYr)).reduce((s,ex)=>s+(ex.amount||0),0);
+    const profThisYr=revThisYr-expThisYr,profLastYr=revLastYr-expLastYr;
+    const yoyRow=(label,cur,prior)=>{
+      const p=pctChange(cur,prior);
+      return {label,cur,prior,priorYear:lastYr,pctTxt:formatPctChange(p),up:p!==null&&p>=0};
+    };
+    if(y>225){doc.addPage();y=M;}
+    y=pdfDrawYoyTable(doc,M,y,W-2*M,[
+      yoyRow(rt('revenue'),revThisYr,revLastYr),
+      yoyRow(rt('totalExpenses'),expThisYr,expLastYr),
+      yoyRow(rt('netProfit'),profThisYr,profLastYr),
+    ],`${rt('yoyComparison')} (${thisYr} vs ${lastYr})`);
   }
   else if(type==='pl'){
     const inv=getReportableInvoices(cid);
@@ -17292,7 +17563,19 @@ function _exportReportPDF(type,cid){
   doc.setTextColor(100,100,100);
   doc.text(`ANB Financial Services | www.anbfinancial.nl | ${rt('confidential')}`,M,y);
   doc.text(new Date().toLocaleString(),W-M-50,y);
-  
+
+  // ⭐ تذييل موحَّد + ترقيم صفحات على *كل* صفحة (وليس آخر صفحة فقط كما كان) -
+  // فجوة بصرية حقيقية في أي تقرير متعدد الصفحات كان يفتقر تمامًا لأي ترقيم
+  const totalPages=doc.internal.getNumberOfPages();
+  for(let p=1;p<=totalPages;p++){
+    doc.setPage(p);
+    doc.setDrawColor(200,144,16);doc.setLineWidth(0.3);
+    doc.line(M,289,W-M,289);
+    setReportFont(doc,'normal');doc.setFontSize(7);doc.setTextColor(140,140,140);
+    doc.text('ANB Financial Services',M,293);
+    doc.text(`${p} / ${totalPages}`,W-M,293,{align:'right'});
+  }
+
   doc.save(`Report_${type}_${escapeHtml(c?.name)}_${new Date().getFullYear()}.pdf`);
   toast('✓ PDF exported successfully!');
 }
@@ -17300,23 +17583,23 @@ function _exportReportPDF(type,cid){
 async function exportReportExcel(type,cid){
   showLoading(t('generating_excel')||'Generating Excel…');
   try{
-    await ensureXLSX();
-    _exportReportExcel(type,cid);
+    await ensureExcelJS();
+    await _exportReportExcel(type,cid);
   }catch(err){
     toast('❌ '+(err.message||'Could not load Excel library'));
   }finally{
     hideLoading();
   }
 }
-function _exportReportExcel(type,cid){
+async function _exportReportExcel(type,cid){
   const c=S.clients.find(c=>c.id===cid);
   const isANBSelfReport=cid===ANB_SELF_ID;
-  const XLSX=window.XLSX;
-  if(!XLSX){toast('Loading Excel library...','ti-loader');return;}
-  
+  const ExcelJS=window.ExcelJS;
+  if(!ExcelJS){toast('Loading Excel library...','ti-loader');return;}
+  const workbook=new ExcelJS.Workbook();
   let data=[];
-  let sheets={};
-  
+  let sheetName='';
+
   if(type==='summary'){
     const inv=getReportableInvoices(cid);
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
@@ -17326,23 +17609,23 @@ function _exportReportExcel(type,cid){
     const margin=(profit/revenue)*100||0;
     
     data=[
-      ['📊 FINANCIAL SUMMARY REPORT'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
-      ['Report Date',FD(new Date())],
-      ['Fiscal Year',new Date().getFullYear()],
-      [],
-      ['Key Metrics','Amount','Percentage'],
-      ['Total Revenue',revenue,'100%'],
-      ['Total Expenses',expenses,((expenses/revenue)*100).toFixed(1)+'%'],
-      ['Net Profit',profit,margin.toFixed(1)+'%'],
-      [],
-      ['Additional Information','Value'],
-      ['Number of Invoices',inv.length],
-      ['Number of Expenses',exp.length],
-      ['Average Invoice',revenue/inv.length||0],
-      ['Average Expense',expenses/exp.length||0]
+      {t:'title',v:'📊 FINANCIAL SUMMARY REPORT'},
+      {t:'data',v:isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],bold:true,zebra:false},
+      {t:'data',v:['Report Date',FD(new Date())],zebra:false},
+      {t:'data',v:['Fiscal Year',new Date().getFullYear()],zebra:false},
+      {t:'blank'},
+      {t:'header',v:['Key Metrics','Amount','Percentage']},
+      {t:'data',v:['Total Revenue',revenue,'100%'],currencyCols:[2]},
+      {t:'data',v:['Total Expenses',expenses,((expenses/revenue)*100).toFixed(1)+'%'],currencyCols:[2]},
+      {t:'total',v:['Net Profit',profit,margin.toFixed(1)+'%'],currencyCols:[2]},
+      {t:'blank'},
+      {t:'section',v:'Additional Information'},
+      {t:'data',v:['Number of Invoices',inv.length]},
+      {t:'data',v:['Number of Expenses',exp.length]},
+      {t:'data',v:['Average Invoice',revenue/inv.length||0],currencyCols:[2]},
+      {t:'data',v:['Average Expense',expenses/exp.length||0],currencyCols:[2]},
     ];
-    sheets['Summary']=XLSX.utils.aoa_to_sheet(data);
+    sheetName='Summary';
   }else if(type==='pl'){
     const inv=getReportableInvoices(cid);
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
@@ -17352,13 +17635,13 @@ function _exportReportExcel(type,cid){
     const profit=revenue-expenses;
     
     data=[
-      ['📈 PROFIT & LOSS STATEMENT'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
-      [],
-      ['REVENUE','Amount'],
-      ['Invoiced Revenue',revenue],
-      [],
-      ['EXPENSES','Amount']
+      {t:'title',v:'📈 PROFIT & LOSS STATEMENT'},
+      {t:'data',v:isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],bold:true,zebra:false},
+      {t:'blank'},
+      {t:'header',v:['REVENUE','Amount']},
+      {t:'data',v:['Invoiced Revenue',revenue],currencyCols:[2]},
+      {t:'blank'},
+      {t:'header',v:['EXPENSES','Amount']},
     ];
     
     const categories={};
@@ -17368,16 +17651,16 @@ function _exportReportExcel(type,cid){
     });
     
     Object.entries(categories).forEach(([cat,amt])=>{
-      data.push([cat,amt]);
+      data.push({t:'data',v:[cat,amt],currencyCols:[2]});
     });
-    if(depreciation>0)data.push(['Depreciation',depreciation]);
+    if(depreciation>0)data.push({t:'data',v:['Depreciation',depreciation],currencyCols:[2]});
     
-    data.push([]);
-    data.push(['Total Expenses',expenses]);
-    data.push([]);
-    data.push(['NET PROFIT/LOSS',profit]);
+    data.push({t:'blank'});
+    data.push({t:'total',v:['Total Expenses',expenses],currencyCols:[2]});
+    data.push({t:'blank'});
+    data.push({t:'total',v:['NET PROFIT/LOSS',profit],currencyCols:[2]});
     
-    sheets['P&L']=XLSX.utils.aoa_to_sheet(data);
+    sheetName='P&L';
   }else if(type==='btw'){
     const inv=getReportableInvoices(cid);
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
@@ -17385,84 +17668,84 @@ function _exportReportExcel(type,cid){
     const btwOut=totalOutputBtw, btwIn=r5b;
     
     data=[
-      ['💰 VAT/BTW TAX RETURN'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
-      ['Report Period',new Date().getFullYear()],
-      [],
-      ['Box / Rubriek','Amount (excl. VAT)','VAT'],
-      ['1a — 21%',r1a.amount,r1a.btw],
-      ['1b — 9%',r1b.amount,r1b.btw],
-      ['1e — 0% / verlegd (domestic, issued)',r1e.amount,0],
-      ['2a/4b — reverse charge received (self-assessed)',r2a4b.amount,r2a4b.btw],
-      ['3a — export outside EU',r3a.amount,''],
-      ['3b — EU business customers (reverse charge)',r3b.amount,''],
-      [],
-      ['5b — Total deductible input VAT','',-btwIn],
-      [],
-      ['VAT Output (1a+1b+2a/4b)',btwOut,'€'+btwOut.toFixed(2)],
-      ['VAT Input (5b)',btwIn,'€'+btwIn.toFixed(2)],
-      [],
-      ['VAT Status',btwPayable>0?'Payable':'Recoverable',''],
-      ['VAT Payable/Recoverable',btwPayable,'€'+Math.abs(btwPayable).toFixed(2)],
-      [],
-      ['Supporting Information',''],
-      ['Invoices in period',inv.length],
-      ['Expenses in period',exp.length]
+      {t:'title',v:'💰 VAT/BTW TAX RETURN'},
+      {t:'data',v:isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],bold:true,zebra:false},
+      {t:'data',v:['Report Period',new Date().getFullYear()],zebra:false},
+      {t:'blank'},
+      {t:'header',v:['Box / Rubriek','Amount (excl. VAT)','VAT']},
+      {t:'data',v:['1a — 21%',r1a.amount,r1a.btw],currencyCols:[2,3]},
+      {t:'data',v:['1b — 9%',r1b.amount,r1b.btw],currencyCols:[2,3]},
+      {t:'data',v:['1e — 0% / verlegd (domestic, issued)',r1e.amount,0],currencyCols:[2,3]},
+      {t:'data',v:['2a/4b — reverse charge received (self-assessed)',r2a4b.amount,r2a4b.btw],currencyCols:[2,3]},
+      {t:'data',v:['3a — export outside EU',r3a.amount,''],currencyCols:[2]},
+      {t:'data',v:['3b — EU business customers (reverse charge)',r3b.amount,''],currencyCols:[2]},
+      {t:'blank'},
+      {t:'data',v:['5b — Total deductible input VAT','',-btwIn],currencyCols:[3]},
+      {t:'blank'},
+      {t:'data',v:['VAT Output (1a+1b+2a/4b)',btwOut,'€'+btwOut.toFixed(2)],currencyCols:[2]},
+      {t:'data',v:['VAT Input (5b)',btwIn,'€'+btwIn.toFixed(2)],currencyCols:[2]},
+      {t:'blank'},
+      {t:'data',v:['VAT Status',btwPayable>0?'Payable':'Recoverable',''],bold:true},
+      {t:'total',v:['VAT Payable/Recoverable',btwPayable,'€'+Math.abs(btwPayable).toFixed(2)],currencyCols:[2]},
+      {t:'blank'},
+      {t:'section',v:'Supporting Information'},
+      {t:'data',v:['Invoices in period',inv.length]},
+      {t:'data',v:['Expenses in period',exp.length]},
     ];
-    sheets['BTW']=XLSX.utils.aoa_to_sheet(data);
+    sheetName='BTW';
   }else if(type==='expenses'){
     const expenses=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
     
     data=[
-      ['🧾 EXPENSES REPORT'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
-      ['Report Date',FD(new Date())],
-      [],
-      ['Date','Supplier','Description','Category','Amount','Notes']
+      {t:'title',v:'🧾 EXPENSES REPORT'},
+      {t:'data',v:isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],bold:true,zebra:false},
+      {t:'data',v:['Report Date',FD(new Date())],zebra:false},
+      {t:'blank'},
+      {t:'header',v:['Date','Supplier','Description','Category','Amount','Notes']},
     ];
     
     let categoryTotal={};
     expenses.forEach(e=>{
       const cat=e.cat||'Other';
       categoryTotal[cat]=(categoryTotal[cat]||0)+e.amount;
-      data.push([e.date,e.supplier,e.desc,cat,e.amount,'']);
+      data.push({t:'data',v:[e.date,e.supplier,e.desc,cat,e.amount,''],currencyCols:[5]});
     });
     
     const total=expenses.reduce((s,e)=>s+e.amount,0);
-    data.push([]);
-    data.push(['','','','TOTAL EXPENSES',total,'']);
-    data.push([]);
-    data.push(['Category Breakdown','Amount']);
+    data.push({t:'blank'});
+    data.push({t:'total',v:['','','','TOTAL EXPENSES',total,''],currencyCols:[5]});
+    data.push({t:'blank'});
+    data.push({t:'section',v:'Category Breakdown'});
     Object.entries(categoryTotal).forEach(([cat,amt])=>{
-      data.push([cat,amt]);
+      data.push({t:'data',v:[cat,amt],currencyCols:[2]});
     });
     
-    sheets['Expenses']=XLSX.utils.aoa_to_sheet(data);
+    sheetName='Expenses';
   }else if(type==='debtors'){
     const invoices=S.invoices.filter(i=>i.cid===cid&&['Openstaand','Verzonden','Verlopen'].includes(i.status));
     
     data=[
-      ['💵 DEBTORS AGING REPORT'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
-      ['Report Date',FD(new Date())],
-      [],
-      ['Invoice #','Date','Amount','Status','Days Outstanding','Amount EUR']
+      {t:'title',v:'💵 DEBTORS AGING REPORT'},
+      {t:'data',v:isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],bold:true,zebra:false},
+      {t:'data',v:['Report Date',FD(new Date())],zebra:false},
+      {t:'blank'},
+      {t:'header',v:['Invoice #','Date','Amount','Status','Days Outstanding','Amount EUR']},
     ];
     
     invoices.forEach(inv=>{
       const daysDiff=Math.floor((new Date()-new Date(inv.date||new Date()))/(1000*60*60*24));
-      data.push([inv.num,inv.date,inv.amount,inv.status,daysDiff,'€'+inv.amount.toFixed(2)]);
+      data.push({t:'data',v:[inv.num,inv.date,inv.amount,inv.status,daysDiff,'€'+inv.amount.toFixed(2)],currencyCols:[3]});
     });
     
     const total=invoices.reduce((s,i)=>s+(i.amount||0),0);
-    data.push([]);
-    data.push(['TOTAL OUTSTANDING INVOICES','','',total,'','€'+total.toFixed(2)]);
-    data.push([]);
-    data.push(['Summary','Count','Total Amount']);
-    data.push(['Current',invoices.filter(i=>i.status==='Openstaand').length,invoices.filter(i=>i.status==='Openstaand').reduce((s,i)=>s+(i.amount||0),0)]);
-    data.push(['Overdue',invoices.filter(i=>isInvoiceOverdue(i)).length,invoices.filter(i=>isInvoiceOverdue(i)).reduce((s,i)=>s+(i.amount||0),0)]);
+    data.push({t:'blank'});
+    data.push({t:'total',v:['TOTAL OUTSTANDING INVOICES','','',total,'','€'+total.toFixed(2)],currencyCols:[4]});
+    data.push({t:'blank'});
+    data.push({t:'header',v:['Summary','Count','Total Amount']});
+    data.push({t:'data',v:['Current',invoices.filter(i=>i.status==='Openstaand').length,invoices.filter(i=>i.status==='Openstaand').reduce((s,i)=>s+(i.amount||0),0)],currencyCols:[3]});
+    data.push({t:'data',v:['Overdue',invoices.filter(i=>isInvoiceOverdue(i)).length,invoices.filter(i=>isInvoiceOverdue(i)).reduce((s,i)=>s+(i.amount||0),0)],currencyCols:[3]});
     
-    sheets['Debtors']=XLSX.utils.aoa_to_sheet(data);
+    sheetName='Debtors';
   }else if(type==='cashflow'){
     const inv=S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.date));
     const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
@@ -17471,34 +17754,34 @@ function _exportReportExcel(type,cid){
     const netflow=inflow-outflow;
     
     data=[
-      ['💵 CASH FLOW ANALYSIS'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
-      ['Report Date',FD(new Date())],
-      [],
-      ['Cash Flow Item','Amount','EUR','Percentage'],
-      ['Cash Inflow (Paid Invoices)',inflow,'€'+inflow.toFixed(2),'100%'],
-      ['Cash Outflow (Expenses)',outflow,'€'+outflow.toFixed(2),((outflow/inflow)*100).toFixed(1)+'%'],
-      [],
-      ['NET CASH FLOW',netflow,'€'+netflow.toFixed(2),((netflow/inflow)*100).toFixed(1)+'%'],
-      [],
-      ['Metrics','Value'],
-      ['Average Inflow per Transaction',inflow/inv.length||0],
-      ['Average Outflow per Transaction',outflow/exp.length||0],
-      ['Cash Position Strength',netflow>0?'Positive':'Negative'],
-      ['Liquidity Ratio',((inflow/outflow)*100).toFixed(1)+'%']
+      {t:'title',v:'💵 CASH FLOW ANALYSIS'},
+      {t:'data',v:isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],bold:true,zebra:false},
+      {t:'data',v:['Report Date',FD(new Date())],zebra:false},
+      {t:'blank'},
+      {t:'header',v:['Cash Flow Item','Amount','EUR','Percentage']},
+      {t:'data',v:['Cash Inflow (Paid Invoices)',inflow,'€'+inflow.toFixed(2),'100%'],currencyCols:[2]},
+      {t:'data',v:['Cash Outflow (Expenses)',outflow,'€'+outflow.toFixed(2),((outflow/inflow)*100).toFixed(1)+'%'],currencyCols:[2]},
+      {t:'blank'},
+      {t:'total',v:['NET CASH FLOW',netflow,'€'+netflow.toFixed(2),((netflow/inflow)*100).toFixed(1)+'%'],currencyCols:[2]},
+      {t:'blank'},
+      {t:'section',v:'Metrics'},
+      {t:'data',v:['Average Inflow per Transaction',inflow/inv.length||0],currencyCols:[2]},
+      {t:'data',v:['Average Outflow per Transaction',outflow/exp.length||0],currencyCols:[2]},
+      {t:'data',v:['Cash Position Strength',netflow>0?'Positive':'Negative']},
+      {t:'data',v:['Liquidity Ratio',((inflow/outflow)*100).toFixed(1)+'%']},
     ];
     
-    sheets['Cash Flow']=XLSX.utils.aoa_to_sheet(data);
+    sheetName='Cash Flow';
   }
   else if(type==='hours_category'){
     const hrs=S.hours.filter(h=>h.cid===cid&&!h.deleted&&isDateInReportPeriod(h.date));
     const totH=hrs.reduce((s,h)=>s+(h.hrs||0),0);
     data=[
-      ['🕐 HOURS BY CATEGORY'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
-      ['Report Date',FD(new Date())],
-      ['Total Hours',totH],
-      []
+      {t:'title',v:'🕐 HOURS BY CATEGORY'},
+      {t:'data',v:isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],bold:true,zebra:false},
+      {t:'data',v:['Report Date',FD(new Date())],zebra:false},
+      {t:'data',v:['Total Hours',totH],zebra:false},
+      {t:'blank'},
     ];
     if(isANBSelfReport){
       const byAdmin={};
@@ -17509,18 +17792,18 @@ function _exportReportExcel(type,cid){
         byAdmin[person][cat]=(byAdmin[person][cat]||0)+(h.hrs||0);
       });
       Object.keys(byAdmin).sort().forEach(person=>{
-        data.push([person]);
-        data.push(['Category','Hours']);
-        Object.entries(byAdmin[person]).forEach(([cat,val])=>data.push([cat,val]));
-        data.push([]);
+        data.push({t:'section',v:person});
+        data.push({t:'header',v:['Category','Hours']});
+        Object.entries(byAdmin[person]).forEach(([cat,val])=>data.push({t:'data',v:[cat,val]}));
+        data.push({t:'blank'});
       });
     } else {
       const byCat={};
       hrs.forEach(h=>{const cat=h.cat||'General';byCat[cat]=(byCat[cat]||0)+(h.hrs||0);});
-      data.push(['Category','Hours']);
-      Object.entries(byCat).forEach(([cat,val])=>data.push([cat,val]));
+      data.push({t:'header',v:['Category','Hours']});
+      Object.entries(byCat).forEach(([cat,val])=>data.push({t:'data',v:[cat,val]}));
     }
-    sheets['Hours by Category']=XLSX.utils.aoa_to_sheet(data);
+    sheetName='Hours by Category';
   }
   else if(type==='emp_financial'){
     const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
@@ -17535,35 +17818,35 @@ function _exportReportExcel(type,cid){
     const accrued13thTotal=active.reduce((s,e)=>s+getAccrued13thMonth(e.id),0);
 
     data=[
-      ['💰 EMPLOYEE FINANCIAL REPORT'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
-      ['Report Date',FD(new Date())],
-      ['Fiscal Year',curYear],
-      [],
-      ['Key Metrics','Value'],
-      ['Active Employees',active.length],
-      ['Monthly Fixed Payroll',fixedMonthlyTotal],
-      [],
-      [curYear+' Summary','Amount'],
-      ['Gross paid this year (taxable)',ytdGrossPaid],
-      ['Loonheffing withheld',-ytdLoonheffing],
-      ['Net paid this year',ytdNetPaid],
-      [],
-      ['Outstanding Liabilities (Accrued, Unpaid)','Amount'],
-      ['Accrued vacation allowance',accruedVacationTotal],
-      ['Accrued 13th month',accrued13thTotal],
-      ['Total accrued liability',accruedVacationTotal+accrued13thTotal],
-      [],
-      ['Employee','Job Title','Salary Type','Salary','Status','YTD Gross','YTD Tax','YTD Net']
+      {t:'title',v:'💰 EMPLOYEE FINANCIAL REPORT'},
+      {t:'data',v:isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],bold:true,zebra:false},
+      {t:'data',v:['Report Date',FD(new Date())],zebra:false},
+      {t:'data',v:['Fiscal Year',curYear],zebra:false},
+      {t:'blank'},
+      {t:'header',v:['Key Metrics','Value']},
+      {t:'data',v:['Active Employees',active.length]},
+      {t:'data',v:['Monthly Fixed Payroll',fixedMonthlyTotal],currencyCols:[2]},
+      {t:'blank'},
+      {t:'header',v:[curYear+' Summary','Amount']},
+      {t:'data',v:['Gross paid this year (taxable)',ytdGrossPaid],currencyCols:[2]},
+      {t:'data',v:['Loonheffing withheld',-ytdLoonheffing],currencyCols:[2]},
+      {t:'total',v:['Net paid this year',ytdNetPaid],currencyCols:[2]},
+      {t:'blank'},
+      {t:'header',v:['Outstanding Liabilities (Accrued, Unpaid)','Amount']},
+      {t:'data',v:['Accrued vacation allowance',accruedVacationTotal],currencyCols:[2]},
+      {t:'data',v:['Accrued 13th month',accrued13thTotal],currencyCols:[2]},
+      {t:'total',v:['Total accrued liability',accruedVacationTotal+accrued13thTotal],currencyCols:[2]},
+      {t:'blank'},
+      {t:'header',v:['Employee','Job Title','Salary Type','Salary','Status','YTD Gross','YTD Tax','YTD Net']},
     ];
     allEmployees.forEach(e=>{
       const empSlips=(S.payslips||[]).filter(p=>p.employeeId===e.id&&p.year===curYear);
       const empGross=empSlips.reduce((s,p)=>s+(p.taxableGross||0),0);
       const empTax=empSlips.reduce((s,p)=>s+(p.loonheffing||0),0);
       const empNet=empSlips.reduce((s,p)=>s+(p.netPay||0),0);
-      data.push([e.name,e.jobTitle||'—',e.salaryType,e.salaryType==='hourly'?e.hourlyRate:e.grossMonthlySalary,e.employmentStatus,empGross,empTax,empNet]);
+      data.push({t:'data',v:[e.name,e.jobTitle||'—',e.salaryType,e.salaryType==='hourly'?e.hourlyRate:e.grossMonthlySalary,e.employmentStatus,empGross,empTax,empNet],currencyCols:[4,6,7,8]});
     });
-    sheets['Employee Financial']=XLSX.utils.aoa_to_sheet(data);
+    sheetName='Employee Financial';
   }
   else if(type==='emp_stats'){
     const allEmployees=(S.employees||[]).filter(e=>e.cid===cid);
@@ -17580,30 +17863,30 @@ function _exportReportExcel(type,cid){
     const expiringSoon=active.filter(e=>e.contractType==='bepaalde_tijd'&&e.contractEndDate&&new Date(e.contractEndDate)<=in90Days&&new Date(e.contractEndDate)>=today);
 
     data=[
-      ['📊 EMPLOYEE STATISTICS REPORT'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
-      ['Report Date',FD(new Date())],
-      [],
-      ['Key Metrics','Value'],
-      ['Total Ever Hired',allEmployees.length],
-      ['Active',active.length],
-      ['Avg. Tenure (months)',avgTenureMonths.toFixed(1)],
-      ['Avg. Hours/Week',avgHours.toFixed(1)],
-      [],
-      ['Contract Type','Count'],
-      ['Permanent (Onbepaalde tijd)',permanent],
-      ['Fixed-term (Bepaalde tijd)',fixedTerm],
-      [],
-      ['Salary Type','Count'],
-      ['Fixed monthly',salaryFixed],
-      ['Variable hourly',salaryHourly],
-      [],
-      ['Fixed-Term Contracts Ending Within 90 Days','Job Title','End Date']
+      {t:'title',v:'📊 EMPLOYEE STATISTICS REPORT'},
+      {t:'data',v:isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],bold:true,zebra:false},
+      {t:'data',v:['Report Date',FD(new Date())],zebra:false},
+      {t:'blank'},
+      {t:'header',v:['Key Metrics','Value']},
+      {t:'data',v:['Total Ever Hired',allEmployees.length]},
+      {t:'data',v:['Active',active.length]},
+      {t:'data',v:['Avg. Tenure (months)',avgTenureMonths.toFixed(1)]},
+      {t:'data',v:['Avg. Hours/Week',avgHours.toFixed(1)]},
+      {t:'blank'},
+      {t:'header',v:['Contract Type','Count']},
+      {t:'data',v:['Permanent (Onbepaalde tijd)',permanent]},
+      {t:'data',v:['Fixed-term (Bepaalde tijd)',fixedTerm]},
+      {t:'blank'},
+      {t:'header',v:['Salary Type','Count']},
+      {t:'data',v:['Fixed monthly',salaryFixed]},
+      {t:'data',v:['Variable hourly',salaryHourly]},
+      {t:'blank'},
+      {t:'header',v:['Fixed-Term Contracts Ending Within 90 Days','Job Title','End Date']},
     ];
     expiringSoon.forEach(e=>{
-      data.push([e.name,e.jobTitle||'—',FD(e.contractEndDate)]);
+      data.push({t:'data',v:[e.name,e.jobTitle||'—',FD(e.contractEndDate)]});
     });
-    sheets['Employee Statistics']=XLSX.utils.aoa_to_sheet(data);
+    sheetName='Employee Statistics';
   }
   else if(type==='tax_liability'){
     const inv=getReportableInvoices(cid);
@@ -17616,49 +17899,46 @@ function _exportReportExcel(type,cid){
     const isCorporate=c?.type==='BV'||c?.type==='NV';
 
     data=[
-      ['🏛️ TAX LIABILITY REPORT'],
-      isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],
-      [],
-      ['Revenue',revenue],
-      ['Operating Expenses',-operatingExpenses],
-      ['Depreciation',-depreciation],
-      ['Taxable Profit',rawProfit],
-      []
+      {t:'title',v:'🏛️ TAX LIABILITY REPORT'},
+      {t:'data',v:isANBSelfReport?['Report Type','Internal Company Report']:['Client',c?.name],bold:true,zebra:false},
+      {t:'blank'},
+      {t:'data',v:['Revenue',revenue],currencyCols:[2]},
+      {t:'data',v:['Operating Expenses',-operatingExpenses],currencyCols:[2]},
+      {t:'data',v:['Depreciation',-depreciation],currencyCols:[2]},
+      {t:'total',v:['Taxable Profit',rawProfit],currencyCols:[2]},
+      {t:'blank'},
     ];
     if(isCorporate){
       const bracket1Amt=Math.min(taxableProfit,200000);
       const bracket2Amt=Math.max(0,taxableProfit-200000);
       const tax1=bracket1Amt*0.19;
       const tax2=bracket2Amt*0.258;
-      data.push(['Corporate Tax (VPB) — 19% bracket',tax1]);
-      if(bracket2Amt>0)data.push(['Corporate Tax (VPB) — 25.8% bracket',tax2]);
-      data.push(['Estimated Total Corporate Tax',tax1+tax2]);
+      data.push({t:'data',v:['Corporate Tax (VPB) — 19% bracket',tax1],currencyCols:[2]});
+      if(bracket2Amt>0)data.push({t:'data',v:['Corporate Tax (VPB) — 25.8% bracket',tax2],currencyCols:[2]});
+      data.push({t:'total',v:['Estimated Total Corporate Tax',tax1+tax2],currencyCols:[2]});
     }else{
       const ptInputs=(S.personalTaxInputs||{})[cid];
       if(ptInputs){
         const pt=calculatePersonalIncomeTax(rawProfit,ptInputs.meetsHourCriterion,ptInputs.isStarter,ptInputs.otherIncome,ptInputs.otherDeductions,ptInputs.partnerHours);
-        if(pt.zelfstandigenaftrek>0)data.push(['Zelfstandigenaftrek',-pt.zelfstandigenaftrek]);
-        if(pt.startersaftrek>0)data.push(['Startersaftrek',-pt.startersaftrek]);
-        if(pt.meewerkaftrek>0)data.push([`Meewerkaftrek (${(pt.meewerkaftrekRate*100).toFixed(2)}%)`,-pt.meewerkaftrek]);
-        data.push(['MKB-winstvrijstelling (12.7%)',-pt.mkbVrijstelling]);
-        if(ptInputs.otherIncome>0)data.push(['Other Personal Income',ptInputs.otherIncome]);
-        if(ptInputs.otherDeductions>0)data.push(['Other Personal Deductions',-ptInputs.otherDeductions]);
-        data.push(['Total Box 1 Income',pt.totalBox1Income]);
-        data.push(['Estimated Personal Income Tax',pt.totalTax]);
+        if(pt.zelfstandigenaftrek>0)data.push({t:'data',v:['Zelfstandigenaftrek',-pt.zelfstandigenaftrek],currencyCols:[2]});
+        if(pt.startersaftrek>0)data.push({t:'data',v:['Startersaftrek',-pt.startersaftrek],currencyCols:[2]});
+        if(pt.meewerkaftrek>0)data.push({t:'data',v:[`Meewerkaftrek (${(pt.meewerkaftrekRate*100).toFixed(2)}%)`,-pt.meewerkaftrek],currencyCols:[2]});
+        data.push({t:'data',v:['MKB-winstvrijstelling (12.7%)',-pt.mkbVrijstelling],currencyCols:[2]});
+        if(ptInputs.otherIncome>0)data.push({t:'data',v:['Other Personal Income',ptInputs.otherIncome],currencyCols:[2]});
+        if(ptInputs.otherDeductions>0)data.push({t:'data',v:['Other Personal Deductions',-ptInputs.otherDeductions],currencyCols:[2]});
+        data.push({t:'total',v:['Total Box 1 Income',pt.totalBox1Income],currencyCols:[2]});
+        data.push({t:'total',v:['Estimated Personal Income Tax',pt.totalTax],currencyCols:[2]});
       }else{
-        data.push(['Note','Subject to personal income tax - depends on total personal income and deductions. Consult a tax advisor for the exact amount.']);
+        data.push({t:'data',v:['Note','Subject to personal income tax - depends on total personal income and deductions. Consult a tax advisor for the exact amount.']});
       }
     }
-    sheets['Tax Liability']=XLSX.utils.aoa_to_sheet(data);
+    sheetName='Tax Liability';
   }
-  
-  const workbook=XLSX.utils.book_new();
-  Object.entries(sheets).forEach(([name,sheet])=>{
-    sheet['!cols']=[{wch:15},{wch:20},{wch:25},{wch:15},{wch:15},{wch:15},{wch:15},{wch:15}];
-    XLSX.utils.book_append_sheet(workbook,sheet,name);
-  });
-  
-  XLSX.writeFile(workbook,`Report_${type}_${escapeHtml(c?.name)}_${new Date().getFullYear()}.xlsx`);
+
+  const ws=workbook.addWorksheet(sheetName||'Report');
+  const colCount=Math.max(3,...data.filter(r=>Array.isArray(r.v)).map(r=>r.v.length));
+  xlRenderRows(ws,data,colCount);
+  await xlSaveWorkbook(workbook,`Report_${type}_${(c?.name||'Report').replace(/[^\w-]+/g,'_')}_${new Date().getFullYear()}.xlsx`);
   toast('✓ Excel exported successfully!');
 }
 
@@ -17842,23 +18122,31 @@ async function exportSingleCategoryToExcel(cid,category,searchTerm){
   if(!config)return;
   const client=S.clients.find(c=>c.id===cid);
   if(!client)return;
-  await ensureXLSX();
+  await ensureExcelJS();
   const summary=getClientDataSummary(cid);
   const term=(searchTerm||'').toLowerCase().trim();
   const filteredData=term?summary[category].filter(item=>
     config.searchFields.some(field=>(item[field]||'').toString().toLowerCase().includes(term))
   ):summary[category];
-  const rows=[config.headers,...filteredData.map(config.rowFn)];
-  const workbook=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(rows),config.sheetName);
-  XLSX.writeFile(workbook,`ANB_${config.sheetName.replace(/\s/g,'_')}_${client.name.replace(/\s/g,'_')}.xlsx`);
+  const workbook=new window.ExcelJS.Workbook();
+  const ws=workbook.addWorksheet(config.sheetName);
+  xlAddTitleRow(ws,`📋 ${config.sheetName.toUpperCase()} — ${client.name}`,config.headers.length);
+  xlAddHeaderRow(ws,config.headers);
+  filteredData.map(config.rowFn).forEach(r=>xlAddDataRow(ws,r,{zebra:true}));
+  ws.columns.forEach(col=>{
+    let maxLen=10;
+    col.eachCell({includeEmpty:true},cell=>{const len=(cell.value!==null&&cell.value!==undefined)?String(cell.value).length:0;if(len>maxLen)maxLen=len;});
+    col.width=Math.min(maxLen+3,42);
+  });
+  ws.views=[{state:'frozen',ySplit:2}];
+  await xlSaveWorkbook(workbook,`ANB_${config.sheetName.replace(/\s/g,'_')}_${client.name.replace(/\s/g,'_')}.xlsx`);
   toast('✓ '+(t('export_complete')||'Export complete'));
 }
 // ⚠️ تصدير مخصَّص لسجل التدقيق - بنيته مختلفة (فلترة مزدوجة: بحث نصي +
 // نوع إجراء، وأحيانًا يعرض نشاطًا عبر كل العملاء وليس عميلًا واحدًا فقط
 // عند عرضه من حساب ANB) فلا يناسبه النمط العام لبقية الفئات
 async function exportAuditLogToExcel(searchTerm,actionFilter,filterCid){
-  await ensureXLSX();
+  await ensureExcelJS();
   const term=(searchTerm||'').toLowerCase().trim();
   const log=(S.auditLog||[]).filter(e=>{
     if(filterCid&&filterCid!==ANB_SELF_ID&&e.cid!==filterCid)return false;
@@ -17866,14 +18154,22 @@ async function exportAuditLogToExcel(searchTerm,actionFilter,filterCid){
     if(!term)return true;
     return (e.summary||'').toLowerCase().includes(term)||(e.actor||'').toLowerCase().includes(term);
   });
-  const rows=[['When','Who','Action','Details'],...log.map(e=>{
-    const d=new Date(e.ts);
-    return [d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),e.actor||'',e.action||'',e.summary||''];
-  })];
-  const workbook=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(rows),'Audit Log');
   const label=filterCid?(S.clients.find(c=>c.id===filterCid)?.name||'Client'):'All';
-  XLSX.writeFile(workbook,`ANB_Audit_Log_${label.replace(/\s/g,'_')}.xlsx`);
+  const workbook=new window.ExcelJS.Workbook();
+  const ws=workbook.addWorksheet('Audit Log');
+  xlAddTitleRow(ws,`📜 AUDIT LOG — ${label}`,4);
+  xlAddHeaderRow(ws,['When','Who','Action','Details']);
+  log.forEach(e=>{
+    const d=new Date(e.ts);
+    xlAddDataRow(ws,[d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),e.actor||'',e.action||'',e.summary||''],{zebra:true});
+  });
+  ws.columns.forEach(col=>{
+    let maxLen=10;
+    col.eachCell({includeEmpty:true},cell=>{const len=(cell.value!==null&&cell.value!==undefined)?String(cell.value).length:0;if(len>maxLen)maxLen=len;});
+    col.width=Math.min(maxLen+3,50);
+  });
+  ws.views=[{state:'frozen',ySplit:2}];
+  await xlSaveWorkbook(workbook,`ANB_Audit_Log_${label.replace(/\s/g,'_')}.xlsx`);
   toast('✓ '+(t('export_complete')||'Export complete'));
 }
 
@@ -18069,56 +18365,62 @@ function exportClientDataPDF(cid){
 async function exportClientDataExcelInternal(cid){
   const client=S.clients.find(c=>c.id===cid);
   if(!client)return;
-  await ensureXLSX();
+  await ensureExcelJS();
   const summary=getClientDataSummary(cid);
-  const workbook=XLSX.utils.book_new();
+  const workbook=new window.ExcelJS.Workbook();
 
-  const infoSheet=XLSX.utils.aoa_to_sheet([
-    ['Client Data Export'],[],
-    ['Name',client.name],['Email',client.email||''],['Phone',client.phone||''],
-    ['KVK',client.kvk||''],['BTW',client.btw||''],['IBAN',client.iban||''],
-    ['Address',client.address||''],['City',client.city||''],['Country',client.country||''],
-    ['Export Date',TODAY()],
-  ]);
-  XLSX.utils.book_append_sheet(workbook,infoSheet,'Client Info');
+  // ⭐ يبني ورقة عمل مُنسَّقة كاملة (عنوان + رؤوس + بيانات + عرض أعمدة تلقائي
+  // + تجميد الصف العلوي) بأقل تكرار - نفس النمط لكل تبويب من التبويبات التسعة أدناه
+  const addSheet=(name,title,headers,rows,currencyCols)=>{
+    const ws=workbook.addWorksheet(name);
+    xlAddTitleRow(ws,title,headers.length);
+    xlAddHeaderRow(ws,headers);
+    rows.forEach(r=>xlAddDataRow(ws,r,{zebra:true,currencyCols}));
+    ws.columns.forEach(col=>{
+      let maxLen=10;
+      col.eachCell({includeEmpty:true},cell=>{const len=(cell.value!==null&&cell.value!==undefined)?String(cell.value).length:0;if(len>maxLen)maxLen=len;});
+      col.width=Math.min(maxLen+3,42);
+    });
+    ws.views=[{state:'frozen',ySplit:2}];
+    return ws;
+  };
 
-  const invRows=[['Number','Date','Description','Amount','VAT','Total','Status','Due Date']];
-  summary.invoices.forEach(i=>invRows.push([i.num||'',i.date||'',i.desc||'',i.amount||0,i.btw||0,i.total||0,i.status||'',i.due||'']));
-  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(invRows),'Invoices');
+  const infoWs=workbook.addWorksheet('Client Info');
+  xlAddTitleRow(infoWs,`📇 CLIENT DATA EXPORT — ${client.name}`,2);
+  [['Name',client.name],['Email',client.email||''],['Phone',client.phone||''],
+   ['KVK',client.kvk||''],['BTW',client.btw||''],['IBAN',client.iban||''],
+   ['Address',client.address||''],['City',client.city||''],['Country',client.country||''],
+   ['Export Date',TODAY()]].forEach(r=>xlAddDataRow(infoWs,r,{bold:true,zebra:true}));
+  infoWs.columns=[{width:16},{width:36}];
 
-  const expRows=[['Date','Description','Category','Amount','VAT','Paid']];
-  summary.expenses.forEach(e=>expRows.push([e.date||'',e.desc||'',e.cat||'',e.amount||0,e.btw||0,e.amountPaid||0]));
-  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(expRows),'Expenses');
+  addSheet('Invoices','🧾 INVOICES',['Number','Date','Description','Amount','VAT','Total','Status','Due Date'],
+    summary.invoices.map(i=>[i.num||'',i.date||'',i.desc||'',i.amount||0,i.btw||0,i.total||0,i.status||'',i.due||'']),[4,5,6]);
 
-  const hrsRows=[['Date','Category','Task','Hours','Invoiced']];
-  summary.hours.forEach(h=>hrsRows.push([h.date||'',h.cat||'',h.task||'',h.hrs||0,h.invoiced?'Yes':'No']));
-  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(hrsRows),'Hours');
+  addSheet('Expenses','💸 EXPENSES',['Date','Description','Category','Amount','VAT','Paid'],
+    summary.expenses.map(e=>[e.date||'',e.desc||'',e.cat||'',e.amount||0,e.btw||0,e.amountPaid||0]),[4,5,6]);
 
-  const conRows=[['Title','Status','Plan (€/month)','Start Date','End Date']];
-  summary.contracts.forEach(c=>conRows.push([c.title||'',c.status||'',c.plan||0,c.startDate||'',c.endDate||'']));
-  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(conRows),'Contracts');
+  addSheet('Hours','🕐 HOURS',['Date','Category','Task','Hours','Invoiced'],
+    summary.hours.map(h=>[h.date||'',h.cat||'',h.task||'',h.hrs||0,h.invoiced?'Yes':'No']));
 
-  const assetRows=[['Name','Category','Acquisition Cost','Acquisition Date','Useful Life (years)','Residual Value']];
-  summary.assets.forEach(a=>assetRows.push([a.name||'',a.category||'',a.acquisitionCost||0,a.acquisitionDate||'',a.usefulLifeYears||0,a.residualValue||0]));
-  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(assetRows),'Assets');
+  addSheet('Contracts','📄 CONTRACTS',['Title','Status','Plan (€/month)','Start Date','End Date'],
+    summary.contracts.map(c=>[c.title||'',c.status||'',c.plan||0,c.startDate||'',c.endDate||'']),[3]);
 
-  const empRows=[['Name','Job Title','Status','Salary Type','Gross Monthly Salary','Start Date']];
-  summary.employees.forEach(e=>empRows.push([e.name||'',e.jobTitle||'',e.employmentStatus||'',e.salaryType||'',e.grossMonthlySalary||0,e.startDate||'']));
-  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(empRows),'Employees');
+  addSheet('Assets','🏗️ ASSETS',['Name','Category','Acquisition Cost','Acquisition Date','Useful Life (years)','Residual Value'],
+    summary.assets.map(a=>[a.name||'',a.category||'',a.acquisitionCost||0,a.acquisitionDate||'',a.usefulLifeYears||0,a.residualValue||0]),[3,6]);
 
-  const docRows=[['Name','Category','Upload Date']];
-  summary.docs.forEach(d=>docRows.push([d.name||'',d.category||'',d.uploadDate||d.date||'']));
-  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(docRows),'Documents');
+  addSheet('Employees','👥 EMPLOYEES',['Name','Job Title','Status','Salary Type','Gross Monthly Salary','Start Date'],
+    summary.employees.map(e=>[e.name||'',e.jobTitle||'',e.employmentStatus||'',e.salaryType||'',e.grossMonthlySalary||0,e.startDate||'']),[5]);
 
-  const msgRows=[['Date','From','Message']];
-  summary.messages.forEach(m=>msgRows.push([m.date||'',m.from||'',m.text||'']));
-  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(msgRows),'Messages');
+  addSheet('Documents','📁 DOCUMENTS',['Name','Category','Upload Date'],
+    summary.docs.map(d=>[d.name||'',d.category||'',d.uploadDate||d.date||'']));
 
-  const bankRows=[['Date','Description','Amount']];
-  summary.bankTx.forEach(b=>bankRows.push([b.date||'',b.desc||'',b.amount||0]));
-  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(bankRows),'Bank Transactions');
+  addSheet('Messages','💬 MESSAGES',['Date','From','Message'],
+    summary.messages.map(m=>[m.date||'',m.from||'',m.text||'']));
 
-  XLSX.writeFile(workbook,`ANB_Client_Export_${client.name.replace(/\s/g,'_')}.xlsx`);
+  addSheet('Bank Transactions','🏦 BANK TRANSACTIONS',['Date','Description','Amount'],
+    summary.bankTx.map(b=>[b.date||'',b.desc||'',b.amount||0]),[3]);
+
+  await xlSaveWorkbook(workbook,`ANB_Client_Export_${client.name.replace(/\s/g,'_')}.xlsx`);
   toast('✓ '+(t('export_complete')||'Export complete'));
 }
 
