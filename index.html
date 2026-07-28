@@ -4084,7 +4084,9 @@ function launchApp(){
   migrateContactAccountNumbers();
   migrateOneTimeDebtors();
   purgeOldTrash();
-  autoPostStaleCashierDays();
+  // ⚠️ لم يعد هناك ترحيل تلقائي صامت لأيام الكاشير المنسية - أي يوم سابق بقي
+  // مفتوحًا الآن يُطلَب جرد كاش فعلي له عبر بوابة إلزامية في rCashier نفسها
+  // (نفس صرامة "اليوم المفقود") بدل ترحيله بصمت بلا أي تحقق فعلي
   generateRecurringExpenses();
   renderApp();
   syncNow();
@@ -14907,6 +14909,17 @@ function getLastCashierActivityDate(cid){
 }
 // يُعيد كل التواريخ المفقودة (بين آخر نشاط معروف واليوم السابق) التي لم
 // تُفسَّر بعد بأي سجل استثناء (مُحلول أو بانتظار الأدمن)
+// ⭐⭐ يكتشف أيام سابقة (قبل اليوم) فيها إدخالات فعلية لم تُرحَّل بعد - هذا
+// يختلف عن "اليوم المفقود" (بلا أي نشاط إطلاقًا): هنا توجد بيانات حقيقية
+// تنتظر جرد الكاش والمطابقة، فلا يجوز ترحيلها تلقائيًا بصمت أبدًا
+function getStaleUnpostedCashierDays(cid){
+  const today=TODAY();
+  const dates=new Set();
+  (S.cashierLog||[]).forEach(e=>{
+    if(e.cid===cid&&!e.posted&&e.date&&e.date<today)dates.add(e.date);
+  });
+  return [...dates].sort();
+}
 function getMissingCashierDays(cid){
   const lastActivity=getLastCashierActivityDate(cid);
   if(!lastActivity)return []; // أول استخدام إطلاقًا - لا فجوة لفحصها
@@ -14997,6 +15010,19 @@ function rCashier(el,cid){
       <div class="empty">📅 ${t('missing_days_pending')||'Please explain a missing day before continuing.'}</div>
     </div>`;
     openExplainMissingDay(cid,missingDays[0]);
+    return;
+  }
+  // ⚠️⚠️ إصلاح خلل خطير: هذه الأيام فيها إدخالات حقيقية لم تُرحَّل بعد - كانت
+  // تُرحَّل تلقائيًا وصامتًا (autoPostStaleCashierDays) بلا أي جرد كاش فعلي،
+  // بالضبط في الحالة التي يكون فيها التحقق أهم (بيانات أقدم، احتمال خطأ أكبر).
+  // الآن: تُعامَل بنفس صرامة "اليوم المفقود" - لا يُفتَح شيء جديد حتى يمر
+  // العميل بجرد كاش فعلي لهذا اليوم تحديدًا
+  const staleDays=getStaleUnpostedCashierDays(cid);
+  if(staleDays.length>0){
+    el.innerHTML=backBtnHtml+`<div class="card"><div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${LICON('banknote',16)} ${t('cashier_title')||'Cashier'}</span></div>
+      <div class="empty">🔢 ${(t('stale_day_pending')||'A previous day (')+FD(staleDays[0])+(t('stale_day_pending2')||') was never posted. Please count your cash to close it out before continuing.')}</div>
+    </div>`;
+    openCashCountGate(cid,staleDays[0]);
     return;
   }
   const client=S.clients.find(cl=>cl.id===cid);
@@ -15235,18 +15261,24 @@ function upCashierEntryPaymentMethod(){
 // لكن لم تُسجَّل كحركة دفتر صندوق رسمية إلا عند الترحيل)
 function getExpectedCashBalance(cid){
   const ledgerNet=(S.cashPayments||[]).filter(p=>p.cid===cid).reduce((s,p)=>s+(p.direction==='out'?-(p.amount||0):(p.amount||0)),0);
-  const today=TODAY();
-  const unpostedCashToday=(S.cashierLog||[]).filter(e=>e.cid===cid&&e.date===today&&!e.posted).reduce((s,e)=>s+(e.cashAmount||0),0);
-  return ledgerNet+unpostedCashToday;
+  // ⚠️ إصلاح: المجموع يشمل كل الإدخالات غير المُرحَّلة بغضّ النظر عن تاريخها
+  // (وليس "اليوم" فقط) - الكاش الفعلي بالدرج يبقى موجودًا فيزيائيًا مهما كان
+  // تاريخ تسجيله الأصلي، طالما لم يُرحَّل بعد
+  const unpostedCash=(S.cashierLog||[]).filter(e=>e.cid===cid&&!e.posted).reduce((s,e)=>s+(e.cashAmount||0),0);
+  return ledgerNet+unpostedCash;
 }
 const CASH_COUNT_TOLERANCE=5; // هامش تسامح €5 كما طُلب صراحة
 // ⭐ بوابة جرد الكاش الإلزامية قبل الترحيل - لا يُعرَض ملخص اليوم ولا زر
 // الترحيل إطلاقًا حتى يتطابق الكاش الفعلي مع المتوقَّع (بهامش €5). عند وجود
 // فرق، لا يُكشَف اتجاهه (نقص أو فائض) - فقط طلب إعادة الجرد، لمنع "تعديل"
 // الرقم المُدخَل ليطابق المتوقَّع بدل الجرد الحقيقي
-function openCashCountGate(cid){
+function openCashCountGate(cid,date){
+  const targetDate=date||TODAY();
+  const isStale=targetDate!==TODAY();
   showModal('🔢 '+(t('count_your_cash')||'Count Your Cash'),`
-    <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">${t('cash_count_hint')||'Before posting today, count the actual cash you physically have and enter it below.'}</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">${isStale
+      ?(t('cash_count_hint_stale')||'Before continuing, count the actual cash you physically have right now (this includes takings from ')+FD(targetDate)+(t('cash_count_hint_stale2')||', which was never closed out) and enter it below.')
+      :(t('cash_count_hint')||'Before posting today, count the actual cash you physically have and enter it below.')}</div>
     <div class="fg"><label>${t('actual_cash_amount')||'Actual cash amount (€)'}</label><input type="number" id="ccg-amount" step="0.01"/></div>
     <div id="ccg-error" style="display:none;background:rgba(168,50,50,0.08);border-left:3px solid var(--danger);padding:8px 10px;border-radius:4px;font-size:11px;color:var(--danger);margin-bottom:8px">
       ⚠️ ${t('cash_discrepancy_message')||'There\u2019s a discrepancy with your cash count. Please recount your cash carefully and try again.'}
@@ -15261,7 +15293,7 @@ function openCashCountGate(cid){
       return; // يبقى النافذة مفتوحة لإعادة الجرد - لا يُكشَف اتجاه الفرق
     }
     closeModal();
-    openPostCashierDayConfirm(cid);
+    openPostCashierDayConfirm(cid,targetDate);
   },t('confirm_count')||'Confirm Count');
   // ⚠️ يمكن إغلاق هذه النافذة بشكل طبيعي (زر Cancel أو ✕) في حال عدم
   // التطابق - يُعيد هذا المستخدم لقائمة الخدمات فقط (الشاشة الأصلية خلف
@@ -15269,13 +15301,13 @@ function openCashCountGate(cid){
   // إقفال اليوم - فتح "ترحيل اليوم" مجددًا لاحقًا يُعيد فتح هذه البوابة نفسها
   // من جديد، فتبقى المطابقة شرطًا إلزاميًا فعليًا رغم إتاحة الإغلاق
 }
-function openPostCashierDayConfirm(cid){
-  const today=TODAY();
-  const unposted=(S.cashierLog||[]).filter(e=>e.cid===cid&&e.date===today&&!e.posted);
+function openPostCashierDayConfirm(cid,date){
+  const targetDate=date||TODAY();
+  const unposted=(S.cashierLog||[]).filter(e=>e.cid===cid&&e.date===targetDate&&!e.posted);
   const total=unposted.reduce((s,e)=>s+(e.price||0),0);
   const totalCash=unposted.reduce((s,e)=>s+(e.cashAmount||0),0);
   const totalBank=unposted.reduce((s,e)=>s+(e.bankAmount||0),0);
-  showModal('📮 '+(t('post_today')||'Post Today'),`
+  showModal('📮 '+(targetDate!==TODAY()?FD(targetDate):(t('post_today')||'Post Today')),`
     <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">${t('post_today_hint')||'This creates one invoice for today\u2019s takings and locks these entries. This can only be done once per day.'}</div>
     <div class="kgrid">
       <div class="kcard"><div class="kl">${t('entries')||'Entries'}</div><div class="kv">${unposted.length}</div></div>
@@ -15287,11 +15319,11 @@ function openPostCashierDayConfirm(cid){
     <div style="display:flex;justify-content:space-between;font-size:12px">
       <span>🏦 ${t('pending_bank_match')||'Pending Bank Match'}</span><b>${FMT(totalBank)}</b>
     </div>
-  `,()=>{postCashierDay(cid);},t('confirm_post')||'Confirm & Post');
+  `,()=>{postCashierDay(cid,targetDate);},t('confirm_post')||'Confirm & Post');
 }
 // ⭐ مُعمَّمة الآن لأي تاريخ (وليس اليوم الحالي فقط) - لتُستخدَم من الترحيل
-// اليدوي ("Post Today") ومن الترحيل التلقائي لأيام سابقة نُسيت (أدناه) بنفس
-// المنطق بالضبط، بلا ازدواجية في الكود المحاسبي الحساس
+// اليدوي ("Post Today") ومن ترحيل يوم سابق بقي مفتوحًا (عبر بوابة جرد الكاش
+// الإلزامية في rCashier - لم يعد هناك ترحيل تلقائي صامت بلا جرد فعلي)
 function postCashierDayForDate(cid,date,silent){
   const unposted=(S.cashierLog||[]).filter(e=>e.cid===cid&&e.date===date&&!e.posted);
   if(unposted.length===0)return false;
@@ -15321,15 +15353,17 @@ function postCashierDayForDate(cid,date,silent){
   unposted.forEach(e=>{e.posted=true;e.postedAt=new Date().toISOString();e.postedInvoiceId=ni.id;e.autoPosted=!!silent;});
   return true;
 }
-function postCashierDay(cid){
-  const posted=postCashierDayForDate(cid,TODAY(),false);
+function postCashierDay(cid,date){
+  const posted=postCashierDayForDate(cid,date||TODAY(),false);
   if(posted){sv();closeModal();renderContent();toast('✓ '+(t('day_posted')||'Day posted successfully'));}
 }
-// ⭐ ترحيل تلقائي لأي يوم سابق (قبل اليوم الحالي) تُرك بلا ترحيل يدوي - يمنع
-// تراكم أيام غير مُرحَّلة أو تضاربها مع أيام لاحقة. يعمل عند كل تسجيل دخول
-// (وليس بجدولة خلفية منفصلة)، فيكفي أن يفتح أي مستخدم (أدمن أو عميل) التطبيق
-// لمعالجة أي تراكم فورًا - لا حاجة لخادم منفصل يعمل في الخلفية لهذا الغرض
-function autoPostStaleCashierDays(){
+// ⚠️⚠️ إصلاح خلل خطير: كانت هذه الدالة تُرحِّل أي يوم سابق مفتوح تلقائيًا
+// وصامتًا بلا أي جرد كاش فعلي - بالضبط الحالة التي يكون فيها التحقق الفعلي
+// أهم (بيانات أقدم، احتمال خطأ أو نقص أكبر يتراكم بصمت). الآن: التعامل مع
+// هذه الأيام انتقل بالكامل لبوابة جرد الكاش الإلزامية في rCashier (نفس صرامة
+// "اليوم المفقود" تمامًا) - هذه الدالة أصبحت غير مُستخدَمة عمدًا، أُبقيت هنا
+// موثَّقة فقط لمرجعية تاريخية، ولم تعد تُستدعى من launchApp()
+function autoPostStaleCashierDays_DEPRECATED(){
   const today=TODAY();
   const staleDates=new Set(); // "cid|date" لكل مجموعة غير مُرحَّلة من يوم سابق
   (S.cashierLog||[]).forEach(e=>{
@@ -15598,7 +15632,7 @@ function renderBankTable(cid,searchTerm){
       else statusBadge=canEdit?`<button class="btn btn-xs" onclick="matchTx('${tx.id}')">${t('match')||'Match'} →</button>`:`<span class="bdg" style="background:var(--gr2);color:var(--t3)">${t('unmatched')||'Unmatched'}</span>`;
       return `<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;border-bottom:1px solid var(--gr2);font-size:11px;${canEdit?'cursor:pointer':''}" ${canEdit?`onclick="matchTx('${tx.id}')"`:''}>
       <span style="color:var(--t3);width:70px;flex-shrink:0;font-size:10px">${FD(tx.date)}</span>
-      <span style="flex:1">${escapeHtml(tx.desc)}${allocatedCount>0?`<div style="font-size:9px;color:var(--t3);margin-top:2px">${(tx.allocations||[]).map(a=>a.targetLabel).join(' + ')}</div>`:''}</span>
+      <span style="flex:1">${escapeHtml(tx.desc)}${tx.isManual?` <span class="bdg" style="background:rgba(184,134,11,0.15);color:#8a6410;font-size:9px" title="Manually entered — not from an imported bank statement">✍ Manual</span>`:''}${allocatedCount>0?`<div style="font-size:9px;color:var(--t3);margin-top:2px">${(tx.allocations||[]).map(a=>a.targetLabel).join(' + ')}</div>`:''}</span>
       <span style="font-weight:600;color:${tx.amount>=0?'var(--green)':'var(--red)'}">
         ${tx.amount>=0?'+':''}${FMT(tx.amount)}
       </span>
@@ -18758,6 +18792,7 @@ async function _exportReportExcel(type,cid){
 function openAddBankTx(){
   const cid=S.currentClient;
   showModal(t('btn_add_manual').replace('🏦 ',''),`
+    <div style="font-size:10.5px;color:#8a6410;background:rgba(184,134,11,0.12);border-left:3px solid var(--gold);padding:8px 10px;border-radius:4px;margin-bottom:12px">⚠️ This creates a manually-typed entry, not a real imported bank transaction. It will be clearly labeled as manual and logged for audit purposes.</div>
     <div class="fr2">
       <div class="fg"><label>Date</label><input type="date" id="bt-d" value="${TODAY()}"/></div>
       <div class="fg"><label>Amount (€)</label><input type="number" id="bt-a" step="0.01" placeholder="-50.00 or +1200.00"/></div>
@@ -18765,9 +18800,11 @@ function openAddBankTx(){
     <div class="fg"><label>${t('lbl_description')}</label><input id="bt-desc" placeholder="Bank statement description"/></div>
   `,()=>{
     if(!S.bankTx)S.bankTx=[];
+    const amount=parseFloat(document.getElementById('bt-a').value)||0;
+    const desc=document.getElementById('bt-desc').value;
     S.bankTx.push({id:UID(),cid,date:document.getElementById('bt-d').value,
-      desc:document.getElementById('bt-desc').value,
-      amount:parseFloat(document.getElementById('bt-a').value)||0,matched:false});
+      desc,amount,matched:false,isManual:true});
+    logAudit('create','bank_tx','Manually added bank transaction — '+FMT(amount)+(desc?' ('+desc+')':''),cid);
     sv();closeModal();renderContent();toast('✓ '+t('tab_bank'));
   });
 }
