@@ -2123,9 +2123,16 @@ function toggleDarkMode(){
 // فقط (بنفس أسلوب حفظ الوضع الداكن تمامًا)
 const FONT_SCALE_LEVELS=[90,100,115,130];
 function applyFontScale(pct){
-  const app=document.getElementById('app');
+  // ⭐⭐ نطبِّق التكبير على منطقة المحتوى الرئيسية (.main) فقط - وليس على
+  // #app بالكامل. السبب: .sidebar على الموبايل بها position:fixed، ومتصفحات
+  // مثل كروم/سفاري تُكبِّر صندوق العناصر المثبَّتة (fixed) أيضًا عند تطبيق
+  // zoom على عنصر أب لها - فيصبح صندوق القائمة أطول فعليًا من الشاشة نفسها
+  // بينما هو مثبَّت من الأعلى، فيخرج الجزء السفلي (أزرار حجم الخط، تسجيل
+  // الخروج) عن حدود الشاشة بلا طريقة للوصول له (العنصر المثبَّت لا يتأثر
+  // بتمرير الصفحة). استبعاد القائمة من التكبير يحل المشكلة نهائيًا.
+  const main=document.querySelector('#app .main');
   const login=document.getElementById('login-page');
-  if(app)app.style.zoom=pct+'%';
+  if(main)main.style.zoom=pct+'%';
   if(login)login.style.zoom=pct+'%';
 }
 function getFontScale(){
@@ -3350,6 +3357,10 @@ async function enablePushNotifications(){
       body:JSON.stringify({subscription:sub.toJSON()}),
     });
     if(!res.ok){toast('❌ Could not save the subscription on the server');return;}
+    // ⭐ نُسجِّل أن المستخدم فعَّل الإشعارات من قبل - يُستخدم فقط لتمييز
+    // "أُلغي الاشتراك بصمت" (مسح الكاش/بيانات الموقع) عن "لم يُفعَّل أبدًا"
+    // في refreshPushNotifButton() - وليس كحالة فعلية بديلة عن الفحص الحي
+    try{localStorage.setItem('anb5_push_was_enabled','1');}catch{}
     toast('✓ Push notifications enabled');
   }catch(e){toast('❌ Network error - please try again');}
   refreshPushNotifButton();
@@ -3367,6 +3378,7 @@ async function disablePushNotifications(){
       }catch(e){/* حتى لو فشل إبلاغ الخادم، نُلغي الاشتراك محليًا لأن هذا ما يهم المستخدم فعليًا */}
       await sub.unsubscribe();
     }
+    try{localStorage.removeItem('anb5_push_was_enabled');}catch{}
     toast('✓ Push notifications disabled');
   }catch(e){toast('❌ Network error - please try again');}
   refreshPushNotifButton();
@@ -3391,7 +3403,20 @@ async function refreshPushNotifButton(){
     btn.onclick=disablePushNotifications;
     btn.style.display='';
   }else{
-    status.textContent='⚪ Not enabled';
+    // ⭐⭐ نميّز هنا بين حالتين: "لم تُفعَّل الإشعارات أبدًا" و"كانت مفعَّلة
+    // وأُلغيت بصمت" (الحالة الثانية تحدث فعليًا عند مسح الكاش/بيانات الموقع
+    // على الموبايل - المتصفح يحذف اشتراك الدفع وتسجيل service worker معًا
+    // كإجراء خصوصية، وهذا سلوك متصفح حقيقي لا يمكن لكود التطبيق منعه أو
+    // استرجاعه تلقائيًا. لكن نقدر نوضح للمستخدم ليش صار كذا بدل ما يتفاجأ)
+    let wasEnabledBefore=false;
+    try{wasEnabledBefore=localStorage.getItem('anb5_push_was_enabled')==='1';}catch{}
+    if(wasEnabledBefore){
+      status.innerHTML='⚠️ Notifications turned off — this happens when your browser/phone clears site data or cache, which erases the notification subscription. Please re-enable.';
+      status.style.color='#8a6410';
+    }else{
+      status.textContent='⚪ Not enabled';
+      status.style.color='';
+    }
     btn.textContent='Enable';
     btn.className='btn btn-xs btn-p';
     btn.onclick=enablePushNotifications;
@@ -7610,6 +7635,7 @@ function rInvoices(el,cid){
   const inv=S.invoices.filter(i=>i.cid===cid&&!i.deleted);
   const paid=inv.filter(i=>i.status==='Betaald').reduce((s,i)=>s+i.total,0);
   const open=inv.filter(i=>['Openstaand','Verzonden'].includes(i.status)).reduce((s,i)=>s+i.total,0);
+  const creditNotesTotal=inv.filter(i=>i.isCreditNote).reduce((s,i)=>s+Math.abs(i.total),0);
   
   // الألوان من الكرت المختار أو استخدام الافتراضي
   const theme=S.cardTheme||CARD_THEME_FALLBACKS.green_0A2218;
@@ -7628,6 +7654,7 @@ function rInvoices(el,cid){
   <div class="kgrid">
     <div class="kcard"><div class="kl">${t('revenue_collected')}</div><div class="kv" style="color:var(--green)">${FMT(paid)}</div></div>
     <div class="kcard"><div class="kl">Outstanding</div><div class="kv" style="color:var(--orange)">${FMT(open)}</div></div>
+    ${creditNotesTotal>0?`<div class="kcard"><div class="kl">↩ Credit Notes Issued</div><div class="kv" style="color:#8a6410">${FMT(creditNotesTotal)}</div></div>`:''}
   </div>
   ${inv.length>0?`<div style="display:flex;gap:8px;margin-bottom:12px">
     <input type="text" id="inv-search" placeholder="🔍 ${t('search')||'Search'} (#, ${t('lbl_description')}, ${t('lbl_customer')})..."
@@ -7704,9 +7731,10 @@ function renderInvoicesTable(cid,searchTerm){
       <td style="font-weight:600">${FMT(i.total)}</td>
       <td>${invoiceStatusBadge(i)}${i.emailSentAt?`<div style="font-size:9px;color:var(--t3);margin-top:2px">✉ sent ${FD(i.emailSentAt)}</div>`:''}</td>
       <td><div style="display:flex;gap:3px">
-        ${(isAdmin()||S.role==='client')&&getInvoiceRemaining(i)>0.01?`<button class="btn btn-xs" onclick="editInvoice('${i.id}')" title="Edit"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✏</span></button>`:''}
-        ${isAdmin()?`${i.status!=='Betaald'?`<button class="btn btn-xs" onclick="openRecordCashPayment('${i.id}')" title="${t('record_cash_payment')||'Record Cash Payment'}"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">💵</span></button>`:''}
-        <button class="btn btn-xs" onclick="sendInvoiceEmail('${i.id}')" title="Email invoice"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✉</span></button>`:''}
+        ${!i.isCreditNote&&(isAdmin()||S.role==='client')&&getInvoiceRemaining(i)>0.01?`<button class="btn btn-xs" onclick="editInvoice('${i.id}')" title="Edit"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✏</span></button>`:''}
+        ${!i.isCreditNote&&isAdmin()?`${i.status!=='Betaald'?`<button class="btn btn-xs" onclick="openRecordCashPayment('${i.id}')" title="${t('record_cash_payment')||'Record Cash Payment'}"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">💵</span></button>`:''}
+        <button class="btn btn-xs" onclick="sendInvoiceEmail('${i.id}')" title="Email invoice"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✉</span></button>
+        <button class="btn btn-xs" onclick="openCreditNoteModal('${i.id}')" title="Issue Credit Note">↩</button>`:''}
         <button class="btn btn-gold btn-xs" onclick="exportPDF('${i.id}')" title="PDF"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬇</span>PDF</button>
         ${isAdmin()?`<button class="btn btn-xs btn-danger" onclick="delInvoice('${i.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🗑</span></button>`:''}
       </div></td>
@@ -7807,8 +7835,8 @@ function renderExpensesTable(cid,searchTerm){
       <td style="color:var(--red)">${FMT(e.amount)}</td>
       <td style="color:var(--blue)">${FMT(e.btw)}</td>
       <td>${expenseStatusBadge(e)}</td>
-      <td>${e.receiptDocId?`<button class="btn btn-xs" onclick="viewReceipt('${e.receiptDocId}')" title="${t('view_attachment')||'View attachment'}">📎</button>`:''}${isAdmin()&&e.paymentStatus!=='Betaald'?`<button class="btn btn-xs" onclick="openRecordCashPaymentExpense('${e.id}')" title="${t('record_cash_payment')||'Record Cash Payment'}">💵</button>`:''}</td>
-      ${(isAdmin()||S.role==='client')?`<td>${(isAdmin()||!e.sourceInvoiceId)&&getExpenseRemaining(e)>0.01?`<button class="btn btn-xs" onclick="editExpense('${e.id}')" title="Edit"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✏</span></button>`:''}</td>`:''}
+      <td>${e.receiptDocId?`<button class="btn btn-xs" onclick="viewReceipt('${e.receiptDocId}')" title="${t('view_attachment')||'View attachment'}">📎</button>`:''}${!e.isCreditNote&&isAdmin()&&e.paymentStatus!=='Betaald'?`<button class="btn btn-xs" onclick="openRecordCashPaymentExpense('${e.id}')" title="${t('record_cash_payment')||'Record Cash Payment'}">💵</button>`:''}${!e.isCreditNote&&isAdmin()?`<button class="btn btn-xs" onclick="openExpenseCreditNoteModal('${e.id}')" title="Log Credit Note Received">↩</button>`:''}</td>
+      ${(isAdmin()||S.role==='client')?`<td>${!e.isCreditNote&&(isAdmin()||!e.sourceInvoiceId)&&getExpenseRemaining(e)>0.01?`<button class="btn btn-xs" onclick="editExpense('${e.id}')" title="Edit"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✏</span></button>`:''}</td>`:''}
       ${isAdmin()?`<td><button class="btn btn-xs btn-danger" onclick="delExpense('${e.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">🗑</span></button></td>`:''}
     </tr>`).join('')}</tbody></table>`}
   </div>`;
@@ -11748,6 +11776,57 @@ function delExpense(id){
     });
   });
 }
+// ══════════════════════════════════════════════════════════════════
+// ⭐⭐ إشعار دائن وارد (Creditnota received) - عندما يُصدر مورد إشعار دائن
+// يُخفِّض مصروفًا مُسجَّلًا بالفعل (مثل إرجاع بضاعة أو تصحيح سعر). يُنشئ
+// سجل مصروف سالب منفصل يشير للمصروف الأصلي، بنفس نوع/نسبة BTW تمامًا -
+// فيُطرَح تلقائيًا وبشكل صحيح من رُبريك 5b (أو 2a/4b للفترة المعكوسة) دون
+// المساس بالمصروف الأصلي نفسه، بنفس مبدأ فاتورة الدائن الصادرة تمامًا.
+// ══════════════════════════════════════════════════════════════════
+function getExpenseCreditNoteCounter(originalExpenseId){
+  return (S.expenses||[]).filter(e=>e.isCreditNote&&e.creditNoteFor===originalExpenseId).length;
+}
+function openExpenseCreditNoteModal(originalExpenseId){
+  const orig=(S.expenses||[]).find(e=>e.id===originalExpenseId);
+  if(!orig){toast('❌ Original expense not found');return;}
+  if(orig.isCreditNote){toast('❌ Cannot issue a credit note against another credit note');return;}
+  const priorCreditNotes=(S.expenses||[]).filter(e=>e.isCreditNote&&e.creditNoteFor===originalExpenseId&&!e.deleted);
+  const alreadyCredited=priorCreditNotes.reduce((s,e)=>s+Math.abs(e.amount),0);
+  const remainingCreditable=Math.max(0,orig.amount-alreadyCredited);
+  showModal('↩ Log Credit Note Received — '+(orig.supplier||''),`
+    <div style="font-size:11px;color:var(--t3);background:var(--gr1);border-radius:6px;padding:10px 12px;margin-bottom:14px;line-height:1.6">
+      For a credit note your supplier issued you (e.g. returned goods, a pricing correction) against the expense dated ${FD(orig.date)} — <b>${escapeHtml(orig.desc||'')}</b>. The original expense is never modified; this creates a separate correcting record.
+    </div>
+    <div class="fg"><label>Amount to credit, excl. BTW (€)</label>
+      <input type="number" id="excn-amount" step="0.01" value="${remainingCreditable.toFixed(2)}" max="${remainingCreditable.toFixed(2)}"/>
+      <div style="font-size:10.5px;color:var(--t3);margin-top:3px">Max creditable: €${remainingCreditable.toFixed(2)} (original €${orig.amount.toFixed(2)}${alreadyCredited>0?', already credited €'+alreadyCredited.toFixed(2):''})</div>
+    </div>
+    <div class="fg"><label>Reason</label><input id="excn-reason" placeholder="e.g. Returned goods, pricing correction"/></div>
+    <div style="font-size:10.5px;color:var(--t3);margin-top:-4px">BTW type/rate is copied automatically from the original expense.</div>
+  `,()=>{
+    const amt=parseFloat(document.getElementById('excn-amount').value)||0;
+    const reason=(document.getElementById('excn-reason').value||'').trim();
+    if(amt<=0){toast('❌ Enter a valid amount greater than 0');markFieldError('excn-amount');return;}
+    if(amt>remainingCreditable+0.01){toast('❌ Cannot credit more than the remaining creditable amount (€'+remainingCreditable.toFixed(2)+')');markFieldError('excn-amount');return;}
+    const seq=getExpenseCreditNoteCounter(originalExpenseId)+1;
+    const rate=orig.btwType==='verlegd_received'?0:(orig.amount?Math.round((orig.btw/orig.amount)*100):0);
+    const btw=orig.btwType==='verlegd_received'?0:Math.round(amt*(rate/100)*100)/100;
+    const selfAssessedVat=orig.btwType==='verlegd_received'?Math.round(amt*((orig.amount?Math.round((orig.selfAssessedVat/orig.amount)*100):0)/100)*100)/100:0;
+    const cn={id:UID(),cid:orig.cid,date:TODAY(),
+      supplier:orig.supplier,payToId:orig.payToId,
+      desc:'Credit note received for '+(orig.desc||'expense')+(reason?': '+reason:''),
+      cat:orig.cat,amount:-amt,
+      btw:-btw,selfAssessedVat:-selfAssessedVat,
+      btwType:orig.btwType||'normal',btwDeductible:orig.btwDeductible,
+      isCreditNote:true,creditNoteFor:orig.id,creditNoteForNum:orig.desc||orig.supplier,
+      amountPaid:0,paymentStatus:'Onbetaald'};
+    if(!S.expenses)S.expenses=[];
+    S.expenses.push(cn);
+    logAudit('create','expense','Logged credit note received for '+FMT(amt)+' against expense from '+(orig.supplier||''),orig.cid);
+    sv();closeModal();renderContent();
+    toast('✓ Credit note logged');
+  },'Log Credit Note');
+}
 function delHours(id){
   showConfirmDialog(t('confirm_delete')||'Confirm Delete',t('confirm_delete_generic')||'Delete this item?',()=>{
     S.hours=S.hours.map(h=>h.id===id?{...h,deleted:true,deletedAt:new Date().toISOString()}:h);
@@ -12166,6 +12245,9 @@ function isInvoiceOverdue(inv){
 // (بلون تحذيري) أو "مدفوعة"، مع مؤشر دفعة جزئية إن وُجد
 // شارة حالة دفع المصروف - نفس مبدأ الفاتورة (معلَّق/مدفوع فقط، مع مؤشر دفعة جزئية)
 function expenseStatusBadge(exp){
+  if(exp.isCreditNote){
+    return `<span class="bdg b-draft" style="background:rgba(184,134,11,.15);color:#8a6410">↩ Credit Note</span><div style="font-size:9px;color:var(--t3);margin-top:2px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(exp.creditNoteForNum||'')}">for ${escapeHtml(exp.creditNoteForNum||'')}</div>`;
+  }
   const total=(exp.amount||0)+(exp.btw||0);
   if(exp.paymentStatus==='Betaald'){
     return `<span class="bdg b-paid">${t('st_betaald')||'Betaald'}</span>`;
@@ -12174,6 +12256,9 @@ function expenseStatusBadge(exp){
   return `<span class="bdg b-open">${t('st_onbetaald')||'Unpaid'}</span>${partial?`<div style="font-size:9px;color:var(--t3);margin-top:2px">${FMT(exp.amountPaid)} / ${FMT(total)}</div>`:''}`;
 }
 function invoiceStatusBadge(inv){
+  if(inv.isCreditNote){
+    return `<span class="bdg b-draft" style="background:rgba(184,134,11,.15);color:#8a6410">↩ Credit Note</span><div style="font-size:9px;color:var(--t3);margin-top:2px">for ${escapeHtml(inv.creditNoteForNum||'')}</div>`;
+  }
   if(inv.status==='Betaald'){
     return `<span class="bdg b-paid">${t('st_betaald')||'Betaald'}</span>`;
   }
@@ -13116,6 +13201,59 @@ function nextNum(clientId){
 function openNewInvoice(){
   openInvoiceModal(null);
 }
+// ══════════════════════════════════════════════════════════════════
+// ⭐⭐ فاتورة الدائن (Creditnota) - التصحيح القانوني الصحيح لفاتورة صادرة
+// بالفعل، بدل تعديلها أو حذفها. تشير لرقم الفاتورة الأصلية، تحمل نفس نوع/نسبة
+// BTW (فتُطرَح تلقائيًا وبشكل صحيح من تقرير BTW لنفس الرُبريك)، ولا تُغيِّر
+// المستند الأصلي أبدًا - فيبقى كما أُرسل فعليًا للعميل، مع مستند تصحيح منفصل
+// موثَّق كما يتطلبه القانون الهولندي.
+// ══════════════════════════════════════════════════════════════════
+function getCreditNoteCounter(originalInvoiceId){
+  return (S.invoices||[]).filter(i=>i.isCreditNote&&i.creditNoteFor===originalInvoiceId).length;
+}
+function openCreditNoteModal(originalInvoiceId){
+  const orig=(S.invoices||[]).find(i=>i.id===originalInvoiceId);
+  if(!orig){toast('❌ Original invoice not found');return;}
+  if(orig.isCreditNote){toast('❌ Cannot issue a credit note against another credit note');return;}
+  // ⚠️ صافي الفاتورة الأصلية بعد أي إشعارات دائن سابقة عليها - لا يمكن إصدار
+  // دائن يتجاوز ما تبقّى فعليًا من قيمتها
+  const priorCreditNotes=(S.invoices||[]).filter(i=>i.isCreditNote&&i.creditNoteFor===originalInvoiceId&&!i.deleted);
+  const alreadyCredited=priorCreditNotes.reduce((s,i)=>s+Math.abs(i.amount),0);
+  const remainingCreditable=Math.max(0,orig.amount-alreadyCredited);
+  showModal('↩ Issue Credit Note — '+orig.num,`
+    <div style="font-size:11px;color:var(--t3);background:var(--gr1);border-radius:6px;padding:10px 12px;margin-bottom:14px;line-height:1.6">
+      This creates a separate, legally correct correction document referencing invoice <b>${escapeHtml(orig.num)}</b>. The original invoice itself is never modified — both documents stay on file, exactly as required for a Dutch administration.
+    </div>
+    <div class="fg"><label>Amount to credit, excl. BTW (€)</label>
+      <input type="number" id="cn-amount" step="0.01" value="${remainingCreditable.toFixed(2)}" max="${remainingCreditable.toFixed(2)}"/>
+      <div style="font-size:10.5px;color:var(--t3);margin-top:3px">Max creditable: €${remainingCreditable.toFixed(2)} (original €${orig.amount.toFixed(2)}${alreadyCredited>0?', already credited €'+alreadyCredited.toFixed(2):''})</div>
+    </div>
+    <div class="fg"><label>Reason</label><input id="cn-reason" placeholder="e.g. Pricing error, returned goods, service not delivered"/></div>
+    <div style="font-size:10.5px;color:var(--t3);margin-top:-4px">BTW type/rate (${orig.btwType==='normal'||!orig.btwType?orig.btwRate+'%':orig.btwType}) is copied automatically from the original invoice.</div>
+  `,()=>{
+    const amt=parseFloat(document.getElementById('cn-amount').value)||0;
+    const reason=(document.getElementById('cn-reason').value||'').trim();
+    if(amt<=0){toast('❌ Enter a valid amount greater than 0');markFieldError('cn-amount');return;}
+    if(amt>remainingCreditable+0.01){toast('❌ Cannot credit more than the remaining creditable amount (€'+remainingCreditable.toFixed(2)+')');markFieldError('cn-amount');return;}
+    const seq=getCreditNoteCounter(originalInvoiceId)+1;
+    const rate=(orig.btwType==='normal'||!orig.btwType)?(orig.btwRate||0):0;
+    const btw=Math.round(amt*(rate/100)*100)/100;
+    const cn={id:UID(),cid:orig.cid,
+      num:orig.num+'-CN'+seq,
+      isCreditNote:true,creditNoteFor:orig.id,creditNoteForNum:orig.num,
+      desc:'Credit note for '+orig.num+(reason?': '+reason:''),
+      date:TODAY(),due:TODAY(),paidDate:TODAY(),
+      status:'Creditnota',
+      amount:-amt,btwRate:orig.btwRate,btwType:orig.btwType||'normal',
+      btw:-btw,total:-(amt+btw),amountPaid:0,
+      billTo:orig.billTo,billToId:orig.billToId,billToManual:orig.billToManual};
+    if(!S.invoices)S.invoices=[];
+    S.invoices.push(cn);
+    logAudit('create','invoice','Issued credit note '+cn.num+' for '+FMT(Math.abs(cn.total))+' against '+orig.num,orig.cid);
+    sv();closeModal();renderContent();
+    toast('✓ Credit note issued — '+cn.num);
+  },'Issue Credit Note');
+}
 
 // ══════════════════════════════════════════════════════════════════
 // تسجيل دخل يومي سريع - لعملاء مثل الحلاق أو البائع الذي يجمع دخله في
@@ -13447,6 +13585,12 @@ function openInvoiceModal(inv){
     if(isMulti&&(!items||items.length===0)){errors.push('🧾 Add at least one item with a description, quantity, and price');}
     if(!isMulti&&!ni.desc){errors.push('📝 Description is required');markFieldError('if-desc');}
     if(a<=0){errors.push('💶 Amount must be greater than 0');if(!isMulti)markFieldError('if-a');}
+    // ⚠️ الترقيم المتسلسل بلا فجوات ولا تكرار شرط قانوني - نمنع حفظ رقم يتعارض
+    // مع فاتورة أخرى موجودة فعليًا لنفس العميل (بما فيها المؤرشفة/المحذوفة، لأنها تبقى جزءًا من السجل القانوني)
+    if(ni.num&&(S.invoices||[]).some(x=>x.id!==ni.id&&x.cid===cid&&x.num===ni.num)){
+      errors.push('🔢 Invoice number "'+ni.num+'" is already used by another invoice for this client');
+      markFieldError('if-n');
+    }
 
     if(errors.length>0){
       toast('❌ Please complete all required fields:\n\n'+errors.join('\n'));
@@ -13651,6 +13795,13 @@ function upExpenseBtwType(){
   }
   upExpensePaymentMethod();
 }
+// ⭐ يُظهر تحذير عدم قابلية خصم BTW عند اختيار فئة "تمثيل/علاقات عامة" -
+// هذي الفئة الوحيدة التي تُستثنى ضريبتها تلقائيًا من قابلية الاسترداد
+function upExpenseCategory(){
+  const cat=document.getElementById('ex-c')?.value;
+  const hintEl=document.getElementById('ex-cat-hint');
+  if(hintEl)hintEl.style.display=cat==='Representatie/Relaties'?'block':'none';
+}
 
 // ⚠️ نظير upInvoicePaymentMethod للمصاريف - نفس المنطق تمامًا
 function upExpensePaymentMethod(){
@@ -13711,7 +13862,9 @@ function openNewExpense(exp){
       <div class="msec msec-first">🧾 ${t('msec_expense_details')||'Expense Details'}</div>
       <div class="fr2">
         <div class="fg"><label>Date</label><input type="date" id="ex-d" value="${exp?exp.date:TODAY()}"/></div>
-        <div class="fg"><label>${t('lbl_category')}</label><select id="ex-c">${['Software','Hardware','Kantoor','Marketing','Transport','Opleiding','Telecom','Overig'].map(c=>`<option ${exp?.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="fg"><label>${t('lbl_category')}</label><select id="ex-c" onchange="upExpenseCategory()">${['Software','Hardware','Kantoor','Marketing','Transport','Opleiding','Telecom','Representatie/Relaties','Overig'].map(c=>`<option ${exp?.cat===c?'selected':''}>${c}</option>`).join('')}</select>
+          <div id="ex-cat-hint" style="display:none;font-size:10.5px;color:#8a6410;background:rgba(184,134,11,0.12);border-left:3px solid var(--red);padding:6px 8px;border-radius:4px;margin-top:6px">⚠️ Representation/entertainment costs (client meals, gifts, staff parties): BTW on these is generally <b>not deductible</b> (art. 16 BUA), and the income/corporate tax deduction is limited — either a threshold (drempel ≈ €4,900/year) or a flat 80% deduction election. This expense's BTW will be excluded from your VAT reclaim automatically.</div>
+        </div>
       </div>
 
       <div class="msec">🏭 ${t('msec_supplier')||'Supplier'}</div>
@@ -13804,11 +13957,13 @@ function openNewExpense(exp){
       if(!isN){
         const newBtw=btwType==='verlegd_received'?0:Math.round(a*(r/100)*100)/100;
         const newSelfAssessed=btwType==='verlegd_received'?Math.round(a*(r/100)*100)/100:0;
+        const editCat=document.getElementById('ex-c').value;
         Object.assign(exp,{
           date:document.getElementById('ex-d').value,
           supplier:(document.getElementById('ex-s')?.value||exp.supplier),
-          desc:exDesc,cat:document.getElementById('ex-c').value,amount:a,
-          btw:newBtw,selfAssessedVat:newSelfAssessed,btwType
+          desc:exDesc,cat:editCat,amount:a,
+          btw:newBtw,selfAssessedVat:newSelfAssessed,btwType,
+          btwDeductible:editCat!=='Representatie/Relaties'
         });
         logAudit('edit','expense','Edited expense '+exDesc+' — '+FMT(a),cid);
         sv();closeModal();renderContent();toast('✓ '+(t('save')||'Saved'));
@@ -13841,12 +13996,14 @@ function openNewExpense(exp){
         payToId=gc.id;
       }
 
+      const cat=document.getElementById('ex-c').value;
       const newExp={id:UID(),cid,date:document.getElementById('ex-d').value,
         supplier:payTo,payToId,desc:exDesc,
-        cat:document.getElementById('ex-c').value,amount:a,
+        cat,amount:a,
         btw:btwType==='verlegd_received'?0:Math.round(a*(r/100)*100)/100, // ⚠️ لا ضريبة فعلية مدفوعة للمورد في حالة الفترة المعكوسة
         selfAssessedVat:btwType==='verlegd_received'?Math.round(a*(r/100)*100)/100:0, // للإقرار فقط (رُبريك 2a/4b + 5b) - أثر نقدي صافٍ صفر
         btwType,receiptDocId:attachedDocId,
+        btwDeductible:cat!=='Representatie/Relaties', // ⭐ ضريبة التمثيل/العلاقات العامة غير قابلة للاسترداد قانونًا (م. 16 BUA) - تُستثنى تلقائيًا من رُبريك 5b
         amountPaid:0,paymentStatus:'Onbetaald'};
       S.expenses.push(newExp);
       logAudit('create','expense','Added expense '+exDesc+' — '+FMT(a),cid);
@@ -13877,6 +14034,7 @@ function openNewExpense(exp){
       sv();closeModal();renderContent();toast(t('tab_expenses')+' ✓','ti-check');
     }
   },'Save Expense');
+  setTimeout(upExpenseCategory,50);
 
   // Get modal elements
   const manualBtn=document.getElementById('ex-manual-btn');
@@ -14365,7 +14523,7 @@ async function _exportPDF(id){
   if(issuerBTW){doc.text('BTW '+issuerBTW,M,iy);iy+=5;}
 
   doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(10,34,24);
-  doc.text('FACTUUR',W-M,16,{align:'right'});
+  doc.text(i.isCreditNote?'CREDITNOTA':'FACTUUR',W-M,16,{align:'right'});
   // شارة رقم الفاتورة (مستطيل مدوّر أخضر داكن بنص ذهبي)
   doc.setFontSize(9);
   const numW=doc.getTextWidth(i.num)+10;
@@ -14376,9 +14534,15 @@ async function _exportPDF(id){
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100,100,100);
   doc.text('Datum',W-M-30,33);
   doc.setFont('helvetica','bold');doc.setTextColor(10,34,24);doc.text(FD(i.date),W-M,33,{align:'right'});
-  doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
-  doc.text('Vervaldatum',W-M-30,38);
-  doc.setFont('helvetica','bold');doc.setTextColor(10,34,24);doc.text(FD(i.due),W-M,38,{align:'right'});
+  if(i.isCreditNote){
+    doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
+    doc.text('Ref. factuur',W-M-30,38);
+    doc.setFont('helvetica','bold');doc.setTextColor(10,34,24);doc.text(String(i.creditNoteForNum||''),W-M,38,{align:'right'});
+  }else{
+    doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
+    doc.text('Vervaldatum',W-M-30,38);
+    doc.setFont('helvetica','bold');doc.setTextColor(10,34,24);doc.text(FD(i.due),W-M,38,{align:'right'});
+  }
 
   doc.setDrawColor(231,229,221);doc.line(M,44,W-M,44);
 
@@ -15677,8 +15841,10 @@ function getClientVatBasis(cid){
 function getReportableInvoices(cid){
   const basis=getClientVatBasis(cid);
   if(basis==='cash'){
-    // أساس النقد: فقط المدفوعة بالكامل، وبتاريخ التحصيل الفعلي (paidDate)
-    return S.invoices.filter(i=>i.cid===cid&&i.status==='Betaald'&&isDateInReportPeriod(i.paidDate||i.date));
+    // أساس النقد: فقط المدفوعة بالكامل، وبتاريخ التحصيل الفعلي (paidDate) -
+    // إشعارات الدائن (Creditnota) تُدرَج دائمًا بتاريخ إصدارها، بغضّ النظر عن
+    // حالة سداد الفاتورة الأصلية، لأنها تصحيح فوري وليست مبلغًا يُحصَّل
+    return S.invoices.filter(i=>i.cid===cid&&((i.status==='Betaald'||i.isCreditNote)&&isDateInReportPeriod(i.paidDate||i.date)));
   }
   // أساس الفاتورة (الافتراضي والإلزامي لعملاء B2B): كل الفواتير الصادرة
   // ضمن الفترة، بغضّ النظر عن حالة الدفع - الضريبة مستحقة عند الإصدار
@@ -16187,7 +16353,7 @@ function computeBtwRubrieken(inv,exp){
   const r3b={amount:inv.filter(i=>i.btwType==='eu_b2b').reduce((s,i)=>s+i.amount,0),btw:0};
   const r3a={amount:inv.filter(i=>i.btwType==='export').reduce((s,i)=>s+i.amount,0),btw:0};
 
-  const expNormal=exp.filter(e=>!e.btwType||e.btwType==='normal');
+  const expNormal=exp.filter(e=>(!e.btwType||e.btwType==='normal')&&e.btwDeductible!==false);
   const expReverse=exp.filter(e=>e.btwType==='verlegd_received');
   const r2a4b={amount:expReverse.reduce((s,e)=>s+e.amount,0),btw:expReverse.reduce((s,e)=>s+(e.selfAssessedVat||0),0)};
   const r5b_normal=expNormal.reduce((s,e)=>s+(e.btw||0),0);
