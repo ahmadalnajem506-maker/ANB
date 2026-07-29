@@ -5466,10 +5466,10 @@ function renderAssetsList(cid,searchTerm,sortValue){
       const bookValue=getBookValue(a,TODAY());
       const accDep=getAccumulatedDepreciation(a,TODAY());
       const annualDep=getAnnualDepreciation(a);
-      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2)">
+      return `<div style="padding:12px 14px;border-bottom:1px solid var(--gr2);${a.isDisposed?'opacity:.7':''}">
         <div style="display:flex;justify-content:space-between;align-items:start">
           <div style="flex:1">
-            <div style="font-weight:600;font-size:12px;color:var(--t1)">${escapeHtml(a.name||'')} <span style="font-size:9px;color:var(--t3);font-weight:400">(${a.category||'Other'})</span></div>
+            <div style="font-weight:600;font-size:12px;color:var(--t1)">${escapeHtml(a.name||'')} <span style="font-size:9px;color:var(--t3);font-weight:400">(${a.category||'Other'})</span>${a.isDisposed?' <span class="bdg" style="background:rgba(120,120,120,0.15);color:var(--t3)">📤 Disposed</span>':''}</div>
             <div style="font-size:11px;color:var(--t3);margin-top:2px">${escapeHtml(a.desc||'')}</div>
             ${a.isImmediatelyExpensable?
               `<div style="font-size:10px;color:var(--red);margin-top:4px">⚠️ ${t('expensed_immediately')||'Expensed immediately (< €450)'} — ${FMT(a.acquisitionCost)}</div>`:
@@ -5479,6 +5479,9 @@ function renderAssetsList(cid,searchTerm,sortValue){
                 <div style="font-size:10px"><span style="color:var(--t3)">${t('accumulated')||'Accumulated'}:</span> <strong>${FMT(accDep)}</strong></div>
                 <div style="font-size:10px"><span style="color:var(--t3)">${t('per_year')||'Per Year'}:</span> <strong>${FMT(annualDep)}</strong></div>
               </div>`}
+            ${a.isDisposed?`<div style="margin-top:8px;padding:8px 10px;background:var(--gr1);border-radius:6px;font-size:10px">
+              📤 Disposed ${FD(a.disposalDate)} — proceeds ${FMT(a.disposalProceeds)} vs book value ${FMT(a.disposalBookValue)} → <b style="color:${a.disposalGainLoss>=0?'var(--green)':'var(--red)'}">${a.disposalGainLoss>=0?'gain':'loss'} of ${FMT(Math.abs(a.disposalGainLoss))}</b>
+            </div>`:''}
             ${a.loanFinanced||a.isVehicle?`<div style="margin-top:8px;padding:8px 10px;background:var(--gr1);border-radius:6px">
               ${a.isVehicle&&a.privateUsePercent>0?`<div style="font-size:10px;color:var(--red);margin-bottom:4px">⚠️ ${t('private_use_percent')||'Private Use'}: <strong>${a.privateUsePercent}%</strong> — ${t('bijtelling_may_apply')||'Bijtelling may apply, confirm with tax advisor'}</div>`:''}
               ${a.loanFinanced?`<div style="font-size:10px;color:var(--t1)">🏦 ${t('loan_remaining_amount')||'Loan Remaining'}: <strong>${FMT(a.loanRemainingAmount)}</strong> @ ${a.loanInterestRate}% ${t('per_year')||'/year'}</div>
@@ -5486,7 +5489,8 @@ function renderAssetsList(cid,searchTerm,sortValue){
             </div>`:''}
           </div>
           <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-            ${a.loanFinanced&&isAdmin()?`<button class="btn btn-xs" onclick="openLogLoanPayment('${a.id}')">🏦 ${t('log_loan_payment')||'Log Payment'}</button>`:''}
+            ${a.loanFinanced&&isAdmin()&&!a.isDisposed?`<button class="btn btn-xs" onclick="openLogLoanPayment('${a.id}')">🏦 ${t('log_loan_payment')||'Log Payment'}</button>`:''}
+            ${!a.isImmediatelyExpensable&&!a.isDisposed&&isAdmin()?`<button class="btn btn-xs" onclick="openDisposeAssetModal('${a.id}')" title="Dispose / Sell">📤 Dispose</button>`:''}
             <button class="btn btn-danger btn-xs" onclick="deleteAsset('${a.id}')" title="${t('delete')}" style="${isAdmin()?'':'display:none'}">🗑️</button>
           </div>
         </div>
@@ -5501,6 +5505,55 @@ function deleteAsset(assetId){
     logAudit('delete','asset','Deleted asset "'+a.name+'"',a.cid);
     sv();closeModal();renderContent();
   });
+}
+// ══════════════════════════════════════════════════════════════════
+// ⭐⭐ استبعاد/بيع أصل قبل نهاية عمره الإنتاجي - يحسب تلقائيًا الربح أو
+// الخسارة الناتج عن الاستبعاد (عائد البيع - القيمة الدفترية عند الاستبعاد)،
+// وهو مبلغ خاضع للضريبة/قابل للخصم فعليًا (Boekwinst/Boekverlies). يُسجَّل
+// كقيد يومية فعلي، والأصل نفسه يبقى محفوظًا بكامل تاريخ إهلاكه (لا يُحذَف) -
+// فقط يتوقَّف عن التراكم أكثر ويُعلَّم كمُستبعَد
+// ══════════════════════════════════════════════════════════════════
+function openDisposeAssetModal(assetId){
+  const a=(S.assets||[]).find(x=>x.id===assetId);
+  if(!a)return;
+  if(a.isImmediatelyExpensable){toast('❌ This was already expensed immediately — no book value to dispose of');return;}
+  showModal('📤 Dispose / Sell Asset — '+a.name,`
+    <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">Records this asset as sold or written off. The book value at the disposal date determines the taxable gain or deductible loss — the asset's full depreciation history is kept, it is never deleted.</div>
+    <div class="fg"><label>Disposal Date</label><input type="date" id="da-date" value="${TODAY()}" onchange="upDisposalGainLoss('${assetId}')"/></div>
+    <div class="fg"><label>Disposal Proceeds (€, sale price — enter 0 if scrapped/written off with no sale)</label><input type="number" id="da-proceeds" step="0.01" value="0" oninput="upDisposalGainLoss('${assetId}')"/></div>
+    <div id="da-gainloss-box" style="font-size:11px;background:var(--gr1);border:1px solid var(--gr2);border-radius:6px;padding:10px 12px"></div>
+  `,()=>{
+    const disposalDate=document.getElementById('da-date').value;
+    const proceeds=parseFloat(document.getElementById('da-proceeds').value)||0;
+    if(!disposalDate){toast('❌ Enter a disposal date');return;}
+    const bookValue=getBookValue(a,disposalDate);
+    const gainLoss=Math.round((proceeds-bookValue)*100)/100;
+    a.isDisposed=true;
+    a.disposalDate=disposalDate;
+    a.disposalProceeds=proceeds;
+    a.disposalBookValue=bookValue;
+    a.disposalGainLoss=gainLoss;
+    if(!S.journal)S.journal=[];
+    S.journal.push({id:UID(),cid:a.cid,assetId:a.id,type:'asset_disposal',date:disposalDate,
+      amount:gainLoss,
+      desc:(gainLoss>=0?'Gain':'Loss')+' on disposal of '+a.name+' — proceeds '+FMT(proceeds)+' vs book value '+FMT(bookValue)});
+    logAudit('edit','asset','Disposed of asset "'+a.name+'" — '+(gainLoss>=0?'gain':'loss')+' of '+FMT(Math.abs(gainLoss)),a.cid);
+    sv();closeModal();renderContent();
+    toast('✓ Asset disposal recorded');
+  },'Record Disposal');
+  setTimeout(()=>upDisposalGainLoss(assetId),50);
+}
+// ⭐ يعرض حيًا القيمة الدفترية عند تاريخ الاستبعاد والربح/الخسارة الناتج
+function upDisposalGainLoss(assetId){
+  const a=(S.assets||[]).find(x=>x.id===assetId);
+  const box=document.getElementById('da-gainloss-box');
+  if(!a||!box)return;
+  const disposalDate=document.getElementById('da-date')?.value||TODAY();
+  const proceeds=parseFloat(document.getElementById('da-proceeds')?.value)||0;
+  const bookValue=getBookValue(a,disposalDate);
+  const gainLoss=Math.round((proceeds-bookValue)*100)/100;
+  box.innerHTML=`<div>Book value at disposal: <b>${FMT(bookValue)}</b></div>
+    <div style="margin-top:4px">${gainLoss>=0?'📈 Taxable gain':'📉 Deductible loss'}: <b style="color:${gainLoss>=0?'var(--green)':'var(--red)'}">${FMT(Math.abs(gainLoss))}</b></div>`;
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -18883,8 +18936,11 @@ function getMonthsSinceAcquisition(asset,asOfDate){
   return Math.max(0,months);
 }
 // الإهلاك المتراكم حتى تاريخ معيّن - لا يتجاوز أبدًا (التكلفة - القيمة المتبقية)
+// ⚠️ لو الأصل مُستبعَد (مُباع/تالف)، يتجمَّد الإهلاك عند تاريخ الاستبعاد نفسه -
+// لا يستمر بالتراكم بعده أبدًا مهما كان "asOfDate" المطلوب لاحقًا
 function getAccumulatedDepreciation(asset,asOfDate){
   if(!asset)return 0;
+  const effectiveAsOfDate=(asset.isDisposed&&asset.disposalDate&&(!asOfDate||asOfDate>asset.disposalDate))?asset.disposalDate:asOfDate;
   const maxDepreciable=(asset.acquisitionCost||0)-(asset.residualValue||0);
   const monthlyDep=getAnnualDepreciation(asset)/12;
   // ⚠️ أصل مُستورَد من بيانات سابقة: نحترم الرقم اليدوي المُدخَل من المحاسب
@@ -18893,14 +18949,14 @@ function getAccumulatedDepreciation(asset,asOfDate){
   // الإهلاك المُتراكِم فعليًا منذ تاريخ الترحيل نفسه إلى ذلك الرقم المستورَد
   if(asset.importedAccumulatedDepreciation!==undefined&&asset.migrationDate){
     const migrationDate=new Date(asset.migrationDate);
-    const target=new Date(asOfDate||TODAY());
+    const target=new Date(effectiveAsOfDate||TODAY());
     if(target<=migrationDate)return Math.min(maxDepreciable,asset.importedAccumulatedDepreciation);
     let monthsSinceMigration=(target.getFullYear()-migrationDate.getFullYear())*12+(target.getMonth()-migrationDate.getMonth());
     if(target.getDate()<migrationDate.getDate())monthsSinceMigration--;
     monthsSinceMigration=Math.max(0,monthsSinceMigration);
     return Math.min(maxDepreciable,asset.importedAccumulatedDepreciation+monthlyDep*monthsSinceMigration);
   }
-  const months=getMonthsSinceAcquisition(asset,asOfDate);
+  const months=getMonthsSinceAcquisition(asset,effectiveAsOfDate);
   return Math.min(maxDepreciable,monthlyDep*months);
 }
 // القيمة الدفترية الحالية = التكلفة - الإهلاك المتراكم (لا تقل أبدًا عن القيمة المتبقية)
@@ -18913,6 +18969,9 @@ function getBookValue(asset,asOfDate){
 // الأصل أثناء الفترة نفسها)
 function getDepreciationForPeriod(asset,periodStart,periodEnd){
   if(!asset||!asset.acquisitionDate)return 0;
+  // ⚠️ لو استُبعِد الأصل قبل نهاية الفترة، نُحدِّد نهاية الفترة الفعلية بتاريخ
+  // الاستبعاد نفسه - لا إهلاك بعده أبدًا
+  if(asset.isDisposed&&asset.disposalDate&&asset.disposalDate<periodEnd)periodEnd=asset.disposalDate;
   const acqDate=new Date(asset.acquisitionDate);
   const pStart=new Date(periodStart);
   const pEnd=new Date(periodEnd);
