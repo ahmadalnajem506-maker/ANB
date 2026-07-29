@@ -9275,6 +9275,7 @@ function viewDoc(id){
 function selectMsgClient(clientId){
   S.selectedMsgClient=clientId;
   S.msgSearchTerm=''; // نُصفِّر البحث عند التبديل بين محادثات عملاء مختلفين
+  msgPendingAttachment=null; // ⚠️ لا نُبقي مرفَقًا مُعلَّقًا عالقًا عند تبديل المحادثة - قد يُرسَل بالخطأ لعميل آخر
   // ✅ الأدمن يفتح محادثة العميل → رسائل العميل (الواردة للأدمن) تُعلَّم كمقروءة من طرف الأدمن
   markMsgsRead(clientId,'admin');
   // ⚠️ إصلاح خلل حقيقي: كان يُعيد رسم منطقة المحتوى فقط (rMessages)، فتبقى
@@ -9308,10 +9309,39 @@ function renderMsgBubble(m,viewerRole,align){
     :(m.from==='client'?(t('you')||'You'):(t('anb_support')||'ANB Support'));
   return `<div style="align-self:${align==='right'?'flex-end':'flex-start'};max-width:80%">
     <div style="font-size:10px;font-weight:700;color:var(--t3);margin-bottom:2px;text-align:${align==='right'?'right':'left'}">${escapeHtml(senderLabel)}</div>
-    <div style="background:${bg};color:${fg};padding:10px 12px;border-radius:6px;line-height:1.4;font-size:13px;word-wrap:break-word">${escapeHtml(m.text)}</div>
-    <div style="font-size:9px;opacity:0.6;margin-top:2px;text-align:${align==='right'?'right':'left'}">${m.date} ${m.time}${m.edited?' · '+(t('edited')||'edited'):''}</div>
+    <div style="background:${bg};color:${fg};padding:10px 12px;border-radius:6px;line-height:1.4;font-size:13px;word-wrap:break-word">
+      ${m.text?escapeHtml(m.text):''}
+      ${m.attachmentUrl||m.attachmentData?renderMsgAttachment(m):''}
+    </div>
+    <div style="font-size:9px;opacity:0.6;margin-top:2px;text-align:${align==='right'?'right':'left'}">${m.date} ${m.time}${m.edited?' · <span style="text-decoration:underline;cursor:pointer" onclick="viewMessageEditHistory(\''+m.id+'\')">'+(t('edited')||'edited')+'</span>':''}</div>
     ${actions}
   </div>`;
+}
+// ⭐ يعرض المرفَق (صورة أو ملف) داخل فقاعة الرسالة - نفس آلية رفع المستندات
+// بالضبط (R2 أو تراجع محلي)، بدل بناء نظام رفع منفصل من الصفر
+function renderMsgAttachment(m){
+  const src=m.attachmentUrl?authenticatedFileUrl(m.attachmentUrl):m.attachmentData;
+  if(!src)return '';
+  const isImage=(m.attachmentType||'').startsWith('image/');
+  if(isImage){
+    return `<div style="${m.text?'margin-top:8px':''}"><img src="${src}" onclick="openReceiptFullscreenZoom(this.src)" style="max-width:180px;max-height:180px;border-radius:6px;cursor:pointer;display:block"/></div>`;
+  }
+  return `<div style="${m.text?'margin-top:8px':''}"><a href="${src}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:6px;color:inherit;text-decoration:underline;font-size:12px">📎 ${escapeHtml(m.attachmentName||'Attachment')}</a></div>`;
+}
+// ⭐ يعرض سجل النسخ السابقة لرسالة عُدِّلت - بدل مجرد علامة "edited" بلا محتوى خلفها
+function viewMessageEditHistory(msgId){
+  const m=(S.messages||[]).find(x=>x.id===msgId);
+  if(!m||!m.editHistory||!m.editHistory.length)return;
+  const html=m.editHistory.map((h,i)=>`<div style="padding:8px 10px;background:var(--gr1);border-radius:6px;margin-bottom:6px">
+      <div style="font-size:9px;color:var(--t3);margin-bottom:3px">${new Date(h.editedAt).toLocaleString()}</div>
+      <div style="font-size:12px;color:var(--t2)">${escapeHtml(h.text)}</div>
+    </div>`).join('')
+    +`<div style="padding:8px 10px;background:var(--gr2);border-radius:6px;border:1px solid var(--gold)">
+      <div style="font-size:9px;color:var(--t3);margin-bottom:3px">Current</div>
+      <div style="font-size:12px;color:var(--t1);font-weight:600">${escapeHtml(m.text)}</div>
+    </div>`;
+  showModal('📝 Message Edit History',html,null,null);
+  setTimeout(()=>{const saveBtn=document.getElementById('mo-s');if(saveBtn)saveBtn.style.display='none';},0);
 }
 function deleteMessage(msgId){
   showConfirmDialog(t('confirm_delete')||'Confirm Delete',t('confirm_delete_message')||'Delete this message?',()=>{
@@ -9332,8 +9362,16 @@ function editMessage(msgId){
     ,()=>{
       const newText=document.getElementById('edit-msg-text')?.value?.trim();
       if(!newText){toast('❌ '+(t('message_cannot_be_empty')||'Message cannot be empty'));return;}
+      if(newText===m.text){closeModal();return;} // لا تغيير فعلي - لا داعي لتسجيل شيء
+      // ⭐⭐ إصلاح خلل حقيقي: التعديل السابق كان يستبدل النص بصمت تام، بلا أي
+      // أثر تدقيقي وبلا حفظ النص الأصلي إطلاقًا - فقط علامة "edited" بلا محتوى
+      // فعلي خلفها. الآن: يُحفَظ كل نص سابق في سجل تعديلات كامل داخل الرسالة
+      // نفسها، بالإضافة لسجل تدقيق عام يوثِّق أن تعديلًا حدث ومتى
+      if(!m.editHistory)m.editHistory=[];
+      m.editHistory.push({text:m.text,editedAt:new Date().toISOString()});
       m.text=newText;
       m.edited=true;
+      logAudit('edit','message','Edited a message (original text preserved in history)',m.cid);
       sv();
       closeModal();
       renderContent();
@@ -9401,7 +9439,10 @@ function rMessages(el,cid){
           filteredMsgs.map(m=>renderMsgBubble(m,'admin',m.from==='anb'?'right':'left')).join('')}
           <div id="msg-end"></div>
         </div>
-        <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px">
+        <div class="msg-attach-preview" style="padding:0 12px"></div>
+        <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px;align-items:center">
+          <input type="file" id="msg-attach-file" accept="image/*,.pdf" style="display:none" onchange="handleMsgAttachmentPick(event)"/>
+          <button onclick="document.getElementById('msg-attach-file').click()" style="padding:8px;background:transparent;border:1px solid var(--gr1);border-radius:4px;cursor:pointer" title="Attach file">📎</button>
           <input type="text" id="msg-input-admin" placeholder="Reply..." style="flex:1;padding:8px;border:1px solid var(--gr1);border-radius:4px;background:var(--white);color:var(--t1)"/>
           <button onclick="sendMsgAdmin('${selectedClient}')" style="padding:8px 16px;background:#0A2218;color:#B08D5A;border:none;border-radius:4px;cursor:pointer;font-weight:600">Send</button>
         </div>
@@ -9459,7 +9500,10 @@ function rMessages(el,cid){
             filteredMsgs.map(m=>renderMsgBubble(m,'admin',m.from==='anb'?'right':'left')).join('')}
             <div id="msg-end"></div>
           </div>
-          <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px">
+          <div class="msg-attach-preview" style="padding:0 12px"></div>
+          <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px;align-items:center">
+            <input type="file" id="msg-attach-file" accept="image/*,.pdf" style="display:none" onchange="handleMsgAttachmentPick(event)"/>
+            <button onclick="document.getElementById('msg-attach-file').click()" style="padding:8px;background:transparent;border:1px solid var(--gr1);border-radius:4px;cursor:pointer" title="Attach file">📎</button>
             <input type="text" id="msg-input-admin" placeholder="Reply..." style="flex:1;padding:8px;border:1px solid var(--gr1);border-radius:4px"/>
             <button onclick="sendMsgAdmin('${selectedClient}')" style="padding:8px 16px;background:#0A2218;color:#B08D5A;border:none;border-radius:4px;cursor:pointer;font-weight:600">Send</button>
           </div>
@@ -9503,7 +9547,10 @@ function rMessages(el,cid){
         clientFilteredMsgs.map(m=>renderMsgBubble(m,'client',m.from==='anb'?'left':'right')).join('')}
         <div id="msg-end-client"></div>
       </div>
-      <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px">
+      <div class="msg-attach-preview" style="padding:0 16px"></div>
+      <div style="padding:12px;border-top:1px solid var(--gr1);display:flex;gap:8px;align-items:center">
+        <input type="file" id="msg-attach-file" accept="image/*,.pdf" style="display:none" onchange="handleMsgAttachmentPick(event)"/>
+        <button onclick="document.getElementById('msg-attach-file').click()" style="padding:8px;background:transparent;border:1px solid var(--gr1);border-radius:4px;cursor:pointer" title="Attach file">📎</button>
         <input type="text" id="msg-input-client" placeholder="Message..." style="flex:1;padding:8px;border:1px solid var(--gr1);border-radius:4px"/>
         <button onclick="sendMsgClient('${cid}')" style="padding:8px 16px;background:#0A2218;color:#B08D5A;border:none;border-radius:4px;cursor:pointer;font-weight:600">${t('btn_send')}</button>
       </div>
@@ -9517,17 +9564,60 @@ function rMessages(el,cid){
   }
 }
 
-function sendMsgAdmin(cid){
+// ⭐⭐ إرفاق ملف/صورة بالرسائل - يُعيد استخدام نفس بنية رفع المستندات تمامًا
+// (uploadFileToR2 + ضغط الصور)، بدل بناء نظام رفع منفصل من الصفر
+let msgPendingAttachment=null; // {dataUrl,name,type,sizeBytes} أو null
+async function handleMsgAttachmentPick(ev){
+  const file=ev.target.files?.[0];
+  if(!file)return;
+  if(file.size>10*1024*1024){toast(`${file.name} is over 10MB — skipped`);ev.target.value='';return;}
+  try{
+    let dataUrl;
+    if(file.type.startsWith('image/'))dataUrl=await compressImage(file);
+    else dataUrl=await readAsDataURL(file);
+    msgPendingAttachment={dataUrl,name:file.name,type:file.type||'application/octet-stream'};
+    updateMsgAttachmentPreview();
+  }catch(err){
+    toast(`Could not read ${file.name}`);
+  }
+  ev.target.value='';
+}
+function clearMsgPendingAttachment(){
+  msgPendingAttachment=null;
+  updateMsgAttachmentPreview();
+}
+function updateMsgAttachmentPreview(){
+  document.querySelectorAll('.msg-attach-preview').forEach(el=>{
+    el.innerHTML=msgPendingAttachment
+      ?`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--gr1);border-radius:6px;padding:4px 8px;font-size:11px">📎 ${escapeHtml(msgPendingAttachment.name)} <span style="cursor:pointer;color:var(--red);font-weight:700" onclick="clearMsgPendingAttachment()">✕</span></span>`
+      :'';
+  });
+}
+// ⭐ يرفع المرفَق المُعلَّق (إن وُجد) لـR2 (أو تراجع محلي)، ويُرجع الحقول
+// الجاهزة للإضافة لسجل الرسالة - نفس منطق handleDocUpload بالضبط
+async function uploadPendingMsgAttachment(cid){
+  if(!msgPendingAttachment)return{};
+  const{dataUrl,name,type}=msgPendingAttachment;
+  const uploaded=await uploadFileToR2(dataUrlToBlob(dataUrl),name,type,cid);
+  msgPendingAttachment=null;
+  updateMsgAttachmentPreview();
+  if(uploaded&&uploaded.url)return{attachmentUrl:uploaded.url,attachmentName:name,attachmentType:type};
+  return{attachmentData:dataUrl,attachmentName:name,attachmentType:type}; // تراجع محلي إن فشل الرفع
+}
+
+async function sendMsgAdmin(cid){
   const inp=document.getElementById('msg-input-admin');
   const txt=inp?.value?.trim();
-  if(!txt){inp?.focus();return;}
-  
+  if(!txt&&!msgPendingAttachment){inp?.focus();return;}
+
   const now=new Date();
+  const attachmentFields=await uploadPendingMsgAttachment(cid);
   S.messages.push({
     id:UID(),
     cid,
     from:'anb',
-    text:txt,
+    text:txt||'',
+    ...attachmentFields,
     date:TODAY(),
     time:now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'),
     createdAt:now.getTime(),
@@ -9539,17 +9629,19 @@ function sendMsgAdmin(cid){
   rMessages(document.getElementById('content'),cid);
 }
 
-function sendMsgClient(cid){
+async function sendMsgClient(cid){
   const inp=document.getElementById('msg-input-client');
   const txt=inp?.value?.trim();
-  if(!txt){inp?.focus();return;}
-  
+  if(!txt&&!msgPendingAttachment){inp?.focus();return;}
+
   const now=new Date();
+  const attachmentFields=await uploadPendingMsgAttachment(cid);
   S.messages.push({
     id:UID(),
     cid,
     from:'client',
-    text:txt,
+    text:txt||'',
+    ...attachmentFields,
     date:TODAY(),
     time:now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'),
     createdAt:now.getTime(),
