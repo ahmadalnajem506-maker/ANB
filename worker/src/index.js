@@ -1,5 +1,5 @@
 // src/index.js
-var TOKEN_TTL_MS = 8 * 60 * 60 * 1e3;
+var TOKEN_TTL_MS = 4 * 60 * 60 * 1e3; // ⚠️⚠️ إصلاح أمني: تقليص من 8 لـ4 ساعات - يُنصَّف نافذة صلاحية أي توكن مسروق. لا يؤثر على المستخدم النشط فعليًا (يُجدَّد تلقائيًا في الخلفية كل فترة عبر scheduleTokenRefresh في العميل)، فقط يُقصِّر عمر توكن خامل/مسروق فعليًا.
 var LOGIN_MAX_ATTEMPTS = 5;
 var LOGIN_LOCKOUT_MS = 15 * 60 * 1e3;
 var MAX_ATTEMPTS_WINDOW_MS = 60 * 1e3;
@@ -45,18 +45,8 @@ export default {
       return json({ error: "Internal error", detail: String(err && err.message || err) }, 500, cors);
     }
   },
-  // ⭐ نسخ احتياطي تلقائي - يُستدعى تلقائيًا في الموعد المحدَّد في wrangler.toml (crons)
   async scheduled(event, env, ctx) {
     if (event.cron === "0 0 * * *") {
-      // ⚠️⚠️ إصلاح خلل قانوني/وظيفي خطير: كانت هذه المهمة (autoPostStaleCashierDaysServer)
-      // تُرحِّل أي يوم كاشير سابق تُرك بلا ترحيل تلقائيًا وبصمت تام، بلا أي جرد
-      // كاش فعلي من العميل - بالضبط الحالة التي يكون فيها التحقق أهم (بيانات
-      // أقدم، احتمال خطأ/نقص أكبر). الفهرس الجديد (index.html، جهة العميل)
-      // أصبح يمنع فتح أي شيء جديد حتى يمر العميل بجرد كاش فعلي لذلك اليوم -
-      // لكن هذه المهمة الخادمية كانت تتجاوز تلك الحماية تمامًا بترحيلها بمنتصف
-      // الليل دون علم العميل أو موافقته. الحل: لم تعد تُرحِّل شيئًا إطلاقًا -
-      // فقط تُرسل تذكيرًا (push) للعميل ليعود ويُغلق يومه بنفسه عبر بوابة جرد
-      // الكاش الإلزامية الموجودة فعليًا بالتطبيق.
       ctx.waitUntil(remindStaleCashierDaysServer(env));
     } else if (event.cron === "0 7 * * *") {
       ctx.waitUntil(sendDailyReminderPushes(env));
@@ -66,18 +56,13 @@ export default {
   }
 };
 
-// ⚠️⚠️ استُبدلت autoPostStaleCashierDaysServer (كانت تُرحِّل تلقائيًا وبصمت)
-// بهذه الدالة: تكتشف نفس الأيام العالقة، لكنها فقط تُرسل تذكير push لصاحب
-// الحساب - لا تُنشئ أي فاتورة ولا قيد كاش. الترحيل الفعلي لا يحدث الآن إلا
-// عبر بوابة جرد الكاش الإلزامية في rCashier (index.html) عندما يعود العميل
-// ويفتح التطبيق، بعد جرد فعلي للكاش الموجود لديه.
 async function remindStaleCashierDaysServer(env) {
   const cloud = await fetchCloudPayload(env);
   if (!cloud) return;
   const payload = cloud.payload;
   const today = (new Date()).toISOString().slice(0, 10);
   const cashierLog = payload.cashierLog || [];
-  const staleCidsWithDates = new Map(); // cid -> earliest stale date
+  const staleCidsWithDates = new Map();
   cashierLog.forEach((e) => {
     if (!e.posted && e.date && e.date < today) {
       const existing = staleCidsWithDates.get(e.cid);
@@ -259,6 +244,7 @@ async function handlePaymentStatus(request, env, cors, url) {
   }
   return json({ error: "provider_not_implemented" }, 501, cors);
 }
+
 var ADMIN_ASSISTANT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 var ANB_APP_REFERENCE = `ANB FinAdmin Pro — comprehensive reference of how the app actually works (verified against its source code), organized by section. Use this to give specific, accurate guidance about where and how to record things — never invent screens, buttons, fields, or numbers not listed here.
 
@@ -320,6 +306,7 @@ ASSETS (Vaste Activa — any purchased asset, not just vehicles):
 - LOAN FINANCING (applies to ANY asset type, not just vehicles): mark an asset as financed by a loan with a remaining balance and annual interest rate. Logging a payment (one total amount entered) automatically splits it into interest (tax-deductible, posted as an actual journal entry) and principal (reduces the loan balance only, never expensed) using standard amortization: interest = remaining balance × annual rate ÷ 12.
 - VEHICLE-specific fields (only for category = Vehicle): a private-use percentage, and a mileage-log note. Private use above a de-minimis threshold typically triggers "Bijtelling" (added taxable income) under Dutch rules — the app flags this but does NOT calculate the exact amount (needs confirmation from a tax advisor); a detailed mileage log can support a claim of under 500 km/year private use.
 - "Loan Overview" report (under Reports, not the Assets screen itself) aggregates every financed asset for a client: total outstanding balance, interest paid this year and all-time, a progress bar per loan, and full payment history.
+- DISPOSAL: any depreciable asset can be marked as disposed (sold or written off) via a "Dispose / Sell Asset" action — records the disposal date and sale proceeds, calculates the taxable gain or deductible loss automatically (proceeds vs. book value at that date), and posts a journal entry for it. The asset's full depreciation history is kept (never deleted); depreciation simply stops accumulating past the disposal date.
 
 EMPLOYEES / PAYROLL:
 - Salary types: Fixed Monthly or Variable Hourly.
@@ -330,7 +317,7 @@ EMPLOYEES / PAYROLL:
 - LEGAL COMPLIANCE BUILT INTO THE EMPLOYEE SCREENS (all verified against 2026 Dutch labor law figures):
   - Minimum wage check: compares the employee's effective hourly rate (converted from a monthly salary if needed) against the current statutory minimum by age, warning at save time if it's below the legal minimum.
   - Probation period (proeftijd): the maximum allowed is calculated live from the contract's actual length — none allowed for a fixed-term contract of 6 months or less (the whole clause is void if used), max 1 month for 6 months–2 years, max 2 months for 2+ years or permanent contracts. Saving an illegal combination is blocked, not just warned.
-  - Employer notice period (opzegtermijn): no longer a manual dropdown — automatically calculated from actual tenure per m. 7:672 BW (1/2/3/4 months at 0/5/10/15 years) and shown as read-only, recalculating as tenure grows.
+  - Employer notice period (opzegtermijn): automatically calculated from actual tenure per m. 7:672 BW (1/2/3/4 months at 0/5/10/15 years) and shown as read-only, recalculating as tenure grows.
   - Ketenregeling (chain rule): tracks the count of consecutive fixed-term contracts and total months for each employee; warns as the 3-contract/3-year legal limit approaches, and blocks issuing a further "extension" once exceeded (only "convert to indefinite term" remains available, since by law the employee is already permanent past that point).
   - Transitievergoeding (transition payment): estimated automatically (1/3 gross monthly salary per full year of service, due from day one for an employer-initiated termination) and shown both on the employee's detail screen (running estimate) and in the End Employment dialog, which also asks for the reason (employer-initiated / mutual consent / employee resignation / serious misconduct) since the payment isn't due in every case.
   - Aanzegplicht (notification obligation): an active reminder fires when a fixed-term contract of 6+ months is within 30 days of its end date, since Dutch law requires written notice of renewal intent by then (or a one-month-salary penalty applies).
@@ -338,14 +325,15 @@ EMPLOYEES / PAYROLL:
 - Reports: "Employee Financial Report" (payroll costs & payments, YTD gross/loonheffing/pension, outstanding accrued liabilities, per-employee breakdown) and "Employee Statistics Report" (headcount, average cost/tenure, contract-type/salary-type/job-title/nationality breakdowns, upcoming fixed-term contract endings). There's also a general "Payroll Report".
 
 CONTRACTS & SERVICE AGREEMENTS:
-- Per-client service contracts (monthly or annual rate, start/end dates, subscription package). New clients go through a signing workflow (agreement sent → client reviews & can request changes or sign → admin approves) before their accounting tabs unlock — while pending, the client only sees a waiting screen plus the ability to review/sign the agreement.
-- "Add Contract" always creates a brand-new client together with the contract (all the same required legal fields as "Add Client" — see NEW CLIENT CREATION below) — it does NOT offer a way to attach a new contract to an already-existing client. An existing client who needs a new/updated contract uses the 🔁 Renew or ✏ Edit buttons on their own current contract instead, never "Add Contract".
+- Per-client service contracts are open-ended by default (monthly, auto-continuing, no fixed end date) — they only stop via explicit termination (1-month statutory notice), not through any "renewal" step. New clients go through a signing workflow (agreement sent → client reviews & can request changes or sign → admin approves) before their accounting tabs unlock — while pending, the client only sees a waiting screen plus the ability to review/sign the agreement.
+- Editing an existing contract's price specifically re-locks the client's accounting (same as a brand-new contract) until they sign the updated agreement — since that's a material change to what they owe. Editing only the title, description, or dates does not trigger this, since nothing financially material changed.
+- "Add Contract" always creates a brand-new client together with the contract (all the same required legal fields as "Add Client" — see NEW CLIENT CREATION below) — it does NOT offer a way to attach a new contract to an already-existing client.
 - Subscription packages themselves are customizable (Settings) — existing signed contracts keep their price even if package definitions change later.
 
 DEBTORS / CREDITORS:
 - Contacts are tagged as "debtor" (customer who owes money) or "creditor" (supplier owed money), each with a ledger account number. A "General Debtors"/"General Creditors" catch-all contact exists per client for entries not tied to a specific named contact.
 
-REPORTS available (Reports screen, grouped): Summary, Profit & Loss (P&L), BTW report (VAT return by official Belastingdienst rubrieken — 1e domestic reverse charge issued, 2a/4b reverse charge received self-assessed [combined for simplicity in the UI, admin should verify the exact box before filing], 3a export outside EU, 3b EU B2B reverse charge, 5b deductible input VAT which automatically excludes non-deductible representation-cost VAT), Tax Liability (estimated personal Inkomstenbelasting or corporate Vennootschapsbelasting — includes urencriterium/starter-status detection, KVK registration date auto-detects starter status for startersaftrek eligibility within first 5 years, customer-base setting [mostly B2B vs 90%+ B2C] determines VAT accounting basis: invoice-basis/factuurstelsel for B2B vs cash-basis/kasstelsel eligibility for mostly-consumer businesses), Cash Flow, Debtors, Expenses, Employee Financial, Employee Statistics, Payroll, and Loan Overview (only appears if the client has at least one financed asset).
+REPORTS available (Reports screen, grouped): Summary, Profit & Loss (P&L), BTW report (VAT return by official Belastingdienst rubrieken — 1e domestic reverse charge issued, 2a/4b reverse charge received self-assessed [combined for simplicity in the UI, admin should verify the exact box before filing], 3a export outside EU, 3b EU B2B reverse charge, 5b deductible input VAT which automatically excludes non-deductible representation-cost VAT), Tax Liability (estimated personal Inkomstenbelasting or corporate Vennootschapsbelasting), Cash Flow, Debtors, Expenses, Employee Financial, Employee Statistics, Payroll, Loan Overview (only appears if the client has at least one financed asset), Hours by Category, and Income Verification Statement (a client-facing, one-page formal statement of net business income for a chosen period — meant to be handed directly to a bank, embassy, or IND for mortgage/visa/residency-permit purposes, distinct from all the other internal/accounting-purpose reports). Year-over-year comparison is available on the Summary, P&L, and Cash Flow reports.
 
 PERIOD LOCKING: Once a year or quarter is "closed" for a client (after filing that period's BTW return), transactions dated within it are protected — clients can no longer edit/delete them, and admins must explicitly confirm an override for any genuine correction. Periods can be reopened if needed. This protection covers invoices, expenses, and hour entries.
 
@@ -354,9 +342,10 @@ IMPORT: A template-based workflow (download template → fill with data from the
 NEW CLIENT CREATION & PASSWORD SECURITY:
 - Every new client (created via "Add Client" or "Add Contract" — both require the exact same legal fields: company name, email, contact person, KVK number, BTW number, IBAN, full address) automatically gets a one-time, randomly-generated temporary password immediately after creation, shown once to the admin in a dialog to copy and share with the client through a trusted channel (phone, in person) — it is never shown again after that.
 - KVK and BTW numbers are validated for correct Dutch format before saving (KVK: exactly 8 digits; BTW: NL + 9 characters + B + 2 digits, e.g. NL123456789B01), and checked for duplicates against every other existing client — saving a KVK/BTW number already used by another client is blocked with a clear message naming the conflicting client.
-- The exact same one-time-password mechanism is used whenever an admin resets an existing client's password (Settings → Clients tab, or the client's own screen → "Reset Password") for a forgotten-password situation — self-service "forgot password" is NOT available; only an admin can issue a new temporary password.
+- The exact same one-time-password mechanism is used whenever an admin resets an existing client's password (Settings → Clients tab, or the client's own screen → "Reset Password") for a forgotten-password situation — self-service "forgot password" is NOT available; only an admin can issue a new temporary password. The login screen's "Need access?" link does not let anyone set a password themselves — it only shows a message directing them to contact ANB (or, for admins, another administrator) directly.
 - Any account that logs in with such a temporary password is immediately shown a mandatory, non-dismissible "Set Your Password" screen before anything else in the app becomes usable — there is no way to skip, close, or work around this screen; the account cannot proceed until a new password (min. 6 characters, confirmed twice) is successfully saved. This applies identically whether the temporary password came from brand-new client creation or from an admin-initiated password reset.
-- Separately, a client can voluntarily change their own password any time from their dashboard's Security card ("Change Password") — this requires entering their CURRENT password correctly first (server-verified) before the new password (min. 6 characters, confirmed twice) is accepted. This is a self-service option distinct from the admin-issued temporary-password flow above, and does not require contacting ANB.
+- Separately, a client can voluntarily change their own password any time from their dashboard's Security card ("Change Password") — this requires entering their CURRENT password correctly first (server-verified) before the new password (min. 6 characters, confirmed twice) is accepted. Changing a password this way (or having it reset by an admin) immediately invalidates any other active login sessions for that account on other devices — only the device that just set the new password stays signed in.
+- Login sessions last 4 hours before needing a refresh (handled automatically in the background while the user is active); an inactive session on the same device signs out automatically after 20 minutes of no activity.
 
 APPEARANCE: A dark mode toggle (🌙/☀️ icon) sits next to the language switcher (EN/NL/AR) at the bottom of the sidebar, available to both admins and clients on every screen. It is a personal, per-device preference saved in the browser (not synced across devices or shared with other users), and takes effect immediately without needing to reload. ANB's core brand colors (dark green, gold) stay the same in both modes — only backgrounds, borders, and body text switch between light and dark.
 
@@ -364,22 +353,21 @@ SETTINGS is organized into three tabs (the previous separate "Company" tab was r
 - Admins tab: the list of admin accounts (add/remove — Super Admin role is protected from being reset or removed by regular admins), each admin's password reset button, and Two-Factor Authentication (2FA) setup for the currently logged-in admin's own account.
 - Clients tab: the list of client accounts with a password-reset button per client and a button to view a copy of their signed contract (PDF), plus Subscription Packages management (the plans offered when creating new client contracts).
 - Danger Zone tab: automatic daily Backups (stored completely separately from the live database, with manual "Backup Now", a list of available backups, and Restore which takes an automatic safety backup of the current state first), and permanent client deletion (gated by re-entering the admin's own password).
-- ANB's own company details (company name, KVK, BTW, IBAN, address, tagline, website, and Professional Indemnity Insurance details referenced in service agreement liability clauses) live in ANB's own record under Edit Client — reached the same way as editing any other client (ANB is modeled as a special client itself) — rather than a separate Settings tab. Saving this screen for ANB automatically keeps the underlying data used by invoice/contract generation in sync, with no separate step needed. The same KVK/BTW format validation and duplicate check applies to ANB's own details too.
+- ANB's own company details (company name, KVK, BTW, IBAN, address, tagline, website, and Professional Indemnity Insurance details referenced in service agreement liability clauses) live in ANB's own record under Edit Client — reached the same way as editing any other client (ANB is modeled as a special client itself) — rather than a separate Settings tab.
 
 TRASH & ARCHIVE: Deleted items go to Trash first; after 30 days non-financial records (clients, contacts) are archived (hidden but never actually deleted) while financial records (invoices, expenses, hours, documents) are archived and kept for the full legal 7-year retention period from the record's own date before being permanently purged.
 
-CLIENT-SIDE FEATURES: A first-time Welcome onboarding (3 short animated slides) shown once per client account, plus a "Quick Start" checklist on their dashboard (log first hours/expense, create first invoice, message ANB) that tracks real progress and disappears once complete or dismissed. A searchable Help Center (collapsible FAQ topics: invoices, expenses, hours, cashier, BTW report, messaging, documents) automatically filtered to only show topics for sections that client actually has enabled — accessed via a floating "❓" button visible on every screen. Clients can manage their own Cashier services and their own Electronic Payment provider connection.
+CLIENT-SIDE FEATURES: A first-time Welcome onboarding (3 short animated slides) shown once per client account, plus a "Quick Start" checklist on their dashboard, a searchable Help Center, and messaging with ANB that supports file/image attachments (reusing the same upload mechanism as Documents) with a full edit history preserved on any edited message.
 
-ROLES: Admin (ANB staff) sees and manages everything for every client, including a company-wide dashboard, messages, documents, and contracts overview across all clients. Clients only see their own data; which optional sections they can see (Reports, Employees, Bank, Assets, Client Activity log, Cashier, etc.) is individually toggled per client by the admin in Edit Client → Configuration → Visible Sections.
+ROLES: Admin (ANB staff) sees and manages everything for every client. Clients only see their own data; which optional sections they can see is individually toggled per client by the admin in Edit Client → Configuration → Visible Sections.
 
-GLOBAL SEARCH (admin-only): A "🔍" button pinned permanently in the topbar (always visible regardless of which screen/tab is open) opens a unified search across clients, invoices, expenses, documents, and contracts at once — also reachable via Ctrl/Cmd+K. Not available to clients, since it searches across every client's data.
+GLOBAL SEARCH (admin-only): A "🔍" button pinned permanently in the topbar opens a unified search across clients, invoices, expenses, documents, and contracts at once — also reachable via Ctrl/Cmd+K.
 
-UNSAVED CHANGES PROTECTION: If you (or a client) type into a form or field and then try to navigate away — switching tabs, selecting a different client, going back, or logging out — before saving, the app shows a "Discard changes?" confirmation first. Nothing is lost silently; you must explicitly confirm to discard. This applies across the whole app (both admin and client views) at every main navigation action, not just one screen.
+UNSAVED CHANGES PROTECTION: If you (or a client) type into a form or field and then try to navigate away before saving, the app shows a "Discard changes?" confirmation first.
 
 AI ASSISTANT: This chatbot itself (admin-only, via a floating "🤖" button) — free via Cloudflare Workers AI, for accounting/tax/admin guidance including "how do I record X in this app" questions.
 
-PUSH NOTIFICATIONS: Real device push notifications (via the browser's native notification system, not just an in-app reminder) can be enabled per device from a "Push Notifications" card — for admins in Settings → Admins tab, for clients in their Security screen. Once enabled, a daily server-side check (runs once a day) sends: admins get notified about contracts expiring within 7 days; clients get notified about their own overdue invoices, and separately about any stale/unposted Cashier day that still needs a physical cash count to close out. This works even if the app is completely closed, unlike the in-app reminders which only show while the app is open. Enabling requires the browser's notification permission prompt to be accepted; it can be disabled again from the same card at any time. If a browser/device clears its site data or cache, the underlying push subscription is wiped by the browser itself (not an app bug) and must be re-enabled manually — the app detects this and shows a clear explanation rather than a silent "not enabled" state.`;
-
+PUSH NOTIFICATIONS: Real device push notifications can be enabled per device from a "Push Notifications" card. Once enabled, a daily server-side check sends: admins get notified about contracts expiring within 7 days; clients get notified about their own overdue invoices, and separately about any stale/unposted Cashier day that still needs a physical cash count to close out (this is a reminder only — it never posts anything on the client's behalf). If a browser/device clears its site data or cache, the underlying push subscription is wiped by the browser itself (not an app bug) and must be re-enabled manually.`;
 var ADMIN_ASSISTANT_SYSTEM_PROMPT = `You are an internal assistant for ANB Financial Services, a Dutch bookkeeping and financial administration firm serving freelancers (ZZP) and small businesses. You help the firm's own admin staff think through accounting, tax (Dutch BTW/Belastingdienst rules), and general business-administration questions they run into during daily work — including questions about how to record something in their own ANB FinAdmin Pro application.
 
 ${ANB_APP_REFERENCE}
@@ -659,12 +647,16 @@ async function handleLogin(request, env, cors) {
     account.passwordIterations = rec.passwordIterations;
     delete account.password; delete account.pwCustom; delete account.pw;
   }
+  // ⭐⭐ إصلاح أمني: نتأكد كل حساب له "إصدار كلمة مرور" (pwv) - إن لم يوجد بعد
+  // (حسابات قديمة قبل هذا التحديث)، نولِّد واحدًا الآن ونحفظه، ليصبح كل توكن
+  // صادر من الآن فصاعدًا مرتبطًا بإصدار محدَّد يمكن إبطاله عند تغيير كلمة المرور
+  if (!account.pwv) account.pwv = generatePwv();
   if (role === "admin") account.lastLogin = (new Date()).toISOString().slice(0, 10);
   list[idx] = account;
   await writeCloudPayload(env, cloud.payload);
   if (account.totpEnabled) return json({ step: "2fa", accountId: account.id }, 200, cors);
   const exp = Date.now() + TOKEN_TTL_MS;
-  const token = await signToken({ at: role, aid: account.id, exp }, env.R2_HMAC_SECRET);
+  const token = await signToken({ at: role, aid: account.id, exp, pwv: account.pwv }, env.R2_HMAC_SECRET);
   return json({ step: "done", token, exp, mustChangePassword: !!account.mustChangePassword }, 200, cors);
 }
 async function handleVerify2FA(request, env, cors) {
@@ -694,11 +686,12 @@ async function handleVerify2FA(request, env, cors) {
     return json({ error: "Incorrect code" }, 401, cors);
   }
   clearFailedAttempts(account);
+  if (!account.pwv) account.pwv = generatePwv();
   if (role === "admin") account.lastLogin = (new Date()).toISOString().slice(0, 10);
   list[idx] = account;
   await writeCloudPayload(env, cloud.payload);
   const exp = Date.now() + TOKEN_TTL_MS;
-  const token = await signToken({ at: role, aid: account.id, exp }, env.R2_HMAC_SECRET);
+  const token = await signToken({ at: role, aid: account.id, exp, pwv: account.pwv }, env.R2_HMAC_SECRET);
   return json({ token, exp, mustChangePassword: !!account.mustChangePassword }, 200, cors);
 }
 var PBKDF2_ITERATIONS = 1e5;
@@ -720,6 +713,15 @@ async function makePasswordRecord(plainPassword) {
   const passwordSalt = bufToHex(saltBytes);
   const passwordHash = await hashPasswordPBKDF2(plainPassword, passwordSalt, PBKDF2_ITERATIONS);
   return { passwordSalt, passwordHash, passwordIterations: PBKDF2_ITERATIONS };
+}
+// ⭐ يولِّد "إصدار كلمة مرور" (pwv) جديدًا - سلسلة عشوائية قصيرة تُحفَظ على
+// الحساب وتُضمَّن في كل توكن صادر بعدها. أي تغيير لكلمة المرور يولِّد قيمة
+// جديدة مختلفة، فيصبح أي توكن قديم صادر بالقيمة السابقة غير صالح فورًا رغم
+// عدم انتهاء صلاحيته الزمنية بعد - إبطال حقيقي للجلسات الأخرى عند تغيير كلمة المرور
+function generatePwv() {
+  const bytes = new Uint8Array(9);
+  crypto.getRandomValues(bytes);
+  return bufToHex(bytes);
 }
 async function hashPasswordPBKDF2(password, saltHex, iterations) {
   const enc = new TextEncoder();
@@ -809,10 +811,16 @@ async function handleSetOwnPassword(request, env, cors) {
   delete account.password; delete account.pwCustom; delete account.pw;
   if (auth.payload.at === "client") account.pwSet = true;
   account.mustChangePassword = false;
+  // ⭐⭐ إصلاح أمني: كل تغيير كلمة مرور يُبطِل فورًا كل توكن سابق صادر بإصدار
+  // قديم (بما فيها أي جهاز آخر لم يسجِّل خروجًا صريحًا) - نُولِّد إصدارًا جديدًا
+  // الآن، ونصدر توكنًا جديدًا بهذا الإصدار للجهاز الحالي فقط أدناه
+  account.pwv = generatePwv();
   clearFailedAttempts(account);
   list[idx] = account;
   await writeCloudPayload(env, cloud.payload);
-  return json({ ok: true }, 200, cors);
+  const exp = Date.now() + TOKEN_TTL_MS;
+  const token = await signToken({ at: auth.payload.at, aid: auth.payload.aid, exp, pwv: account.pwv }, env.R2_HMAC_SECRET);
+  return json({ ok: true, token, exp }, 200, cors);
 }
 async function handleAdminSetPassword(request, env, cors) {
   const auth = await requireValidToken(request, env);
@@ -842,6 +850,10 @@ async function handleAdminSetPassword(request, env, cors) {
   delete account.password; delete account.pwCustom; delete account.pw;
   if (targetRole === "client") account.pwSet = true;
   account.mustChangePassword = !newPassword;
+  // ⭐⭐ إصلاح أمني: نفس منطق تغيير كلمة المرور الذاتي - إعادة تعيين كلمة مرور
+  // عميل/أدمن من قِبل الأدمن تُبطِل فورًا أي جلسة قديمة كانت مفتوحة على ذلك
+  // الحساب بأي جهاز، وليس فقط عند تسجيل الخروج اليدوي
+  account.pwv = generatePwv();
   clearFailedAttempts(account);
   list[idx] = account;
   await writeCloudPayload(env, cloud.payload);
@@ -868,6 +880,9 @@ async function handleGenerateTempPassword(request, env, cors) {
   account.passwordIterations = rec.passwordIterations;
   delete account.password; delete account.pwCustom; delete account.pw;
   account.pwSet = true;
+  // ⭐⭐ إصلاح أمني: كذلك عند توليد كلمة مرور مؤقتة جديدة لعميل - أي جلسة
+  // قديمة كانت لديه تُبطَل فورًا
+  account.pwv = generatePwv();
   clearFailedAttempts(account);
   list[idx] = account;
   await writeCloudPayload(env, cloud.payload);
@@ -884,7 +899,7 @@ async function handleRefreshToken(request, env, cors) {
   const auth = await requireValidToken(request, env);
   if (!auth.ok) return json({ error: auth.error }, 401, cors);
   const exp = Date.now() + TOKEN_TTL_MS;
-  const token = await signToken({ at: auth.payload.at, aid: auth.payload.aid, exp }, env.R2_HMAC_SECRET);
+  const token = await signToken({ at: auth.payload.at, aid: auth.payload.aid, exp, pwv: auth.payload.pwv }, env.R2_HMAC_SECRET);
   return json({ token, exp }, 200, cors);
 }
 
@@ -910,7 +925,7 @@ async function handleSyncPost(request, env, cors) {
   const aid = auth.payload.aid;
   function mergeAccount(existingAccount, incomingAccount) {
     if (!existingAccount) return incomingAccount;
-    return { ...incomingAccount, passwordHash: existingAccount.passwordHash, passwordSalt: existingAccount.passwordSalt };
+    return { ...incomingAccount, passwordHash: existingAccount.passwordHash, passwordSalt: existingAccount.passwordSalt, pwv: existingAccount.pwv };
   }
   if (role === "admin") {
     Object.keys(incomingPayload).forEach((key) => {
@@ -1238,6 +1253,16 @@ async function signToken(claims, secret) {
   const sig = await hmacSign(payloadB64, secret);
   return `${payloadB64}.${sig}`;
 }
+// ⭐⭐ إصلاح أمني (نقطتان): (1) TOKEN_TTL_MS أُنقِص من 8 لـ4 ساعات أعلى الملف.
+// (2) تحقق جديد من "إصدار كلمة المرور" (pwv): كل توكن يحمل الآن قيمة pwv كما
+// كانت وقت إصداره - إن تغيّرت كلمة مرور الحساب لاحقًا (تغيير ذاتي، إعادة تعيين
+// من الأدمن، أو كلمة مرور مؤقتة جديدة)، تتغيَّر قيمة pwv المحفوظة على الحساب،
+// فيصبح أي توكن قديم يحمل القيمة السابقة مرفوضًا فورًا - حتى لو لم تنتهِ مدته
+// الزمنية بعد. هذا يُغلِق فعليًا ثغرة "توكن مسروق يبقى صالحًا حتى انتهاء صلاحيته
+// الطبيعية حتى بعد تغيير كلمة المرور" التي كانت موجودة سابقًا. توكنات صادرة
+// قبل هذا التحديث (بلا حقل pwv) تُقبَل دون هذا الفحص الإضافي لتفادي تسجيل خروج
+// جماعي فوري لكل المستخدمين النشطين لحظة النشر - ستحمل توكنات pwv تلقائيًا
+// بمجرد إعادة تسجيل الدخول أو تجديد الجلسة التالي.
 async function requireValidToken(request, env) {
   const authHeader = request.headers.get("Authorization") || "";
   const m = authHeader.match(/^Bearer\s+(.+)$/i);
@@ -1251,6 +1276,21 @@ async function requireValidToken(request, env) {
   let payload;
   try { payload = JSON.parse(b64urlDecode(payloadB64)); } catch { return { ok: false, error: "Malformed token payload" }; }
   if (!payload.exp || Date.now() > payload.exp) return { ok: false, error: "Token expired" };
+  if (payload.pwv) {
+    try {
+      const table = payload.at === "admin" ? "tbl_admins" : "tbl_clients";
+      const row = await env.DB.prepare(`SELECT payload FROM ${table} WHERE id = ?`).bind(payload.aid).first();
+      if (row) {
+        const currentAccount = JSON.parse(row.payload);
+        if (currentAccount.pwv && currentAccount.pwv !== payload.pwv) {
+          return { ok: false, error: "Session invalidated — password was changed, please sign in again" };
+        }
+      }
+    } catch (e) {
+      // فشل فحص pwv (مثلًا عطل عابر بقاعدة البيانات) لا يجب أن يقفل مستخدمًا
+      // شرعيًا خارجًا - نمرِّر بحذر بدل رفض الطلب عند أي عطل مؤقت في هذا الفحص الإضافي وحده
+    }
+  }
   return { ok: true, payload };
 }
 async function hmacSign(message, secret) {
