@@ -3423,6 +3423,22 @@ async function refreshPushNotifButton(){
     btn.style.display='';
   }
 }
+// ⭐⭐ يرسم شعار ANB الفعلي (المُحمَّل بالفعل داخل الصفحة الحية) على أي PDF -
+// نفس أسلوب _exportClientPDF بالضبط، لكن مُستخرَج كدالة مشتركة قابلة لإعادة
+// الاستخدام في كل مستندات ANB الرسمية (فواتير، عقود، شهادات...) بدل الاكتفاء
+// بشريط ذهبي رفيع بلا هوية بصرية فعلية. يفشل بصمت (بلا رمي استثناء) لو تعذَّر
+// العثور على الشعار أو رسمه - المستند يبقى صالحًا للإصدار بدونه في أسوأ حال.
+function drawAnbLogoOnPdf(doc,x,y,size){
+  try{
+    const logoImgs=document.querySelectorAll('img[alt="ANB Financial Services"]');
+    if(logoImgs.length===0)return false;
+    const rc=document.createElement('canvas');
+    rc.width=logoImgs[0].naturalWidth||300;rc.height=logoImgs[0].naturalHeight||300;
+    const rx=rc.getContext('2d');rx.drawImage(logoImgs[0],0,0,rc.width,rc.height);
+    doc.addImage(rc.toDataURL('image/png'),'PNG',x,y,size,size);
+    return true;
+  }catch(e){return false;}
+}
 async function ensureJsPDF(){
   if(!(window.jsPDF?.jsPDF||window.jspdf?.jsPDF)){
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
@@ -5201,14 +5217,21 @@ async function exportContractPDF(contractId){
   if(!jsPDF){toast('❌ Could not load PDF library');return;}
   const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=16;
 
-  doc.setFillColor(200,144,16);doc.rect(0,0,W,2,'F');
-  doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(10,34,24);
-  doc.text('DIENSTVERLENINGSOVEREENKOMST',W/2,18,{align:'center'});
-  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
-  doc.text('Service Agreement',W/2,24,{align:'center'});
-  doc.setDrawColor(231,229,221);doc.line(M,29,W-M,29);
+  // ⭐ ترويسة راقية بشعار ANB الفعلي - هذا مستند صادر باسم ANB فعليًا (عقد
+  // خدمة بين ANB والعميل)، بعكس فواتير العميل التي تحمل هوية عمل العميل نفسه
+  doc.setFillColor(10,34,24);doc.rect(0,0,W,32,'F');
+  doc.setFillColor(200,144,16);doc.rect(0,31,W,1.2,'F');
+  const contractLogoDrawn=drawAnbLogoOnPdf(doc,M,5,22);
+  const titleX=contractLogoDrawn?M+22+8:W/2;
+  const titleAlign=contractLogoDrawn?'left':'center';
+  doc.setFont('helvetica','bold');doc.setFontSize(15);doc.setTextColor(255,255,255);
+  doc.text('DIENSTVERLENINGSOVEREENKOMST',titleX,16,{align:titleAlign});
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(212,181,126);
+  doc.text('Service Agreement',titleX,22,{align:titleAlign});
+  doc.setFontSize(7);doc.setTextColor(180,178,168);
+  doc.text(S.settings?.companyName||'ANB Financial Services',titleX,27,{align:titleAlign});
 
-  const ctx={y:36,M,W};
+  const ctx={y:42,M,W};
   const providerName=S.settings?.companyName||'ANB Financial Services';
   const planLine=con.plan?`een maandelijkse abonnementsvergoeding van €${con.plan}`:'de tussen Partijen overeengekomen vergoeding';
 
@@ -14781,8 +14804,11 @@ async function _exportPDF(id){
   const isClientPortal=S.role==='client';
   const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=16;
 
-  // ── شريط ذهبي رفيع أعلى الصفحة
-  doc.setFillColor(200,144,16);doc.rect(0,0,W,2,'F');
+  // ── شريط ذهبي بسماكة أكثر أناقة أعلى الصفحة (لمسة أرقى من الخط الرفيع
+  // السابق) - لا شعار ANB هنا عمدًا: هذه فاتورة العميل الخاصة به لعميله هو،
+  // تحمل هوية عمل العميل نفسه، وليست مستندًا صادرًا باسم ANB
+  doc.setFillColor(200,144,16);doc.rect(0,0,W,3,'F');
+  doc.setFillColor(10,34,24);doc.rect(0,3,W,.6,'F');
 
   // ── رأس الفاتورة: بيانات المُصدر يسارًا، عنوان الفاتورة يمينًا
   doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(10,34,24);
@@ -16522,12 +16548,17 @@ async function exportIncomeVerificationPDF(cid){
     :(start&&end?FD(start.toISOString().slice(0,10))+' through '+FD(end.toISOString().slice(0,10)):'the selected period');
 
   const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=20;
-  doc.setFillColor(200,144,16);doc.rect(0,0,W,2,'F');
-  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(10,34,24);
-  doc.text('INCOME VERIFICATION STATEMENT',W/2,20,{align:'center'});
-  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
-  doc.text('Verklaring van Inkomen',W/2,26,{align:'center'});
-  doc.setDrawColor(231,229,221);doc.line(M,31,W-M,31);
+  doc.setFillColor(10,34,24);doc.rect(0,0,W,32,'F');
+  doc.setFillColor(200,144,16);doc.rect(0,31,W,1.2,'F');
+  const ivLogoDrawn=drawAnbLogoOnPdf(doc,M,5,22);
+  const ivTitleX=ivLogoDrawn?M+22+8:W/2;
+  const ivTitleAlign=ivLogoDrawn?'left':'center';
+  doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(255,255,255);
+  doc.text('INCOME VERIFICATION STATEMENT',ivTitleX,16,{align:ivTitleAlign});
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(212,181,126);
+  doc.text('Verklaring van Inkomen',ivTitleX,22,{align:ivTitleAlign});
+  doc.setFontSize(7);doc.setTextColor(180,178,168);
+  doc.text(S.settings?.companyName||'ANB Financial Services',ivTitleX,27,{align:ivTitleAlign});
 
   let y=42;
   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(60,60,60);
@@ -16570,12 +16601,7 @@ async function exportIncomeVerificationPDF(cid){
   doc.text(S.settings?.address||'',M,y);y+=4;
   doc.text('Prepared by: '+(getCurrentAdminName()||'ANB Financial Services'),M,y);
 
-  const totalPages=doc.getNumberOfPages();
-  for(let p=1;p<=totalPages;p++){
-    doc.setPage(p);
-    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(140,140,140);
-    doc.text((S.settings?.companyName||'ANB Financial Services')+' · page '+p+' / '+totalPages,W/2,290,{align:'center'});
-  }
+  renderANBLetterheadFooter(doc,W);
 
   doc.save('Income-Verification-'+(c.name||'client').replace(/[^a-z0-9]/gi,'-')+'-'+TODAY()+'.pdf');
   logAudit('export','report','Generated Income Verification Statement for '+(c.name||''),cid);
