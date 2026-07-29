@@ -5008,16 +5008,29 @@ function saveContract(contractId,cid){
   if(!S.contracts)S.contracts=[];
   
   if(contractId){
-    // Update existing — الحالة (status) لا تُعدَّل من هنا إطلاقًا، فقط عبر أزرار Suspend/Resume/Cancel/Renew المخصصة
+    // Update existing — الحالة (status) لا تُعدَّل من هنا عادةً، إلا في حالة
+    // واحدة محدَّدة: تغيير السعر (plan)
     const idx=S.contracts.findIndex(c=>c.id===contractId);
     if(idx>=0){
-      S.contracts[idx]={...S.contracts[idx],title,desc,plan,type,startDate,endDate};
+      const oldContract=S.contracts[idx];
+      // ⚠️⚠️ إصلاح خلل قانوني/وظيفي: تغيير السعر على عقد نشط بالفعل كان يسري
+      // فورًا بلا أي موافقة جديدة من العميل - بعكس التجديد الذي يفرض إعادة
+      // توقيع بشكل صحيح. الآن: أي تغيير فعلي بالسعر يضع العقد بحالة 'draft'
+      // (نفس آلية التجديد بالضبط) - يُقفل تلقائيًا محاسبة العميل حتى يوقِّع
+      // الاتفاقية الجديدة بالسعر الجديد. تعديلات العنوان/الوصف/التواريخ وحدها
+      // (بلا تغيير سعر) لا تحتاج هذا - تبقى الحالة كما هي دون قفل.
+      const priceChanged=oldContract.plan!==plan;
+      const newStatus=priceChanged?'draft':oldContract.status;
+      S.contracts[idx]={...oldContract,title,desc,plan,type,startDate,endDate,status:newStatus};
       // ⚠️ إصلاح: تعديل عقد لم يكن يترك أي أثر - لا في سجل النشاط ولا كمستند
       // يراجعه العميل. الآن: نسجّل التعديل، ونولّد اتفاقية محدَّثة للمراجعة
       // (نفس أسلوب التجديد) حتى يرى العميل التغيير فعليًا في Documents.
       const client=S.clients.find(cl=>cl.id===cid);
-      logAudit('edit','contract','Updated contract "'+title+'" for '+(client?.name||''),cid);
-      if(client)createContractAgreement(client,S.contracts[idx]);
+      logAudit('edit','contract',(priceChanged?'Updated price and locked pending re-signature for contract "':'Updated contract "')+title+'" for '+(client?.name||'')+(priceChanged?' ('+FMT(oldContract.plan)+' → '+FMT(plan)+')':''),cid);
+      if(client){
+        createContractAgreement(client,S.contracts[idx]);
+      }
+      if(priceChanged)toast('⚠️ Price changed — client accounting is now locked until they sign the updated agreement');
     }
   }else{
     // Add new
@@ -5379,7 +5392,6 @@ function renderClientContractsList(cid,searchTerm,sortValue){
             ${con.status==='suspended'
               ?`<button class="btn btn-xs" onclick="resumeContract('${con.id}')" title="${t('resume')||'Resume'}">▶</button>`
               :`<button class="btn btn-xs" onclick="suspendContract('${con.id}')" title="${t('suspend')||'Suspend'}">⏸</button>`}
-            <button class="btn btn-xs" onclick="openRenewContractDialog('${con.id}')" title="${t('renew')||'Renew'}">🔁</button>
             ${!con.endDate?`<button class="btn btn-xs" onclick="openEndContractDialog('${con.id}')" title="${t('end_contract_hint')||'End contract (1 month notice)'}">🏁</button>`:''}
             <button class="btn btn-danger btn-xs" onclick="cancelContract('${con.id}')" title="${t('cancel_permanently')||'Cancel permanently'}">🚫</button>
           `:''}
@@ -16035,6 +16047,9 @@ function rReports(el,cid){
     case 'emp_stats':
       rReportEmployeeStats(contentEl,cid);
       break;
+    case 'income_verification':
+      rReportIncomeVerification(contentEl,cid);
+      break;
     case 'hours_category':
       rReportHoursByCategory(contentEl,cid);
       break;
@@ -16199,6 +16214,7 @@ function rReportsList(el,cid){
     {id:'btw',icon:'💰',name:t('rep_btw_title'),bg:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'financial'},
     {id:'tax_liability',icon:'🏛️',name:t('rep_tax_liability_title')||'Tax Liability',bg:'linear-gradient(135deg, #1a4d2e 0%, #235c37 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'financial'},
     {id:'cashflow',icon:'💵',name:t('rep_cashflow_title'),bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#B08D5A',text:'#0A2218',accent:'#D4B57E',group:'financial'},
+    {id:'income_verification',icon:'📜',name:t('rep_income_verification_title')||'Income Verification Statement',bg:'linear-gradient(135deg, #7dbfa3 0%, #B8E6D1 100%)',border:'#B08D5A',text:'#0A2218',accent:'#D4B57E',group:'financial'},
     {id:'debtors',icon:'💵',name:t('rep_debtors_title'),bg:'linear-gradient(135deg, #1a4d2e 0%, #2d7a4f 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'detailed'},
     {id:'expenses',icon:'🧾',name:t('rep_expenses_title'),bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'detailed'},
     {id:'hours_category',icon:'🕐',name:t('rep_hours_category_title')||'Hours by Category',bg:'linear-gradient(135deg, #235c37 0%, #2d7a4f 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'detailed'},
@@ -16457,6 +16473,116 @@ function rReportEmployeeStats(el,cid){
 }
 
 
+// ══════════════════════════════════════════════════════════════════
+// ⭐⭐ شهادة إثبات دخل (Income Verification Statement) - مستند رسمي موجَّه
+// للعميل نفسه (وليس للاستخدام الداخلي)، يستخدمه لطلبات تجديد الإقامة (IND)،
+// القروض العقارية، أو أي جهة تطلب إثبات دخل من محاسب معتمد. مختلف عن كل
+// التقارير الأخرى التي تخدم أغراضًا محاسبية/ضريبية داخلية فقط.
+// ══════════════════════════════════════════════════════════════════
+function computeIncomeVerificationData(cid){
+  const inv=getReportableInvoices(cid);
+  const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
+  const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
+  const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+  const netIncome=revenue-expenses;
+  return {revenue,expenses,netIncome};
+}
+function rReportIncomeVerification(el,cid){
+  const c=S.clients.find(c=>c.id===cid);
+  const theme=S.cardTheme||CARD_THEME_FALLBACKS.mint_7dbfa3;
+  const {revenue,expenses,netIncome}=computeIncomeVerificationData(cid);
+  const {start,end,period}=getReportPeriodRange();
+  const periodLabel=period==='all'?'the entire administration period on file':
+    (start&&end?FD(start.toISOString().slice(0,10))+' – '+FD(end.toISOString().slice(0,10)):'the selected period');
+
+  let html='<div style="padding:16px">';
+  html+='<button onclick="goBackToReportsList()" style="margin-bottom:16px;padding:8px 16px;background:'+theme.border+';color:'+theme.textDefault+';border:none;border-radius:6px;cursor:pointer;font-size:12px">← '+t('back_to_reports')+'</button>';
+  html+='<div style="font-size:10.5px;color:var(--t3);background:var(--gr1);border-left:3px solid var(--gold);padding:8px 10px;border-radius:4px;margin-bottom:12px">📜 A formal one-page statement you can hand directly to a bank, embassy/IND, or any third party requiring proof of income — not for internal accounting use. Select the exact period this statement should cover, then generate the PDF.</div>';
+  html+=renderReportPeriodSelector();
+  html+='<div class="card" style="border:2px solid '+theme.border+'"><div class="ch" style="background:'+theme.bg+'"><span class="ct">'+LICON('file-text',16)+' Income Verification Statement — '+(c?.name||'')+'</span><button class="btn btn-xs" style="background:'+theme.border+';color:'+theme.textDefault+'" onclick="exportIncomeVerificationPDF(\''+cid+'\')">📥 Generate PDF</button></div>';
+  html+='<div style="padding:16px">';
+  html+='<div style="font-size:11px;color:var(--t3);margin-bottom:10px">Covering: <b>'+periodLabel+'</b></div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+  html+='<div style="background:rgba(46,125,50,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--green)"><div style="font-size:11px;color:var(--t3);margin-bottom:4px">💰 Gross Revenue</div><div style="font-size:20px;font-weight:600;color:var(--green)">'+FMT(revenue)+'</div></div>';
+  html+='<div style="background:rgba(184,134,11,.08);border-radius:var(--r);padding:12px;border-left:3px solid var(--red)"><div style="font-size:11px;color:var(--t3);margin-bottom:4px">💸 Business Expenses</div><div style="font-size:20px;font-weight:600;color:var(--red)">'+FMT(expenses)+'</div></div>';
+  html+='</div>';
+  html+=heroNumberBox('NET INCOME (before personal tax)',netIncome,netIncome>=0?'var(--green)':'var(--red)',netIncome>=0?'rgba(46,125,50,.1)':'rgba(184,134,11,.1)');
+  html+='<div style="font-size:10px;color:var(--t3);margin-top:8px">This figure is net business income before personal income tax (Inkomstenbelasting) and personal deductions such as the zelfstandigenaftrek — the exact figure a bank or IND office typically wants is this net business result, but always check the specific requirement of the requesting party.</div>';
+  html+='</div></div>';
+  el.innerHTML=html;
+}
+async function exportIncomeVerificationPDF(cid){
+  const c=S.clients.find(c=>c.id===cid);
+  if(!c){toast('❌ Client not found');return;}
+  const jsPDF=await ensureJsPDF();
+  if(!jsPDF){toast('❌ Could not load PDF library');return;}
+  const {revenue,expenses,netIncome}=computeIncomeVerificationData(cid);
+  const {start,end,period}=getReportPeriodRange();
+  const periodLabel=period==='all'?'the entire administration period on file with '+(S.settings?.companyName||'ANB Financial Services')
+    :(start&&end?FD(start.toISOString().slice(0,10))+' through '+FD(end.toISOString().slice(0,10)):'the selected period');
+
+  const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=20;
+  doc.setFillColor(200,144,16);doc.rect(0,0,W,2,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(10,34,24);
+  doc.text('INCOME VERIFICATION STATEMENT',W/2,20,{align:'center'});
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
+  doc.text('Verklaring van Inkomen',W/2,26,{align:'center'});
+  doc.setDrawColor(231,229,221);doc.line(M,31,W-M,31);
+
+  let y=42;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(60,60,60);
+  doc.text('Date issued: '+FD(TODAY()),M,y);y+=10;
+
+  const bodyText=`This is to confirm that ${c.name||'the client named below'} (KVK: ${c.kvk||'—'}, VAT/BTW: ${c.btw||'—'}), registered at ${c.address?c.address+(c.zipCode?', '+c.zipCode:'')+(c.city?' '+c.city:''):'the address on file'}, keeps its business financial administration with ${S.settings?.companyName||'ANB Financial Services'}. Based on that administration, the business's financial result for ${periodLabel} is as stated below.`;
+  doc.splitTextToSize(bodyText,W-M*2).forEach(l=>{doc.text(l,M,y);y+=5;});
+  y+=6;
+
+  const rows=[
+    ['Gross Revenue (excl. VAT)',FMT(revenue)],
+    ['Business Expenses (excl. VAT)','-'+FMT(expenses)],
+    ['Net Business Income',FMT(netIncome)]
+  ];
+  doc.setFillColor(10,34,24);doc.rect(M,y,W-M*2,8,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(245,220,112);
+  doc.text('FINANCIAL SUMMARY',M+3,y+5.5);
+  y+=8;
+  rows.forEach(([label,val],i)=>{
+    const rowH=9;
+    if(i===rows.length-1){doc.setFillColor(245,240,225);doc.rect(M,y,W-M*2,rowH,'F');}
+    else if(i%2===1){doc.setFillColor(250,250,248);doc.rect(M,y,W-M*2,rowH,'F');}
+    doc.setFont('helvetica',i===rows.length-1?'bold':'normal');doc.setFontSize(9.5);doc.setTextColor(10,34,24);
+    doc.text(label,M+3,y+6);
+    doc.text(val,W-M-3,y+6,{align:'right'});
+    y+=rowH;
+  });
+  y+=10;
+
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100,100,100);
+  const disclaimer='This statement reflects net business income before personal income tax (Inkomstenbelasting) and any personal deductions (such as zelfstandigenaftrek or MKB-winstvrijstelling) that may apply to the business owner. It is prepared based solely on the financial administration kept with our firm and does not constitute a formal audit or assurance opinion.';
+  doc.splitTextToSize(disclaimer,W-M*2).forEach(l=>{doc.text(l,M,y);y+=4;});
+  y+=14;
+
+  doc.setDrawColor(200,200,200);doc.line(M,y,M+70,y);y+=5;
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(10,34,24);
+  doc.text(S.settings?.companyName||'ANB Financial Services',M,y);y+=4.5;
+  doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(100,100,100);
+  doc.text('KVK: '+(S.settings?.kvk||'—')+' · BTW: '+(S.settings?.btw||'—'),M,y);y+=4;
+  doc.text(S.settings?.address||'',M,y);y+=4;
+  doc.text('Prepared by: '+(getCurrentAdminName()||'ANB Financial Services'),M,y);
+
+  const totalPages=doc.getNumberOfPages();
+  for(let p=1;p<=totalPages;p++){
+    doc.setPage(p);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(140,140,140);
+    doc.text((S.settings?.companyName||'ANB Financial Services')+' · page '+p+' / '+totalPages,W/2,290,{align:'center'});
+  }
+
+  doc.save('Income-Verification-'+(c.name||'client').replace(/[^a-z0-9]/gi,'-')+'-'+TODAY()+'.pdf');
+  logAudit('export','report','Generated Income Verification Statement for '+(c.name||''),cid);
+  toast('✓ Income Verification Statement generated');
+}
+
+
 function rReportCashFlow(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   const theme=S.cardTheme||CARD_THEME_FALLBACKS.leaf_4da876_white;
@@ -16512,7 +16638,8 @@ function rReportCashFlow(el,cid){
   
   html+='</div>';
   html+='</div></div></div>';
-  
+  html+=renderYoyComparisonCard(cid);
+
   el.innerHTML=html;
 }
 
@@ -16627,7 +16754,8 @@ function rReportPL(el,cid){
   
   html+=heroNumberBox('NET PROFIT/LOSS',profit,profit>=0?'var(--green)':'var(--red)',profit>=0?'rgba(46,125,50,.1)':'rgba(184,134,11,.1)');
   html+='</div></div></div>';
-  
+  html+=renderYoyComparisonCard(cid);
+
   el.innerHTML=html;
 }
 
