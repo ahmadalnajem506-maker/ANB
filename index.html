@@ -996,43 +996,6 @@ var S = {lang:'en', role:null, clients:[]};
       </button>
     </div>
 
-    <!-- STEP 3: Set Password -->
-    <div class="auth-step" id="step-3" style="animation:fadeInUp 0.8s ease-out 0.15s both">
-      <button style="background:none;border:none;color:#B08D5A;cursor:pointer;font-weight:700;margin-bottom:24px;font-size:12px;transition:all 0.3s;padding:0" onclick="goBack(1)" onmouseover="this.style.color='#C7A876';this.style.transform='translateX(-4px)'" onmouseout="this.style.color='#B08D5A';this.style.transform='translateX(0)'">← Back</button>
-      
-      <div style="text-align:center;margin-bottom:28px">
-        <h1 id="step3-title" style="font-size:38px;font-weight:800;color:#B08D5A;margin:0 0 8px 0;letter-spacing:-0.3px;line-height:1.2;background:linear-gradient(135deg,#8f7245 0%,#B08D5A 25%,#E4CE9C 50%,#C7A876 75%,#8f7245 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Set your password</h1>
-        <p style="color:rgba(255,255,255,0.6);font-size:13px;margin:0" id="step3-sub">Choose a strong password</p>
-      </div>
-
-      <div id="step3-identity-box" style="background:linear-gradient(135deg,rgba(176,141,90,0.08) 0%,rgba(176,141,90,0.03) 100%);border-left:3px solid #B08D5A;padding:11px 13px;border-radius:8px;margin-bottom:20px;font-size:11px;color:#B08D5A;font-weight:600;box-shadow:0 4px 12px rgba(176,141,90,0.08),inset 0 1px 0 rgba(255,255,255,0.05);backdrop-filter:blur(4px)"></div>
-
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:10px;font-weight:700;color:#B08D5A;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">New password</label>
-        <div class="pw-field-wrap">
-        <input type="password" id="new-pw1" autocomplete="new-password" placeholder="Min. 6 characters" style="width:100%;padding:12px 42px 12px 14px;border:2px solid #B08D5A;border-radius:10px;font-size:13px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(176,141,90,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" oninput="checkPwStrength()" onkeydown="if(event.key==='Enter')document.getElementById('new-pw2').focus()" onfocus="this.style.boxShadow='0 8px 24px rgba(176,141,90,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#C7A876';this.style.background='rgba(176,141,90,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(176,141,90,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#B08D5A';this.style.background='transparent'"/>
-        <button type="button" class="pw-toggle-btn" onclick="togglePwVisibility('new-pw1',this)" aria-label="Show password" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-        </div>
-        <div id="pw-bar" style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:7px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,0.3)"><div style="height:100%;width:0%;background:linear-gradient(90deg,#7A4A00,#C7A876,#1B5E35);transition:all 0.3s;box-shadow:0 0 8px currentColor;filter:drop-shadow(0 0 4px currentColor)" id="pw-bar-inner"></div></div>
-        <div id="pw-hint" style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:5px;font-weight:600"></div>
-      </div>
-
-      <div style="margin-bottom:20px">
-        <label style="display:block;font-size:10px;font-weight:700;color:#B08D5A;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Confirm password</label>
-        <div class="pw-field-wrap">
-        <input type="password" id="new-pw2" autocomplete="new-password" placeholder="Repeat password" style="width:100%;padding:12px 42px 12px 14px;border:2px solid #B08D5A;border-radius:10px;font-size:13px;transition:all 0.35s;box-sizing:border-box;background:transparent;color:#FFFFFF;font-weight:500;box-shadow:0 4px 12px rgba(176,141,90,0.05),inset 0 1px 0 rgba(255,255,255,0.05)" onkeydown="if(event.key==='Enter')doSetPassword()" onfocus="this.style.boxShadow='0 8px 24px rgba(176,141,90,0.2),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.borderColor='#C7A876';this.style.background='rgba(176,141,90,0.05)'" onblur="this.style.boxShadow='0 4px 12px rgba(176,141,90,0.05),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.borderColor='#B08D5A';this.style.background='transparent'"/>
-        <button type="button" class="pw-toggle-btn" onclick="togglePwVisibility('new-pw2',this)" aria-label="Show password" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-        </div>
-      </div>
-
-      <div id="login-err-3" style="background:rgba(184,134,11,0.12);color:#B8860B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #B8860B;font-weight:600;box-shadow:0 4px 12px rgba(184,134,11,0.15)"></div>
-
-      <button class="login-btn" onclick="doSetPassword()" id="set-pw-btn" data-i18n="set_pw_signin" style="width:100%;padding:12px 20px;background:linear-gradient(135deg,#8f7245 0%,#B08D5A 25%,#E4CE9C 50%,#C7A876 75%,#8f7245 100%);color:#0A2218;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.35s;box-shadow:0 8px 24px rgba(176,141,90,0.4),0 0 20px rgba(176,141,90,0.2);text-transform:uppercase;letter-spacing:0.4px;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 36px rgba(176,141,90,0.5),0 0 30px rgba(176,141,90,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(176,141,90,0.4),0 0 20px rgba(176,141,90,0.2)'">
-        <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:translateX(-100%);animation:shine 3s infinite"></div>
-        <span style="position:relative;z-index:1">Set & sign in</span>
-      </button>
-    </div>
-
     <!-- STEP SUCCESS -->
     <div class="auth-step" id="step-ok" style="text-align:center;animation:fadeInUp 0.8s ease-out 0.15s both">
       <div style="font-size:56px;margin-bottom:14px;animation:bounce 0.8s ease-in-out,pulse 2s ease-in-out 0.8s infinite">✅</div>
@@ -1475,8 +1438,8 @@ var I18N={
     // Login
     welcome_back:'Welcome back', sign_in_sub:'Sign in with your email or phone number',
     role_admin:'Administrator', role_admin_sub:'Full access', role_client:'Client', role_client_sub:'My account',
-    email_or_phone:'Email or phone number', continue_btn:'Continue →', first_time:'First time?',
-    set_pw_here:'Set your password here', password:'Password', forgot_pw:'Forgot password?',
+    email_or_phone:'Email or phone number', continue_btn:'Continue →', first_time:'Need access?',
+    set_pw_here:'Contact ANB', password:'Password', forgot_pw:'Forgot password?',
     sign_in_btn:'Sign in', set_pw_signin:'Set password & sign in',
     // Sidebar / nav
     overview:'Overview', settings_nav:'Settings', add_client:'Add client', sign_out:'Sign out',
@@ -1676,8 +1639,8 @@ var I18N={
   nl:{
     welcome_back:'Welkom terug', sign_in_sub:'Log in met uw e-mailadres of telefoonnummer',
     role_admin:'Administrator', role_admin_sub:'Volledige toegang', role_client:'Client', role_client_sub:'Mijn account',
-    email_or_phone:'E-mailadres of telefoonnummer', continue_btn:'Doorgaan →', first_time:'Eerste keer?',
-    set_pw_here:'Stel hier uw wachtwoord in', password:'Wachtwoord', forgot_pw:'Wachtwoord vergeten?',
+    email_or_phone:'E-mailadres of telefoonnummer', continue_btn:'Doorgaan →', first_time:'Toegang nodig?',
+    set_pw_here:'Neem contact op met ANB', password:'Wachtwoord', forgot_pw:'Wachtwoord vergeten?',
     sign_in_btn:'Inloggen', set_pw_signin:'Wachtwoord instellen & inloggen',
     overview:'Overzicht', settings_nav:'Instellingen', add_client:'Klant toevoegen', sign_out:'Uitloggen',
     client_workspaces:'Klantdossiers', my_account:'Mijn account', administrator:'Administrator',
@@ -1859,8 +1822,8 @@ var I18N={
   ar:{
     welcome_back:'مرحباً بعودتك', sign_in_sub:'سجّل الدخول بالبريد الإلكتروني أو رقم الهاتف',
     role_admin:'مسؤول النظام', role_admin_sub:'صلاحية كاملة', role_client:'عميل', role_client_sub:'حسابي',
-    email_or_phone:'البريد الإلكتروني أو رقم الهاتف', continue_btn:'استمرار ←', first_time:'أول مرة؟',
-    set_pw_here:'حدِّد كلمة المرور هنا', password:'كلمة المرور', forgot_pw:'نسيت كلمة المرور؟',
+    email_or_phone:'البريد الإلكتروني أو رقم الهاتف', continue_btn:'استمرار ←', first_time:'تحتاج وصولًا؟',
+    set_pw_here:'تواصل مع ANB', password:'كلمة المرور', forgot_pw:'نسيت كلمة المرور؟',
     sign_in_btn:'تسجيل الدخول', set_pw_signin:'تحديد كلمة المرور والدخول',
     overview:'نظرة عامة', settings_nav:'الإعدادات', add_client:'إضافة عميل', sign_out:'تسجيل الخروج',
     client_workspaces:'ملفات العملاء', my_account:'حسابي', administrator:'مسؤول النظام',
@@ -3978,67 +3941,6 @@ function goForgot(){
     showErr('login-err-1','For security, admin passwords can no longer be self-set. Ask another administrator to set one for you (Settings → Admins → Reset), or contact ANB technical support.');
   }else{
     showErr('login-err-1','For your security, please contact ANB directly — they will verify your identity and provide you with login credentials.');
-  }
-}
-
-// Password strength checker
-function checkPwStrength(){
-  const pw=document.getElementById('new-pw1').value;
-  const bar=document.getElementById('pw-bar');
-  const hint=document.getElementById('pw-hint');
-  if(!pw){bar.style.cssText='';hint.textContent='';return;}
-  let score=0;
-  if(pw.length>=6)score++;
-  if(pw.length>=10)score++;
-  if(/[A-Z]/.test(pw))score++;
-  if(/[0-9]/.test(pw))score++;
-  if(/[^A-Za-z0-9]/.test(pw))score++;
-  const levels=[
-    {w:'20%',bg:'#7A4A00',t:'Too short'},
-    {w:'40%',bg:'var(--red)',t:'Weak'},
-    {w:'60%',bg:'#C7A876',t:'Fair'},
-    {w:'80%',bg:'#7dbfa3',t:'Good'},
-    {w:'100%',bg:'#1B5E35',t:'Strong ✓'},
-  ];
-  const l=levels[Math.min(score,4)];
-  bar.style.cssText=`width:${l.w};background:${l.bg};height:4px;border-radius:2px;margin-top:4px;transition:all .3s`;
-  hint.textContent=l.t;
-  hint.style.color=l.bg;
-}
-
-// Save new password
-async function doSetPassword(){
-  const pw1=document.getElementById('new-pw1').value;
-  const pw2=document.getElementById('new-pw2').value;
-  showErr('login-err-3','');
-  if(pw1.length<6){showErr('login-err-3','Password must be at least 6 characters');return;}
-  if(pw1!==pw2){showErr('login-err-3','Passwords do not match');return;}
-
-  const accountId=authState.role==='admin'?authState.adminId:authState.clientId;
-  try{
-    const res=await fetch(R2_WORKER_URL+'/set-password',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({role:authState.role,accountId,newPassword:pw1}),
-    });
-    if(!res.ok){
-      let serverMsg='Something went wrong - please try again';
-      try{const errData=await res.json();serverMsg=errData.message||errData.error||serverMsg;}catch{}
-      if(res.status===429)serverMsg='Too many attempts - please wait a minute and try again';
-      showErr('login-err-3',serverMsg);
-      return;
-    }
-    const data=await res.json();
-    setR2Token({token:data.token,exp:data.exp});
-
-    // Show success then launch
-    goStep('ok');
-    S.role=authState.role;
-    S.currentAdmin=authState.role==='admin'?accountId:null;
-    S.currentClient=authState.role==='client'?accountId:null;
-    S.tab='dashboard';
-    setTimeout(()=>pullFullDataThenLaunch(),1500);
-  }catch(e){
-    showErr('login-err-3','Network error - please check your connection and try again');
   }
 }
 
