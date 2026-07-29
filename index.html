@@ -5834,6 +5834,12 @@ function generateDepreciationEntries(cid,year){
 function getRecordedDepreciationForPeriod(cid){
   return (S.journal||[]).filter(j=>j.cid===cid&&j.type==='depreciation'&&isDateInReportPeriod(j.date)).reduce((s,j)=>s+(j.amount||0),0);
 }
+// ⭐ إجمالي تكلفة الرواتب المُسجَّلة فعليًا (كقيود) لعميل معيّن ضمن فترة
+// التقرير المختارة - نفس مبدأ الإهلاك بالضبط، حتى تُخصَم رواتب الموظفين من
+// الربح الخاضع للضريبة بدل بقائها معزولة في S.payslips فقط
+function getRecordedPayrollCostForPeriod(cid){
+  return (S.journal||[]).filter(j=>j.cid===cid&&j.type==='payroll'&&isDateInReportPeriod(j.date)).reduce((s,j)=>s+(j.amount||0),0);
+}
 
 /* ── BACK TO CLIENTS BUTTON IN SIDEBAR ── */
 function rClientsLis(el){
@@ -10344,6 +10350,23 @@ function openPayslipModal(employeeId){
       ...b,loonheffing,netPay,generatedAt:new Date().toISOString(),taxYear:LOONHEFFING_TAX_YEAR
     };
     S.payslips.push(payslip);
+    // ⭐⭐ إصلاح فجوة حقيقية: كانت تكلفة الرواتب معزولة تمامًا في S.payslips
+    // بلا أي مصروف أو قيد مقابل - فلا تُخصَم إطلاقًا من الربح الخاضع للضريبة
+    // بتقريري الأرباح والخسائر والخصوم الضريبية. الآن: كل بيان راتب يُنشئ
+    // تلقائيًا قيد يومية بإجمالي تكلفة الشهر الفعلية (الراتب الأساسي + بدل
+    // الإجازة وراتب ١٣ المتراكمَين هذا الشهر - بغضّ النظر عن موعد صرفهما
+    // فعليًا - + البدلات)، على أساس الاستحقاق الصحيح محاسبيًا لا الدفع الفعلي.
+    // إن أُعيد إصدار بيان راتب لنفس الموظف/الشهر/السنة (تصحيح خطأ)، يُستبدَل
+    // القيد القديم بدل تكراره.
+    if(!S.journal)S.journal=[];
+    S.journal=S.journal.filter(j=>!(j.type==='payroll'&&j.employeeId===emp.id&&j.month===month&&j.year===year));
+    const totalPayrollCost=b.grossBase+b.vacationMoney+b.thirteenthMonthAccrual+b.customTotal+b.travelAllowance+b.homeWorkAllowance;
+    S.journal.push({
+      id:UID(),cid:emp.cid,employeeId:emp.id,payslipId:payslip.id,type:'payroll',
+      date:new Date(year,month,0).toISOString().slice(0,10), // آخر يوم في الشهر نفسه
+      amount:Math.round(totalPayrollCost*100)/100,
+      desc:(t('payroll_cost_for')||'Payroll cost for')+' '+emp.name+' — '+monthNames[month-1]+' '+year
+    });
     logAudit('create','payslip','Generated payslip for '+emp.name+' — '+monthNames[month-1]+' '+year,emp.cid);
     sv();
     closeModal();
@@ -16578,7 +16601,8 @@ function rReportSummary(el,cid){
   const inv=getReportableInvoices(cid);
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
-  const expenses=exp.reduce((s,e)=>s+(e.amount||0),0);
+  const payrollCost=getRecordedPayrollCostForPeriod(cid);
+  const expenses=exp.reduce((s,e)=>s+(e.amount||0),0)+payrollCost;
   const profit=revenue-expenses;
   const debtors=S.invoices.filter(i=>i.cid===cid&&['Openstaand','Verzonden'].includes(i.status)).reduce((s,i)=>s+i.total,0);
   const btwPayable=inv.reduce((s,i)=>s+(i.btw||0),0)-exp.reduce((s,e)=>s+(e.btw||0),0);
@@ -16642,7 +16666,8 @@ function rReportPL(el,cid){
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
   const depreciation=getRecordedDepreciationForPeriod(cid);
-  const expenses=exp.reduce((s,e)=>s+(e.amount||0),0)+depreciation;
+  const payrollCost=getRecordedPayrollCostForPeriod(cid);
+  const expenses=exp.reduce((s,e)=>s+(e.amount||0),0)+depreciation+payrollCost;
   const profit=revenue-expenses;
   
   const expByCat={};
@@ -16673,6 +16698,11 @@ function rReportPL(el,cid){
   if(depreciation>0){
     html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)">';
     html+='<span>📉 '+(t('depreciation')||'Depreciation')+'</span><span style="color:var(--red)">-'+FMT(depreciation)+'</span>';
+    html+='</div>';
+  }
+  if(payrollCost>0){
+    html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)">';
+    html+='<span>👥 '+(t('payroll_costs')||'Payroll Costs')+'</span><span style="color:var(--red)">-'+FMT(payrollCost)+'</span>';
     html+='</div>';
   }
   
@@ -17024,8 +17054,9 @@ function rReportTaxLiability(el,cid){
   const exp=S.expenses.filter(e=>e.cid===cid&&isDateInReportPeriod(e.date));
   const revenue=inv.reduce((s,i)=>s+(i.amount||0),0);
   const depreciation=getRecordedDepreciationForPeriod(cid);
+  const payrollCost=getRecordedPayrollCostForPeriod(cid);
   const operatingExpenses=exp.reduce((s,e)=>s+(e.amount||0),0);
-  const totalExpenses=operatingExpenses+depreciation;
+  const totalExpenses=operatingExpenses+depreciation+payrollCost;
   const rawProfit=revenue-totalExpenses;
   const taxableProfit=Math.max(0,rawProfit);
 
@@ -17061,6 +17092,9 @@ function rReportTaxLiability(el,cid){
   html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)"><span>'+(t('revenue')||'Revenue')+'</span><span style="color:var(--green);font-weight:600">'+FMT(revenue)+'</span></div>';
   html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)"><span>'+(t('operating_expenses')||'Operating Expenses')+'</span><span style="color:var(--red)">-'+FMT(operatingExpenses)+'</span></div>';
   html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)"><span>📉 '+(t('depreciation')||'Depreciation')+'</span><span style="color:var(--red)">-'+FMT(depreciation)+'</span></div>';
+  if(payrollCost>0){
+    html+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;border-bottom:1px solid var(--gr2)"><span>👥 '+(t('payroll_costs')||'Payroll Costs')+'</span><span style="color:var(--red)">-'+FMT(payrollCost)+'</span></div>';
+  }
   html+='<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:13px;font-weight:700;border-top:2px solid var(--gr2);margin-top:6px"><span>'+(t('taxable_profit')||'Taxable Profit')+'</span><span style="color:'+(rawProfit>=0?'var(--green)':'var(--red)')+'">'+FMT(rawProfit)+'</span></div>';
   html+='</div>';
 
