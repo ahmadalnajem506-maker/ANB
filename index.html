@@ -13343,18 +13343,16 @@ function rEditClient(el,cid){
         <div style="padding:14px">
           <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:8px">${t('subscription_information')||'Subscription'}</div>
           <div class="fg"><label>${t('plan')||'Plan'}</label>
-            <select id="cf-fee">
-              <option value="0" ${!c?.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
-              ${renderPlanOptions(c?.monthlyFee)}
-            </select>
+            <input type="text" value="€${c?.monthlyFee||0}/month" disabled style="background:var(--gr1);color:var(--t3)"/>
+            <div class="sec-desc" style="margin:4px 0 0">⚠️⚠️ Price, package, and monthly limits are managed exclusively from this client's Contract (Contracts tab) — changing them there properly re-locks accounting until the client signs the new terms. This panel used to let the price be changed here silently, bypassing that protection, so it's now read-only.</div>
           </div>
 
           <div style="border-top:1px solid var(--gr2);margin-top:12px;padding-top:14px">
             <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px">${t('monthly_limits')||'Monthly Transaction Limits'}</div>
-            <div class="sec-desc">${t('monthly_limits_hint')||'Set how many invoices/expenses are included in this client\u2019s plan per month. You\u2019ll get an alert if they go over, so you can bill for the extra transactions.'}</div>
+            <div class="sec-desc">Auto-set from the package tier on the client's Contract.</div>
             <div class="fr2">
-              <div class="fg"><label>${t('monthly_invoice_limit')||'Invoices / month'}</label><input type="number" id="cf-inv-limit" min="0" value="${escapeHtml(c?.monthlyInvoiceLimit||'')}" placeholder="${t('no_limit')||'No limit'}"/></div>
-              <div class="fg"><label>${t('monthly_expense_limit')||'Expenses / month'}</label><input type="number" id="cf-exp-limit" min="0" value="${escapeHtml(c?.monthlyExpenseLimit||'')}" placeholder="${t('no_limit')||'No limit'}"/></div>
+              <div class="fg"><label>${t('monthly_invoice_limit')||'Invoices / month'}</label><input type="text" value="${c?.monthlyInvoiceLimit||'—'}" disabled style="background:var(--gr1);color:var(--t3)"/></div>
+              <div class="fg"><label>${t('monthly_expense_limit')||'Expenses / month'}</label><input type="text" value="${c?.monthlyExpenseLimit||'—'}" disabled style="background:var(--gr1);color:var(--t3)"/></div>
             </div>
           </div>
         </div>
@@ -13554,12 +13552,13 @@ function saveClientConfigTab(clientId){
   const c=S.clients.find(c=>c.id===clientId);
   if(!c)return;
 
-  const newFee=parseInt(document.getElementById('cf-fee')?.value)||0;
+  // ⚠️⚠️ إصلاح خلل أمني/وظيفي خطير: كانت هذه الدالة تُغيِّر سعر العميل
+  // (monthlyFee) والحدود الشهرية مباشرة وبصمت تام - بلا أي علاقة بالعقد
+  // نفسه، وبلا تفعيل آلية قفل المحاسبة عند تغيير السعر (نفس الحماية التي
+  // بنيناها خصيصًا بتعديل العقد). الآن: السعر والحدود تُدار حصريًا من تبويب
+  // العقود، وهذا التبويب لا يلمسها إطلاقًا - فقط يعرضها للقراءة.
   const updatedClient={
     ...c,
-    monthlyFee:newFee,
-    monthlyInvoiceLimit:parseInt(document.getElementById('cf-inv-limit')?.value)||0,
-    monthlyExpenseLimit:parseInt(document.getElementById('cf-exp-limit')?.value)||0,
     cardVisibility:TOGGLEABLE_CLIENT_CARDS.reduce((map,card)=>{
       const checkbox=document.getElementById('cf-cardvis-'+card.id);
       if(checkbox)map[card.id]=checkbox.checked;
@@ -13567,14 +13566,7 @@ function saveClientConfigTab(clientId){
     },{})
   };
 
-  if(newFee!==c.monthlyFee){
-    const planNames={0:t('no_subscription')||'No subscription'};getServicePackages().forEach(p=>{planNames[p.price]=p.name;});
-    logAudit('plan_change','client',
-      'Changed plan for '+updatedClient.name+': '+(planNames[c.monthlyFee]||c.monthlyFee||'—')+' → '+(planNames[newFee]||newFee),
-      updatedClient.id);
-  }else{
-    logAudit('edit','client','Edited configuration for '+updatedClient.name,updatedClient.id);
-  }
+  logAudit('edit','client','Edited configuration for '+updatedClient.name,updatedClient.id);
   S.clients=S.clients.map(x=>x.id===updatedClient.id?updatedClient:x);
 
   sv();
@@ -13645,15 +13637,40 @@ function openClientModal(c){
       </div>
 
       <div class="msec">💳 ${t('subscription_information')||'Subscription'}</div>
-      <div class="fg">
-        <label>${t('plan')||'Plan'}${isN?' *':''}</label>
-        <select id="cf-fee">
-          <option value="0" ${c&&!c.monthlyFee?'selected':''}>${t('no_subscription')||'No subscription'}</option>
-          <option value="100" ${parseInt(c?.monthlyFee)===100?'selected':''}>Basic — €100/month</option>
-          <option value="150" ${!c||parseInt(c?.monthlyFee)===150?'selected':''}>Plus — €150/month</option>
-          <option value="200" ${parseInt(c?.monthlyFee)===200?'selected':''}>Pro — €200/month</option>
-        </select>
+      ${isN?`
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">📦 Package *</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${Object.values(SUBSCRIPTION_PACKAGES).map(pkg=>`
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="updateContractPriceLive()">
+              <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id==='essential'?'checked':''} style="flex-shrink:0"/>
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name}</div>
+                <div style="font-size:10.5px;color:var(--t3)">Tier ${pkg.tier} · ${pkg.chatLevel} chat · ${pkg.reportsFreq} reports</div>
+              </div>
+            </label>`).join('')}
+        </div>
       </div>
+      <div style="margin-top:12px">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👤 Data Entry Mode *</label>
+        <div style="display:flex;gap:8px">
+          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer">
+            <input type="radio" name="contract-mode" value="manual" checked onclick="updateContractPriceLive()"/> Manual
+          </label>
+          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer">
+            <input type="radio" name="contract-mode" value="admin" onclick="updateContractPriceLive()"/> Admin
+          </label>
+        </div>
+      </div>
+      <div id="contract-addons" style="margin-top:12px"></div>
+      <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center;margin-top:12px">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Monthly Price</div>
+        <div id="contract-price-display" style="font-size:24px;font-weight:800;color:var(--gold)">€0</div>
+      </div>`:`
+      <div class="fg"><label>${t('plan')||'Plan'}</label>
+        <input type="text" value="€${c?.monthlyFee||0}/month — managed via this client's Contract (Contracts tab)" disabled style="background:var(--gr1);color:var(--t3)"/>
+        <div class="sec-desc" style="margin:4px 0 0">To change the package, price, or addons, edit the client's contract directly from the Contracts tab instead.</div>
+      </div>`}
 
       <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3);margin-top:14px">
         ℹ️ Fields marked with * are required
@@ -13686,8 +13703,11 @@ function openClientModal(c){
 
     // إضافة عميل جديد: يُنشأ فورًا (متطابق مع سلوك إضافة عقد)، مع توليد اتفاقية قابلة للتوقيع تلقائيًا تظهر في Documents
     if(isN){
-      const planVal=parseInt(document.getElementById('cf-fee')?.value)||0;
-      if(!planVal){toast('❌ Please select a subscription plan');markFieldError('cf-fee');return;}
+      const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
+      const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+      const hoursAddon=!!document.getElementById('contract-hours-addon')?.checked;
+      const cashierAddon=!!document.getElementById('contract-cashier-addon')?.checked;
+      const planVal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon);
       const newClient={
         id:UID(),
         name:n,
@@ -13717,6 +13737,11 @@ function openClientModal(c){
       // سجل عقد فعلي في S.contracts - أي "عميل بلا عقد" رغم وجود اتفاقية
       // معلَّقة. الآن يُنشأ سجل عقد حقيقي دائمًا، بنفس منطق "إضافة عقد" تمامًا
       // (تسمية تلقائية، مفتوح المدة) - لا يوجد بعد الآن عميل بلا عقد إطلاقًا.
+      // ⚠️⚠️ إصلاح فجوة حقيقية أخرى: هذا المسار (إضافة عميل مباشرة) كان لا
+      // يزال يستخدم قائمة أسعار قديمة ثابتة (Basic/Plus/Pro) منفصلة تمامًا
+      // عن نظام الباقات الجديد المبني بـ"إضافة عقد" - يعني عميل يُنشأ من هنا
+      // كان يحصل على عقد بلا subscriptionPackage إطلاقًا. الآن كلا المسارين
+      // (إضافة عميل، إضافة عقد) يستخدمان نفس محرك التسعير بالضبط.
       if(!S.contracts)S.contracts=[];
       const newContract={
         id:UID(),
@@ -13725,12 +13750,17 @@ function openClientModal(c){
         desc:'',
         plan:planVal,
         type:'Standard',
+        subscriptionPackage:packageId,
+        isAdminMode,
+        hoursAddon,
+        cashierAddon,
         startDate:TODAY(),
         endDate:'',
         status:'draft',
         createdDate:TODAY()
       };
       S.contracts.push(newContract);
+      applyContractLimitsToClient(newClient.id,packageId,planVal);
       createContractAgreement(newClient,newContract);
       sv();
       closeModal();
@@ -13770,17 +13800,10 @@ function openClientModal(c){
         city:city,
         country:document.getElementById('cf-country').value,
         registrationNumber:document.getElementById('cf-regnum').value,
-        monthlyFee:parseInt(document.getElementById('cf-fee')?.value)||0,
+        monthlyFee:c.monthlyFee||0, // ⚠️ لا يُعدَّل من هنا إطلاقًا - يُدار حصريًا من العقد نفسه، تفاديًا لتصفيره صامتًا بعد حذف حقل cf-fee من هذه الشاشة
         customerBase:document.getElementById('cf-custbase')?.value||'business'
       };
-      if(updatedClient.monthlyFee!==c.monthlyFee){
-        const planNames={0:t('no_subscription')||'No subscription'};getServicePackages().forEach(p=>{planNames[p.price]=p.name;});
-        logAudit('plan_change','client',
-          'Changed plan for '+updatedClient.name+': '+(planNames[c.monthlyFee]||c.monthlyFee||'—')+' → '+(planNames[updatedClient.monthlyFee]||updatedClient.monthlyFee),
-          updatedClient.id);
-      }else{
-        logAudit('edit','client','Edited client details for '+updatedClient.name,updatedClient.id);
-      }
+      logAudit('edit','client','Edited client details for '+updatedClient.name,updatedClient.id);
       S.clients=S.clients.map(x=>x.id===updatedClient.id?updatedClient:x);
       sv();
       closeModal();
@@ -13788,6 +13811,7 @@ function openClientModal(c){
       toast(t('edit')+' ✓','ti-check');
     }
   },'Save Changes');
+  if(isN)setTimeout(()=>{renderContractAddonsSection();updateContractPriceLive();},50);
 }
 
 // ⚠️ إصلاح خلل ترقيم محتمل: كان الترقيم مبنيًا على طول مصفوفة الفواتير
