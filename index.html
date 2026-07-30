@@ -4800,15 +4800,9 @@ function getNextContractTitle(cid){
 // لا يظهر أي تفصيل سعري لكل بند بالعقد نفسه - فقط المجموع + قائمة الخدمات.
 // ══════════════════════════════════════════════════════════════════
 const SUBSCRIPTION_PACKAGES={
-  essential:{id:'essential',name:'Essential',tier:1,chatLevel:'basic',reportsFreq:'annual',
-    hoursAddon:'allowed_forced_additional',
-    cashierAddon:'allowed_forced_additional'},
-  advanced:{id:'advanced',name:'Advanced',tier:2,chatLevel:'advanced',reportsFreq:'quarterly',
-    hoursAddon:'allowed_forced_basic',
-    cashierAddon:'allowed_forced_basic'},
-  premium:{id:'premium',name:'Premium',tier:3,chatLevel:'premium',reportsFreq:'monthly',
-    hoursAddon:'auto_included_basic',
-    cashierAddon:'auto_included_basic'}
+  essential:{id:'essential',name:'Essential',tier:1,chatLevel:'basic',reportsFreq:'annual'},
+  advanced:{id:'advanced',name:'Advanced',tier:2,chatLevel:'advanced',reportsFreq:'quarterly'},
+  premium:{id:'premium',name:'Premium',tier:3,chatLevel:'premium',reportsFreq:'monthly'}
 };
 const TIER_SERVICE_PRICING={
   invoices:{1:{manual:15,adminAddon:10},2:{manual:24,adminAddon:13},3:{manual:30,adminAddon:20}},
@@ -4833,6 +4827,9 @@ const OVERAGE_RATES={
 const CHAT_PRICING={basic:5,advanced:5,premium:8};
 const FIXED_SERVICE_PRICING={btw:5,ibAnnual:5,ibPersonalAddon:50};
 const REPORTS_PRICING={annual:5,quarterly:8,monthly:15};
+// ⭐⭐ إصلاح حسب طلب صريح: الساعات والكاشير لم تعودا مرتبطتين بالباقة إطلاقًا
+// (لا فرض تلقائي، لا شمول تلقائي بالباقة الثالثة) - أصبحتا إضافتين اختياريتين
+// موحَّدتين لأي باقة، بنفس الأسعار الحالية بالضبط (Basic/Additional)
 const HOURS_ADDON_PRICING={basic:5,additional:10};
 const CASHIER_ADDON_PRICING={basic:10,additional:20};
 const EMPLOYEE_PAYROLL_PRICING={
@@ -4840,7 +4837,9 @@ const EMPLOYEE_PAYROLL_PRICING={
   2:{maxCount:3,manual:10,adminAddon:8},
   3:{maxCount:7,manual:16,adminAddon:9}
 };
-function computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon){
+// ⭐ hoursLevel/cashierLevel: 'none'|'basic'|'additional' - اختيار حر بالكامل
+// بغضّ النظر عن الباقة المُختارة
+function computeContractTotal(packageId,isAdminMode,hoursLevel,cashierLevel){
   const pkg=SUBSCRIPTION_PACKAGES[packageId];
   if(!pkg)return 0;
   const tier=pkg.tier;
@@ -4853,21 +4852,11 @@ function computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon){
   total+=FIXED_SERVICE_PRICING.btw;
   total+=FIXED_SERVICE_PRICING.ibAnnual;
   total+=REPORTS_PRICING[pkg.reportsFreq]||0;
-  if(pkg.hoursAddon==='auto_included_basic'){
-    total+=HOURS_ADDON_PRICING.basic;
-  }else if(hoursAddon){
-    const forcedLevel=pkg.hoursAddon==='allowed_forced_additional'?'additional':'basic';
-    total+=HOURS_ADDON_PRICING[forcedLevel];
-  }
-  if(pkg.cashierAddon==='auto_included_basic'){
-    total+=CASHIER_ADDON_PRICING.basic;
-  }else if(cashierAddon){
-    const forcedLevel=pkg.cashierAddon==='allowed_forced_additional'?'additional':'basic';
-    total+=CASHIER_ADDON_PRICING[forcedLevel];
-  }
+  if(hoursLevel&&hoursLevel!=='none')total+=HOURS_ADDON_PRICING[hoursLevel]||0;
+  if(cashierLevel&&cashierLevel!=='none')total+=CASHIER_ADDON_PRICING[cashierLevel]||0;
   return total;
 }
-function getContractServiceSummaryLines(packageId,isAdminMode,hoursAddon,cashierAddon){
+function getContractServiceSummaryLines(packageId,isAdminMode,hoursLevel,cashierLevel){
   const pkg=SUBSCRIPTION_PACKAGES[packageId];
   if(!pkg)return[];
   const mode=isAdminMode?'ANB handles data entry on your behalf':'You enter your own data';
@@ -4880,10 +4869,8 @@ function getContractServiceSummaryLines(packageId,isAdminMode,hoursAddon,cashier
     'Income tax return — annual (business)',
     'Financial reports — '+pkg.reportsFreq
   ];
-  if(pkg.hoursAddon==='auto_included_basic')lines.push('Hours register — included (basic)');
-  else if(hoursAddon)lines.push('Hours register — included ('+(pkg.hoursAddon==='allowed_forced_additional'?'additional':'basic')+')');
-  if(pkg.cashierAddon==='auto_included_basic')lines.push('Cashier + cash management — included (basic)');
-  else if(cashierAddon)lines.push('Cashier + cash management — included ('+(pkg.cashierAddon==='allowed_forced_additional'?'additional':'basic')+')');
+  if(hoursLevel&&hoursLevel!=='none')lines.push('Hours register — included ('+hoursLevel+')');
+  if(cashierLevel&&cashierLevel!=='none')lines.push('Cashier + cash management — included ('+cashierLevel+')');
   return lines;
 }
 
@@ -4895,7 +4882,7 @@ function openAddContract(cid){
         <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">📦 Package *</label>
         <div style="display:flex;flex-direction:column;gap:8px" id="pkg-cards">
           ${Object.values(SUBSCRIPTION_PACKAGES).map(pkg=>`
-            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="updateContractPriceLive()">
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="onPackageChange()">
               <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id==='essential'?'checked':''} style="flex-shrink:0"/>
               <div style="flex:1">
                 <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name}</div>
@@ -4903,6 +4890,7 @@ function openAddContract(cid){
               </div>
             </label>`).join('')}
         </div>
+        <div id="pkg-detail-panel" style="background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:10px 12px;margin-top:8px"></div>
       </div>
 
       <div>
@@ -4918,6 +4906,22 @@ function openAddContract(cid){
       </div>
 
       <div id="contract-addons"></div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👥 Employees &amp; Payroll (separate pricing, on request)</label>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
+            <input type="radio" name="contract-emp-tier" value="none" checked onclick="updateContractPriceLive()"/> Not needed
+          </label>
+          ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
+            <input type="radio" name="contract-emp-tier" value="${tierNum}" onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(× employees + payroll = ${2}× that)</span>
+          </label>`).join('')}
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
+            <input type="radio" name="contract-emp-tier" value="custom" onclick="updateContractPriceLive()"/> More than 7 employees — <span style="color:var(--t3)">custom quote required, not auto-priced</span>
+          </label>
+        </div>
+      </div>
 
       <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center">
         <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Monthly Price</div>
@@ -4939,10 +4943,12 @@ function openAddContract(cid){
     const title=getNextContractTitle(cid);
     const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
     const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
-    const hoursAddon=!!document.getElementById('contract-hours-addon')?.checked;
-    const cashierAddon=!!document.getElementById('contract-cashier-addon')?.checked;
+    const hoursAddon=getSelectedAddonLevel('hours');
+    const cashierAddon=getSelectedAddonLevel('cashier');
+    const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
     const start=document.getElementById('contract-start').value;
-    const plan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon);
+    const plan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode);
+    if(empTier==='custom'){toast('⚠️ More than 7 employees needs a custom quote — set the final price by editing the contract afterward');}
 
     if(!S.contracts)S.contracts=[];
     S.contracts.push({
@@ -4956,6 +4962,7 @@ function openAddContract(cid){
       isAdminMode,
       hoursAddon,
       cashierAddon,
+      employeePayrollTier:empTier,
       startDate:start,
       endDate:'',
       status:'draft',
@@ -4971,37 +4978,90 @@ function openAddContract(cid){
 // ⭐ يبني قسم الإضافات (ساعات/كاشير) بناءً على الباقة المُختارة حاليًا - يُعاد
 // بناؤه كل مرة تتغيَّر الباقة، لأن منطق الفرض (Additional/Basic/مُضمَّن
 // تلقائيًا) يختلف تمامًا بين الباقات الثلاث
+// ⭐⭐ إصلاح حسب طلب صريح: الساعات والكاشير أصبحتا مستقلتين تمامًا عن الباقة -
+// نفس خيارين موحَّدين (بلا/Basic/Additional) متاحين لأي باقة على حد سواء.
+// بما أنهما لم يعودا يعتمدان على الباقة المُختارة، تُبنى هذي الحقول مرة واحدة
+// فقط عند فتح النافذة، ولا تُعاد بناؤها أبدًا بعد ذلك - يُلغي هذا تمامًا فئة
+// الخلل السابقة (إعادة البناء كانت تمحو حالة "محدَّد" فور الضغط عليها)
 function renderContractAddonsSection(){
   const container=document.getElementById('contract-addons');
   if(!container)return;
-  const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
-  const pkg=SUBSCRIPTION_PACKAGES[packageId];
-  let html='';
-  ['hours','cashier'].forEach(kind=>{
-    const mode=kind==='hours'?pkg.hoursAddon:pkg.cashierAddon;
-    const label=kind==='hours'?'⏱ Hours Register':'💰 Cashier + Cash Management';
-    if(mode==='auto_included_basic'){
-      html+=`<div style="font-size:11px;color:var(--t3);padding:8px 10px;background:var(--gr1);border-radius:6px">${label} — included automatically (Basic)</div>`;
-    }else{
-      const forcedLevel=mode==='allowed_forced_additional'?'Additional':'Basic';
-      const price=kind==='hours'?HOURS_ADDON_PRICING[forcedLevel.toLowerCase()]:CASHIER_ADDON_PRICING[forcedLevel.toLowerCase()];
-      html+=`<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px;margin-bottom:6px">
-        <input type="checkbox" id="contract-${kind}-addon" onclick="updateContractPriceLive()"/> Add ${label} (${forcedLevel} — +€${price}/mo)
-      </label>`;
-    }
-  });
-  container.innerHTML=html;
+  const addonRow=(kind,label,pricing)=>`
+    <div style="margin-bottom:10px">
+      <div style="font-size:11.5px;font-weight:600;color:var(--t1);margin-bottom:6px">${label} <span style="font-weight:400;color:var(--t3)">(optional, available on any package)</span></div>
+      <div style="display:flex;gap:6px">
+        <label style="flex:1;display:flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11px">
+          <input type="radio" name="contract-${kind}-level" value="none" checked onclick="updateContractPriceLive()"/> None
+        </label>
+        <label style="flex:1;display:flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11px">
+          <input type="radio" name="contract-${kind}-level" value="basic" onclick="updateContractPriceLive()"/> Basic (+€${pricing.basic}/mo)
+        </label>
+        <label style="flex:1;display:flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11px">
+          <input type="radio" name="contract-${kind}-level" value="additional" onclick="updateContractPriceLive()"/> Additional (+€${pricing.additional}/mo)
+        </label>
+      </div>
+    </div>`;
+  container.innerHTML=addonRow('hours','⏱ Hours Register',HOURS_ADDON_PRICING)+addonRow('cashier','💰 Cashier + Cash Management',CASHIER_ADDON_PRICING);
+}
+// ⭐ يقرأ المستوى المُختار حاليًا لإضافة معيّنة (بلا/Basic/Additional)
+function getSelectedAddonLevel(kind){
+  return document.querySelector('input[name="contract-'+kind+'-level"]:checked')?.value||'none';
 }
 // ⭐ يُعاد حساب السعر الإجمالي حيًا في كل مرة يتغيَّر فيها أي اختيار
 function updateContractPriceLive(){
-  renderContractAddonsSection();
   const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
   const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
-  const hoursAddon=!!document.getElementById('contract-hours-addon')?.checked;
-  const cashierAddon=!!document.getElementById('contract-cashier-addon')?.checked;
-  const total=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon);
+  const hoursLevel=getSelectedAddonLevel('hours');
+  const cashierLevel=getSelectedAddonLevel('cashier');
+  const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'';
+  const total=computeContractTotal(packageId,isAdminMode,hoursLevel,cashierLevel)+computeEmployeePayrollAddon(empTier,isAdminMode);
   const display=document.getElementById('contract-price-display');
   if(display)display.textContent='€'+total;
+  updatePackageDetailPanel();
+}
+// ⭐ يُستدعى عند تغيير الباقة نفسها - الإضافات (ساعات/كاشير) لم تعد تعتمد على
+// الباقة إطلاقًا فلا حاجة لإعادة بنائها، فقط تحديث السعر ولوحة التفاصيل
+function onPackageChange(){
+  updateContractPriceLive();
+}
+// ⭐⭐ يحسب تكلفة إضافة الموظفين/الرواتب (نظام منفصل تمامًا، حسب الطلب) -
+// يُضاف لمجموع العقد فقط إن اختار الأدمن مستوى فعليًا (لا يظهر بمستند العميل
+// كبند منفصل، يُدمَج بالمجموع الكلي كباقي الإضافات)
+function computeEmployeePayrollAddon(empTier,isAdminMode){
+  if(!empTier||empTier==='none'||empTier==='custom')return 0;
+  const tier=EMPLOYEE_PAYROLL_PRICING[empTier];
+  if(!tier)return 0;
+  // الموظفون والرواتب معًا (نفس المستوى لكليهما)
+  return 2*(tier.manual+(isAdminMode?tier.adminAddon:0));
+}
+// ⭐ يعرض تفاصيل الباقة المُختارة فعليًا (الخدمات، الحدود، هامش التسامح،
+// ورسوم التجاوز) - شفافية كاملة للأدمن أثناء الإنشاء، حتى لو لن تظهر هذي
+// التفاصيل السعرية للعميل نفسه على مستند العقد (الذي يعرض المجموع فقط)
+function updatePackageDetailPanel(){
+  const panel=document.getElementById('pkg-detail-panel');
+  if(!panel)return;
+  const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
+  const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+  const hoursLevel=getSelectedAddonLevel('hours');
+  const cashierLevel=getSelectedAddonLevel('cashier');
+  const lines=getContractServiceSummaryLines(packageId,isAdminMode,hoursLevel,cashierLevel);
+  const rows=['invoices','expenses','bank'].map(svc=>{
+    const limit=TIER_LIMITS[svc][SUBSCRIPTION_PACKAGES[packageId].tier];
+    const tol=TIER_LIMITS_WITH_TOLERANCE[svc][SUBSCRIPTION_PACKAGES[packageId].tier];
+    const rate=OVERAGE_RATES[svc];
+    return `<div style="display:flex;justify-content:space-between;font-size:10.5px;padding:3px 0;border-bottom:1px dashed var(--gr2)">
+      <span style="text-transform:capitalize">${svc}</span>
+      <span>${limit}/mo (up to ${tol} tolerated) — then €${isAdminMode?rate.admin:rate.manual}/${rate.per} over</span>
+    </div>`;
+  }).join('');
+  panel.innerHTML=`
+    <div style="font-size:11px;font-weight:700;color:var(--t1);margin-bottom:6px">📋 What's included in ${SUBSCRIPTION_PACKAGES[packageId].name}</div>
+    <ul style="margin:0 0 10px;padding-left:16px;font-size:10.5px;color:var(--t2);line-height:1.7">
+      ${lines.map(l=>`<li>${l}</li>`).join('')}
+    </ul>
+    <div style="font-size:10.5px;font-weight:700;color:var(--t1);margin-bottom:4px">Monthly limits &amp; overage (not shown on client's agreement, for your reference)</div>
+    ${rows}
+  `;
 }
 // ⭐ يُطبِّق تلقائيًا حدود الفواتير/المصاريف الشهرية (+ حد جديد للبنك) على
 // سجل العميل بناءً على مستوى الباقة المُختارة - بدل حقل مُدخَل يدويًا منفصل
@@ -5044,7 +5104,7 @@ function openEditContract(contractId,cid){
         <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">📦 Package *</label>
         <div style="display:flex;flex-direction:column;gap:8px">
           ${Object.values(SUBSCRIPTION_PACKAGES).map(pkg=>`
-            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;${locked?'opacity:.5':'cursor:pointer'}" ${locked?'':'onclick="updateContractPriceLive()"'}>
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;${locked?'opacity:.5':'cursor:pointer'}" ${locked?'':'onclick="onPackageChange()"'}>
               <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id===packageId?'checked':''} ${locked?'disabled':''} style="flex-shrink:0"/>
               <div style="flex:1">
                 <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name}</div>
@@ -5052,6 +5112,7 @@ function openEditContract(contractId,cid){
               </div>
             </label>`).join('')}
         </div>
+        <div id="pkg-detail-panel" style="background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:10px 12px;margin-top:8px"></div>
       </div>
 
       <div>
@@ -5067,6 +5128,22 @@ function openEditContract(contractId,cid){
       </div>
 
       <div id="contract-addons"></div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👥 Employees &amp; Payroll (separate pricing, on request)</label>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;${locked?'opacity:.5':'cursor:pointer'};font-size:11.5px">
+            <input type="radio" name="contract-emp-tier" value="none" ${!con.employeePayrollTier||con.employeePayrollTier==='none'?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> Not needed
+          </label>
+          ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;${locked?'opacity:.5':'cursor:pointer'};font-size:11.5px">
+            <input type="radio" name="contract-emp-tier" value="${tierNum}" ${con.employeePayrollTier===tierNum?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(employees + payroll = 2× that)</span>
+          </label>`).join('')}
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;${locked?'opacity:.5':'cursor:pointer'};font-size:11.5px">
+            <input type="radio" name="contract-emp-tier" value="custom" ${con.employeePayrollTier==='custom'?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> More than 7 employees — <span style="color:var(--t3)">custom quote required, not auto-priced</span>
+          </label>
+        </div>
+      </div>
 
       <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center">
         <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Monthly Price</div>
@@ -5094,10 +5171,9 @@ function openEditContract(contractId,cid){
     </div>
   `, locked?null:()=>saveContract(contractId,cid), locked?'Close':'Update Contract');
   if(!locked)setTimeout(()=>{
-    const hoursChk=document.getElementById('contract-hours-addon');
     renderContractAddonsSection();
-    const h=document.getElementById('contract-hours-addon');if(h)h.checked=!!con.hoursAddon;
-    const c=document.getElementById('contract-cashier-addon');if(c)c.checked=!!con.cashierAddon;
+    const hRadio=document.querySelector('input[name="contract-hours-level"][value="'+(con.hoursAddon||'none')+'"]');if(hRadio)hRadio.checked=true;
+    const cRadio=document.querySelector('input[name="contract-cashier-level"][value="'+(con.cashierAddon||'none')+'"]');if(cRadio)cRadio.checked=true;
     updateContractPriceLive();
   },50);
 }
@@ -5106,11 +5182,12 @@ function saveContract(contractId,cid){
   const title=document.getElementById('contract-title')?.value||'';
   const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
   const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
-  const hoursAddon=!!document.getElementById('contract-hours-addon')?.checked;
-  const cashierAddon=!!document.getElementById('contract-cashier-addon')?.checked;
+  const hoursAddon=getSelectedAddonLevel('hours');
+  const cashierAddon=getSelectedAddonLevel('cashier');
+  const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
   const startDate=document.getElementById('contract-start')?.value||'';
   const endDate=document.getElementById('contract-end')?.value||'';
-  const plan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon);
+  const plan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode);
 
   if(!title){toast('❌ Contract title required');markFieldError('contract-title');return;}
 
@@ -5130,7 +5207,7 @@ function saveContract(contractId,cid){
       // تغيير سعر) لا تحتاج هذا - تبقى الحالة كما هي دون قفل.
       const priceChanged=oldContract.plan!==plan;
       const newStatus=priceChanged?'draft':oldContract.status;
-      S.contracts[idx]={...oldContract,title,plan,subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,startDate,endDate,status:newStatus};
+      S.contracts[idx]={...oldContract,title,plan,subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,employeePayrollTier:empTier,startDate,endDate,status:newStatus};
       const client=S.clients.find(cl=>cl.id===cid);
       logAudit('edit','contract',(priceChanged?'Updated price and locked pending re-signature for contract "':'Updated contract "')+title+'" for '+(client?.name||'')+(priceChanged?' ('+FMT(oldContract.plan)+' → '+FMT(plan)+')':''),cid);
       if(client){
@@ -5145,7 +5222,7 @@ function saveContract(contractId,cid){
     // Add new (fallback path — openAddContract normally handles creation itself)
     S.contracts.push({
       id:UID(),cid:cid,title:title,desc:'',plan:plan,type:'Standard',
-      subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,
+      subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,employeePayrollTier:empTier,
       startDate:startDate,endDate:endDate,status:'draft',createdDate:TODAY()
     });
     applyContractLimitsToClient(cid,packageId,plan);
@@ -5172,11 +5249,12 @@ function openProposeUpgrade(contractId,cid){
       <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">📦 New Package</label>
       <div style="display:flex;flex-direction:column;gap:8px">
         ${Object.values(SUBSCRIPTION_PACKAGES).map(pkg=>`
-          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="updateContractPriceLive()">
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="onPackageChange()">
             <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id===(con.subscriptionPackage||'essential')?'checked':''}/>
             <div style="flex:1"><div style="font-weight:700;font-size:13px">${pkg.name}</div><div style="font-size:10.5px;color:var(--t3)">Tier ${pkg.tier} · ${pkg.chatLevel} chat · ${pkg.reportsFreq} reports</div></div>
           </label>`).join('')}
       </div>
+      <div id="pkg-detail-panel" style="background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:10px 12px;margin-top:8px"></div>
     </div>
     <div style="margin-top:12px">
       <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👤 Data Entry Mode</label>
@@ -5186,6 +5264,21 @@ function openProposeUpgrade(contractId,cid){
       </div>
     </div>
     <div id="contract-addons" style="margin-top:12px"></div>
+    <div style="margin-top:12px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👥 Employees &amp; Payroll</label>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
+          <input type="radio" name="contract-emp-tier" value="none" ${!con.employeePayrollTier||con.employeePayrollTier==='none'?'checked':''} onclick="updateContractPriceLive()"/> Not needed
+        </label>
+        ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
+        <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
+          <input type="radio" name="contract-emp-tier" value="${tierNum}" ${con.employeePayrollTier===tierNum?'checked':''} onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on
+        </label>`).join('')}
+        <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
+          <input type="radio" name="contract-emp-tier" value="custom" ${con.employeePayrollTier==='custom'?'checked':''} onclick="updateContractPriceLive()"/> More than 7 — custom quote
+        </label>
+      </div>
+    </div>
     <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center;margin-top:12px">
       <div style="font-size:11px;color:var(--t3);margin-bottom:4px">New Total Monthly Price</div>
       <div id="contract-price-display" style="font-size:24px;font-weight:800;color:var(--gold)">€${con.plan||0}</div>
@@ -5193,11 +5286,12 @@ function openProposeUpgrade(contractId,cid){
   `,()=>{
     const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
     const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
-    const hoursAddon=!!document.getElementById('contract-hours-addon')?.checked;
-    const cashierAddon=!!document.getElementById('contract-cashier-addon')?.checked;
-    const newPlan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon);
-    if(newPlan===con.plan&&packageId===con.subscriptionPackage&&isAdminMode===con.isAdminMode){toast('❌ This matches the current plan already — nothing to propose');return;}
-    con.pendingUpgrade={subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,newPlan,
+    const hoursAddon=getSelectedAddonLevel('hours');
+    const cashierAddon=getSelectedAddonLevel('cashier');
+    const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
+    const newPlan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode);
+    if(newPlan===con.plan&&packageId===con.subscriptionPackage&&isAdminMode===con.isAdminMode&&empTier===(con.employeePayrollTier||'none')){toast('❌ This matches the current plan already — nothing to propose');return;}
+    con.pendingUpgrade={subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,employeePayrollTier:empTier,newPlan,
       proposedDate:TODAY(),lastReminderDate:TODAY()};
     logAudit('edit','contract','Proposed an upgrade for '+(S.clients.find(cl=>cl.id===cid)?.name||'')+' — €'+con.plan+' → €'+newPlan+' (awaiting client approval)',cid);
     sv();closeModal();renderContent();
@@ -5205,8 +5299,8 @@ function openProposeUpgrade(contractId,cid){
   },'Propose to Client');
   setTimeout(()=>{
     renderContractAddonsSection();
-    const h=document.getElementById('contract-hours-addon');if(h)h.checked=!!con.hoursAddon;
-    const c=document.getElementById('contract-cashier-addon');if(c)c.checked=!!con.cashierAddon;
+    const hRadio=document.querySelector('input[name="contract-hours-level"][value="'+(con.hoursAddon||'none')+'"]');if(hRadio)hRadio.checked=true;
+    const cRadio=document.querySelector('input[name="contract-cashier-level"][value="'+(con.cashierAddon||'none')+'"]');if(cRadio)cRadio.checked=true;
     updateContractPriceLive();
   },50);
 }
@@ -5219,6 +5313,7 @@ function approvePendingUpgrade(contractId){
     con.isAdminMode=u.isAdminMode;
     con.hoursAddon=u.hoursAddon;
     con.cashierAddon=u.cashierAddon;
+    con.employeePayrollTier=u.employeePayrollTier;
     con.plan=u.newPlan;
     con.pendingUpgrade=null;
     // ⭐ موافقة العميل الصريحة تُغني عن أي قفل إضافي - الشروط الجديدة تسري فورًا
@@ -13642,7 +13737,7 @@ function openClientModal(c){
         <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">📦 Package *</label>
         <div style="display:flex;flex-direction:column;gap:8px">
           ${Object.values(SUBSCRIPTION_PACKAGES).map(pkg=>`
-            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="updateContractPriceLive()">
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="onPackageChange()">
               <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id==='essential'?'checked':''} style="flex-shrink:0"/>
               <div style="flex:1">
                 <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name}</div>
@@ -13650,6 +13745,7 @@ function openClientModal(c){
               </div>
             </label>`).join('')}
         </div>
+        <div id="pkg-detail-panel" style="background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:10px 12px;margin-top:8px"></div>
       </div>
       <div style="margin-top:12px">
         <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👤 Data Entry Mode *</label>
@@ -13663,6 +13759,21 @@ function openClientModal(c){
         </div>
       </div>
       <div id="contract-addons" style="margin-top:12px"></div>
+      <div style="margin-top:12px">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👥 Employees &amp; Payroll (separate pricing, on request)</label>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
+            <input type="radio" name="contract-emp-tier" value="none" checked onclick="updateContractPriceLive()"/> Not needed
+          </label>
+          ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
+            <input type="radio" name="contract-emp-tier" value="${tierNum}" onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on
+          </label>`).join('')}
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
+            <input type="radio" name="contract-emp-tier" value="custom" onclick="updateContractPriceLive()"/> More than 7 — custom quote
+          </label>
+        </div>
+      </div>
       <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center;margin-top:12px">
         <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Monthly Price</div>
         <div id="contract-price-display" style="font-size:24px;font-weight:800;color:var(--gold)">€0</div>
@@ -13705,9 +13816,10 @@ function openClientModal(c){
     if(isN){
       const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
       const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
-      const hoursAddon=!!document.getElementById('contract-hours-addon')?.checked;
-      const cashierAddon=!!document.getElementById('contract-cashier-addon')?.checked;
-      const planVal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon);
+      const hoursAddon=getSelectedAddonLevel('hours');
+      const cashierAddon=getSelectedAddonLevel('cashier');
+      const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
+      const planVal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode);
       const newClient={
         id:UID(),
         name:n,
@@ -13754,6 +13866,7 @@ function openClientModal(c){
         isAdminMode,
         hoursAddon,
         cashierAddon,
+        employeePayrollTier:empTier,
         startDate:TODAY(),
         endDate:'',
         status:'draft',
