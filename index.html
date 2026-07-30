@@ -4836,9 +4836,9 @@ const CASHIER_ADDON_PRICE=20;
 // النهائي الذي يراه العميل - أما شاشات الأدمن (إضافة/تعديل عقد) فتحتاج تفاصيل
 // التسعير الكاملة كما كانت (مستويات حسب عدد الموظفين + خيار مخصَّص لأكثر من 7)
 const EMPLOYEE_PAYROLL_PRICING={
-  1:{maxCount:2,manual:8,adminAddon:5},
-  2:{maxCount:3,manual:10,adminAddon:8},
-  3:{maxCount:7,manual:16,adminAddon:9}
+  1:{maxCount:2,manual:20,adminAddon:10},
+  2:{maxCount:3,manual:35,adminAddon:20},
+  3:{maxCount:7,manual:80,adminAddon:50}
 };
 // ⭐ يحسب تكلفة إضافة الموظفين/الرواتب لعرضها بشاشة الأدمن فقط (لا تظهر
 // كتفصيل بمستند العقد النهائي للعميل - فقط "موجود/غير موجود" هناك)
@@ -4847,8 +4847,9 @@ function computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice){
   if(empTier==='custom')return customEmpPrice||0;
   const tier=EMPLOYEE_PAYROLL_PRICING[empTier];
   if(!tier)return 0;
-  // الموظفون والرواتب معًا (نفس المستوى لكليهما)
-  return 2*(tier.manual+(isAdminMode?tier.adminAddon:0));
+  // ⚠️ الأرقام الجديدة تمثِّل بالفعل السعر الإجمالي للموظفين + الرواتب معًا
+  // (لا حاجة لمضاعفته كما كان سابقًا حين كان السعر لخدمة واحدة فقط)
+  return tier.manual+(isAdminMode?tier.adminAddon:0);
 }
 function computeContractTotal(packageId,isAdminMode,hoursEnabled,cashierEnabled){
   const pkg=SUBSCRIPTION_PACKAGES[packageId];
@@ -4936,7 +4937,7 @@ function openAddContract(cid){
           </label>
           ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
-            <input type="radio" name="contract-emp-tier" value="${tierNum}" onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(employees + payroll = 2× that)</span>
+            <input type="radio" name="contract-emp-tier" value="${tierNum}" onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(covers employees + payroll together)</span>
           </label>`).join('')}
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
             <input type="radio" name="contract-emp-tier" value="custom" onclick="updateContractPriceLive()"/> More than 7 employees — <span style="color:var(--t3)">custom quote required, not auto-priced</span>
@@ -5152,7 +5153,7 @@ function openEditContract(contractId,cid){
           </label>
           ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;${locked?'opacity:.5':'cursor:pointer'};font-size:11.5px">
-            <input type="radio" name="contract-emp-tier" value="${tierNum}" ${con.employeePayrollTier===tierNum?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(employees + payroll = 2× that)</span>
+            <input type="radio" name="contract-emp-tier" value="${tierNum}" ${con.employeePayrollTier===tierNum?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(covers employees + payroll together)</span>
           </label>`).join('')}
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;${locked?'opacity:.5':'cursor:pointer'};font-size:11.5px">
             <input type="radio" name="contract-emp-tier" value="custom" ${con.employeePayrollTier==='custom'?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> More than 7 employees — <span style="color:var(--t3)">custom quote required, not auto-priced</span>
@@ -5296,7 +5297,7 @@ function openProposeUpgrade(contractId,cid){
         </label>
         ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
         <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
-          <input type="radio" name="contract-emp-tier" value="${tierNum}" ${con.employeePayrollTier===tierNum?'checked':''} onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on
+          <input type="radio" name="contract-emp-tier" value="${tierNum}" ${con.employeePayrollTier===tierNum?'checked':''} onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(covers employees + payroll together)</span>
         </label>`).join('')}
         <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
           <input type="radio" name="contract-emp-tier" value="custom" ${con.employeePayrollTier==='custom'?'checked':''} onclick="updateContractPriceLive()"/> More than 7 — custom quote
@@ -13794,7 +13795,7 @@ function openClientModal(c){
           </label>
           ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
-            <input type="radio" name="contract-emp-tier" value="${tierNum}" onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on
+            <input type="radio" name="contract-emp-tier" value="${tierNum}" onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(covers employees + payroll together)</span>
           </label>`).join('')}
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
             <input type="radio" name="contract-emp-tier" value="custom" onclick="updateContractPriceLive()"/> More than 7 — custom quote
