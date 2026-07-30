@@ -1,5 +1,5 @@
 // src/index.js
-var TOKEN_TTL_MS = 4 * 60 * 60 * 1e3; // ⚠️⚠️ إصلاح أمني: تقليص من 8 لـ4 ساعات - يُنصَّف نافذة صلاحية أي توكن مسروق. لا يؤثر على المستخدم النشط فعليًا (يُجدَّد تلقائيًا في الخلفية كل فترة عبر scheduleTokenRefresh في العميل)، فقط يُقصِّر عمر توكن خامل/مسروق فعليًا.
+var TOKEN_TTL_MS = 4 * 60 * 60 * 1e3;
 var LOGIN_MAX_ATTEMPTS = 5;
 var LOGIN_LOCKOUT_MS = 15 * 60 * 1e3;
 var MAX_ATTEMPTS_WINDOW_MS = 60 * 1e3;
@@ -254,11 +254,12 @@ INVOICES (per client):
 - Recurring invoice schedules can be set up and stopped (already-generated invoices are kept when stopped).
 - Invoice numbers are sequential per client and never reused, even after deletion — the counter only ever moves forward. Saving a duplicate/manually-typed number that collides with another invoice for the same client is blocked.
 - CREDIT NOTES (Creditnota): any invoice can have a credit note issued against it ("↩ Issue Credit Note" button) instead of editing or deleting it — the correct legal way to correct an already-issued Dutch invoice. A credit note references the original invoice's number, is capped at the invoice's remaining creditable amount (accounting for any prior partial credit notes), automatically copies the original's BTW rate/type so it nets out correctly in the BTW report, and is clearly labeled "↩ Credit Note" in the invoice list (with a link back to the original). The original invoice itself is never modified. Credit note PDFs are titled "CREDITNOTA" and reference the original invoice number instead of a due date.
+- PROOF OF RETURN: issuing a credit note requires the date of the original transaction (mandatory) and, separately, at least one of a note or an attached photo/document as evidence (one of the two is mandatory, not both) — an optional free-text reference to the original transaction can also be added. This applies the same way to expense credit notes received (below).
 
 EXPENSES (per client):
 - Has a category and supplier. Reverse-charge purchases received (domestic or foreign supplier) are their own BTW type: "verlegd_received" — no VAT was actually paid to the supplier; the rate is used only to self-assess VAT for the return (net effect €0 on the return, appears in reverse-charge-received rubrieken 2a/4b).
 - Categories include a dedicated "Representatie/Relaties" (representation/entertainment/gifts) category. Selecting it shows a warning that BTW on these costs is generally not deductible (art. 16 BUA) and income/corporate tax deductibility is limited (a threshold or a flat 80% election) — the app automatically excludes this expense's BTW from the reclaimable VAT total in the BTW report (both when creating and when editing an expense).
-- CREDIT NOTES RECEIVED: if a supplier issues a credit note against an already-recorded expense (e.g. returned goods, a pricing correction), use "↩ Log Credit Note Received" on that expense instead of editing/deleting it — creates a separate negative record referencing the original expense, copying its BTW type/rate automatically so it nets out correctly in the BTW report, without touching the original.
+- CREDIT NOTES RECEIVED: if a supplier issues a credit note against an already-recorded expense (e.g. returned goods, a pricing correction), use "↩ Log Credit Note Received" on that expense instead of editing/deleting it — creates a separate negative record referencing the original expense, copying its BTW type/rate automatically so it nets out correctly in the BTW report, without touching the original. Same proof-of-return requirement as invoice credit notes (see above): original transaction date is mandatory, plus a note or an attached photo/document (at least one of the two).
 - Receipts can be photographed and read automatically via OCR (Google Cloud Vision). The system "learns" per-supplier typical VAT rate and amount over time (Settings → Manage Learned Suppliers) and flags amounts that deviate significantly from what's usually paid to that supplier, asking for manual verification.
 - OCR confidence is shown per field (color-coded); low-quality scans are flagged for careful manual review.
 - Recurring expense schedules (e.g. rent, fixed monthly subscriptions) can be set up when adding a new manual expense (checkbox + monthly/quarterly/yearly frequency) and stopped later; already-generated expenses are kept when a schedule is stopped. Shown in a "Recurring expense schedules" table on the client's Expenses screen (admin-only), same pattern as recurring invoices.
@@ -269,7 +270,7 @@ HOURS:
 - Tracks progress toward the Dutch "urencriterium" — 1,225 hours/year required for the self-employed deduction (Zelfstandigenaftrek), and separately the 525-hour "Meewerkaftrek" threshold for an unpaid helping partner (used for ANB's own internal hour tracking between its owner and helping partner).
 - Every hour entry creation, edit, and deletion is recorded in the audit log, and is protected by the same closed-period lock as invoices/expenses — editing/deleting an hour entry dated within an already-closed accounting period requires an explicit admin override (clients are blocked outright). This matters because the hour log is the direct evidentiary record for urencriterium/Meewerkaftrek tax claims.
 - A soft plausibility check warns (without blocking) if logging an entry would bring one person's total for a single day above 16 hours.
-- The floating timer widget and the "Unbilled Hours" dashboard indicator only appear on a client's dashboard if the Hours section is enabled for that client (Edit Client → Configuration → Visible Sections). If Hours is disabled for a client, neither the timer nor the unbilled-hours count shows up for them at all.
+- Hours Register is now a standalone optional add-on billed at €5/month (Basic) or €10/month (Additional — adds urencriterium/Meewerkaftrek tracking) — available on any subscription package, not tied to a specific one (see CONTRACTS & PRICING below). If not added at all for a client, neither the floating timer widget nor the "Unbilled Hours" dashboard indicator appears for them.
 
 CASH LEDGER (distinct from Cashier — for businesses that occasionally get paid in cash, not walk-in service businesses):
 - Record Cash Payment: settles a specific existing invoice partially or fully in cash; invoice only shows "Paid" once fully covered.
@@ -278,6 +279,7 @@ CASH LEDGER (distinct from Cashier — for businesses that occasionally get paid
 - Personal Drawing: money taken from the till for personal (non-business) use — affects the owner's capital account, NOT the profit & loss statement, and is NOT a business expense.
 - A warning appears if a cash entry is backdated by more than 1 day, since the Belastingdienst expects daily logging of cash takings.
 - Cash amounts that came from a Cashier day posting are labeled clearly (e.g. "🧾 Cashier — 18/07/2026 (invoice number)") in the Cash Ledger list, not just a bare invoice number, so the connection between the two features is visible at a glance.
+- If a client has Cashier enabled, the Cash Ledger screen is hidden entirely for them (they use the Cashier's own Personal Drawing button instead — see below) to avoid the two features overlapping.
 
 CASHIER (separate feature, for walk-in/service businesses — driving instructors, hairdressers, barbers, etc.):
 - Admin (or the client themselves) configures quick-tap "Services" with a name, a color (chosen from a preset palette, shown as a left accent stripe and tinted card background — not an emoji), and price (which can be marked editable at time of use, e.g. for a custom amount).
@@ -285,8 +287,13 @@ CASHIER (separate feature, for walk-in/service businesses — driving instructor
 - "Post Today" performs the daily reconciliation: requires counting the actual physical cash on hand first (compared against everything currently unposted regardless of which date it was logged under, since that cash is still physically in the drawer either way; flags a discrepancy — beyond a small €5 tolerance — without revealing which direction it's off, to prevent "solving for" the expected number instead of counting for real), then creates one invoice for the day's takings and locks the entries. Can only be done once per day.
 - STALE/FORGOTTEN DAYS: if a previous day's Cashier entries were never manually posted, the client is blocked from doing anything new in the Cashier the next time they open it — they must first go through the same mandatory cash-count gate for that specific stale day before continuing. There is NO automatic silent posting of forgotten days — a real physical cash count is always required before a day is posted, no matter how old. As a courtesy, a once-daily scheduled server job also sends a push notification to the client if a stale unposted day exists, reminding them to open the app and close it out — this reminder never posts anything itself, it only nudges the client to do the count.
 - If a day has zero entries when trying to post manually (a genuinely empty day, as opposed to a stale unposted one), the client must explain why first (no activity that day, or a genuine recording error) — a "missing day exception" that requires ANB admin approval before the client can continue using the Cashier.
+- LOG RETURN: a dedicated "↩ Log Return" button records a refund as a negative entry, always dated today (since the cash physically leaves the till today regardless of when the original sale happened) — automatically flows into today's unposted total and the next cash count. Requires the date of the original transaction (mandatory), an optional reference to it, and a note or attached photo/document as evidence (at least one of the two).
+- PERSONAL DRAWING: also available directly from the Cashier screen itself (same "🏠 Personal Drawing" button and behavior as the Cash Ledger's) — no need to switch screens for this.
 - Cashier Log (admin-only screen): full history of all cashier transactions with a reprint button per entry.
 - Receipt printing: after any cashier sale, the app offers to print a physical receipt via the browser's native print dialog (works with AirPrint on iOS or any connected printer on Android) — this is not a direct Bluetooth connection, it uses standard printing so it works across devices without special hardware pairing.
+- Cashier is now a standalone optional add-on billed at €10/month (Basic) or €20/month (Additional — adds electronic payment/Mollie/SumUp integration) — available on any subscription package, not tied to a specific one (see CONTRACTS & PRICING below).
+
+LIVE CASH BALANCE: the admin sees a real-time cash balance card directly under the client info card whenever viewing a client that has Cash Ledger or Cashier enabled (hidden entirely otherwise, and never shown for ANB's own account) — no button or click needed, it's always visible and always current. Shows the same "expected cash balance" figure the client will be asked to count against during their next Cashier day-close, so admin and client are always looking at the same number.
 
 ELECTRONIC PAYMENT (Cashier add-on):
 - Either the admin or the client themselves can connect the CLIENT's OWN payment provider account (their money goes directly to them, never through ANB): Mollie (live) or SumUp (live, additionally requires a "Merchant Code" alongside the API key) — Stripe is not yet implemented.
@@ -312,7 +319,7 @@ EMPLOYEES / PAYROLL:
 - Salary types: Fixed Monthly or Variable Hourly.
 - Benefits: Vacation money (Vakantiegeld, 8% of gross annual salary, typically paid out once in May, or accrued monthly and shown as a running liability until then), 13th month bonus (accrues 1/12 of gross monthly, paid as a lump sum in December, same accrual principle as vacation money), homework allowance (tax-free up to the official rate, based on homework days per month), travel allowance (tax-free per-km rate or fixed monthly amount), pension percentage.
 - Payroll tax (Loonheffing) is estimated using official tax brackets — the app explicitly disclaims this needs verification before official use.
-- Payslips can be generated (status: CONCEPT while the month hasn't ended yet, then CONFIRMED) and exported as PDF, alongside a payslip history per employee.
+- Payslips can be generated (status: CONCEPT while the month hasn't ended yet, then CONFIRMED) and exported as PDF, alongside a payslip history per employee. Generating a payslip automatically posts a matching payroll-cost journal entry (gross pay plus vacation money and 13th-month amounts accrued that month, plus allowances) so payroll actually reduces taxable profit in the P&L and Tax Liability reports — it no longer sits isolated from the rest of the accounting.
 - Contract types: Permanent (Onbepaalde tijd) or Fixed-term (Bepaalde tijd) — fixed-term contracts ending within 90 days are flagged in the Employee Statistics report.
 - LEGAL COMPLIANCE BUILT INTO THE EMPLOYEE SCREENS (all verified against 2026 Dutch labor law figures):
   - Minimum wage check: compares the employee's effective hourly rate (converted from a monthly salary if needed) against the current statutory minimum by age, warning at save time if it's below the legal minimum.
@@ -323,24 +330,30 @@ EMPLOYEES / PAYROLL:
   - Aanzegplicht (notification obligation): an active reminder fires when a fixed-term contract of 6+ months is within 30 days of its end date, since Dutch law requires written notice of renewal intent by then (or a one-month-salary penalty applies).
   - Vacation days and sick leave: each employee has a vacation-day entitlement (defaulting to the legal minimum of 4× weekly work days) with a log of days taken and a running remaining balance, and a separate sick-leave log per period with a reminder of the employer's minimum 70%-continued-pay obligation (up to 2 years) per period logged.
 - Reports: "Employee Financial Report" (payroll costs & payments, YTD gross/loonheffing/pension, outstanding accrued liabilities, per-employee breakdown) and "Employee Statistics Report" (headcount, average cost/tenure, contract-type/salary-type/job-title/nationality breakdowns, upcoming fixed-term contract endings). There's also a general "Payroll Report".
+- EMPLOYEE/PAYROLL PRICING: managed and quoted separately from the standard subscription packages — priced per tier by headcount (up to 2 / up to 3 / up to 7 employees, each with a Manual price and an Admin add-on, applied to employees and payroll together). More than 7 employees is treated as a genuine change in the nature of the work and is deliberately NOT auto-priced — it requires a custom quote set manually on the contract, since managing that many employees is a materially bigger undertaking than the standard tiers.
 
-CONTRACTS & SERVICE AGREEMENTS:
-- Per-client service contracts are open-ended by default (monthly, auto-continuing, no fixed end date) — they only stop via explicit termination (1-month statutory notice), not through any "renewal" step. New clients go through a signing workflow (agreement sent → client reviews & can request changes or sign → admin approves) before their accounting tabs unlock — while pending, the client only sees a waiting screen plus the ability to review/sign the agreement.
-- Editing an existing contract's price specifically re-locks the client's accounting (same as a brand-new contract) until they sign the updated agreement — since that's a material change to what they owe. Editing only the title, description, or dates does not trigger this, since nothing financially material changed.
-- "Add Contract" always creates a brand-new client together with the contract (all the same required legal fields as "Add Client" — see NEW CLIENT CREATION below) — it does NOT offer a way to attach a new contract to an already-existing client.
-- Subscription packages themselves are customizable (Settings) — existing signed contracts keep their price even if package definitions change later.
+CONTRACTS & PRICING (Essential / Advanced / Premium):
+- Every client contract selects one of three fixed packages — Essential (Tier 1 volumes, Basic chat, annual reports), Advanced (Tier 2 volumes, Advanced chat, quarterly reports), or Premium (Tier 3 volumes, Premium chat, monthly reports). BTW filing (quarterly) and the annual business income tax return are included identically in all three packages, since ANB always performs these regardless of package.
+- Each package has its own monthly volume limit for Invoices, Expenses, and Bank reconciliation (e.g. Essential: up to 10 invoices/25 expenses/40 bank transactions per month). A 15% tolerance is applied on top of each limit before anything is billed as overage (e.g. Essential's 10-invoice limit tolerates up to 12 before overage kicks in).
+- DATA ENTRY MODE (Manual vs Admin) is chosen once for the whole contract, not per service: "Manual" means the client enters their own invoices/expenses/bank data; "Admin" means ANB staff enters it on their behalf, at a higher price reflecting that real staff time. This choice affects the price of the Invoices/Expenses/Bank/Employees/Payroll components and the overage rate that applies.
+- HOURS REGISTER and CASHIER are both fully independent, optional add-ons available on ANY package (not tied to Premium or any specific tier) — see the HOURS and CASHIER sections above for their current prices and levels (Basic/Additional).
+- OVERAGE BILLING: actual monthly usage (invoices/expenses/bank transactions) is compared against the package's tolerated limit; anything genuinely over that is billed automatically as an extra line on the client's next monthly subscription invoice (computed from the previous, now-complete month), with a simultaneous notification to the admin and a note visible to the client on that invoice — no manual intervention needed. The overage rate itself differs between Manual and Admin mode (Admin's rate is meaningfully higher, since ANB is the one doing the extra work).
+- The contract document itself (and the client-facing signed agreement) shows only the total monthly price plus a plain-language list of what's included — it never breaks down the price per service/component, by design, to avoid per-item price negotiation.
+- Contracts are open-ended by default (no fixed end date) — they only stop via explicit termination (1-month statutory notice), not through any "renewal" step. New clients go through a signing workflow (agreement sent → client reviews & can request changes or sign → admin approves) before their accounting tabs unlock — while pending, the client only sees a waiting screen plus the ability to review/sign the agreement.
+- PRICE CHANGES vs UPGRADES: an admin directly editing an existing contract's price (package, mode, or addons) re-locks the client's accounting immediately until they sign the updated agreement, same as a brand-new contract — since that's a unilateral change to what they owe. By contrast, an admin can "🔼 Propose Upgrade" a new package/price to a client — this does NOT lock anything; the client keeps using their current plan completely uninterrupted, and only sees the proposed upgrade as a card on their contract with Approve/Decline buttons. The new terms only take effect once the client explicitly approves. If a proposed upgrade sits unanswered for 7+ days, the admin gets an automatic reminder on next login so it doesn't get forgotten.
+- "Add Contract" always creates a brand-new client together with the contract (all the same required legal fields as "Add Client" — company name, email, contact person, KVK, BTW, IBAN, full address) — it does NOT offer a way to attach a new contract to an already-existing client.
 
 DEBTORS / CREDITORS:
 - Contacts are tagged as "debtor" (customer who owes money) or "creditor" (supplier owed money), each with a ledger account number. A "General Debtors"/"General Creditors" catch-all contact exists per client for entries not tied to a specific named contact.
 
-REPORTS available (Reports screen, grouped): Summary, Profit & Loss (P&L), BTW report (VAT return by official Belastingdienst rubrieken — 1e domestic reverse charge issued, 2a/4b reverse charge received self-assessed [combined for simplicity in the UI, admin should verify the exact box before filing], 3a export outside EU, 3b EU B2B reverse charge, 5b deductible input VAT which automatically excludes non-deductible representation-cost VAT), Tax Liability (estimated personal Inkomstenbelasting or corporate Vennootschapsbelasting), Cash Flow, Debtors, Expenses, Employee Financial, Employee Statistics, Payroll, Loan Overview (only appears if the client has at least one financed asset), Hours by Category, and Income Verification Statement (a client-facing, one-page formal statement of net business income for a chosen period — meant to be handed directly to a bank, embassy, or IND for mortgage/visa/residency-permit purposes, distinct from all the other internal/accounting-purpose reports). Year-over-year comparison is available on the Summary, P&L, and Cash Flow reports.
+REPORTS available (Reports screen, admin-only — this entire section, including Income Verification Statement, is never shown to clients under any configuration): Summary, Profit & Loss (P&L), BTW report (VAT return by official Belastingdienst rubrieken — 1e domestic reverse charge issued, 2a/4b reverse charge received self-assessed [combined for simplicity in the UI, admin should verify the exact box before filing], 3a export outside EU, 3b EU B2B reverse charge, 5b deductible input VAT which automatically excludes non-deductible representation-cost VAT), Tax Liability (estimated personal Inkomstenbelasting or corporate Vennootschapsbelasting — both now correctly reduced by actual payroll costs, not just operating expenses and depreciation), Cash Flow, Debtors, Expenses, Employee Financial, Employee Statistics, Payroll, Loan Overview (only appears if the client has at least one financed asset), Hours by Category, and Income Verification Statement (a client-facing, one-page formal statement of net business income for a chosen period — meant to be handed directly to a bank, embassy, or IND for mortgage/visa/residency-permit purposes; even though the document itself is client-facing, it is only ever generated by an admin after review, never accessed or triggered by the client directly). Year-over-year comparison is available on the Summary, P&L, and Cash Flow reports.
 
 PERIOD LOCKING: Once a year or quarter is "closed" for a client (after filing that period's BTW return), transactions dated within it are protected — clients can no longer edit/delete them, and admins must explicitly confirm an override for any genuine correction. Periods can be reopened if needed. This protection covers invoices, expenses, and hour entries.
 
 IMPORT: A template-based workflow (download template → fill with data from the client's previous accounting office → upload) to migrate historical data in, with required supporting files (bank statements, prior reports) and a full import history that can be reversed (removes all records + the journal entry created by that batch). Not applicable to ANB's own account (it isn't switching from a previous bookkeeper).
 
 NEW CLIENT CREATION & PASSWORD SECURITY:
-- Every new client (created via "Add Client" or "Add Contract" — both require the exact same legal fields: company name, email, contact person, KVK number, BTW number, IBAN, full address) automatically gets a one-time, randomly-generated temporary password immediately after creation, shown once to the admin in a dialog to copy and share with the client through a trusted channel (phone, in person) — it is never shown again after that.
+- Every new client (created via "Add Client" or "Add Contract" — both require the exact same legal fields, and both walk through the same package/mode/addon selection described in CONTRACTS & PRICING above) automatically gets a one-time, randomly-generated temporary password immediately after creation, shown once to the admin in a dialog to copy and share with the client through a trusted channel (phone, in person) — it is never shown again after that.
 - KVK and BTW numbers are validated for correct Dutch format before saving (KVK: exactly 8 digits; BTW: NL + 9 characters + B + 2 digits, e.g. NL123456789B01), and checked for duplicates against every other existing client — saving a KVK/BTW number already used by another client is blocked with a clear message naming the conflicting client.
 - The exact same one-time-password mechanism is used whenever an admin resets an existing client's password (Settings → Clients tab, or the client's own screen → "Reset Password") for a forgotten-password situation — self-service "forgot password" is NOT available; only an admin can issue a new temporary password. The login screen's "Need access?" link does not let anyone set a password themselves — it only shows a message directing them to contact ANB (or, for admins, another administrator) directly.
 - Any account that logs in with such a temporary password is immediately shown a mandatory, non-dismissible "Set Your Password" screen before anything else in the app becomes usable — there is no way to skip, close, or work around this screen; the account cannot proceed until a new password (min. 6 characters, confirmed twice) is successfully saved. This applies identically whether the temporary password came from brand-new client creation or from an admin-initiated password reset.
@@ -351,15 +364,16 @@ APPEARANCE: A dark mode toggle (🌙/☀️ icon) sits next to the language swit
 
 SETTINGS is organized into three tabs (the previous separate "Company" tab was removed):
 - Admins tab: the list of admin accounts (add/remove — Super Admin role is protected from being reset or removed by regular admins), each admin's password reset button, and Two-Factor Authentication (2FA) setup for the currently logged-in admin's own account.
-- Clients tab: the list of client accounts with a password-reset button per client and a button to view a copy of their signed contract (PDF), plus Subscription Packages management (the plans offered when creating new client contracts).
+- Clients tab: the list of client accounts with a password-reset button per client and a button to view a copy of their signed contract (PDF).
 - Danger Zone tab: automatic daily Backups (stored completely separately from the live database, with manual "Backup Now", a list of available backups, and Restore which takes an automatic safety backup of the current state first), and permanent client deletion (gated by re-entering the admin's own password).
-- ANB's own company details (company name, KVK, BTW, IBAN, address, tagline, website, and Professional Indemnity Insurance details referenced in service agreement liability clauses) live in ANB's own record under Edit Client — reached the same way as editing any other client (ANB is modeled as a special client itself) — rather than a separate Settings tab.
+- ANB's own company details (company name, KVK, BTW, IBAN, address, tagline, website, and Professional Indemnity Insurance details referenced in service agreement liability clauses) live in ANB's own record under Edit Client — reached the same way as editing any other client (ANB is modeled as a special client itself) — rather than a separate Settings tab. Billing/price/package fields do not apply to ANB's own record and are hidden there.
+- A client's price, package, and monthly transaction limits are no longer editable from the client's own Configuration tab (that used to silently bypass the price-change lock) — they are managed exclusively from that client's Contract.
 
 TRASH & ARCHIVE: Deleted items go to Trash first; after 30 days non-financial records (clients, contacts) are archived (hidden but never actually deleted) while financial records (invoices, expenses, hours, documents) are archived and kept for the full legal 7-year retention period from the record's own date before being permanently purged.
 
 CLIENT-SIDE FEATURES: A first-time Welcome onboarding (3 short animated slides) shown once per client account, plus a "Quick Start" checklist on their dashboard, a searchable Help Center, and messaging with ANB that supports file/image attachments (reusing the same upload mechanism as Documents) with a full edit history preserved on any edited message.
 
-ROLES: Admin (ANB staff) sees and manages everything for every client. Clients only see their own data; which optional sections they can see is individually toggled per client by the admin in Edit Client → Configuration → Visible Sections.
+ROLES: Admin (ANB staff) sees and manages everything for every client. Clients only see their own data; which optional sections they can see is individually toggled per client by the admin in Edit Client → Configuration → Visible Sections (Reports is the one exception — it is always admin-only and cannot be toggled visible for any client).
 
 GLOBAL SEARCH (admin-only): A "🔍" button pinned permanently in the topbar opens a unified search across clients, invoices, expenses, documents, and contracts at once — also reachable via Ctrl/Cmd+K.
 
@@ -647,9 +661,6 @@ async function handleLogin(request, env, cors) {
     account.passwordIterations = rec.passwordIterations;
     delete account.password; delete account.pwCustom; delete account.pw;
   }
-  // ⭐⭐ إصلاح أمني: نتأكد كل حساب له "إصدار كلمة مرور" (pwv) - إن لم يوجد بعد
-  // (حسابات قديمة قبل هذا التحديث)، نولِّد واحدًا الآن ونحفظه، ليصبح كل توكن
-  // صادر من الآن فصاعدًا مرتبطًا بإصدار محدَّد يمكن إبطاله عند تغيير كلمة المرور
   if (!account.pwv) account.pwv = generatePwv();
   if (role === "admin") account.lastLogin = (new Date()).toISOString().slice(0, 10);
   list[idx] = account;
@@ -714,10 +725,6 @@ async function makePasswordRecord(plainPassword) {
   const passwordHash = await hashPasswordPBKDF2(plainPassword, passwordSalt, PBKDF2_ITERATIONS);
   return { passwordSalt, passwordHash, passwordIterations: PBKDF2_ITERATIONS };
 }
-// ⭐ يولِّد "إصدار كلمة مرور" (pwv) جديدًا - سلسلة عشوائية قصيرة تُحفَظ على
-// الحساب وتُضمَّن في كل توكن صادر بعدها. أي تغيير لكلمة المرور يولِّد قيمة
-// جديدة مختلفة، فيصبح أي توكن قديم صادر بالقيمة السابقة غير صالح فورًا رغم
-// عدم انتهاء صلاحيته الزمنية بعد - إبطال حقيقي للجلسات الأخرى عند تغيير كلمة المرور
 function generatePwv() {
   const bytes = new Uint8Array(9);
   crypto.getRandomValues(bytes);
@@ -811,9 +818,6 @@ async function handleSetOwnPassword(request, env, cors) {
   delete account.password; delete account.pwCustom; delete account.pw;
   if (auth.payload.at === "client") account.pwSet = true;
   account.mustChangePassword = false;
-  // ⭐⭐ إصلاح أمني: كل تغيير كلمة مرور يُبطِل فورًا كل توكن سابق صادر بإصدار
-  // قديم (بما فيها أي جهاز آخر لم يسجِّل خروجًا صريحًا) - نُولِّد إصدارًا جديدًا
-  // الآن، ونصدر توكنًا جديدًا بهذا الإصدار للجهاز الحالي فقط أدناه
   account.pwv = generatePwv();
   clearFailedAttempts(account);
   list[idx] = account;
@@ -850,9 +854,6 @@ async function handleAdminSetPassword(request, env, cors) {
   delete account.password; delete account.pwCustom; delete account.pw;
   if (targetRole === "client") account.pwSet = true;
   account.mustChangePassword = !newPassword;
-  // ⭐⭐ إصلاح أمني: نفس منطق تغيير كلمة المرور الذاتي - إعادة تعيين كلمة مرور
-  // عميل/أدمن من قِبل الأدمن تُبطِل فورًا أي جلسة قديمة كانت مفتوحة على ذلك
-  // الحساب بأي جهاز، وليس فقط عند تسجيل الخروج اليدوي
   account.pwv = generatePwv();
   clearFailedAttempts(account);
   list[idx] = account;
@@ -880,8 +881,6 @@ async function handleGenerateTempPassword(request, env, cors) {
   account.passwordIterations = rec.passwordIterations;
   delete account.password; delete account.pwCustom; delete account.pw;
   account.pwSet = true;
-  // ⭐⭐ إصلاح أمني: كذلك عند توليد كلمة مرور مؤقتة جديدة لعميل - أي جلسة
-  // قديمة كانت لديه تُبطَل فورًا
   account.pwv = generatePwv();
   clearFailedAttempts(account);
   list[idx] = account;
@@ -1253,16 +1252,6 @@ async function signToken(claims, secret) {
   const sig = await hmacSign(payloadB64, secret);
   return `${payloadB64}.${sig}`;
 }
-// ⭐⭐ إصلاح أمني (نقطتان): (1) TOKEN_TTL_MS أُنقِص من 8 لـ4 ساعات أعلى الملف.
-// (2) تحقق جديد من "إصدار كلمة المرور" (pwv): كل توكن يحمل الآن قيمة pwv كما
-// كانت وقت إصداره - إن تغيّرت كلمة مرور الحساب لاحقًا (تغيير ذاتي، إعادة تعيين
-// من الأدمن، أو كلمة مرور مؤقتة جديدة)، تتغيَّر قيمة pwv المحفوظة على الحساب،
-// فيصبح أي توكن قديم يحمل القيمة السابقة مرفوضًا فورًا - حتى لو لم تنتهِ مدته
-// الزمنية بعد. هذا يُغلِق فعليًا ثغرة "توكن مسروق يبقى صالحًا حتى انتهاء صلاحيته
-// الطبيعية حتى بعد تغيير كلمة المرور" التي كانت موجودة سابقًا. توكنات صادرة
-// قبل هذا التحديث (بلا حقل pwv) تُقبَل دون هذا الفحص الإضافي لتفادي تسجيل خروج
-// جماعي فوري لكل المستخدمين النشطين لحظة النشر - ستحمل توكنات pwv تلقائيًا
-// بمجرد إعادة تسجيل الدخول أو تجديد الجلسة التالي.
 async function requireValidToken(request, env) {
   const authHeader = request.headers.get("Authorization") || "";
   const m = authHeader.match(/^Bearer\s+(.+)$/i);
@@ -1286,10 +1275,7 @@ async function requireValidToken(request, env) {
           return { ok: false, error: "Session invalidated — password was changed, please sign in again" };
         }
       }
-    } catch (e) {
-      // فشل فحص pwv (مثلًا عطل عابر بقاعدة البيانات) لا يجب أن يقفل مستخدمًا
-      // شرعيًا خارجًا - نمرِّر بحذر بدل رفض الطلب عند أي عطل مؤقت في هذا الفحص الإضافي وحده
-    }
+    } catch (e) {}
   }
   return { ok: true, payload };
 }
