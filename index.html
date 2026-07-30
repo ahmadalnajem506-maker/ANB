@@ -3998,6 +3998,7 @@ function launchApp(){
   migrateInvoiceStatuses();
   checkExpiredContracts();
   checkAanzegplichtReminders();
+  checkPendingUpgradeReminders();
   generateRecurringInvoices();
   migrateContactAccountNumbers();
   migrateOneTimeDebtors();
@@ -4790,104 +4791,286 @@ function getNextContractTitle(cid){
   });
   return 'Contract Extension '+(maxExt+1);
 }
+// ══════════════════════════════════════════════════════════════════
+// ⭐⭐⭐ نظام باقات الاشتراك الثابتة (Essential/Advanced/Premium) - ثمرة نقاش
+// مطوَّل حول التسعير. كل باقة تحدِّد حجم الفواتير/المصاريف/البنك + مستوى
+// الشات + تكرار التقارير. BTW والإقرار الضريبي ثابتان بكل الباقات (خدمة
+// مهنية تلتزم بها ANB دائمًا، لا فرق بالحجم). السعر النهائي = سعر الباقة
+// (Manual أو Admin، خيار ثابت للعقد كامل) + إضافات اختيارية (ساعات/كاشير).
+// لا يظهر أي تفصيل سعري لكل بند بالعقد نفسه - فقط المجموع + قائمة الخدمات.
+// ══════════════════════════════════════════════════════════════════
+const SUBSCRIPTION_PACKAGES={
+  essential:{id:'essential',name:'Essential',tier:1,chatLevel:'basic',reportsFreq:'annual',
+    hoursAddon:'allowed_forced_additional',
+    cashierAddon:'allowed_forced_additional'},
+  advanced:{id:'advanced',name:'Advanced',tier:2,chatLevel:'advanced',reportsFreq:'quarterly',
+    hoursAddon:'allowed_forced_basic',
+    cashierAddon:'allowed_forced_basic'},
+  premium:{id:'premium',name:'Premium',tier:3,chatLevel:'premium',reportsFreq:'monthly',
+    hoursAddon:'auto_included_basic',
+    cashierAddon:'auto_included_basic'}
+};
+const TIER_SERVICE_PRICING={
+  invoices:{1:{manual:15,adminAddon:10},2:{manual:24,adminAddon:13},3:{manual:30,adminAddon:20}},
+  expenses:{1:{manual:15,adminAddon:10},2:{manual:24,adminAddon:13},3:{manual:30,adminAddon:20}},
+  bank:{1:{manual:15,adminAddon:10},2:{manual:24,adminAddon:13},3:{manual:30,adminAddon:20}}
+};
+const TIER_LIMITS={
+  invoices:{1:10,2:30,3:60},
+  expenses:{1:25,2:50,3:100},
+  bank:{1:40,2:85,3:170}
+};
+const TIER_LIMITS_WITH_TOLERANCE={
+  invoices:{1:12,2:35,3:69},
+  expenses:{1:29,2:58,3:115},
+  bank:{1:46,2:98,3:196}
+};
+const OVERAGE_RATES={
+  invoices:{manual:7,admin:12,per:10},
+  expenses:{manual:10,admin:20,per:10},
+  bank:{manual:12,admin:20,per:30}
+};
+const CHAT_PRICING={basic:5,advanced:5,premium:8};
+const FIXED_SERVICE_PRICING={btw:5,ibAnnual:5,ibPersonalAddon:50};
+const REPORTS_PRICING={annual:5,quarterly:8,monthly:15};
+const HOURS_ADDON_PRICING={basic:5,additional:10};
+const CASHIER_ADDON_PRICING={basic:10,additional:20};
+const EMPLOYEE_PAYROLL_PRICING={
+  1:{maxCount:2,manual:8,adminAddon:5},
+  2:{maxCount:3,manual:10,adminAddon:8},
+  3:{maxCount:7,manual:16,adminAddon:9}
+};
+function computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon){
+  const pkg=SUBSCRIPTION_PACKAGES[packageId];
+  if(!pkg)return 0;
+  const tier=pkg.tier;
+  let total=0;
+  ['invoices','expenses','bank'].forEach(svc=>{
+    const p=TIER_SERVICE_PRICING[svc][tier];
+    total+=p.manual+(isAdminMode?p.adminAddon:0);
+  });
+  total+=CHAT_PRICING[pkg.chatLevel]||0;
+  total+=FIXED_SERVICE_PRICING.btw;
+  total+=FIXED_SERVICE_PRICING.ibAnnual;
+  total+=REPORTS_PRICING[pkg.reportsFreq]||0;
+  if(pkg.hoursAddon==='auto_included_basic'){
+    total+=HOURS_ADDON_PRICING.basic;
+  }else if(hoursAddon){
+    const forcedLevel=pkg.hoursAddon==='allowed_forced_additional'?'additional':'basic';
+    total+=HOURS_ADDON_PRICING[forcedLevel];
+  }
+  if(pkg.cashierAddon==='auto_included_basic'){
+    total+=CASHIER_ADDON_PRICING.basic;
+  }else if(cashierAddon){
+    const forcedLevel=pkg.cashierAddon==='allowed_forced_additional'?'additional':'basic';
+    total+=CASHIER_ADDON_PRICING[forcedLevel];
+  }
+  return total;
+}
+function getContractServiceSummaryLines(packageId,isAdminMode,hoursAddon,cashierAddon){
+  const pkg=SUBSCRIPTION_PACKAGES[packageId];
+  if(!pkg)return[];
+  const mode=isAdminMode?'ANB handles data entry on your behalf':'You enter your own data';
+  const lines=[
+    'Invoices — up to '+TIER_LIMITS.invoices[pkg.tier]+'/month ('+mode+')',
+    'Expenses — up to '+TIER_LIMITS.expenses[pkg.tier]+'/month ('+mode+')',
+    'Bank reconciliation — up to '+TIER_LIMITS.bank[pkg.tier]+' transactions/month ('+mode+')',
+    'Chat support — '+({basic:'reply within 24h',advanced:'reply within 12h',premium:'reply within 6h'}[pkg.chatLevel]),
+    'BTW filing — quarterly',
+    'Income tax return — annual (business)',
+    'Financial reports — '+pkg.reportsFreq
+  ];
+  if(pkg.hoursAddon==='auto_included_basic')lines.push('Hours register — included (basic)');
+  else if(hoursAddon)lines.push('Hours register — included ('+(pkg.hoursAddon==='allowed_forced_additional'?'additional':'basic')+')');
+  if(pkg.cashierAddon==='auto_included_basic')lines.push('Cashier + cash management — included (basic)');
+  else if(cashierAddon)lines.push('Cashier + cash management — included ('+(pkg.cashierAddon==='allowed_forced_additional'?'additional':'basic')+')');
+  return lines;
+}
+
 function openAddContract(cid){
   showModal('Add Contract',`
-    <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;flex-direction:column;gap:14px">
 
       <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📝 Description</label>
-        <textarea id="contract-desc" placeholder="Add any details about this contract..." 
-          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;height:70px;resize:none;font-family:inherit"></textarea>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">📦 Package *</label>
+        <div style="display:flex;flex-direction:column;gap:8px" id="pkg-cards">
+          ${Object.values(SUBSCRIPTION_PACKAGES).map(pkg=>`
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="updateContractPriceLive()">
+              <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id==='essential'?'checked':''} style="flex-shrink:0"/>
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name}</div>
+                <div style="font-size:10.5px;color:var(--t3)">Tier ${pkg.tier} · ${pkg.chatLevel} chat · ${pkg.reportsFreq} reports</div>
+              </div>
+            </label>`).join('')}
+        </div>
       </div>
 
       <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan *</label>
-        <select id="contract-plan" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
-          <option value="">Select Plan</option>
-          ${renderPlanOptions()}
-        </select>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👤 Data Entry Mode *</label>
+        <div style="display:flex;gap:8px">
+          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer">
+            <input type="radio" name="contract-mode" value="manual" checked onclick="updateContractPriceLive()"/> Manual (client enters own data)
+          </label>
+          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer">
+            <input type="radio" name="contract-mode" value="admin" onclick="updateContractPriceLive()"/> Admin (ANB enters data)
+          </label>
+        </div>
+      </div>
+
+      <div id="contract-addons"></div>
+
+      <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Monthly Price</div>
+        <div id="contract-price-display" style="font-size:24px;font-weight:800;color:var(--gold)">€0</div>
       </div>
 
       <div>
         <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📅 Start Date</label>
-        <input type="date" id="contract-start" 
+        <input type="date" id="contract-start" value="${TODAY()}"
           style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
       </div>
 
       <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:10px;border-radius:4px;font-size:11px;color:var(--t3)">
-        ℹ️ Contracts are open-ended by default (no fixed end date) — named automatically as "Contract" (or "Contract Extension N" for later renewals).
-      </div>
-
-      <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">✓ Status</label>
-        <select id="contract-status" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
-          <option value="draft">📝 Draft</option>
-          <option value="active">✅ Active</option>
-          <option value="completed">🎉 Completed</option>
-          <option value="terminated">❌ Terminated</option>
-        </select>
-      </div>
-
-      <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3)">
-        ℹ️ Fields marked with * are required
+        ℹ️ Contracts are open-ended by default (no fixed end date). The service list (not per-item prices) will appear on the client-facing agreement — only the total price is shown.
       </div>
 
     </div>
   `, ()=>{
-    const title=getNextContractTitle('${cid}'); // ⭐ تسمية تلقائية - انظر الدالة المشتركة أدناه
-    const desc=document.getElementById('contract-desc').value;
-    const plan=parseInt(document.getElementById('contract-plan').value||'0')||0;
-    if(!plan){toast('❌ Please select a subscription plan');markFieldError('contract-plan');return;}
-    const type='Standard';
+    const title=getNextContractTitle(cid);
+    const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
+    const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+    const hoursAddon=!!document.getElementById('contract-hours-addon')?.checked;
+    const cashierAddon=!!document.getElementById('contract-cashier-addon')?.checked;
     const start=document.getElementById('contract-start').value;
-    const status=document.getElementById('contract-status').value||'draft';
+    const plan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon);
 
     if(!S.contracts)S.contracts=[];
     S.contracts.push({
       id:UID(),
-      cid:'${cid}',
+      cid:cid,
       title,
-      desc,
+      desc:'',
       plan,
-      type,
+      type:'Standard',
+      subscriptionPackage:packageId,
+      isAdminMode,
+      hoursAddon,
+      cashierAddon,
       startDate:start,
-      endDate:'', // ⭐ مفتوح المدة افتراضيًا
-      status,
+      endDate:'',
+      status:'draft',
       createdDate:TODAY()
     });
+    applyContractLimitsToClient(cid,packageId,plan);
     sv();
     setTab('contracts');
     closeModal();
   }, 'Create Contract');
+  setTimeout(()=>{renderContractAddonsSection();updateContractPriceLive();},50);
 }
+// ⭐ يبني قسم الإضافات (ساعات/كاشير) بناءً على الباقة المُختارة حاليًا - يُعاد
+// بناؤه كل مرة تتغيَّر الباقة، لأن منطق الفرض (Additional/Basic/مُضمَّن
+// تلقائيًا) يختلف تمامًا بين الباقات الثلاث
+function renderContractAddonsSection(){
+  const container=document.getElementById('contract-addons');
+  if(!container)return;
+  const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
+  const pkg=SUBSCRIPTION_PACKAGES[packageId];
+  let html='';
+  ['hours','cashier'].forEach(kind=>{
+    const mode=kind==='hours'?pkg.hoursAddon:pkg.cashierAddon;
+    const label=kind==='hours'?'⏱ Hours Register':'💰 Cashier + Cash Management';
+    if(mode==='auto_included_basic'){
+      html+=`<div style="font-size:11px;color:var(--t3);padding:8px 10px;background:var(--gr1);border-radius:6px">${label} — included automatically (Basic)</div>`;
+    }else{
+      const forcedLevel=mode==='allowed_forced_additional'?'Additional':'Basic';
+      const price=kind==='hours'?HOURS_ADDON_PRICING[forcedLevel.toLowerCase()]:CASHIER_ADDON_PRICING[forcedLevel.toLowerCase()];
+      html+=`<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px;margin-bottom:6px">
+        <input type="checkbox" id="contract-${kind}-addon" onclick="updateContractPriceLive()"/> Add ${label} (${forcedLevel} — +€${price}/mo)
+      </label>`;
+    }
+  });
+  container.innerHTML=html;
+}
+// ⭐ يُعاد حساب السعر الإجمالي حيًا في كل مرة يتغيَّر فيها أي اختيار
+function updateContractPriceLive(){
+  renderContractAddonsSection();
+  const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
+  const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+  const hoursAddon=!!document.getElementById('contract-hours-addon')?.checked;
+  const cashierAddon=!!document.getElementById('contract-cashier-addon')?.checked;
+  const total=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon);
+  const display=document.getElementById('contract-price-display');
+  if(display)display.textContent='€'+total;
+}
+// ⭐ يُطبِّق تلقائيًا حدود الفواتير/المصاريف الشهرية (+ حد جديد للبنك) على
+// سجل العميل بناءً على مستوى الباقة المُختارة - بدل حقل مُدخَل يدويًا منفصل
+// قد يتعارض مع حد الباقة نفسها
+function applyContractLimitsToClient(cid,packageId,plan){
+  const pkg=SUBSCRIPTION_PACKAGES[packageId];
+  if(!pkg)return;
+  const c=S.clients.find(cl=>cl.id===cid);
+  if(!c)return;
+  c.monthlyInvoiceLimit=TIER_LIMITS.invoices[pkg.tier];
+  c.monthlyExpenseLimit=TIER_LIMITS.expenses[pkg.tier];
+  c.monthlyBankLimit=TIER_LIMITS.bank[pkg.tier];
+  // ⚠️⚠️ إصلاح فجوة حقيقية: فاتورة الاشتراك الشهرية الفعلية (generateAllClientInvoices)
+  // تعتمد على c.monthlyFee - وهذا الحقل لم يكن يتزامن أبدًا مع سعر العقد
+  // الجديد (plan) المحسوب من نظام الباقات! يعني عقدًا جديدًا بالكامل كان
+  // سيُفوتَر فعليًا بـ€0 أو برقم قديم لا علاقة له بالباقة الفعلية المُختارة.
+  if(typeof plan==='number')c.monthlyFee=plan;
+}
+
+
 
 function openEditContract(contractId,cid){
   const con=S.contracts?.find(c=>c.id===contractId);
   if(!con)return;
   const locked=con.status==='cancelled';
+  const packageId=con.subscriptionPackage||'essential';
+  const isAdminMode=!!con.isAdminMode;
 
   showModal('Edit Contract',`
-    <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;flex-direction:column;gap:14px">
       ${locked?`<div style="background:var(--danger-bg);border-left:4px solid var(--danger);padding:10px;border-radius:4px;font-size:12px;color:var(--danger)">🚫 This contract is cancelled and read-only.</div>`:''}
 
       <div>
         <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📋 Contract Title *</label>
-        <input type="text" id="contract-title" value="${escapeHtml(con.title||'')}" placeholder="e.g., Service Agreement" ${locked?'disabled':''}
+        <input type="text" id="contract-title" value="${escapeHtml(con.title||'')}" ${locked?'disabled':''}
           style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
-      </div>
-      
-      <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">📝 Description</label>
-        <textarea id="contract-desc" placeholder="Add any details about this contract..." ${locked?'disabled':''}
-          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;height:70px;resize:none;font-family:inherit">${escapeHtml(con.desc||'')}</textarea>
       </div>
 
       <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">💳 Subscription Plan</label>
-        <select id="contract-plan" ${locked?'disabled':''} style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;cursor:pointer">
-          <option value="">Select Plan</option>
-          ${renderPlanOptions(con.plan)}
-        </select>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">📦 Package *</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${Object.values(SUBSCRIPTION_PACKAGES).map(pkg=>`
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;${locked?'opacity:.5':'cursor:pointer'}" ${locked?'':'onclick="updateContractPriceLive()"'}>
+              <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id===packageId?'checked':''} ${locked?'disabled':''} style="flex-shrink:0"/>
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name}</div>
+                <div style="font-size:10.5px;color:var(--t3)">Tier ${pkg.tier} · ${pkg.chatLevel} chat · ${pkg.reportsFreq} reports</div>
+              </div>
+            </label>`).join('')}
+        </div>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👤 Data Entry Mode *</label>
+        <div style="display:flex;gap:8px">
+          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;${locked?'opacity:.5':'cursor:pointer'}">
+            <input type="radio" name="contract-mode" value="manual" ${!isAdminMode?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> Manual
+          </label>
+          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;${locked?'opacity:.5':'cursor:pointer'}">
+            <input type="radio" name="contract-mode" value="admin" ${isAdminMode?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> Admin
+          </label>
+        </div>
+      </div>
+
+      <div id="contract-addons"></div>
+
+      <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Monthly Price</div>
+        <div id="contract-price-display" style="font-size:24px;font-weight:800;color:var(--gold)">€${con.plan||0}</div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -4896,7 +5079,6 @@ function openEditContract(contractId,cid){
           <input type="date" id="contract-start" value="${con.startDate||''}" ${locked?'disabled':''}
             style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
         </div>
-        
         <div>
           <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">🏁 End Date</label>
           <input type="date" id="contract-end" value="${con.endDate||''}" ${locked?'disabled':''}
@@ -4905,26 +5087,35 @@ function openEditContract(contractId,cid){
       </div>
 
       <div style="background:rgba(10,34,24,0.05);border-left:4px solid #0A2218;padding:12px;border-radius:4px;font-size:12px;color:var(--t3)">
-        ℹ️ ${locked?'Cancelled contracts cannot be edited — data such as KVK/BTW/IBAN lives on the client record and is never editable from here.':'Fields marked with * are required. Legal identifiers (KVK/BTW/IBAN) are managed from the client record, not here.'}
-        <br/>ℹ️ To suspend, resume, cancel, or renew this contract, use the buttons in the Contracts list instead of this form.
+        ${locked?'Cancelled contracts cannot be edited.':'⚠️ Changing the price (package, mode, or addons) re-locks the client\u2019s accounting until they sign the updated agreement.'}
+        <br/>ℹ️ To suspend, resume, cancel, or renew this contract, use the buttons in the Contracts list instead.
       </div>
 
     </div>
   `, locked?null:()=>saveContract(contractId,cid), locked?'Close':'Update Contract');
+  if(!locked)setTimeout(()=>{
+    const hoursChk=document.getElementById('contract-hours-addon');
+    renderContractAddonsSection();
+    const h=document.getElementById('contract-hours-addon');if(h)h.checked=!!con.hoursAddon;
+    const c=document.getElementById('contract-cashier-addon');if(c)c.checked=!!con.cashierAddon;
+    updateContractPriceLive();
+  },50);
 }
 
 function saveContract(contractId,cid){
   const title=document.getElementById('contract-title')?.value||'';
-  const desc=document.getElementById('contract-desc')?.value||'';
-  const plan=parseInt(document.getElementById('contract-plan')?.value||'0')||0;
-  const type='Standard';
+  const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
+  const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+  const hoursAddon=!!document.getElementById('contract-hours-addon')?.checked;
+  const cashierAddon=!!document.getElementById('contract-cashier-addon')?.checked;
   const startDate=document.getElementById('contract-start')?.value||'';
   const endDate=document.getElementById('contract-end')?.value||'';
+  const plan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon);
 
   if(!title){toast('❌ Contract title required');markFieldError('contract-title');return;}
-  
+
   if(!S.contracts)S.contracts=[];
-  
+
   if(contractId){
     // Update existing — الحالة (status) لا تُعدَّل من هنا عادةً، إلا في حالة
     // واحدة محدَّدة: تغيير السعر (plan)
@@ -4935,40 +5126,135 @@ function saveContract(contractId,cid){
       // فورًا بلا أي موافقة جديدة من العميل - بعكس التجديد الذي يفرض إعادة
       // توقيع بشكل صحيح. الآن: أي تغيير فعلي بالسعر يضع العقد بحالة 'draft'
       // (نفس آلية التجديد بالضبط) - يُقفل تلقائيًا محاسبة العميل حتى يوقِّع
-      // الاتفاقية الجديدة بالسعر الجديد. تعديلات العنوان/الوصف/التواريخ وحدها
-      // (بلا تغيير سعر) لا تحتاج هذا - تبقى الحالة كما هي دون قفل.
+      // الاتفاقية الجديدة بالسعر الجديد. تعديلات العنوان/التواريخ وحدها (بلا
+      // تغيير سعر) لا تحتاج هذا - تبقى الحالة كما هي دون قفل.
       const priceChanged=oldContract.plan!==plan;
       const newStatus=priceChanged?'draft':oldContract.status;
-      S.contracts[idx]={...oldContract,title,desc,plan,type,startDate,endDate,status:newStatus};
-      // ⚠️ إصلاح: تعديل عقد لم يكن يترك أي أثر - لا في سجل النشاط ولا كمستند
-      // يراجعه العميل. الآن: نسجّل التعديل، ونولّد اتفاقية محدَّثة للمراجعة
-      // (نفس أسلوب التجديد) حتى يرى العميل التغيير فعليًا في Documents.
+      S.contracts[idx]={...oldContract,title,plan,subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,startDate,endDate,status:newStatus};
       const client=S.clients.find(cl=>cl.id===cid);
       logAudit('edit','contract',(priceChanged?'Updated price and locked pending re-signature for contract "':'Updated contract "')+title+'" for '+(client?.name||'')+(priceChanged?' ('+FMT(oldContract.plan)+' → '+FMT(plan)+')':''),cid);
       if(client){
         createContractAgreement(client,S.contracts[idx]);
       }
-      if(priceChanged)toast('⚠️ Price changed — client accounting is now locked until they sign the updated agreement');
+      if(priceChanged){
+        applyContractLimitsToClient(cid,packageId,plan);
+        toast('⚠️ Price changed — client accounting is now locked until they sign the updated agreement');
+      }
     }
   }else{
-    // Add new
+    // Add new (fallback path — openAddContract normally handles creation itself)
     S.contracts.push({
-      id:UID(),
-      cid:cid,
-      title:title,
-      desc:desc,
-      plan:plan,
-      type:type,
-      startDate:startDate,
-      endDate:endDate,
-      status:'draft',
-      createdDate:TODAY()
+      id:UID(),cid:cid,title:title,desc:'',plan:plan,type:'Standard',
+      subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,
+      startDate:startDate,endDate:endDate,status:'draft',createdDate:TODAY()
     });
+    applyContractLimitsToClient(cid,packageId,plan);
   }
-  
+
   sv();
   setTab('contracts');
   closeModal();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ⭐⭐⭐ آلية "الترقية المعلَّقة" - على عكس تعديل السعر المباشر (يُقفل
+// المحاسبة فورًا)، هذا مسار مُقتَرح من الأدمن ينتظر موافقة صريحة من العميل:
+// العقد الحالي يستمر بالعمل بلا انقطاع وبلا أي قفل طيلة فترة الانتظار -
+// فقط عند الموافقة الفعلية تُطبَّق الشروط الجديدة. يُذكَّر الأدمن أسبوعيًا لو
+// بقيت الترقية بلا رد، حتى لا تُنسى.
+// ══════════════════════════════════════════════════════════════════
+function openProposeUpgrade(contractId,cid){
+  const con=(S.contracts||[]).find(c=>c.id===contractId);
+  if(!con)return;
+  showModal('🔼 Propose Upgrade',`
+    <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">The client keeps using their current plan uninterrupted while this is pending. Nothing changes until they explicitly approve it.</div>
+    <div>
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">📦 New Package</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${Object.values(SUBSCRIPTION_PACKAGES).map(pkg=>`
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="updateContractPriceLive()">
+            <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id===(con.subscriptionPackage||'essential')?'checked':''}/>
+            <div style="flex:1"><div style="font-weight:700;font-size:13px">${pkg.name}</div><div style="font-size:10.5px;color:var(--t3)">Tier ${pkg.tier} · ${pkg.chatLevel} chat · ${pkg.reportsFreq} reports</div></div>
+          </label>`).join('')}
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👤 Data Entry Mode</label>
+      <div style="display:flex;gap:8px">
+        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer"><input type="radio" name="contract-mode" value="manual" ${!con.isAdminMode?'checked':''} onclick="updateContractPriceLive()"/> Manual</label>
+        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer"><input type="radio" name="contract-mode" value="admin" ${con.isAdminMode?'checked':''} onclick="updateContractPriceLive()"/> Admin</label>
+      </div>
+    </div>
+    <div id="contract-addons" style="margin-top:12px"></div>
+    <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center;margin-top:12px">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:4px">New Total Monthly Price</div>
+      <div id="contract-price-display" style="font-size:24px;font-weight:800;color:var(--gold)">€${con.plan||0}</div>
+    </div>
+  `,()=>{
+    const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
+    const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+    const hoursAddon=!!document.getElementById('contract-hours-addon')?.checked;
+    const cashierAddon=!!document.getElementById('contract-cashier-addon')?.checked;
+    const newPlan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon);
+    if(newPlan===con.plan&&packageId===con.subscriptionPackage&&isAdminMode===con.isAdminMode){toast('❌ This matches the current plan already — nothing to propose');return;}
+    con.pendingUpgrade={subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,newPlan,
+      proposedDate:TODAY(),lastReminderDate:TODAY()};
+    logAudit('edit','contract','Proposed an upgrade for '+(S.clients.find(cl=>cl.id===cid)?.name||'')+' — €'+con.plan+' → €'+newPlan+' (awaiting client approval)',cid);
+    sv();closeModal();renderContent();
+    toast('✓ Upgrade proposed — client will see it and can approve or decline');
+  },'Propose to Client');
+  setTimeout(()=>{
+    renderContractAddonsSection();
+    const h=document.getElementById('contract-hours-addon');if(h)h.checked=!!con.hoursAddon;
+    const c=document.getElementById('contract-cashier-addon');if(c)c.checked=!!con.cashierAddon;
+    updateContractPriceLive();
+  },50);
+}
+function approvePendingUpgrade(contractId){
+  const con=(S.contracts||[]).find(c=>c.id===contractId);
+  if(!con||!con.pendingUpgrade)return;
+  showConfirmDialog('Approve Upgrade','Switch to the new plan (€'+con.pendingUpgrade.newPlan+'/mo) now?',()=>{
+    const u=con.pendingUpgrade;
+    con.subscriptionPackage=u.subscriptionPackage;
+    con.isAdminMode=u.isAdminMode;
+    con.hoursAddon=u.hoursAddon;
+    con.cashierAddon=u.cashierAddon;
+    con.plan=u.newPlan;
+    con.pendingUpgrade=null;
+    // ⭐ موافقة العميل الصريحة تُغني عن أي قفل إضافي - الشروط الجديدة تسري فورًا
+    applyContractLimitsToClient(con.cid,u.subscriptionPackage,u.newPlan);
+    logAudit('edit','contract','Client approved upgrade — now €'+u.newPlan+'/mo',con.cid);
+    sv();closeModal();renderContent();
+    toast('✓ Upgrade approved — your new plan is active now');
+  });
+}
+function declinePendingUpgrade(contractId){
+  const con=(S.contracts||[]).find(c=>c.id===contractId);
+  if(!con||!con.pendingUpgrade)return;
+  showConfirmDialog('Decline Upgrade','Keep your current plan and decline this proposed upgrade?',()=>{
+    con.pendingUpgrade=null;
+    logAudit('edit','contract','Client declined proposed upgrade',con.cid);
+    sv();closeModal();renderContent();
+    toast('Upgrade declined — your current plan continues unchanged');
+  });
+}
+// ⭐ يُذكِّر الأدمن أسبوعيًا (وليس أكثر) بأي ترقية معلَّقة بلا رد من العميل -
+// يعمل عند فتح التطبيق، بنفس نمط تذكيرات Aanzegplicht/الكاشير الموجودة أصلًا
+function checkPendingUpgradeReminders(){
+  if(!isAdmin())return;
+  const today=new Date();
+  const stale=(S.contracts||[]).filter(c=>{
+    if(!c.pendingUpgrade)return false;
+    const lastReminder=new Date(c.pendingUpgrade.lastReminderDate||c.pendingUpgrade.proposedDate);
+    const daysSince=Math.floor((today-lastReminder)/864e5);
+    return daysSince>=7;
+  });
+  if(!stale.length)return;
+  stale.forEach(c=>{c.pendingUpgrade.lastReminderDate=TODAY();});
+  sv();
+  const names=stale.map(c=>S.clients.find(cl=>cl.id===c.cid)?.name||'').filter(Boolean);
+  const preview=names.slice(0,2).join('، ')+(names.length>2?' +'+(names.length-2):'');
+  toast('🔼 '+(stale.length>1?stale.length+' proposed upgrades':'1 proposed upgrade')+' still awaiting client response: '+preview,null,6000);
 }
 
 function deleteContract(contractId){
@@ -5309,10 +5595,19 @@ function renderClientContractsList(cid,searchTerm,sortValue){
             <span style="font-size:9px;font-weight:700;color:${meta.color}">📝 ${meta.label}</span>
             ${agreementDoc?`<span onclick="reviewAgreementDoc('${agreementDoc.id}')" style="font-size:9px;font-weight:700;color:${meta.color};text-decoration:underline;cursor:pointer">${t('view')||'View'} →</span>`:''}
           </div>`:''}
+          ${con.pendingUpgrade?`<div style="margin-top:6px;background:rgba(200,144,16,0.12);border:1px solid var(--gold);border-radius:6px;padding:8px 10px">
+            <div style="font-size:10px;font-weight:700;color:#8a6410">🔼 Upgrade proposed — ${SUBSCRIPTION_PACKAGES[con.pendingUpgrade.subscriptionPackage]?.name||con.pendingUpgrade.subscriptionPackage} (€${con.pendingUpgrade.newPlan}/mo)</div>
+            <div style="font-size:9.5px;color:var(--t3);margin-top:2px">Current plan keeps working normally until this is approved.</div>
+            ${!isAdmin()?`<div style="margin-top:6px;display:flex;gap:6px">
+              <button class="btn btn-p btn-xs" onclick="approvePendingUpgrade('${con.id}')">✓ Approve</button>
+              <button class="btn btn-xs" onclick="declinePendingUpgrade('${con.id}')">✕ Decline</button>
+            </div>`:`<div style="font-size:9px;color:var(--t3);margin-top:4px">Awaiting client response</div>`}
+          </div>`:''}
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:150px">
           <button class="btn btn-xs" onclick="exportContractPDF('${con.id}')" title="${t('view_contract_copy')||'Export as PDF'}">📄</button>
           <button class="btn btn-xs" onclick="openEditContract('${con.id}','${con.cid}')" title="${con.status==='cancelled'?(t('view')||'View'):(t('edit')||'Edit')}">${con.status==='cancelled'?'👁':'✏'}</button>
+          ${con.status!=='cancelled'&&isAdmin()&&!con.pendingUpgrade&&con.subscriptionPackage?`<button class="btn btn-xs" onclick="openProposeUpgrade('${con.id}','${con.cid}')" title="Propose Upgrade">🔼</button>`:''}
           ${con.status!=='cancelled'?`
             ${con.status==='suspended'
               ?`<button class="btn btn-xs" onclick="resumeContract('${con.id}')" title="${t('resume')||'Resume'}">▶</button>`
@@ -6800,7 +7095,25 @@ function rClientActionCards(el,cid){
   if(isAdmin())cards.splice(7,0,{id:'employees',icon:'👥',name:t('employees')||'Employees',value:activeEmployees,onclickAttr:"selectCard('employees')"});
 
   renderQuickDashboard(el,[],cards,{styled:true,isANB:isANBSelfBook});
-  el.innerHTML=renderClientInfoCard(c)+getClientHourCriterionAlert(cid)+renderClientHealthBadge(cid)+el.innerHTML;
+  el.innerHTML=renderClientInfoCard(c)+renderClientCashBalanceCard(cid)+getClientHourCriterionAlert(cid)+renderClientHealthBadge(cid)+el.innerHTML;
+}
+// ⭐⭐ بطاقة رصيد الكاش الحي - تحت بطاقة معلومات العميل مباشرة، تُحسَب فورًا
+// عند كل عرض للشاشة (لا زر، لا نقرة مطلوبة) - نفس حساب getExpectedCashBalance
+// المستخدَم أصلًا ببوابة جرد الكاش، فيبقى الرقم متطابقًا دائمًا مع ما سيُطلَب
+// من العميل عدّه فعليًا لاحقًا. لا تظهر إطلاقًا لعميل لا يستخدم أي ميزة كاش
+// (لا دفتر صندوق ولا كاشير) تفاديًا للتشويش
+function renderClientCashBalanceCard(cid){
+  if(!isCardVisibleForClient(cid,'cash_ledger')&&!isCardVisibleForClient(cid,'cashier'))return '';
+  const ledgerNet=(S.cashPayments||[]).filter(p=>p.cid===cid).reduce((s,p)=>s+(p.direction==='out'?-(p.amount||0):(p.amount||0)),0);
+  const unpostedCash=(S.cashierLog||[]).filter(e=>e.cid===cid&&!e.posted).reduce((s,e)=>s+(e.cashAmount||0),0);
+  const total=ledgerNet+unpostedCash;
+  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--gr1);border:1.5px solid var(--gold);border-radius:10px;padding:10px 14px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:18px">💵</span>
+      <span style="font-size:11.5px;color:var(--t3);font-weight:600">Cash Balance</span>
+    </div>
+    <div style="font-size:16px;font-weight:800;color:var(--gold)">${FMT(total)}</div>
+  </div>`;
 }
 
 /* ═══════════════════════════ SHARED VIEWS ═══════════════════════════ */
@@ -6911,13 +7224,56 @@ function postANBInvoiceAsApprovedExpense(invoice,clientId){
 
 // يولّد فاتورة اشتراك شهرية لكل عميل نشط بضغطة واحدة، ويتخطى من لديه
 // فاتورة بالفعل هذا الشهر لتفادي التكرار
+// ⭐ يجلب العقد النشط الحالي لعميل معيّن (أحدث عقد بحالة active، أو draft لو
+// ما فيه نشط بعد - يُستخدَم فقط لأغراض التسعير/الحدود، لا لبوابة القفل نفسها)
+function getActiveContractForClient(cid){
+  const contracts=(S.contracts||[]).filter(c=>c.cid===cid&&!c.deleted);
+  return contracts.find(c=>c.status==='active')||contracts.find(c=>c.status==='draft')||null;
+}
+// ⭐⭐ يحسب رسم تجاوز شهر مُحدَّد لعميل معيّن: يقارن الاستخدام الفعلي (فواتيره
+// الخاصة/مصاريفه/حركاته البنكية بذلك الشهر) بحد الباقة + هامش التسامح 15%،
+// ويحسب الرسم فقط على ما تجاوز ذلك، بمعدل Manual/Admin الصحيح حسب اختيار العقد
+function computeClientOverageForMonth(cid,monthStr){
+  const contract=getActiveContractForClient(cid);
+  if(!contract||!contract.subscriptionPackage)return{total:0,details:[]};
+  const pkg=SUBSCRIPTION_PACKAGES[contract.subscriptionPackage];
+  if(!pkg)return{total:0,details:[]};
+  const tier=pkg.tier;
+  const counts={
+    invoices:(S.invoices||[]).filter(i=>i.cid===cid&&!i.deleted&&!i.isCreditNote&&(i.date||'').slice(0,7)===monthStr).length,
+    expenses:(S.expenses||[]).filter(e=>e.cid===cid&&!e.deleted&&!e.isCreditNote&&(e.date||'').slice(0,7)===monthStr).length,
+    bank:(S.bankTx||[]).filter(t=>t.cid===cid&&(t.date||'').slice(0,7)===monthStr).length
+  };
+  const details=[];
+  let total=0;
+  ['invoices','expenses','bank'].forEach(svc=>{
+    const limit=TIER_LIMITS_WITH_TOLERANCE[svc][tier];
+    const count=counts[svc];
+    if(count>limit){
+      const overageUnits=count-limit;
+      const rate=OVERAGE_RATES[svc];
+      const blocks=Math.ceil(overageUnits/rate.per);
+      const fee=blocks*(contract.isAdminMode?rate.admin:rate.manual);
+      total+=fee;
+      details.push({svc,count,limit,overageUnits,fee});
+    }
+  });
+  return{total:Math.round(total*100)/100,details};
+}
+
 function generateAllClientInvoices(){
   const realClients=S.clients.filter(cl=>cl.id!==ANB_SELF_ID&&!cl.deleted&&cl.accountStatus!=='cancelled');
   if(realClients.length===0){toast('No active clients to invoice');return;}
 
   const monthLabel=new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  showConfirmDialog('Generate All Client Invoices','Generate a subscription invoice for '+realClients.length+' client(s) for '+monthLabel+'? Clients who already have an invoice this month will be skipped. Each invoice will also be added directly as an unpaid expense in the client\u2019s own account.',()=>{
-    let created=0,skipped=0;
+  // ⭐⭐ الشهر الماضي (المكتمل بالفعل) هو ما نحاسب على تجاوزه الآن - استخدامه
+  // خلال الشهر الجاري لا يزال جاريًا وغير نهائي بعد
+  const now=new Date();
+  const lastMonthDate=new Date(now.getFullYear(),now.getMonth()-1,1);
+  const lastMonthStr=lastMonthDate.toISOString().slice(0,7);
+  const lastMonthLabel=lastMonthDate.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  showConfirmDialog('Generate All Client Invoices','Generate a subscription invoice for '+realClients.length+' client(s) for '+monthLabel+'? Any usage overage from '+lastMonthLabel+' (beyond the package limit + 15% tolerance) will be added automatically as a separate line. Clients who already have an invoice this month will be skipped.',()=>{
+    let created=0,skipped=0,withOverage=0;
     const today=TODAY();
     const thisMonth=today.slice(0,7);
     realClients.forEach(cl=>{
@@ -6925,19 +7281,32 @@ function generateAllClientInvoices(){
       if(!fee){skipped++;return;}
       const alreadyInvoiced=S.invoices.some(i=>i.cid===ANB_SELF_ID&&i.billToId===cl.id&&(i.date||'').slice(0,7)===thisMonth&&!i.deleted);
       if(alreadyInvoiced){skipped++;return;}
+      // ⭐ تجاوز الشهر الماضي (إن وُجد) يُضاف تلقائيًا كسطر منفصل بنفس الفاتورة -
+      // يظهر للعميل بوصف الفاتورة نفسه (تنبيه ضمني)، ويُذكَر بتوست الأدمن أدناه
+      const overage=computeClientOverageForMonth(cl.id,lastMonthStr);
+      let desc='Monthly subscription — '+monthLabel;
+      if(overage.total>0){
+        withOverage++;
+        desc+=' + usage overage for '+lastMonthLabel+' ('+overage.details.map(d=>d.svc+': '+d.count+'/'+d.limit).join(', ')+') — €'+overage.total.toFixed(2);
+      }
+      const baseTotal=fee+overage.total;
       const ni={id:UID(),cid:ANB_SELF_ID,num:nextNum(ANB_SELF_ID),
-        desc:'Monthly subscription — '+monthLabel,date:today,
+        desc,date:today,
         due:new Date(Date.now()+14*864e5).toISOString().slice(0,10),
-        status:'Openstaand',amount:fee,btw:fee*0.21,total:fee*1.21,btwRate:21,
+        status:'Openstaand',amount:baseTotal,btw:baseTotal*0.21,total:baseTotal*1.21,btwRate:21,
+        overageAmount:overage.total,overageDetails:overage.details,
         amountPaid:0,billTo:cl.name,billToId:cl.id,billToManual:null};
       S.invoices.push(ni);
       consumeInvoiceCounter(ANB_SELF_ID);
       postANBInvoiceAsApprovedExpense(ni,cl.id);
+      if(overage.total>0){
+        logAudit('create','invoice','Auto-billed usage overage for '+cl.name+' — '+lastMonthLabel+': €'+overage.total.toFixed(2)+' ('+overage.details.map(d=>d.svc+' '+d.count+'/'+d.limit).join(', ')+')',cl.id);
+      }
       created++;
     });
     logAudit('create','invoice','Bulk-generated '+created+' client subscription invoices for '+monthLabel,ANB_SELF_ID);
     sv();renderApp();closeModal();
-    toast('✓ Generated '+created+' invoice(s)'+(skipped>0?' — skipped '+skipped+' (already invoiced or no fee set)':''));
+    toast('✓ Generated '+created+' invoice(s)'+(withOverage>0?' — '+withOverage+' included usage overage':'')+(skipped>0?' — skipped '+skipped+' (already invoiced or no fee set)':''));
   });
 }
 
@@ -9548,6 +9917,66 @@ async function uploadPendingMsgAttachment(cid){
   return{attachmentData:dataUrl,attachmentName:name,attachmentType:type}; // تراجع محلي إن فشل الرفع
 }
 
+// ⭐⭐ إثبات المرتجعات - إرفاق دليل (صورة/مستند) لأي مرتجع (كاشير، فاتورة
+// دائن، مصروف دائن). نفس بنية مرفَقات الرسائل بالضبط، بمتغيّر مستقل خاص بها
+// حتى لا يتعارض مع أي مرفَق رسالة قيد التحضير بنفس الوقت
+let returnEvidencePendingAttachment=null;
+async function handleReturnEvidencePick(ev){
+  const file=ev.target.files?.[0];
+  if(!file)return;
+  if(file.size>10*1024*1024){toast(`${file.name} is over 10MB — skipped`);ev.target.value='';return;}
+  try{
+    let dataUrl;
+    if(file.type.startsWith('image/'))dataUrl=await compressImage(file);
+    else dataUrl=await readAsDataURL(file);
+    returnEvidencePendingAttachment={dataUrl,name:file.name,type:file.type||'application/octet-stream'};
+    updateReturnEvidencePreview();
+  }catch(err){
+    toast(`Could not read ${file.name}`);
+  }
+  ev.target.value='';
+}
+function clearReturnEvidenceAttachment(){
+  returnEvidencePendingAttachment=null;
+  updateReturnEvidencePreview();
+}
+function updateReturnEvidencePreview(){
+  document.querySelectorAll('.return-evidence-preview').forEach(el=>{
+    el.innerHTML=returnEvidencePendingAttachment
+      ?`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--gr1);border-radius:6px;padding:4px 8px;font-size:11px">📎 ${escapeHtml(returnEvidencePendingAttachment.name)} <span style="cursor:pointer;color:var(--red);font-weight:700" onclick="clearReturnEvidenceAttachment()">✕</span></span>`
+      :'';
+  });
+}
+async function uploadPendingReturnEvidence(cid){
+  if(!returnEvidencePendingAttachment)return{};
+  const{dataUrl,name,type}=returnEvidencePendingAttachment;
+  const uploaded=await uploadFileToR2(dataUrlToBlob(dataUrl),name,type,cid);
+  returnEvidencePendingAttachment=null;
+  updateReturnEvidencePreview();
+  if(uploaded&&uploaded.url)return{evidenceUrl:uploaded.url,evidenceName:name,evidenceType:type};
+  return{evidenceData:dataUrl,evidenceName:name,evidenceType:type};
+}
+// ⭐ يبني كتلة HTML مشترَكة (ملاحظة + إرفاق دليل) لأي نافذة مرتجع - أحدهما
+// إلزامي على الأقل، والتحقق يتم بدالة واحدة مشترَكة أيضًا لضمان نفس السلوك بالثلاث قنوات
+function renderReturnEvidenceFieldsHtml(noteFieldId){
+  return `
+    <div class="fg"><label>Note (or attach evidence below — at least one is required)</label><input id="${noteFieldId}" placeholder="e.g. Customer returned item, damaged on arrival"/></div>
+    <div class="fg">
+      <label>Attach evidence (photo/document)</label>
+      <input type="file" id="return-evidence-file" accept="image/*,.pdf" style="display:none" onchange="handleReturnEvidencePick(event)"/>
+      <button type="button" class="btn btn-xs" onclick="document.getElementById('return-evidence-file').click()">📎 Attach File</button>
+      <div class="return-evidence-preview" style="margin-top:6px"></div>
+    </div>`;
+}
+function validateReturnEvidenceOrNote(noteFieldId){
+  const note=(document.getElementById(noteFieldId)?.value||'').trim();
+  if(!note&&!returnEvidencePendingAttachment){
+    toast('❌ Please add a note or attach evidence — at least one is required');
+    return false;
+  }
+  return true;
+}
+
 async function sendMsgAdmin(cid){
   const inp=document.getElementById('msg-input-admin');
   const txt=inp?.value?.trim();
@@ -11940,13 +12369,25 @@ function openExpenseCreditNoteModal(originalExpenseId){
       <input type="number" id="excn-amount" step="0.01" value="${remainingCreditable.toFixed(2)}" max="${remainingCreditable.toFixed(2)}"/>
       <div style="font-size:10.5px;color:var(--t3);margin-top:3px">Max creditable: €${remainingCreditable.toFixed(2)} (original €${orig.amount.toFixed(2)}${alreadyCredited>0?', already credited €'+alreadyCredited.toFixed(2):''})</div>
     </div>
-    <div class="fg"><label>Reason</label><input id="excn-reason" placeholder="e.g. Returned goods, pricing correction"/></div>
+    <div class="fg"><label>Date of original transaction</label><input type="date" id="excn-orig-date" value="${orig.date||TODAY()}"/></div>
+    <div class="fg"><label>Original transaction reference (optional)</label><input id="excn-orig-ref" placeholder="e.g. supplier credit note #"/></div>
+    ${renderReturnEvidenceFieldsHtml('excn-reason')}
     <div style="font-size:10.5px;color:var(--t3);margin-top:-4px">BTW type/rate is copied automatically from the original expense.</div>
   `,()=>{
     const amt=parseFloat(document.getElementById('excn-amount').value)||0;
-    const reason=(document.getElementById('excn-reason').value||'').trim();
+    const origDate=document.getElementById('excn-orig-date').value;
     if(amt<=0){toast('❌ Enter a valid amount greater than 0');markFieldError('excn-amount');return;}
     if(amt>remainingCreditable+0.01){toast('❌ Cannot credit more than the remaining creditable amount (€'+remainingCreditable.toFixed(2)+')');markFieldError('excn-amount');return;}
+    if(!origDate){toast('❌ Date of original transaction is required');markFieldError('excn-orig-date');return;}
+    if(!validateReturnEvidenceOrNote('excn-reason'))return;
+    proceedWithExpenseCreditNote();
+  },'Log Credit Note');
+  async function proceedWithExpenseCreditNote(){
+    const amt=parseFloat(document.getElementById('excn-amount').value)||0;
+    const reason=(document.getElementById('excn-reason').value||'').trim();
+    const origDate=document.getElementById('excn-orig-date').value;
+    const origRef=(document.getElementById('excn-orig-ref').value||'').trim();
+    const evidenceFields=await uploadPendingReturnEvidence(orig.cid);
     const seq=getExpenseCreditNoteCounter(originalExpenseId)+1;
     const rate=orig.btwType==='verlegd_received'?0:(orig.amount?Math.round((orig.btw/orig.amount)*100):0);
     const btw=orig.btwType==='verlegd_received'?0:Math.round(amt*(rate/100)*100)/100;
@@ -11958,13 +12399,14 @@ function openExpenseCreditNoteModal(originalExpenseId){
       btw:-btw,selfAssessedVat:-selfAssessedVat,
       btwType:orig.btwType||'normal',btwDeductible:orig.btwDeductible,
       isCreditNote:true,creditNoteFor:orig.id,creditNoteForNum:orig.desc||orig.supplier,
+      originalTransactionDate:origDate,originalTransactionRef:origRef,note:reason,...evidenceFields,
       amountPaid:0,paymentStatus:'Onbetaald'};
     if(!S.expenses)S.expenses=[];
     S.expenses.push(cn);
     logAudit('create','expense','Logged credit note received for '+FMT(amt)+' against expense from '+(orig.supplier||''),orig.cid);
     sv();closeModal();renderContent();
     toast('✓ Credit note logged');
-  },'Log Credit Note');
+  }
 }
 function delHours(id){
   const h=(S.hours||[]).find(x=>x.id===id);
@@ -12747,7 +13189,6 @@ const TOGGLEABLE_CLIENT_CARDS=[
   {id:'documents',icon:'📁',label:'Documents'},
   {id:'messages',icon:'💬',label:'Messages'},
   {id:'security',icon:'🔒',label:'Security'},
-  {id:'reports',icon:'📈',label:'Reports'},
   {id:'employees',icon:'👥',label:'Employees'},
   {id:'bank',icon:'🏦',label:'Bank'},
   {id:'assets',icon:'🏢',label:'Assets'},
@@ -12755,6 +13196,17 @@ const TOGGLEABLE_CLIENT_CARDS=[
 ];
 function isCardVisibleForClient(cid,cardId){
   const c=S.clients.find(cl=>cl.id===cid);
+  // ⚠️⚠️ قرار ثابت: شاشة التقارير تبقى دائمًا حصرية للأدمن فقط - لا تُتاح
+  // كخيار قابل للتبديل لأي عميل إطلاقًا، بخلاف كل الأقسام الأخرى. هذا يشمل
+  // شهادة إثبات الدخل أيضًا (جزء من نفس الشاشة) - تُصدَر فقط من الأدمن بعد
+  // مراجعة، لأنها مستند رسمي يحمل اسم ANB يُقدَّم لجهات خارجية حسّاسة (بنك، IND)
+  if(cardId==='reports')return false;
+  // ⚠️⚠️ إصلاح فجوة حقيقية: دفتر الصندوق (Cash Ledger) والكاشير كانا يتشاركان
+  // فقط استبعاد زر "الدخل اليومي" من الأول عند تفعيل الثاني - لكن باقي دفتر
+  // الصندوق (وتحديدًا "سحب نقدي شخصي") كان يبقى ظاهرًا ومتاحًا رغم عدم وجود
+  // أي داعٍ لاستخدامه بمعزل عن الكاشير. الآن: دفتر الصندوق يُخفى بالكامل لأي
+  // عميل مفعَّل عنده الكاشير - خيار السحب الشخصي انتقل إليه مباشرة (أدناه)
+  if(cardId==='cash_ledger'&&isCardVisibleForClient(cid,'cashier'))return false;
   if(c&&c.cardVisibility&&Object.prototype.hasOwnProperty.call(c.cardVisibility,cardId)){
     return c.cardVisibility[cardId];
   }
@@ -13399,13 +13851,27 @@ function openCreditNoteModal(originalInvoiceId){
       <input type="number" id="cn-amount" step="0.01" value="${remainingCreditable.toFixed(2)}" max="${remainingCreditable.toFixed(2)}"/>
       <div style="font-size:10.5px;color:var(--t3);margin-top:3px">Max creditable: €${remainingCreditable.toFixed(2)} (original €${orig.amount.toFixed(2)}${alreadyCredited>0?', already credited €'+alreadyCredited.toFixed(2):''})</div>
     </div>
-    <div class="fg"><label>Reason</label><input id="cn-reason" placeholder="e.g. Pricing error, returned goods, service not delivered"/></div>
+    <div class="fg"><label>Date of original transaction</label><input type="date" id="cn-orig-date" value="${orig.date||TODAY()}"/></div>
+    <div class="fg"><label>Original transaction reference (optional)</label><input id="cn-orig-ref" placeholder="e.g. order #, delivery note #"/></div>
+    ${renderReturnEvidenceFieldsHtml('cn-reason')}
     <div style="font-size:10.5px;color:var(--t3);margin-top:-4px">BTW type/rate (${orig.btwType==='normal'||!orig.btwType?orig.btwRate+'%':orig.btwType}) is copied automatically from the original invoice.</div>
   `,()=>{
     const amt=parseFloat(document.getElementById('cn-amount').value)||0;
     const reason=(document.getElementById('cn-reason').value||'').trim();
+    const origDate=document.getElementById('cn-orig-date').value;
+    const origRef=(document.getElementById('cn-orig-ref').value||'').trim();
     if(amt<=0){toast('❌ Enter a valid amount greater than 0');markFieldError('cn-amount');return;}
     if(amt>remainingCreditable+0.01){toast('❌ Cannot credit more than the remaining creditable amount (€'+remainingCreditable.toFixed(2)+')');markFieldError('cn-amount');return;}
+    if(!origDate){toast('❌ Date of original transaction is required');markFieldError('cn-orig-date');return;}
+    if(!validateReturnEvidenceOrNote('cn-reason'))return;
+    proceedWithInvoiceCreditNote();
+  },'Issue Credit Note');
+  async function proceedWithInvoiceCreditNote(){
+    const amt=parseFloat(document.getElementById('cn-amount').value)||0;
+    const reason=(document.getElementById('cn-reason').value||'').trim();
+    const origDate=document.getElementById('cn-orig-date').value;
+    const origRef=(document.getElementById('cn-orig-ref').value||'').trim();
+    const evidenceFields=await uploadPendingReturnEvidence(orig.cid);
     const seq=getCreditNoteCounter(originalInvoiceId)+1;
     const rate=(orig.btwType==='normal'||!orig.btwType)?(orig.btwRate||0):0;
     const btw=Math.round(amt*(rate/100)*100)/100;
@@ -13417,13 +13883,14 @@ function openCreditNoteModal(originalInvoiceId){
       status:'Creditnota',
       amount:-amt,btwRate:orig.btwRate,btwType:orig.btwType||'normal',
       btw:-btw,total:-(amt+btw),amountPaid:0,
+      originalTransactionDate:origDate,originalTransactionRef:origRef,note:reason,...evidenceFields,
       billTo:orig.billTo,billToId:orig.billToId,billToManual:orig.billToManual};
     if(!S.invoices)S.invoices=[];
     S.invoices.push(cn);
     logAudit('create','invoice','Issued credit note '+cn.num+' for '+FMT(Math.abs(cn.total))+' against '+orig.num,orig.cid);
     sv();closeModal();renderContent();
     toast('✓ Credit note issued — '+cn.num);
-  },'Issue Credit Note');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -15142,9 +15609,13 @@ function rCashier(el,cid){
   const todayTotal=unposted.reduce((s,e)=>s+(e.price||0),0);
 
   el.innerHTML=backBtnHtml+`<div class="card">
-    <div class="ch" style="border-bottom:3px solid ${theme.border};display:flex;justify-content:space-between;align-items:center">
+    <div class="ch" style="border-bottom:3px solid ${theme.border};display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap">
       <span class="ct">${LICON('banknote',16)} ${t('cashier_title')||'Cashier'}</span>
-      <button class="btn btn-xs" onclick="openManageCashierServices('${cid}')" title="${t('manage_services')||'Manage Services'}">⚙️ ${t('manage_my_services')||'My Services'}</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-xs" onclick="openLogCashierReturn('${cid}')" title="Log a return/refund">↩ Log Return</button>
+        <button class="btn btn-xs" onclick="openRecordPersonalDrawingCash('${cid}')" title="${t('personal_drawing_hint')||'Money taken from the cash till for personal use'}">🏠 ${t('personal_drawing')||'Personal Drawing'}</button>
+        <button class="btn btn-xs" onclick="openManageCashierServices('${cid}')" title="${t('manage_services')||'Manage Services'}">⚙️ ${t('manage_my_services')||'My Services'}</button>
+      </div>
     </div>
     ${services.length===0?`<div class="empty">
       <div>${t('no_cashier_services_client')||'No services set up yet.'}</div>
@@ -19984,6 +20455,42 @@ function markAsPersonalDrawing(txId){
   toast('✓ '+(t('personal_drawing_recorded')||'Personal drawing recorded'));
 }
 // نظير المسحوبات الشخصية من الكاش مباشرة (وليس من البنك) - يُستدعى من دفتر الصندوق
+// ══════════════════════════════════════════════════════════════════
+// ⭐⭐⭐ تسجيل استرجاع بالكاشير - مبلغ سالب يُضاف لعمليات اليوم الحالي غير
+// المُرحَّلة (بنفس آلية أي عملية بيع عادية بالضبط، فقط بالسالب) - لأن
+// الاسترداد يحدث فعليًا اليوم (كاش يخرج من الدرج اليوم)، بغض النظر عن متى
+// حدثت العملية الأصلية. لا حاجة لمس أي يوم سابق مُرحَّل أو مُقفَل، ويدخل
+// تلقائيًا ضمن حساب الرصيد المتوقَّع بجرد الكاش القادم بلا أي تعديل إضافي.
+// ══════════════════════════════════════════════════════════════════
+function openLogCashierReturn(cid){
+  showModal('↩ Log Return',`
+    <div style="font-size:11px;color:var(--t3);margin-bottom:12px;line-height:1.6">Recorded with today\u2019s date (the cash leaves the till today, regardless of when the original sale happened).</div>
+    <div class="fg"><label>Amount to refund (€)</label><input type="number" id="cr-amount" step="0.01"/></div>
+    <div class="fg"><label>Date of original transaction</label><input type="date" id="cr-orig-date" value="${TODAY()}"/></div>
+    <div class="fg"><label>Original transaction reference (optional)</label><input id="cr-orig-ref" placeholder="e.g. receipt #, service name"/></div>
+    ${renderReturnEvidenceFieldsHtml('cr-note')}
+  `,async ()=>{
+    const amount=parseFloat(document.getElementById('cr-amount').value)||0;
+    const origDate=document.getElementById('cr-orig-date').value;
+    const origRef=(document.getElementById('cr-orig-ref').value||'').trim();
+    if(amount<=0){toast('❌ Enter a valid amount greater than 0');markFieldError('cr-amount');return;}
+    if(!origDate){toast('❌ Date of original transaction is required');markFieldError('cr-orig-date');return;}
+    if(!validateReturnEvidenceOrNote('cr-note'))return;
+    const note=(document.getElementById('cr-note').value||'').trim();
+    const evidenceFields=await uploadPendingReturnEvidence(cid);
+    if(!S.cashierLog)S.cashierLog=[];
+    S.cashierLog.push({
+      id:UID(),cid,serviceId:null,serviceName:'Return / Refund',serviceIcon:'↩',
+      price:-amount,cashAmount:-amount,bankAmount:0,
+      date:TODAY(),timestamp:new Date().toISOString(),
+      posted:false,isReturn:true,
+      originalTransactionDate:origDate,originalTransactionRef:origRef,note,...evidenceFields
+    });
+    logAudit('create','cashier_entry','Logged a return of '+FMT(amount)+' (original transaction: '+FD(origDate)+(origRef?', ref '+origRef:'')+')',cid);
+    sv();closeModal();renderContent();
+    toast('✓ Return logged');
+  },'Log Return');
+}
 function openRecordPersonalDrawingCash(cid){
   showModal('🏠 '+(t('record_personal_drawing')||'Record Personal Drawing'),`
     <div style="font-size:11px;color:var(--t3);margin-bottom:12px;line-height:1.6">${t('personal_drawing_hint')||'Money taken from the cash till for personal use — not a business expense. This affects the owner\u2019s capital account, not the profit & loss.'}</div>
@@ -20506,6 +21013,12 @@ function createContractAgreement(client,contract){
     monthlyFee:contract?.plan||client.monthlyFee||0,
     paymentTerms:client.paymentTerms||15,
     terminationNotice:client.terminationNotice||1,
+    // ⭐ نُدرج اختيارات الباقة نفسها بالنسخة المحفوظة من العقد، حتى يقدر
+    // مستند الاتفاقية يعرض قائمة الخدمات المُتضمَّنة (بلا أي سعر لكل بند)
+    subscriptionPackage:contract?.subscriptionPackage||null,
+    isAdminMode:!!contract?.isAdminMode,
+    hoursAddon:!!contract?.hoursAddon,
+    cashierAddon:!!contract?.cashierAddon,
   };
 
   const agreement={
@@ -20779,6 +21292,10 @@ function generateDutchContractHTML(client){
     3.2 Alle vermelde tarieven zijn exclusief btw (21%), tenzij uitdrukkelijk anders vermeld.<br/>
     3.3 Facturatie vindt maandelijks plaats. Betaling dient te geschieden binnen ${escapeHtml(String(paymentDays))} dagen na factuurdatum via bankoverschrijving${s.iban?` naar IBAN ${escapeHtml(s.iban)}`:''}.<br/>
     3.4 Bij overschrijding van de betalingstermijn is Opdrachtgever van rechtswege in verzuim, zonder dat hiervoor een nadere ingebrekestelling is vereist. De wettelijke handelsrente (art. 6:119a BW) is alsdan verschuldigd, vermeerderd met de buitengerechtelijke incassokosten conform de Wet Incassokosten (WIK).
+    ${client.subscriptionPackage&&SUBSCRIPTION_PACKAGES[client.subscriptionPackage]?`<br/>3.5 Dit maandbedrag omvat de volgende diensten (${SUBSCRIPTION_PACKAGES[client.subscriptionPackage].name}-pakket):
+    <ul style="margin:6px 0 0;padding-left:18px">
+      ${getContractServiceSummaryLines(client.subscriptionPackage,client.isAdminMode,client.hoursAddon,client.cashierAddon).map(line=>`<li>${escapeHtml(line)}</li>`).join('')}
+    </ul>`:''}
   </div>
 </div>
 
