@@ -4951,9 +4951,22 @@ function openAddContract(cid){
         </div>
       </div>
 
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🏷️ Discount (optional)</label>
+        <select id="contract-discount-type" onchange="updateContractPriceLive()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;margin-bottom:6px">
+          <option value="none">No discount</option>
+          <option value="percent">Percentage (%)</option>
+          <option value="fixed">Fixed amount (€)</option>
+        </select>
+        <div id="contract-discount-value-wrap" style="display:none">
+          <input type="number" id="contract-discount-value" step="0.01" min="0" placeholder="e.g. 10" oninput="updateContractPriceLive()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
+        </div>
+      </div>
+
       <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center">
         <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Monthly Price</div>
         <div id="contract-price-display" style="font-size:24px;font-weight:800;color:var(--gold)">€0</div>
+        <div id="contract-price-original" style="display:none;font-size:11px;color:var(--t3);text-decoration:line-through;margin-top:2px"></div>
       </div>
 
       <div>
@@ -4977,7 +4990,10 @@ function openAddContract(cid){
     const customEmpPrice=parseFloat(document.getElementById('contract-emp-custom-price')?.value)||0;
     const customEmpCount=parseInt(document.getElementById('contract-emp-custom-count')?.value)||0;
     const start=document.getElementById('contract-start').value;
-    const plan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+    const discountType=document.getElementById('contract-discount-type')?.value||'none';
+    const discountValue=parseFloat(document.getElementById('contract-discount-value')?.value)||0;
+    const baseTotal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+    const plan=computeDiscountedTotal(baseTotal,discountType,discountValue);
     if(empTier==='custom'&&!customEmpPrice){toast('❌ Enter the custom monthly price for employees + payroll');markFieldError('contract-emp-custom-price');return;}
 
     if(!S.contracts)S.contracts=[];
@@ -4987,6 +5003,8 @@ function openAddContract(cid){
       title,
       desc:'',
       plan,
+      discountType,
+      discountValue:discountType!=='none'?discountValue:undefined,
       type:'Standard',
       subscriptionPackage:packageId,
       isAdminMode,
@@ -5029,6 +5047,16 @@ function isAddonEnabled(kind){
   return !!document.getElementById('contract-'+kind+'-enabled')?.checked;
 }
 // ⭐ يُعاد حساب السعر الإجمالي حيًا في كل مرة يتغيَّر فيها أي اختيار
+// ⭐⭐ خصم على السعر الإجمالي للاشتراك - إما نسبة مئوية أو مبلغ ثابت. يُطبَّق
+// على المجموع الكلي (الباقة + الإضافات + الموظفين إن وُجدوا)، ولا يمكن أن
+// ينزل السعر النهائي تحت الصفر مهما كان الخصم كبيرًا
+function computeDiscountedTotal(baseTotal,discountType,discountValue){
+  if(!discountType||discountType==='none'||!discountValue)return baseTotal;
+  let discounted=baseTotal;
+  if(discountType==='percent')discounted=baseTotal*(1-Math.min(100,discountValue)/100);
+  else if(discountType==='fixed')discounted=baseTotal-discountValue;
+  return Math.max(0,Math.round(discounted*100)/100);
+}
 function updateContractPriceLive(){
   const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
   const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
@@ -5036,13 +5064,28 @@ function updateContractPriceLive(){
   const cashierEnabled=isAddonEnabled('cashier');
   const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
   const customEmpPrice=parseFloat(document.getElementById('contract-emp-custom-price')?.value)||0;
-  const total=computeContractTotal(packageId,isAdminMode,hoursEnabled,cashierEnabled)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+  const baseTotal=computeContractTotal(packageId,isAdminMode,hoursEnabled,cashierEnabled)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+  const discountType=document.getElementById('contract-discount-type')?.value||'none';
+  const discountValue=parseFloat(document.getElementById('contract-discount-value')?.value)||0;
+  const finalTotal=computeDiscountedTotal(baseTotal,discountType,discountValue);
   const display=document.getElementById('contract-price-display');
-  if(display)display.textContent='€'+total;
+  const originalDisplay=document.getElementById('contract-price-original');
+  if(display)display.textContent='€'+finalTotal;
+  if(originalDisplay){
+    if(discountType!=='none'&&discountValue>0&&finalTotal!==baseTotal){
+      originalDisplay.style.display='block';
+      originalDisplay.textContent='€'+baseTotal+' before discount';
+    }else{
+      originalDisplay.style.display='none';
+    }
+  }
   updatePackageDetailPanel();
   // ⭐ إظهار/إخفاء حقلي العدد والسعر المخصَّصين فقط عند اختيار "أكثر من 7 موظفين"
   const customField=document.getElementById('contract-emp-custom-wrap');
   if(customField)customField.style.display=(empTier==='custom')?'block':'none';
+  // ⭐ إظهار/إخفاء حقل قيمة الخصم فقط عند اختيار نوع خصم فعلي
+  const discountValueWrap=document.getElementById('contract-discount-value-wrap');
+  if(discountValueWrap)discountValueWrap.style.display=(discountType!=='none')?'flex':'none';
 }
 // ⭐ يُستدعى عند تغيير الباقة نفسها - الإضافات (ساعات/كاشير) لم تعد تعتمد على
 // الباقة إطلاقًا فلا حاجة لإعادة بنائها، فقط تحديث السعر ولوحة التفاصيل
@@ -5167,9 +5210,22 @@ function openEditContract(contractId,cid){
         </div>
       </div>
 
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🏷️ Discount (optional)</label>
+        <select id="contract-discount-type" ${locked?'disabled':''} onchange="updateContractPriceLive()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;margin-bottom:6px">
+          <option value="none" ${!con.discountType||con.discountType==='none'?'selected':''}>No discount</option>
+          <option value="percent" ${con.discountType==='percent'?'selected':''}>Percentage (%)</option>
+          <option value="fixed" ${con.discountType==='fixed'?'selected':''}>Fixed amount (€)</option>
+        </select>
+        <div id="contract-discount-value-wrap" style="display:none">
+          <input type="number" id="contract-discount-value" step="0.01" min="0" value="${con.discountValue||''}" placeholder="e.g. 10" ${locked?'disabled':''} oninput="updateContractPriceLive()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
+        </div>
+      </div>
+
       <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center">
         <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Monthly Price</div>
         <div id="contract-price-display" style="font-size:24px;font-weight:800;color:var(--gold)">€${con.plan||0}</div>
+        <div id="contract-price-original" style="display:none;font-size:11px;color:var(--t3);text-decoration:line-through;margin-top:2px"></div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -5211,7 +5267,10 @@ function saveContract(contractId,cid){
   const customEmpCount=parseInt(document.getElementById('contract-emp-custom-count')?.value)||0;
   const startDate=document.getElementById('contract-start')?.value||'';
   const endDate=document.getElementById('contract-end')?.value||'';
-  const plan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+  const discountType=document.getElementById('contract-discount-type')?.value||'none';
+  const discountValue=parseFloat(document.getElementById('contract-discount-value')?.value)||0;
+  const baseTotal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+  const plan=computeDiscountedTotal(baseTotal,discountType,discountValue);
 
   if(!title){toast('❌ Contract title required');markFieldError('contract-title');return;}
   if(empTier==='custom'&&!customEmpPrice){toast('❌ Enter the custom monthly price for employees + payroll');markFieldError('contract-emp-custom-price');return;}
@@ -5232,7 +5291,7 @@ function saveContract(contractId,cid){
       // تغيير سعر) لا تحتاج هذا - تبقى الحالة كما هي دون قفل.
       const priceChanged=oldContract.plan!==plan;
       const newStatus=priceChanged?'draft':oldContract.status;
-      S.contracts[idx]={...oldContract,title,plan,subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,startDate,endDate,status:newStatus};
+      S.contracts[idx]={...oldContract,title,plan,discountType,discountValue:discountType!=='none'?discountValue:undefined,subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,startDate,endDate,status:newStatus};
       const client=S.clients.find(cl=>cl.id===cid);
       logAudit('edit','contract',(priceChanged?'Updated price and locked pending re-signature for contract "':'Updated contract "')+title+'" for '+(client?.name||'')+(priceChanged?' ('+FMT(oldContract.plan)+' → '+FMT(plan)+')':''),cid);
       if(client){
@@ -5246,7 +5305,7 @@ function saveContract(contractId,cid){
   }else{
     // Add new (fallback path — openAddContract normally handles creation itself)
     S.contracts.push({
-      id:UID(),cid:cid,title:title,desc:'',plan:plan,type:'Standard',
+      id:UID(),cid:cid,title:title,desc:'',plan:plan,discountType,discountValue:discountType!=='none'?discountValue:undefined,type:'Standard',
       subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,
       startDate:startDate,endDate:endDate,status:'draft',createdDate:TODAY()
     });
@@ -5310,9 +5369,21 @@ function openProposeUpgrade(contractId,cid){
         </div>
       </div>
     </div>
+    <div style="margin-top:12px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🏷️ Discount (optional)</label>
+      <select id="contract-discount-type" onchange="updateContractPriceLive()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;margin-bottom:6px">
+        <option value="none" ${!con.discountType||con.discountType==='none'?'selected':''}>No discount</option>
+        <option value="percent" ${con.discountType==='percent'?'selected':''}>Percentage (%)</option>
+        <option value="fixed" ${con.discountType==='fixed'?'selected':''}>Fixed amount (€)</option>
+      </select>
+      <div id="contract-discount-value-wrap" style="display:none">
+        <input type="number" id="contract-discount-value" step="0.01" min="0" value="${con.discountValue||''}" placeholder="e.g. 10" oninput="updateContractPriceLive()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
+      </div>
+    </div>
     <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center;margin-top:12px">
       <div style="font-size:11px;color:var(--t3);margin-bottom:4px">New Total Monthly Price</div>
       <div id="contract-price-display" style="font-size:24px;font-weight:800;color:var(--gold)">€${con.plan||0}</div>
+      <div id="contract-price-original" style="display:none;font-size:11px;color:var(--t3);text-decoration:line-through;margin-top:2px"></div>
     </div>
   `,()=>{
     const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
@@ -5323,9 +5394,12 @@ function openProposeUpgrade(contractId,cid){
     const customEmpPrice=parseFloat(document.getElementById('contract-emp-custom-price')?.value)||0;
     const customEmpCount=parseInt(document.getElementById('contract-emp-custom-count')?.value)||0;
     if(empTier==='custom'&&!customEmpPrice){toast('❌ Enter the custom monthly price for employees + payroll');markFieldError('contract-emp-custom-price');return;}
-    const newPlan=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+    const discountType=document.getElementById('contract-discount-type')?.value||'none';
+    const discountValue=parseFloat(document.getElementById('contract-discount-value')?.value)||0;
+    const baseTotal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+    const newPlan=computeDiscountedTotal(baseTotal,discountType,discountValue);
     if(newPlan===con.plan&&packageId===con.subscriptionPackage&&isAdminMode===con.isAdminMode&&empTier===(con.employeePayrollTier||'none')){toast('❌ This matches the current plan already — nothing to propose');return;}
-    con.pendingUpgrade={subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,newPlan,
+    con.pendingUpgrade={subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,discountType,discountValue:discountType!=='none'?discountValue:undefined,newPlan,
       proposedDate:TODAY(),lastReminderDate:TODAY()};
     logAudit('edit','contract','Proposed an upgrade for '+(S.clients.find(cl=>cl.id===cid)?.name||'')+' — €'+con.plan+' → €'+newPlan+' (awaiting client approval)',cid);
     sv();closeModal();renderContent();
@@ -5350,6 +5424,8 @@ function approvePendingUpgrade(contractId){
     con.employeePayrollTier=u.employeePayrollTier;
     con.employeePayrollCustomPrice=u.employeePayrollCustomPrice;
     con.employeePayrollCustomCount=u.employeePayrollCustomCount;
+    con.discountType=u.discountType;
+    con.discountValue=u.discountValue;
     con.plan=u.newPlan;
     con.pendingUpgrade=null;
     // ⭐ موافقة العميل الصريحة تُغني عن أي قفل إضافي - الشروط الجديدة تسري فورًا
@@ -13808,9 +13884,21 @@ function openClientModal(c){
           </div>
         </div>
       </div>
+      <div style="margin-top:12px">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🏷️ Discount (optional)</label>
+        <select id="contract-discount-type" onchange="updateContractPriceLive()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px;margin-bottom:6px">
+          <option value="none">No discount</option>
+          <option value="percent">Percentage (%)</option>
+          <option value="fixed">Fixed amount (€)</option>
+        </select>
+        <div id="contract-discount-value-wrap" style="display:none">
+          <input type="number" id="contract-discount-value" step="0.01" min="0" placeholder="e.g. 10" oninput="updateContractPriceLive()" style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
+        </div>
+      </div>
       <div style="background:var(--gr1);border:2px solid var(--gold);border-radius:8px;padding:14px;text-align:center;margin-top:12px">
         <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Total Monthly Price</div>
         <div id="contract-price-display" style="font-size:24px;font-weight:800;color:var(--gold)">€0</div>
+        <div id="contract-price-original" style="display:none;font-size:11px;color:var(--t3);text-decoration:line-through;margin-top:2px"></div>
       </div>`:`
       <div class="fg"><label>${t('plan')||'Plan'}</label>
         <input type="text" value="€${c?.monthlyFee||0}/month — managed via this client's Contract (Contracts tab)" disabled style="background:var(--gr1);color:var(--t3)"/>
@@ -13856,7 +13944,10 @@ function openClientModal(c){
       const customEmpPrice=parseFloat(document.getElementById('contract-emp-custom-price')?.value)||0;
       const customEmpCount=parseInt(document.getElementById('contract-emp-custom-count')?.value)||0;
       if(empTier==='custom'&&!customEmpPrice){toast('❌ Enter the custom monthly price for employees + payroll');markFieldError('contract-emp-custom-price');return;}
-      const planVal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+      const discountType=document.getElementById('contract-discount-type')?.value||'none';
+      const discountValue=parseFloat(document.getElementById('contract-discount-value')?.value)||0;
+      const baseTotal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+      const planVal=computeDiscountedTotal(baseTotal,discountType,discountValue);
       const newClient={
         id:UID(),
         name:n,
@@ -13898,6 +13989,8 @@ function openClientModal(c){
         title:getNextContractTitle(newClient.id),
         desc:'',
         plan:planVal,
+        discountType,
+        discountValue:discountType!=='none'?discountValue:undefined,
         type:'Standard',
         subscriptionPackage:packageId,
         isAdminMode,
