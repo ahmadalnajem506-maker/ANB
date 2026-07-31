@@ -6307,30 +6307,79 @@ function saveAsset(cid){
 
 // يولّد قيود إهلاك فعلية (Journal Entries) لكل أصول عميل معيّن ضمن سنة
 // محدَّدة، مع منع التوليد المكرر لنفس الأصل ونفس السنة
-function generateDepreciationEntries(cid,year){
+// ⚠️ يقبل الآن periodType/quarter (بدل السنة الكاملة فقط) حتى يمكن استدعاؤها
+// تلقائيًا عند إغلاق ربع واحد فقط بدل انتظار إغلاق السنة كاملة، و silent
+// (وضع صامت) يُستخدَم عند الاستدعاء التلقائي من إغلاق الفترة نفسه - بلا toast
+// مستقل خاص به (المستدعي يدمج النتيجة برسالة واحدة)، وبلا toast إطلاقًا لو
+// لم توجد أصول قابلة للإهلاك أصلًا (حالة طبيعية جدًا لمعظم العملاء، فلا داعي
+// لإزعاج الأدمن برسالة "لا توجد أصول" في كل إغلاق فترة). الزر اليدوي في شاشة
+// الأصول يستدعيها بلا هذه المعاملات فيحصل على نفس السلوك القديم بالضبط.
+//
+// ⚠️⚠️ المبدأ المحاسبي الأساسي هنا: كل فترة زمنية تُحسَب مرة واحدة فقط أبدًا -
+// بصرف النظر عن ترتيب الإغلاق. لو أُغلقت أرباع سابقة من نفس السنة وحُسب
+// إهلاكها فعلًا، وبعدها أُغلقت السنة كاملة، لا يُعاد حساب تلك الأرباع مطلقًا -
+// يُحسَب فقط الفرق (إهلاك السنة الكاملة ناقص ما سبق حسابه في تلك الأرباع)،
+// أي الجزء المتبقي غير المحسوب سابقًا. والعكس صحيح: لو أُقفلت السنة كاملة أولًا
+// (نادر لكن ممكن)، أي محاولة إغلاق ربع منها لاحقًا لا تُنشئ قيدًا إضافيًا فوقها.
+function generateDepreciationEntries(cid,year,periodType,quarter,silent){
   year=year||new Date().getFullYear();
-  const periodStart=year+'-01-01';
-  const periodEnd=year+'-12-31';
+  periodType=periodType||'year';
+  let periodStart,periodEnd,periodKey;
+  if(periodType==='quarter'&&quarter){
+    const qStartMonth=(quarter-1)*3;
+    periodStart=new Date(year,qStartMonth,1).toISOString().slice(0,10);
+    periodEnd=new Date(year,qStartMonth+3,0).toISOString().slice(0,10); // آخر يوم فعلي في الربع
+    periodKey='Q'+quarter+' '+year;
+  }else{
+    periodStart=year+'-01-01';
+    periodEnd=year+'-12-31';
+    periodKey=String(year);
+  }
   const assets=(S.assets||[]).filter(a=>a.cid===cid&&!a.isImmediatelyExpensable&&!a.deleted);
-  if(assets.length===0){toast('No depreciable assets found for this client');return;}
+  if(assets.length===0){
+    if(!silent)toast('No depreciable assets found for this client');
+    return{created:0,skipped:0};
+  }
 
   if(!S.journal)S.journal=[];
   let created=0,skipped=0;
   assets.forEach(a=>{
-    const alreadyExists=S.journal.some(j=>j.assetId===a.id&&j.year===year&&j.type==='depreciation');
-    if(alreadyExists){skipped++;return;}
-    const amount=Math.round(getDepreciationForPeriod(a,periodStart,periodEnd)*100)/100;
-    if(amount<=0){skipped++;return;}
-    S.journal.push({
-      id:UID(),cid,assetId:a.id,year,type:'depreciation',
-      date:periodEnd,amount,
-      desc:(t('depreciation_for')||'Depreciation for')+' '+a.name+' — '+year
-    });
-    created++;
+    const depEntriesThisYear=S.journal.filter(j=>j.assetId===a.id&&j.year===year&&j.type==='depreciation');
+    const yearEntryExists=depEntriesThisYear.some(j=>!j.quarter);
+    if(periodType==='quarter'){
+      // لو السنة كاملة سبق إقفالها وحُسب إهلاكها بقيد واحد شامل، فالربع مغطّى
+      // بالفعل ضمن ذلك القيد - لا نُنشئ فوقه قيدًا ربعيًا مستقلًا يُكرِّر المبلغ
+      if(yearEntryExists){skipped++;return;}
+      if(depEntriesThisYear.some(j=>j.quarter===quarter)){skipped++;return;}
+      const amount=Math.round(getDepreciationForPeriod(a,periodStart,periodEnd)*100)/100;
+      if(amount<=0){skipped++;return;}
+      S.journal.push({
+        id:UID(),cid,assetId:a.id,year,quarter,type:'depreciation',
+        date:periodEnd,amount,
+        desc:(t('depreciation_for')||'Depreciation for')+' '+a.name+' — '+periodKey
+      });
+      created++;
+    }else{
+      if(yearEntryExists){skipped++;return;} // السنة كاملة سبق إقفالها فعلًا - لا تُكرَّر
+      const fullYearAmount=Math.round(getDepreciationForPeriod(a,periodStart,periodEnd)*100)/100;
+      const alreadyBookedInQuarters=Math.round(depEntriesThisYear.filter(j=>j.quarter).reduce((s,j)=>s+(j.amount||0),0)*100)/100;
+      const remaining=Math.round((fullYearAmount-alreadyBookedInQuarters)*100)/100;
+      if(remaining<=0){skipped++;return;} // كل إهلاك السنة سبق حسابه ضمن الأرباع المُقفَلة
+      S.journal.push({
+        id:UID(),cid,assetId:a.id,year,quarter:null,type:'depreciation',
+        date:periodEnd,amount:remaining,
+        desc:(t('depreciation_for')||'Depreciation for')+' '+a.name+' — '+periodKey+
+          (alreadyBookedInQuarters>0?' ('+(t('remaining_after_quarters')||'remaining portion, after quarters already closed')+')':'')
+      });
+      created++;
+    }
   });
-  logAudit('create','journal','Generated '+created+' depreciation entries for '+year,cid);
-  sv();renderApp();
-  toast('✓ '+created+' '+(t('entries_created')||'entries created')+(skipped>0?' — '+skipped+' '+(t('skipped_already_exist')||'skipped (already exist or zero)'):''));
+  if(created>0)logAudit('create','journal','Generated '+created+' depreciation entries for '+periodKey,cid);
+  if(!silent){
+    sv();renderApp();
+    toast('✓ '+created+' '+(t('entries_created')||'entries created')+(skipped>0?' — '+skipped+' '+(t('skipped_already_exist')||'skipped (already exist or zero)'):''));
+  }
+  return{created,skipped};
 }
 // إجمالي الإهلاك المُسجَّل فعليًا (كقيود) لعميل معيّن ضمن فترة تقرير معيّنة
 function getRecordedDepreciationForPeriod(cid){
@@ -10607,6 +10656,10 @@ function rEmployees(el,cid){
     </button>
     <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||''}</span>
   </div>
+  ${isAdmin()&&allEmployees.some(e=>e.employmentStatus==='active')?`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:10px 14px;margin-bottom:12px">
+    <div style="font-size:11.5px;color:var(--t2)">🧾 ${t('bulk_payslips_hint')||'Generate last month\u2019s payslip for every active salaried employee at once. Hourly-paid employees are excluded (their hours need manual entry) and PDFs aren\u2019t auto-downloaded — download them anytime from each employee\u2019s Payslip History.'}</div>
+    <button class="btn btn-p btn-xs" onclick="generateAllPayslips('${cid}')">${t('bulk_payslips_btn')||'Generate All Payslips'}</button>
+  </div>`:''}
   <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
     ${allEmployees.length>0?`<input type="text" id="employees-search" placeholder="🔍 ${t('search')||'Search'}..."
       style="flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--gr2);border-radius:8px;font-size:13px;background:var(--white);color:var(--t1)"
@@ -11084,6 +11137,72 @@ function openPayslipModal(employeeId){
   },t('generate_pdf')||'Generate PDF');
 
   setTimeout(()=>updatePayslipMonthOptions(employeeId),30);
+}
+
+// ⭐⭐ يُصدر بيانات رواتب الشهر الماضي (المكتمل فعليًا - لا الشهر الجاري غير
+// المنتهي بعد) لكل الموظفين النشطين ذوي الراتب الثابت دفعة واحدة، بنفس مبدأ
+// generateAllClientInvoices بالضبط: يتخطى من صدر له بيان بالفعل لهذا الشهر
+// (لا تكرار)، ويُسجِّل الأدمن بسجل تدقيق واحد للعملية الجماعية كلها.
+// ⚠️ موظفو الأجر بالساعة (salaryType==='hourly') مُستثنَون عمدًا من التوليد
+// الآلي - لا يمكن تخمين ساعات عملهم الفعلية هذا الشهر، وتوليد رقم وهمي قد
+// يعني دفع راتب خاطئ فعليًا. يُدرَجون فقط بقائمة "بحاجة متابعة يدوية" في
+// رسالة التوست النهائية، ويبقى توليدهم فرديًا كالمعتاد عبر openPayslipModal.
+// ⚠️ بخلاف التوليد الفردي، لا يُصدَّر PDF تلقائيًا لكل موظف هنا (تنزيل عشرات
+// الملفات دفعة واحدة تجربة سيئة) - التنزيل يبقى متاحًا لاحقًا وفرديًا من
+// "سجل بيانات الراتب" (Payslip History) الخاص بكل موظف عبر redownloadPayslip.
+function generateAllPayslips(cid){
+  const now=new Date();
+  const targetDate=new Date(now.getFullYear(),now.getMonth()-1,1);
+  const year=targetDate.getFullYear(),month=targetDate.getMonth()+1;
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthLabel=monthNames[month-1]+' '+year;
+
+  const activeEmployees=(S.employees||[]).filter(e=>e.cid===cid&&!e.deleted&&e.employmentStatus==='active');
+  if(activeEmployees.length===0){toast('No active employees to generate payslips for');return;}
+
+  showConfirmDialog(t('bulk_payslips_title')||'Generate All Payslips',
+    (t('bulk_payslips_confirm1')||'Generate payslip for ')+activeEmployees.length+(t('bulk_payslips_confirm2')||' active employee(s) for ')+monthLabel+
+    (t('bulk_payslips_confirm3')||'? Employees who already have a payslip this month are skipped. Hourly-rate employees need their hours entered manually and are excluded here — generate theirs individually as usual. PDFs are not downloaded automatically; get them anytime from each employee\u2019s Payslip History.'),
+    ()=>{
+      let created=0,skippedAlready=0;const manualFollowUp=[];
+      activeEmployees.forEach(emp=>{
+        const alreadyExists=(S.payslips||[]).some(p=>p.employeeId===emp.id&&p.month===month&&p.year===year);
+        if(alreadyExists){skippedAlready++;return;}
+        if(emp.salaryType==='hourly'){manualFollowUp.push(emp.name);return;}
+
+        // ⚠️ نفس الافتراضات الصفرية الظاهرة كقيم ابتدائية في النموذج اليدوي
+        // (km ومربّع أيام العمل من المنزل يبدآن بـ0 قابلًا للتعديل) - التوليد
+        // الآلي هنا لا يخترع رقمًا جديدًا، فقط يستخدم نفس الافتراض الموجود أصلًا
+        const km=emp.travelAllowanceType==='per_km'?0:null;
+        const homeWorkDays=emp.hasHomeWorkAllowance?0:null;
+        const b=computePayslipBreakdown(emp,null,month,{km,homeWorkDays});
+        const loonheffing=calculateLoonheffing2026(b.taxableGross,emp.applyLoonheffingskorting!==false);
+        const netPay=b.taxableGross-loonheffing+b.travelAllowance+b.homeWorkAllowance;
+
+        if(!S.payslips)S.payslips=[];
+        const payslip={
+          id:UID(),employeeId:emp.id,cid:emp.cid,month,year,hoursWorked:null,km,homeWorkDays,
+          ...b,loonheffing,netPay,generatedAt:new Date().toISOString(),taxYear:LOONHEFFING_TAX_YEAR,bulkGenerated:true
+        };
+        S.payslips.push(payslip);
+        if(!S.journal)S.journal=[];
+        S.journal=S.journal.filter(j=>!(j.type==='payroll'&&j.employeeId===emp.id&&j.month===month&&j.year===year));
+        const totalPayrollCost=b.grossBase+b.vacationMoney+b.thirteenthMonthAccrual+b.customTotal+b.travelAllowance+b.homeWorkAllowance;
+        S.journal.push({
+          id:UID(),cid:emp.cid,employeeId:emp.id,payslipId:payslip.id,type:'payroll',
+          date:new Date(year,month,0).toISOString().slice(0,10),
+          amount:Math.round(totalPayrollCost*100)/100,
+          desc:(t('payroll_cost_for')||'Payroll cost for')+' '+emp.name+' — '+monthLabel
+        });
+        created++;
+      });
+      if(created>0)logAudit('create','payslip','Bulk-generated '+created+' payslip(s) for '+monthLabel,cid);
+      sv();renderApp();closeModal();
+      let msg='✓ '+created+' '+(t('payslips_generated')||'payslip(s) generated')+' — '+monthLabel;
+      if(skippedAlready>0)msg+=' — '+skippedAlready+' '+(t('skipped_already_paid')||'already had a payslip');
+      if(manualFollowUp.length>0)msg+=' — ⚠ '+(t('needs_manual_hours')||'needs manual hours: ')+manualFollowUp.join(', ');
+      toast(msg);
+    });
 }
 
 // يعبّئ قائمة الأشهر المتاحة حسب السنة المختارة - يمنع أي شهر قادم من الظهور كخيار إطلاقًا
@@ -12558,8 +12677,18 @@ function openClosePeriodModal(cid){
         if(!S.yearClosings)S.yearClosings=[];
         S.yearClosings.push({id:UID(),cid,periodType,year,quarter,closedAt:new Date().toISOString(),closedBy:S.currentAdmin||null});
         logAudit('create','year_closing','Closed period '+label,cid);
+        // ⚠️ توليد قيود الإهلاك تلقائيًا للفترة المُغلَقة نفسها (ربع أو سنة كاملة)
+        // بدل انتظار الأدمن ليتذكَّر الضغط على الزر يدويًا لكل عميل. silent=true
+        // يمنع أي toast/رسالة مستقلة لو لم توجد أصول (الحالة الأغلب) - النتيجة
+        // تُدمَج بدلًا من ذلك في رسالة إغلاق الفترة نفسها بالأسفل، حتى يبقى
+        // الأدمن مطّلعًا دائمًا على أي قيد محاسبي أُنشئ تلقائيًا نيابة عنه.
+        const depResult=generateDepreciationEntries(cid,year,periodType,quarter,true);
         sv();closeModal();renderContent();
-        toast('🔒 '+(t('period_closed')||'Period closed — its transactions are now protected'));
+        let closedMsg='🔒 '+(t('period_closed')||'Period closed — its transactions are now protected');
+        if(depResult&&depResult.created>0){
+          closedMsg+=' • 📊 '+depResult.created+' '+(t('depreciation_auto_generated')||'depreciation entries auto-generated');
+        }
+        toast(closedMsg);
       });
   },t('close_period_action')||'Close Period');
 }
@@ -16504,6 +16633,39 @@ function renderBankTable(cid,searchTerm){
 
 // ═══ BANK IMPORT: CSV / MT940 ═══════════════════════════════
 
+// ⭐⭐⭐ يكتشف صيغة كشف الحساب البنكي تلقائيًا من محتوى الملف نفسه (بلا أي
+// اختيار يدوي للبنك من المستخدم أصلًا - لم يكن موجودًا). الإصدار السابق كان
+// يبحث عن كلمات داخل سطر العنوان الخام كاملًا كنص واحد (raw substring)، وهذا
+// يُنتج تصنيفات خاطئة حقيقية: مثلًا "Transactiedatum" (عمود ABN) يحتوي الكلمة
+// الجزئية "datum" ضمنه، فكان يدخل شرط "datum && bedrag" الخاص بـING/Rabobank
+// أولًا بالخطأ قبل أن يصل لشرط ABN إطلاقًا - وبما أن أعمدة ABN لا تحتوي فعليًا
+// على "tegenrekening" ولا "mededelingen"/"mutatiesoort" (وهذي أعمدة ING لا
+// Rabobank أصلًا رغم كتابتها كشرط لـRabobank)، كانت ملفات ABN وRabobank الحقيقية
+// تنتهي دائمًا كـ"Generic CSV" رغم دعمهما المُعلَن.
+// ⭐ الحل: تقسيم سطر العنوان فعليًا لأعمدة منفصلة (بنفس splitCSV المُستخدَمة في
+// التحليل الفعلي لاحقًا، فتُعامَل الفواصل المنقوطة/العادية والحقول المُقتبَسة
+// بنفس الطريقة تمامًا)، ثم البحث عن تطابق تام لاسم عمود مميّز حقيقي لكل بنك -
+// لا بحث جزئي عشوائي داخل نص خام قد يتقاطع بين الأعمدة.
+function detectBankFormat(raw){
+  // MT940: صيغة SWIFT بعلامات حقول مميّزة (:20: :61: :86: ...)، تُفحَص أولًا
+  // لأنها ليست CSV إطلاقًا - لا داعي لمحاولة تحليل عنوان أعمدة لها
+  if(/:20:/.test(raw)&&(/:61:/.test(raw)||/:60F:/.test(raw)||/:86:/.test(raw)))return 'MT940';
+
+  const firstLine=(raw.split('\n')[0]||'').replace(/\r$/,'');
+  const cols=splitCSV(firstLine).map(c=>c.replace(/"/g,'').trim().toLowerCase());
+  const has=(...names)=>names.some(n=>cols.includes(n));
+
+  // ⚠️ الترتيب مهم: نتحقق أولًا من الأعمدة الأكثر تفرُّدًا وغير القابلة للتداخل
+  // بين البنوك (Rabobank وABN لهما أعمدة لا وجود لمثيلها إطلاقًا عند أي بنك
+  // آخر)، وأخيرًا فقط الشرط الأعم (datum+bedrag) الخاص بـING كمُطابَقة احتياطية
+  if(has('iban/bban')||has('tegenpartij iban')||has('tegenpartij naam')||has('volgnr')||has('saldo na trn'))return 'Rabobank';
+  if(has('transactiedatum')||has('valutacode')||has('beginstand')||has('eindstand'))return 'ABN';
+  if(has('tegenrekening')||has('mutatiesoort')||has('mededelingen')||has('naam / omschrijving')||has('bedrag (eur)'))return 'ING';
+  if(has('counterparty')||(has('amount')&&has('account')&&has('name')))return 'Bunq';
+  if(has('datum')&&has('bedrag'))return 'ING'; // احتياطي: عمودا "Datum"/"Bedrag" العاديان بلا أي عمود مميّز آخر - الافتراض الأقرب هو ING
+  return 'Generic';
+}
+
 function importBankFile(ev,cid){
   const file=ev.target.files&&ev.target.files[0];
   if(!file)return;
@@ -16513,26 +16675,17 @@ function importBankFile(ev,cid){
     let txs=[];
     let format='unknown';
     try{
-      if(raw.includes(':20:')||raw.includes('\n:60')){
-        txs=parseMT940(raw,cid); format='MT940';
-      } else {
-        const header=raw.split('\n')[0].toLowerCase();
-        if(header.includes('datum') && header.includes('bedrag')){
-          if(header.includes('naam/omschrijving')||header.includes('tegenrekening')){
-            txs=parseINGcsv(raw,cid); format='ING CSV';
-          } else if(header.includes('mededelingen')||header.includes('mutatiesoort')){
-            txs=parseRabobankCsv(raw,cid); format='Rabobank CSV';
-          } else {
-            txs=parseGenericCsv(raw,cid); format='Generic CSV';
-          }
-        } else if(header.includes('transactiedatum')||header.includes('omschrijving')){
-          txs=parseABNcsv(raw,cid); format='ABN AMRO CSV';
-        } else if(header.includes('amount')||header.includes('description')){
-          txs=parseBunqCsv(raw,cid); format='Bunq CSV';
-        } else {
-          txs=parseGenericCsv(raw,cid); format='Generic CSV';
-        }
-      }
+      const detected=detectBankFormat(raw);
+      const PARSERS={
+        MT940:{fn:parseMT940,label:'MT940'},
+        Rabobank:{fn:parseRabobankCsv,label:'Rabobank CSV'},
+        ABN:{fn:parseABNcsv,label:'ABN AMRO CSV'},
+        ING:{fn:parseINGcsv,label:'ING CSV'},
+        Bunq:{fn:parseBunqCsv,label:'Bunq CSV'},
+        Generic:{fn:parseGenericCsv,label:'Generic CSV'}
+      };
+      const parser=PARSERS[detected]||PARSERS.Generic;
+      txs=parser.fn(raw,cid); format=parser.label;
     }catch(err){
       toast('❌ Import error: '+err.message,'ti-alert-circle');
       ev.target.value=''; return;
@@ -16549,9 +16702,14 @@ function importBankFile(ev,cid){
       ev.target.value=''; return;
     }
     S.bankTx.push(...newTxs);
-    const autoMatchedCount=autoMatchBankTransactions(cid,newTxs.map(tx=>tx.id));
+    const autoMatch=autoMatchBankTransactions(cid,newTxs.map(tx=>tx.id));
     sv();renderContent();
-    toast(`✓ ${format}: ${newTxs.length} imported, ${txs.length-newTxs.length} duplicates skipped`+(autoMatchedCount>0?`, ${autoMatchedCount} auto-matched (exact unambiguous match)`:''),'ti-check');
+    let matchNote='';
+    if(autoMatch.matchedCount>0){
+      const assisted=autoMatch.matchedByName+autoMatch.matchedByDate;
+      matchNote=`, ${autoMatch.matchedCount} auto-matched`+(assisted>0?` (${assisted} via name/date disambiguation)`:' (exact unambiguous match)');
+    }
+    toast(`✓ ${format}: ${newTxs.length} imported, ${txs.length-newTxs.length} duplicates skipped`+matchNote,'ti-check');
     ev.target.value='';
   };
   reader.readAsText(file,'UTF-8');
@@ -20472,15 +20630,47 @@ function reverseAllocationFromTarget(type,targetId,amount){
 }
 
 // ══════════════════════════════════════════════════════════════════
-// ⭐⭐⭐ مطابقة تلقائية عند الاستيراد - تُطبَّق المطابقة تلقائيًا فقط عند وجود
-// مرشَّح واحد لا غير بمبلغ مطابق تمامًا (بلا أي هامش تسامح) لنفس العميل - أي
-// حالة فيها أكثر من مرشَّح، أو فرق ولو بسيط بالمبلغ، تبقى ضمن قائمة الاقتراحات
-// العادية بانتظار مراجعة الأدمن كما كان الحال دائمًا. لا كسر لمبدأ "لا تعديل
-// مالي صامت بلا تأكيد" - هذي فقط الحالة الوحيدة عديمة اللبس بالتعريف.
+// ⭐⭐⭐ مطابقة تلقائية عند الاستيراد - المبلغ يبقى دائمًا شرطًا حاسمًا بلا أي
+// هامش تسامح إطلاقًا (مطابقة بمبلغ تقريبي تعني خطر تخصيص دفعة لعنصر مالي
+// خاطئ فعليًا - غير مقبول أبدًا). لكن عند وجود أكثر من مرشَّح بنفس المبلغ
+// المطابِق تمامًا (شائع جدًا مع الفواتير/المصاريف المتكررة بنفس القيمة كل
+// شهر)، بدل الاستسلام فورًا للمراجعة اليدوية كما كان الحال سابقًا، نستخدم
+// إشارتين إضافيتين حقيقيتين لحسم الأمر بلا أي تخمين:
+//   1) اسم الطرف الآخر الفعلي (المورد للمصاريف، أو جهة الفوترة للفواتير عبر
+//      getBillToName) مقابل نص وصف الحركة البنكية (tx.desc) - لو مرشَّح واحد
+//      فقط من بين المتطابقين بالمبلغ يحتوي اسمه ضمن نص الحركة، فهذا تأكيد
+//      حقيقي إضافي (نفس مبدأ التطبيع المستخدَم أصلًا في findSupplierProfile)
+//   2) لو الاسم لم يحسم الأمر (لا تطابق، أو أكثر من مرشَّح بالاسم أيضًا)، تُطبَّق
+//      قاعدة محاسبية معيارية: أقدم عنصر مستحق غير مسدَّد يُسدَّد أولًا (FIFO) -
+//      لكن فقط لو كان الأقدم أقدم بوضوح تام بلا أي تعادل بالتاريخ مع مرشَّح آخر
+// أي حالة تبقى ملتبسة بعد هذين الفلترين (لا اسم حاسم ولا تاريخ حاسم) تبقى كما
+// كانت دائمًا: منتظرة للمراجعة اليدوية بلا أي تخمين - لا كسر لمبدأ "لا تعديل
+// مالي صامت بلا تأكيد" حقيقي.
 // ══════════════════════════════════════════════════════════════════
+function textContainsNormalizedName(haystackText,name){
+  const key=normalizeSupplierName(name);
+  if(!key||key.length<3)return false; // أسماء قصيرة جدًا (حرفان أو أقل) غير موثوقة كإشارة مطابقة - قد تُطابق بالصدفة
+  return normalizeSupplierName(haystackText).includes(key);
+}
+function narrowMatchCandidatesByName(tx,candidates,isIncoming){
+  if(candidates.length<=1)return candidates;
+  const named=candidates.filter(c=>{
+    const name=isIncoming?getBillToName(c):(c.supplier||'');
+    return name&&name!=='—'&&textContainsNormalizedName(tx.desc,name);
+  });
+  return named.length===1?named:candidates;
+}
+function narrowMatchCandidatesByOldestDate(candidates){
+  if(candidates.length<=1)return candidates;
+  const dated=candidates.filter(c=>!!c.date);
+  if(dated.length===0)return candidates;
+  const sorted=[...dated].sort((a,b)=>(a.date<b.date?-1:a.date>b.date?1:0));
+  if(sorted.length>1&&sorted[0].date===sorted[1].date)return candidates; // تعادل بالتاريخ - لا حسم
+  return [sorted[0]];
+}
 function autoMatchBankTransactions(cid,newTxIds){
   const txs=(S.bankTx||[]).filter(t=>newTxIds.includes(t.id)&&t.cid===cid&&!t.noMatchNeeded);
-  let matchedCount=0;
+  let matchedCount=0,matchedByName=0,matchedByDate=0;
   txs.forEach(tx=>{
     const remaining=getTxRemaining(tx);
     if(remaining<=0.01)return; // مُطابَقة بالفعل أو مبلغ صفري
@@ -20491,15 +20681,28 @@ function autoMatchBankTransactions(cid,newTxIds){
     }else{
       candidates=S.expenses.filter(e=>e.cid===cid&&!e.deleted&&Math.abs(getExpenseRemaining(e)-remaining)<0.005);
     }
-    // ⚠️ "لا لبس" يعني مرشَّح واحد بالضبط - أي عدد آخر (صفر أو أكثر من واحد) يبقى للمراجعة اليدوية
+    if(candidates.length===0)return;
+    let matchReason='exact single-candidate';
+    if(candidates.length>1){
+      const byName=narrowMatchCandidatesByName(tx,candidates,isIncoming);
+      if(byName.length===1){candidates=byName;matchReason='amount + counterparty name match';}
+      else{
+        const byDate=narrowMatchCandidatesByOldestDate(candidates);
+        if(byDate.length===1){candidates=byDate;matchReason='amount match, oldest outstanding settled first (FIFO)';}
+      }
+    }
+    // ⚠️ "لا لبس" الآن يعني: مرشَّح واحد بعد كل الإشارات (المبلغ وحده، أو
+    // المبلغ+الاسم، أو المبلغ+الأقدمية الحاسمة) - أي التباس متبقٍ يبقى للمراجعة اليدوية
     if(candidates.length!==1)return;
     const target=candidates[0];
     const type=isIncoming?'invoice':'expense';
     const targetLabel=isIncoming?((target.num||'')+' — '+(target.desc||'')):(target.desc||target.supplier||'Expense');
-    createAllocation(tx,type,target.id,targetLabel,remaining,true);
+    createAllocation(tx,type,target.id,targetLabel,remaining,true,matchReason);
     matchedCount++;
+    if(matchReason.includes('counterparty'))matchedByName++;
+    else if(matchReason.includes('FIFO'))matchedByDate++;
   });
-  return matchedCount;
+  return{matchedCount,matchedByName,matchedByDate};
 }
 
 function matchTx(id){
@@ -20673,11 +20876,11 @@ function addManualAllocation(txId,type,targetId,promptForAmount){
   },t('match')||'Match');
 }
 
-function createAllocation(tx,type,targetId,targetLabel,amount,silent){
+function createAllocation(tx,type,targetId,targetLabel,amount,silent,matchReason){
   if(!tx.allocations)tx.allocations=[];
   tx.allocations.push({id:UID(),type,targetId,targetLabel,amount,autoMatched:!!silent});
   applyAllocationToTarget(type,targetId,amount);
-  logAudit('edit','bank_tx',(silent?'Auto-matched (exact single-candidate) transaction "':'Matched transaction "')+tx.desc+'" ('+FMT(amount)+') to '+targetLabel,tx.cid);
+  logAudit('edit','bank_tx',(silent?'Auto-matched ('+(matchReason||'exact single-candidate')+') transaction "':'Matched transaction "')+tx.desc+'" ('+FMT(amount)+') to '+targetLabel,tx.cid);
   sv();
   if(!silent)renderMatchModalContent(tx.id); // إعادة رسم النافذة نفسها لتحديث المتبقي والاقتراحات فورًا
 }
@@ -20961,7 +21164,8 @@ async function parseImportFile(file,category){
     for(let i=0;i<Math.min(6,aoa.length);i++){
       const rowText=(aoa[i]||[]).join(' ').toLowerCase();
       if(rowText.includes('reference total')){
-        referenceTotal=parseFloat(aoa[i][1])||0;
+        const n=normalizeImportNumber(aoa[i][1]);
+        referenceTotal=n.ok&&n.value!==''?n.value:NaN; // NaN صريح لو التطبيع فشل - لا نُخفي خطأ إدخال حقيقي كـ"صفر"
         dataStartRow=i+2; // نتخطى الصف الفارغ بعدها أيضًا
         break;
       }
@@ -20976,19 +21180,82 @@ async function parseImportFile(file,category){
   }
   if(headerRowIdx===-1)headerRowIdx=0;
 
+// ⭐⭐⭐ يطبّع نص أي رقم مُدخَل بصيغ شائعة مختلفة قبل الفحص/الترحيل، بدل رفض
+// الصف بالكامل لمجرد أن المستخدم كتب "€1.500,00" أو "1,500.00" بدل "1500" -
+// هذي صيغ صحيحة تمامًا وواضحة المعنى، وليست خطأً حقيقيًا في البيانات. الفرق
+// بين فاصل الآلاف والفاصل العشري: آخر فاصلة/نقطة تظهر بالنص هي الفاصل
+// العشري الفعلي (لا افتراض صيغة واحدة فقط والفشل الصامت في الأخرى).
+function normalizeImportNumber(raw){
+  if(raw===''||raw===undefined||raw===null)return{ok:true,value:''};
+  if(typeof raw==='number')return{ok:true,value:raw}; // Excel يُرجع رقمًا فعليًا مباشرة غالبًا لو الخلية عددية أصلًا
+  let s=String(raw).trim();
+  if(!s)return{ok:true,value:''};
+  s=s.replace(/[€$£\s]/g,''); // إزالة رموز العملة الشائعة والمسافات (بما فيها مسافة فاصل الآلاف الأوروبية)
+  const hasComma=s.includes(','),hasDot=s.includes('.');
+  if(hasComma&&hasDot){
+    const lastComma=s.lastIndexOf(','),lastDot=s.lastIndexOf('.');
+    if(lastComma>lastDot)s=s.replace(/\./g,'').replace(',','.'); // صيغة أوروبية/هولندية: 1.234,56
+    else s=s.replace(/,/g,''); // صيغة إنجليزية: 1,234.56
+  }else if(hasComma&&!hasDot){
+    // فاصلة وحيدة بلا نقطة: عشرية هولندية لو رقمان بالضبط بعدها (1234,56)، وإلا فاصل آلاف (1,234)
+    const parts=s.split(',');
+    s=(parts.length===2&&parts[1].length===2)?parts[0]+'.'+parts[1]:s.replace(/,/g,'');
+  }
+  const num=parseFloat(s);
+  return isNaN(num)?{ok:false,value:raw}:{ok:true,value:num};
+}
+// ⭐ يحوّل الرقم التسلسلي لتاريخ Excel (لو الخلية مُهيّأة كتاريخ فعليًا بدل نص)
+// إلى تاريخ ISO عادي - نظام إبوك Excel يبدأ 1899-12-30 (خطأ السنة الكبيسة الشهير في Excel)
+function excelSerialToISODate(serial){
+  const d=new Date(Math.round((serial-25569)*86400*1000));
+  return isNaN(d.getTime())?null:d.toISOString().slice(0,10);
+}
+// ⭐⭐⭐ يطبّع أي تاريخ مُدخَل لصيغة ISO موحَّدة قبل الفحص/الترحيل، بإعادة
+// استخدام نفس دوال parseDateNL/parseDateISO المُستخدَمة أصلًا لتحليل كشوف
+// البنك (تدعم DD-MM-YYYY وDD/MM/YYYY وYYYYMMDD وISO) - بدل الاعتماد فقط على
+// new Date() الذي يرفض أو يُسيء تفسير الصيغة الهولندية الشائعة "15-01-2026"
+function normalizeImportDate(raw){
+  if(raw===''||raw===undefined||raw===null)return{ok:true,value:''};
+  if(typeof raw==='number'){
+    const iso=excelSerialToISODate(raw);
+    return iso?{ok:true,value:iso}:{ok:false,value:raw};
+  }
+  const s=String(raw).trim();
+  if(!s)return{ok:true,value:''};
+  const iso=parseDateISO(s)||parseDateNL(s);
+  return iso?{ok:true,value:iso}:{ok:false,value:raw};
+}
+
   const rows=[];
   for(let i=headerRowIdx+1;i<aoa.length;i++){
     const row=aoa[i];
     if(!row||row.every(cell=>cell===''||cell===undefined||cell===null))continue;
     const obj={};
-    cat.columns.forEach((col,idx)=>{obj[col.key]=row[idx]!==undefined?row[idx]:'';});
+    cat.columns.forEach((col,idx)=>{
+      const raw=row[idx]!==undefined?row[idx]:'';
+      // ⚠️ التطبيع هنا فقط - لو فشل، تُحفَظ القيمة الخام كما هي بلا تغيير، ليبقى
+      // فحص validateImportRows قادرًا على رفضها برسالة واضحة تعرض ما كتبه المستخدم فعليًا
+      if(col.type==='number'){
+        const n=normalizeImportNumber(raw);
+        obj[col.key]=n.ok?n.value:raw;
+      }else if(col.type==='date'){
+        const d=normalizeImportDate(raw);
+        obj[col.key]=d.ok?d.value:raw;
+      }else{
+        obj[col.key]=typeof raw==='string'?raw.trim():raw;
+      }
+    });
     rows.push(obj);
   }
   return {rows,referenceTotal};
 }
 
 // يفحص صفوف الاستيراد بدقة قبل أي ترحيل - يُعيد قائمة أخطاء واضحة إن وُجدت،
-// وإلا يُعيد "صالح" - لا ترحيل جزئي أبدًا: إما كل الصفوف صحيحة أو لا شيء
+// وإلا يُعيد "صالح" - لا ترحيل جزئي أبدًا: إما كل الصفوف صحيحة أو لا شيء.
+// ⚠️ بحلول هذه المرحلة، القيم الرقمية والتاريخية سبق تطبيعها فعليًا في
+// parseImportFile (صيغ العملة/الفاصل العشري الأوروبي/التواريخ الهولندية كلها
+// قُبِلت وحُوِّلت هناك بصمت) - فأي خطأ يظهر هنا الآن هو خطأ حقيقي فعلًا لا
+// مجرد تنسيق مختلف، والرسائل توضّح الصيغ المقبولة صراحة بدل رفض غامض
 function validateImportRows(category,rows,referenceTotal){
   const cat=IMPORT_CATEGORIES[category];
   const errors=[];
@@ -21005,13 +21272,14 @@ function validateImportRows(category,rows,referenceTotal){
         return;
       }
       if(val===''||val===undefined||val===null)return;
-      if(col.type==='number'&&isNaN(parseFloat(val))){
-        errors.push(`Row ${rowNum}: "${col.label}" must be a number (got "${val}").`);
+      if(col.type==='number'&&(typeof val!=='number'||isNaN(val))){
+        errors.push(`Row ${rowNum}: "${col.label}" — couldn't recognize "${val}" as a number. Accepted formats: 1500, 1500.00, 1.500,00, or €1,500.00.`);
       }
       if(col.type==='date'){
+        // ⚠️ لو التطبيع نجح، val صار نصًا ISO (YYYY-MM-DD) بالفعل وnew Date() يقرأه بثقة تامة
         const d=new Date(val);
-        if(isNaN(d.getTime())){
-          errors.push(`Row ${rowNum}: "${col.label}" is not a valid date (got "${val}").`);
+        if(typeof val!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(val)||isNaN(d.getTime())){
+          errors.push(`Row ${rowNum}: "${col.label}" — couldn't recognize "${val}" as a date. Accepted formats: YYYY-MM-DD, DD-MM-YYYY, DD/MM/YYYY.`);
         }else if(d>new Date()){
           errors.push(`Row ${rowNum}: "${col.label}" is a future date (${val}) - this is unexpected for historical data.`);
         }
