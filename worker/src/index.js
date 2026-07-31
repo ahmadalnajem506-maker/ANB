@@ -381,7 +381,7 @@ UNSAVED CHANGES PROTECTION: If you (or a client) type into a form or field and t
 
 AI ASSISTANT: This chatbot itself (admin-only, via a floating "🤖" button) — free via Cloudflare Workers AI, for accounting/tax/admin guidance including "how do I record X in this app" questions.
 
-PUSH NOTIFICATIONS: Real device push notifications can be enabled per device from a "Push Notifications" card. Once enabled, a daily server-side check sends: admins get notified about contracts expiring within 7 days; clients get notified about their own overdue invoices, and separately about any stale/unposted Cashier day that still needs a physical cash count to close out (this is a reminder only — it never posts anything on the client's behalf). If a browser/device clears its site data or cache, the underlying push subscription is wiped by the browser itself (not an app bug) and must be re-enabled manually.`;
+PUSH NOTIFICATIONS: Real device push notifications can be enabled per device from a "Push Notifications" card. Once enabled, a daily server-side check sends: admins get notified about contracts expiring within 7 days, and a combined daily summary of what clients did the previous day across all clients at once (new invoices issued, new expenses logged, and bank statement files imported — counting only actions the client did themselves, not the admin's own work on their behalf); clients get notified about their own overdue invoices, and separately about any stale/unposted Cashier day that still needs a physical cash count to close out (this is a reminder only — it never posts anything on the client's behalf). If a browser/device clears its site data or cache, the underlying push subscription is wiped by the browser itself (not an app bug) and must be re-enabled manually.`;
 var ADMIN_ASSISTANT_SYSTEM_PROMPT = `You are an internal assistant for ANB Financial Services, a Dutch bookkeeping and financial administration firm serving freelancers (ZZP) and small businesses. You help the firm's own admin staff think through accounting, tax (Dutch BTW/Belastingdienst rules), and general business-administration questions they run into during daily work — including questions about how to record something in their own ANB FinAdmin Pro application.
 
 ${ANB_APP_REFERENCE}
@@ -1245,6 +1245,50 @@ async function sendDailyReminderPushes(env) {
       title: "ANB — فاتورة متأخرة السداد",
       body: `لديك ${overdueByClient[cid]} فاتورة متأخرة السداد`
     });
+  }
+
+  // ⭐⭐⭐ ملخَّص نشاط العملاء اليومي - حسب طلب صريح: خيار (ب) ملخَّص مجمَّع
+  // يشمل كل عميل، لا إشعارًا منفصلًا لكل عملية. يُرسَل ضمن نفس الفحص الصباحي
+  // اليومي الموجود أصلًا (٧ صباحًا) - لا حاجة لمُشغِّل cron جديد. يحسب نشاط
+  // "الأمس" المكتمل فقط (لا اليوم الجاري غير المنتهي)، ويقتصر على ما فعله
+  // العميل نفسه (actorRole==='client') - لا يُبلَّغ الأدمن عن أفعاله هو نفسه.
+  const yesterday = new Date(today.getTime() - 864e5);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  const auditLog = payload.auditLog || [];
+  const clientActivity = {};
+  auditLog.forEach((entry) => {
+    if (!entry || entry.actorRole !== "client" || entry.action !== "create") return;
+    if (!["invoice", "expense", "bank_import"].includes(entry.entityType)) return;
+    const entryDateStr = (entry.ts || "").slice(0, 10);
+    if (entryDateStr !== yesterdayStr) return;
+    if (!entry.cid) return;
+    if (!clientActivity[entry.cid]) clientActivity[entry.cid] = { invoices: 0, expenses: 0, bankImports: 0 };
+    if (entry.entityType === "invoice") clientActivity[entry.cid].invoices++;
+    else if (entry.entityType === "expense") clientActivity[entry.cid].expenses++;
+    else if (entry.entityType === "bank_import") clientActivity[entry.cid].bankImports++;
+  });
+  const activeClientIds = Object.keys(clientActivity);
+  if (activeClientIds.length > 0) {
+    const clients = payload.clients || [];
+    const summaryLines = activeClientIds.map((cid) => {
+      const client = clients.find((c) => c && c.id === cid);
+      const name = client ? client.name : "Unknown client";
+      const a = clientActivity[cid];
+      const parts = [];
+      if (a.invoices) parts.push(a.invoices + " فاتورة");
+      if (a.expenses) parts.push(a.expenses + " مصروف");
+      if (a.bankImports) parts.push(a.bankImports + " استيراد كشف بنكي");
+      return name + ": " + parts.join("، ");
+    });
+    const shown = summaryLines.slice(0, 6);
+    const bodyText = shown.join(" · ") + (summaryLines.length > 6 ? " · +" + (summaryLines.length - 6) + " عميل آخر" : "");
+    for (const admin of admins) {
+      if (admin.status !== "active") continue;
+      await sendPushToAccount(env, "admin", admin.id, {
+        title: "ANB — ملخص نشاط العملاء (أمس)",
+        body: bodyText
+      });
+    }
   }
 }
 async function signToken(claims, secret) {
