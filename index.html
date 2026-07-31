@@ -12285,7 +12285,7 @@ async function _restoreBackupImpl(backupKey){
   }
 }
 
-async function resetAdminPassword(adminId){
+function resetAdminPassword(adminId){
   const admin=S.admins.find(a=>a.id===adminId);
   if(!admin)return;
 
@@ -12294,40 +12294,39 @@ async function resetAdminPassword(adminId){
     return;
   }
 
-  const newPw=prompt('Enter new password for '+admin.name+':');
-  if(!newPw||newPw.length<6){
-    if(newPw)toast('⚠ Password must be at least 6 characters','⚠');
-    return;
-  }
+  showModal('🔑 Reset Password — '+admin.name,`
+    <div class="fg"><label>New password (min. 6 characters)</label><input type="password" id="reset-admin-pw1" autocomplete="new-password"/></div>
+    <div class="fg"><label>Confirm password</label><input type="password" id="reset-admin-pw2" autocomplete="new-password"/></div>
+  `,async()=>{
+    const newPw=document.getElementById('reset-admin-pw1').value;
+    const confirm2=document.getElementById('reset-admin-pw2').value;
+    if(!newPw||newPw.length<6){toast('⚠ Password must be at least 6 characters','⚠');markFieldError('reset-admin-pw1');return;}
+    if(confirm2!==newPw){toast('⚠ Passwords do not match','⚠');markFieldError('reset-admin-pw2');return;}
 
-  const confirm2=prompt('Confirm password:');
-  if(confirm2!==newPw){
-    toast('⚠ Passwords do not match','⚠');
-    return;
-  }
-
-  // ⚠️ إصلاح: كان هذا الزر يحاول تغيير كلمة المرور محليًا ثم الاعتماد على
-  // المزامنة العادية (/sync) لنقلها للخادم - لكن الخادم يحمي حقول كلمة
-  // المرور من الكتابة فوقها عبر ذلك المسار تحديدًا (حماية أمنية ضرورية ضد
-  // حقن هاش مزوَّر)، فكان هذا الزر لا يعمل فعليًا بصمت. الآن يستدعي نقطة
-  // مخصَّصة موثَّقة بتوكن الأدمن، وهي الاستثناء المشروع الوحيد لتلك الحماية.
-  try{
-    const res=await fetch(R2_WORKER_URL+'/admin/set-password',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
-      body:JSON.stringify({targetRole:'admin',targetAccountId:adminId,newPassword:newPw}),
-    });
-    if(!res.ok){
-      const errData=await res.json().catch(()=>({}));
-      toast('⚠ '+(errData.error||'Could not reset password'),'⚠');
-      return;
+    // ⚠️ إصلاح: كان هذا الزر يحاول تغيير كلمة المرور محليًا ثم الاعتماد على
+    // المزامنة العادية (/sync) لنقلها للخادم - لكن الخادم يحمي حقول كلمة
+    // المرور من الكتابة فوقها عبر ذلك المسار تحديدًا (حماية أمنية ضرورية ضد
+    // حقن هاش مزوَّر)، فكان هذا الزر لا يعمل فعليًا بصمت. الآن يستدعي نقطة
+    // مخصَّصة موثَّقة بتوكن الأدمن، وهي الاستثناء المشروع الوحيد لتلك الحماية.
+    try{
+      const res=await fetch(R2_WORKER_URL+'/admin/set-password',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
+        body:JSON.stringify({targetRole:'admin',targetAccountId:adminId,newPassword:newPw}),
+      });
+      if(!res.ok){
+        const errData=await res.json().catch(()=>({}));
+        toast('⚠ '+(errData.error||'Could not reset password'),'⚠');
+        return;
+      }
+      clearFailedAttempts(admin); // تحديث محلي فوري للعرض فقط - المصدر الحقيقي هو الخادم أعلاه
+      logAudit('password_change','account','Reset password for admin: '+admin.name);
+      closeModal();
+      toast('✓ Password reset successfully','✓');
+    }catch(e){
+      toast('⚠ Network error - please try again','⚠');
     }
-    clearFailedAttempts(admin); // تحديث محلي فوري للعرض فقط - المصدر الحقيقي هو الخادم أعلاه
-    logAudit('password_change','account','Reset password for admin: '+admin.name);
-    toast('✓ Password reset successfully','✓');
-  }catch(e){
-    toast('⚠ Network error - please try again','⚠');
-  }
+  },'Reset Password');
 }
 
 
@@ -16492,7 +16491,7 @@ function renderBankTable(cid,searchTerm){
       else statusBadge=canEdit?`<button class="btn btn-xs" onclick="matchTx('${tx.id}')">${t('match')||'Match'} →</button>`:`<span class="bdg" style="background:var(--gr2);color:var(--t3)">${t('unmatched')||'Unmatched'}</span>`;
       return `<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;border-bottom:1px solid var(--gr2);font-size:11px;${canEdit?'cursor:pointer':''}" ${canEdit?`onclick="matchTx('${tx.id}')"`:''}>
       <span style="color:var(--t3);width:70px;flex-shrink:0;font-size:10px">${FD(tx.date)}</span>
-      <span style="flex:1">${escapeHtml(tx.desc)}${tx.isManual?` <span class="bdg" style="background:rgba(184,134,11,0.15);color:#8a6410;font-size:9px" title="Manually entered — not from an imported bank statement">✍ Manual</span>`:''}${allocatedCount>0?`<div style="font-size:9px;color:var(--t3);margin-top:2px">${(tx.allocations||[]).map(a=>a.targetLabel).join(' + ')}</div>`:''}</span>
+      <span style="flex:1">${escapeHtml(tx.desc)}${tx.isManual?` <span class="bdg" style="background:rgba(184,134,11,0.15);color:#8a6410;font-size:9px" title="Manually entered — not from an imported bank statement">✍ Manual</span>`:''}${allocatedCount>0?`<div style="font-size:9px;color:var(--t3);margin-top:2px">${(tx.allocations||[]).map(a=>a.targetLabel+(a.autoMatched?' 🪄':'')).join(' + ')}</div>`:''}</span>
       <span style="font-weight:600;color:${tx.amount>=0?'var(--green)':'var(--red)'}">
         ${tx.amount>=0?'+':''}${FMT(tx.amount)}
       </span>
@@ -16550,8 +16549,9 @@ function importBankFile(ev,cid){
       ev.target.value=''; return;
     }
     S.bankTx.push(...newTxs);
+    const autoMatchedCount=autoMatchBankTransactions(cid,newTxs.map(tx=>tx.id));
     sv();renderContent();
-    toast(`✓ ${format}: ${newTxs.length} imported, ${txs.length-newTxs.length} duplicates skipped`,'ti-check');
+    toast(`✓ ${format}: ${newTxs.length} imported, ${txs.length-newTxs.length} duplicates skipped`+(autoMatchedCount>0?`, ${autoMatchedCount} auto-matched (exact unambiguous match)`:''),'ti-check');
     ev.target.value='';
   };
   reader.readAsText(file,'UTF-8');
@@ -20471,6 +20471,37 @@ function reverseAllocationFromTarget(type,targetId,amount){
   }
 }
 
+// ══════════════════════════════════════════════════════════════════
+// ⭐⭐⭐ مطابقة تلقائية عند الاستيراد - تُطبَّق المطابقة تلقائيًا فقط عند وجود
+// مرشَّح واحد لا غير بمبلغ مطابق تمامًا (بلا أي هامش تسامح) لنفس العميل - أي
+// حالة فيها أكثر من مرشَّح، أو فرق ولو بسيط بالمبلغ، تبقى ضمن قائمة الاقتراحات
+// العادية بانتظار مراجعة الأدمن كما كان الحال دائمًا. لا كسر لمبدأ "لا تعديل
+// مالي صامت بلا تأكيد" - هذي فقط الحالة الوحيدة عديمة اللبس بالتعريف.
+// ══════════════════════════════════════════════════════════════════
+function autoMatchBankTransactions(cid,newTxIds){
+  const txs=(S.bankTx||[]).filter(t=>newTxIds.includes(t.id)&&t.cid===cid&&!t.noMatchNeeded);
+  let matchedCount=0;
+  txs.forEach(tx=>{
+    const remaining=getTxRemaining(tx);
+    if(remaining<=0.01)return; // مُطابَقة بالفعل أو مبلغ صفري
+    const isIncoming=tx.amount>=0;
+    let candidates;
+    if(isIncoming){
+      candidates=S.invoices.filter(i=>i.cid===cid&&!i.deleted&&Math.abs(getInvoiceRemaining(i)-remaining)<0.005);
+    }else{
+      candidates=S.expenses.filter(e=>e.cid===cid&&!e.deleted&&Math.abs(getExpenseRemaining(e)-remaining)<0.005);
+    }
+    // ⚠️ "لا لبس" يعني مرشَّح واحد بالضبط - أي عدد آخر (صفر أو أكثر من واحد) يبقى للمراجعة اليدوية
+    if(candidates.length!==1)return;
+    const target=candidates[0];
+    const type=isIncoming?'invoice':'expense';
+    const targetLabel=isIncoming?((target.num||'')+' — '+(target.desc||'')):(target.desc||target.supplier||'Expense');
+    createAllocation(tx,type,target.id,targetLabel,remaining,true);
+    matchedCount++;
+  });
+  return matchedCount;
+}
+
 function matchTx(id){
   openMatchModal(id);
 }
@@ -20633,20 +20664,22 @@ function addManualAllocation(txId,type,targetId,promptForAmount){
     targetLabel=con.name+' ('+(con.type||'')+')';
   }
   const suggested=targetRemaining!==null?Math.min(targetRemaining,getTxRemaining(tx)):getTxRemaining(tx);
-  const input=prompt((t('enter_amount_to_match')||'Amount to match')+' (€):',suggested.toFixed(2));
-  if(input===null)return;
-  const amount=parseFloat(input);
-  if(!amount||amount<=0){toast('❌ '+(t('invalid_amount')||'Invalid amount'));return;}
-  createAllocation(tx,type,targetId,targetLabel,amount);
+  showModal(t('enter_amount_to_match')||'Amount to Match',`
+    <div class="fg"><label>${targetLabel}</label><input type="number" id="manual-match-amount" step="0.01" min="0.01" value="${suggested.toFixed(2)}"/></div>
+  `,()=>{
+    const amount=parseFloat(document.getElementById('manual-match-amount').value);
+    if(!amount||amount<=0){toast('❌ '+(t('invalid_amount')||'Invalid amount'));markFieldError('manual-match-amount');return;}
+    createAllocation(tx,type,targetId,targetLabel,amount);
+  },t('match')||'Match');
 }
 
-function createAllocation(tx,type,targetId,targetLabel,amount){
+function createAllocation(tx,type,targetId,targetLabel,amount,silent){
   if(!tx.allocations)tx.allocations=[];
-  tx.allocations.push({id:UID(),type,targetId,targetLabel,amount});
+  tx.allocations.push({id:UID(),type,targetId,targetLabel,amount,autoMatched:!!silent});
   applyAllocationToTarget(type,targetId,amount);
-  logAudit('edit','bank_tx','Matched transaction "'+tx.desc+'" ('+FMT(amount)+') to '+targetLabel,tx.cid);
+  logAudit('edit','bank_tx',(silent?'Auto-matched (exact single-candidate) transaction "':'Matched transaction "')+tx.desc+'" ('+FMT(amount)+') to '+targetLabel,tx.cid);
   sv();
-  renderMatchModalContent(tx.id); // إعادة رسم النافذة نفسها لتحديث المتبقي والاقتراحات فورًا
+  if(!silent)renderMatchModalContent(tx.id); // إعادة رسم النافذة نفسها لتحديث المتبقي والاقتراحات فورًا
 }
 
 // إلغاء مطابقة حركة بنكية بالكامل بضغطة واحدة (يعكس كل التخصيصات المرتبطة بها
