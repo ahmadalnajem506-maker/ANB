@@ -16660,7 +16660,14 @@ function detectBankFormat(raw){
   // آخر)، وأخيرًا فقط الشرط الأعم (datum+bedrag) الخاص بـING كمُطابَقة احتياطية
   if(has('iban/bban')||has('tegenpartij iban')||has('tegenpartij naam')||has('volgnr')||has('saldo na trn'))return 'Rabobank';
   if(has('transactiedatum')||has('valutacode')||has('beginstand')||has('eindstand'))return 'ABN';
-  if(has('tegenrekening')||has('mutatiesoort')||has('mededelingen')||has('naam / omschrijving')||has('bedrag (eur)'))return 'ING';
+  if(has('tegenrekening')||has('mutatiesoort')||has('mededelingen')||has('naam / omschrijving')||has('bedrag (eur)'))return 'ING'; // ING - عربي/هولندي
+  // ⚠️ ING يُصدِّر أيضًا نسخة إنجليزية الأعمدة: Date, Name / Description, Account,
+  // Counterparty, Code, Debit/credit, Amount (EUR), Transaction type, Notifications.
+  // عمود "Counterparty" فيها كان يجعلها تُطابَق بالخطأ قاعدة Bunq الاحتياطية
+  // أدناه (Bunq له عمود بنفس الاسم فعلًا) قبل ما تصل هذه القاعدة إطلاقًا - لازم
+  // نتحقق من صيغة ING الإنجليزية أولًا. "debit/credit" و"name / description" لا
+  // يظهران عند Bunq (أعمدته: Date, Amount, Account, Counterparty, Name, Description, Category)
+  if(has('debit/credit')||has('name / description')||has('transaction type'))return 'ING'; // ING - إنجليزي
   if(has('counterparty')||(has('amount')&&has('account')&&has('name')))return 'Bunq';
   if(has('datum')&&has('bedrag'))return 'ING'; // احتياطي: عمودا "Datum"/"Bedrag" العاديان بلا أي عمود مميّز آخر - الافتراض الأقرب هو ING
   return 'Generic';
@@ -16726,10 +16733,12 @@ function parseINGcsv(raw,cid){
     const dateStr=cols[0].replace(/"/g,'').trim(); // DD-MM-YYYY
     const desc=((cols[1]||'')+(cols[8]?'; '+(cols[8]):''))
       .replace(/"/g,'').trim().slice(0,100);
-    const afbij=(cols[5]||'').replace(/"/g,'').trim(); // Af / Bij
+    const afbij=(cols[5]||'').replace(/"/g,'').trim().toLowerCase();
     const amtStr=(cols[6]||'').replace(/"/g,'').replace(',','.').trim();
     const amt=parseFloat(amtStr)||(0);
-    const amount=afbij.toLowerCase()==='af'?-Math.abs(amt):Math.abs(amt);
+    // ⚠️ ING يُصدِّر أيضًا نسخة إنجليزية تكتب "Debit"/"Credit" بدل "Af"/"Bij"
+    // الهولندية - نفس العمود بالضبط، قيمتان مختلفتان فقط حسب لغة الحساب
+    const amount=(afbij==='af'||afbij==='debit')?-Math.abs(amt):Math.abs(amt);
     const date=parseDateNL(dateStr);
     if(date&&!isNaN(amount))txs.push({id:UID(),cid,date,desc,amount,matched:false,source:'ING'});
   }
