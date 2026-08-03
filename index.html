@@ -1161,6 +1161,9 @@ html { scroll-behavior: smooth; }
   <div class="loading-msg" id="loading-msg"></div>
 </div>
 
+<!-- ⭐ مكتبة استيراد كشوف الحساب البنكية - مستقلة تمامًا، ملف منفصل، قابلة لإعادة
+     الاستخدام بأي جزء من التطبيق أو أي مشروع آخر مستقبلًا بلا أي تعديل -->
+<script src="bank-import-engine.js"></script>
 <script>
 /* ═══════════════════════════ DATA ═══════════════════════════ */
 const COLORS=['#1B5E35','#1B5E35','#B08D5A','#C7A876','#4da876','#2d7a4f','var(--red)','#1B5E35'];
@@ -16558,15 +16561,26 @@ function rBank(el,cid){
   </div>
   <div class="card">
     <div class="ch" style="border-bottom:3px solid ${theme.border}"><span class="ct">${t('tab_bank')} — ${escapeHtml(c?.name)}</span>
-      ${isAdmin()?`<div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn btn-p btn-xs" onclick="document.getElementById('bank-import-input-${cid}').click()">📥 Import CSV/MT940</button>
-        <input type="file" id="bank-import-input-${cid}" accept=".csv,.txt,.mt940,.sta,.940" style="display:none" onchange="importBankFile(event,'${cid}')"/>
+      ${isAdmin()?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <select id="bank-import-select-${cid}" style="padding:6px 8px;border:1px solid var(--gr2);border-radius:6px;font-size:11px;background:var(--white);color:var(--t1);cursor:pointer" title="${t('bank_select_hint')||'Auto-detect works for most files — only override if detection gets it wrong'}">
+          <option value="auto">${t('bank_auto_detect')||'🔍 Auto-detect'}</option>
+          <option value="ing">ING</option>
+          <option value="abn">ABN AMRO</option>
+          <option value="rabobank">Rabobank</option>
+          <option value="bunq">Bunq</option>
+          <option value="knab">Knab</option>
+          <option value="revolut">Revolut</option>
+          <option value="mt940">MT940</option>
+          <option value="camt053">CAMT.053</option>
+        </select>
+        <button class="btn btn-p btn-xs" onclick="document.getElementById('bank-import-input-${cid}').click()">📥 ${t('import_statement')||'Import Statement'}</button>
+        <input type="file" id="bank-import-input-${cid}" accept=".csv,.txt,.mt940,.sta,.940,.xml,.xlsx" style="display:none" onchange="importBankFile(event,'${cid}')"/>
         <button class="btn btn-xs" onclick="openAddBankTx()">${t('btn_add_manual')}</button>
         ${cid!==ANB_SELF_ID?`<button class="btn btn-xs" style="background:var(--gold);color:#0A2218" onclick="openImportDataModal('bank','${cid}')">📋 ${t('import_previous_data')||'Import Previous Data'}</button>`:''}
       </div>`:''}
     </div>
     <div style="font-size:11px;color:var(--t3);padding:6px 14px 8px">
-      Supported: ING, ABN AMRO, Rabobank, Bunq (CSV) · MT940 (all banks)
+      ${t('bank_supported_formats')||'Supported'}: ING · ABN AMRO · Rabobank · Bunq · Knab · Revolut (CSV/Excel) · MT940 · CAMT.053 (XML)
     </div>
     ${renderImportBatchHistory('bank',cid)}
     ${txs.length>0?`<div style="display:flex;gap:8px;padding:0 14px 10px;flex-wrap:wrap">
@@ -16631,224 +16645,99 @@ function renderBankTable(cid,searchTerm){
     }).join('');
 }
 
-// ═══ BANK IMPORT: CSV / MT940 ═══════════════════════════════
-
-// ⭐⭐⭐ يكتشف صيغة كشف الحساب البنكي تلقائيًا من محتوى الملف نفسه (بلا أي
-// اختيار يدوي للبنك من المستخدم أصلًا - لم يكن موجودًا). الإصدار السابق كان
-// يبحث عن كلمات داخل سطر العنوان الخام كاملًا كنص واحد (raw substring)، وهذا
-// يُنتج تصنيفات خاطئة حقيقية: مثلًا "Transactiedatum" (عمود ABN) يحتوي الكلمة
-// الجزئية "datum" ضمنه، فكان يدخل شرط "datum && bedrag" الخاص بـING/Rabobank
-// أولًا بالخطأ قبل أن يصل لشرط ABN إطلاقًا - وبما أن أعمدة ABN لا تحتوي فعليًا
-// على "tegenrekening" ولا "mededelingen"/"mutatiesoort" (وهذي أعمدة ING لا
-// Rabobank أصلًا رغم كتابتها كشرط لـRabobank)، كانت ملفات ABN وRabobank الحقيقية
-// تنتهي دائمًا كـ"Generic CSV" رغم دعمهما المُعلَن.
-// ⭐ الحل: تقسيم سطر العنوان فعليًا لأعمدة منفصلة (بنفس splitCSV المُستخدَمة في
-// التحليل الفعلي لاحقًا، فتُعامَل الفواصل المنقوطة/العادية والحقول المُقتبَسة
-// بنفس الطريقة تمامًا)، ثم البحث عن تطابق تام لاسم عمود مميّز حقيقي لكل بنك -
-// لا بحث جزئي عشوائي داخل نص خام قد يتقاطع بين الأعمدة.
-function detectBankFormat(raw){
-  // MT940: صيغة SWIFT بعلامات حقول مميّزة (:20: :61: :86: ...)، تُفحَص أولًا
-  // لأنها ليست CSV إطلاقًا - لا داعي لمحاولة تحليل عنوان أعمدة لها
-  if(/:20:/.test(raw)&&(/:61:/.test(raw)||/:60F:/.test(raw)||/:86:/.test(raw)))return 'MT940';
-
-  const firstLine=(raw.split('\n')[0]||'').replace(/\r$/,'');
-  const cols=splitCSV(firstLine).map(c=>c.replace(/"/g,'').trim().toLowerCase());
-  const has=(...names)=>names.some(n=>cols.includes(n));
-
-  // ⚠️ الترتيب مهم: نتحقق أولًا من الأعمدة الأكثر تفرُّدًا وغير القابلة للتداخل
-  // بين البنوك (Rabobank وABN لهما أعمدة لا وجود لمثيلها إطلاقًا عند أي بنك
-  // آخر)، وأخيرًا فقط الشرط الأعم (datum+bedrag) الخاص بـING كمُطابَقة احتياطية
-  if(has('iban/bban')||has('tegenpartij iban')||has('tegenpartij naam')||has('volgnr')||has('saldo na trn'))return 'Rabobank';
-  if(has('transactiedatum')||has('valutacode')||has('beginstand')||has('eindstand'))return 'ABN';
-  if(has('tegenrekening')||has('mutatiesoort')||has('mededelingen')||has('naam / omschrijving')||has('bedrag (eur)'))return 'ING'; // ING - عربي/هولندي
-  // ⚠️ ING يُصدِّر أيضًا نسخة إنجليزية الأعمدة: Date, Name / Description, Account,
-  // Counterparty, Code, Debit/credit, Amount (EUR), Transaction type, Notifications.
-  // عمود "Counterparty" فيها كان يجعلها تُطابَق بالخطأ قاعدة Bunq الاحتياطية
-  // أدناه (Bunq له عمود بنفس الاسم فعلًا) قبل ما تصل هذه القاعدة إطلاقًا - لازم
-  // نتحقق من صيغة ING الإنجليزية أولًا. "debit/credit" و"name / description" لا
-  // يظهران عند Bunq (أعمدته: Date, Amount, Account, Counterparty, Name, Description, Category)
-  if(has('debit/credit')||has('name / description')||has('transaction type'))return 'ING'; // ING - إنجليزي
-  if(has('counterparty')||(has('amount')&&has('account')&&has('name')))return 'Bunq';
-  if(has('datum')&&has('bedrag'))return 'ING'; // احتياطي: عمودا "Datum"/"Bedrag" العاديان بلا أي عمود مميّز آخر - الافتراض الأقرب هو ING
-  return 'Generic';
-}
-
+// ═══ BANK IMPORT MODULE ═══════════════════════════════════════
+// ⭐⭐⭐ الآن مجرد طبقة تكامل رقيقة تفوّض كل منطق التحليل/الفحص/التحقق لمكتبة
+// BankImportEngine المستقلة (ملف bank-import-engine.js منفصل تمامًا، محمَّل
+// كـ<script> عادي) - التطبيق فقط يستدعيها ويقرر ماذا يفعل بالنتيجة (يحفظ،
+// يعرض، يُنبّه). أي إصلاح/تطوير لمنطق التحليل نفسه يصير بالمكتبة فقط، لا هنا.
 function importBankFile(ev,cid){
   const file=ev.target.files&&ev.target.files[0];
   if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const raw=e.target.result;
-    let txs=[];
-    let format='unknown';
-    try{
-      const detected=detectBankFormat(raw);
-      const PARSERS={
-        MT940:{fn:parseMT940,label:'MT940'},
-        Rabobank:{fn:parseRabobankCsv,label:'Rabobank CSV'},
-        ABN:{fn:parseABNcsv,label:'ABN AMRO CSV'},
-        ING:{fn:parseINGcsv,label:'ING CSV'},
-        Bunq:{fn:parseBunqCsv,label:'Bunq CSV'},
-        Generic:{fn:parseGenericCsv,label:'Generic CSV'}
-      };
-      const parser=PARSERS[detected]||PARSERS.Generic;
-      txs=parser.fn(raw,cid); format=parser.label;
-    }catch(err){
-      toast('❌ Import error: '+err.message,'ti-alert-circle');
+  const selEl=document.getElementById('bank-import-select-'+cid);
+  const selectedBank=selEl?selEl.value:'auto';
+  const existingTransactions=(S.bankTx||[]).filter(tx=>tx.cid===cid);
+
+  BankImportEngine.ImportService.processFile(file,{
+    cid,bankKey:selectedBank,existingTransactions,xlsxLib:XLSX
+  }).then(result=>{
+    if(result.allTxs.length===0){
+      toast((t('no_transactions_found')||'No transactions found in file')+
+        (result.invalidCount?' — '+result.invalidCount+' '+(t('rows_had_errors')||'row(s) had errors'):''),'ti-alert-circle');
       ev.target.value=''; return;
     }
-    if(!txs.length){
-      toast('No transactions found in file','ti-alert-circle');
-      ev.target.value=''; return;
-    }
-    // Deduplicate: skip txs with same date+amount+desc already in bankTx
-    const existing=new Set(S.bankTx.filter(tx=>tx.cid===cid).map(tx=>tx.date+'|'+tx.amount+'|'+tx.desc.slice(0,20)));
-    const newTxs=txs.filter(tx=>!existing.has(tx.date+'|'+tx.amount+'|'+tx.desc.slice(0,20)));
-    if(!newTxs.length){
-      toast('All transactions already imported (duplicates skipped)','ti-alert-circle');
-      ev.target.value=''; return;
-    }
-    S.bankTx.push(...newTxs);
-    const autoMatch=autoMatchBankTransactions(cid,newTxs.map(tx=>tx.id));
-    sv();renderContent();
-    let matchNote='';
-    if(autoMatch.matchedCount>0){
-      const assisted=autoMatch.matchedByName+autoMatch.matchedByDate;
-      matchNote=`, ${autoMatch.matchedCount} auto-matched`+(assisted>0?` (${assisted} via name/date disambiguation)`:' (exact unambiguous match)');
-    }
-    toast(`✓ ${format}: ${newTxs.length} imported, ${txs.length-newTxs.length} duplicates skipped`+matchNote,'ti-check');
+    openBankImportPreview(cid,result);
     ev.target.value='';
-  };
-  reader.readAsText(file,'UTF-8');
+  }).catch(err=>{
+    toast('❌ '+(t('import_error')||'Import error')+': '+err.message,'ti-alert-circle');
+    ev.target.value='';
+  });
 }
 
-// ── ING CSV ──────────────────────────────────────────────────
-// Header: "Datum";"Naam / Omschrijving";"Rekening";"Tegenrekening";"Code";"Af Bij";"Bedrag (EUR)";"Mutatiesoort";"Mededelingen"
-function parseINGcsv(raw,cid){
-  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
-  const txs=[];
-  for(let i=1;i<lines.length;i++){
-    const cols=splitCSV(lines[i]);
-    if(cols.length<7)continue;
-    const dateStr=cols[0].replace(/"/g,'').trim(); // DD-MM-YYYY
-    const desc=((cols[1]||'')+(cols[8]?'; '+(cols[8]):''))
-      .replace(/"/g,'').trim().slice(0,100);
-    const afbij=(cols[5]||'').replace(/"/g,'').trim().toLowerCase();
-    const amtStr=(cols[6]||'').replace(/"/g,'').replace(',','.').trim();
-    const amt=parseFloat(amtStr)||(0);
-    // ⚠️ ING يُصدِّر أيضًا نسخة إنجليزية تكتب "Debit"/"Credit" بدل "Af"/"Bij"
-    // الهولندية - نفس العمود بالضبط، قيمتان مختلفتان فقط حسب لغة الحساب
-    const amount=(afbij==='af'||afbij==='debit')?-Math.abs(amt):Math.abs(amt);
-    const date=parseDateNL(dateStr);
-    if(date&&!isNaN(amount))txs.push({id:UID(),cid,date,desc,amount,matched:false,source:'ING'});
+// ⭐⭐ شاشة معاينة قبل الترحيل الفعلي - result هنا هو بالضبط ما تُعيده
+// BankImportEngine.ImportService.processFile (uniqueTxs/duplicateTxs/invalidCount جاهزة مسبقًا)
+function openBankImportPreview(cid,result){
+  S.bankImportDraft={cid,result};
+  const validCount=result.uniqueTxs.length;
+  showModal(
+    (t('bank_import_preview_title')||'Import Preview')+' — '+result.bankLabel,
+    renderBankImportPreviewBody(result),
+    ()=>confirmBankImportFromPreview(),
+    validCount>0?(t('confirm_import_n')||'Import')+' '+validCount+' '+(validCount===1?(t('transaction')||'transaction'):(t('transactions')||'transactions')):(t('close')||'Close')
+  );
+}
+function renderBankImportPreviewBody(result){
+  const {uniqueTxs,duplicateTxs,invalidCount,excludedPendingCount}=result;
+  const allRows=uniqueTxs.map(tx=>({tx,isDuplicate:false})).concat(duplicateTxs.map(tx=>({tx,isDuplicate:true})));
+  allRows.sort((a,b)=>(b.tx.bookingDate||'').localeCompare(a.tx.bookingDate||''));
+  return`
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <div class="bdg" style="background:rgba(34,139,34,0.12);color:var(--green)">✓ ${(t('will_import')||'Will import')}: ${uniqueTxs.length}</div>
+    ${duplicateTxs.length>0?`<div class="bdg" style="background:var(--gr2);color:var(--t3)">⚠ ${(t('duplicates_skipped')||'Duplicates (skipped)')}: ${duplicateTxs.length}</div>`:''}
+    ${invalidCount>0?`<div class="bdg" style="background:rgba(184,134,11,0.15);color:#8a6410">✕ ${(t('invalid_rows')||'Invalid rows')}: ${invalidCount}</div>`:''}
+    ${excludedPendingCount>0?`<div class="bdg" style="background:var(--gr2);color:var(--t3)">⏳ ${(t('pending_excluded')||'Pending (excluded)')}: ${excludedPendingCount}</div>`:''}
+  </div>
+  <div style="max-height:360px;overflow-y:auto;border:1px solid var(--gr2);border-radius:6px">
+    ${allRows.map(r=>{
+      const tx=r.tx;
+      return`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--gr2);font-size:11px;${r.isDuplicate?'opacity:.45':''}">
+        <span style="width:66px;flex-shrink:0;color:var(--t3);font-size:10px">${FD(tx.bookingDate)}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(tx.description||'')}">${escapeHtml(tx.description||'')}</span>
+        <span style="width:85px;text-align:right;font-weight:600;color:${tx.amount>=0?'var(--green)':'var(--red)'}">${tx.amount>=0?'+':''}${FMT(tx.amount)}</span>
+        <span style="width:75px;text-align:right;color:var(--t3);font-size:10px">${(tx.balance!==null&&tx.balance!==undefined)?FMT(tx.balance):''}</span>
+        <span style="width:100px;flex-shrink:0;text-align:right">${r.isDuplicate?`<span class="bdg" style="background:var(--gr2);color:var(--t3);font-size:9px">${t('duplicate')||'Duplicate'}</span>`:`<span class="bdg" style="background:rgba(34,139,34,0.12);color:var(--green);font-size:9px">${t('new')||'New'}</span>`}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function confirmBankImportFromPreview(){
+  const draft=S.bankImportDraft;
+  if(!draft){toast('❌ '+(t('nothing_to_import')||'Nothing to import'));return;}
+  const {uniqueTxs,duplicateTxs,bankLabel}=draft.result;
+  if(uniqueTxs.length===0){
+    toast((t('all_already_imported')||'All transactions already imported (duplicates skipped)'));
+    closeModal();S.bankImportDraft=null;return;
   }
-  return txs;
+  // ⚠️ BankImportEngine يُعيد حقول النموذج الموحَّد (bookingDate/description) فقط -
+  // التطبيق هو من يُلحِق حقلي date/desc (بالإضافة لهما لا بدلًا منهما) للتوافق
+  // الكامل مع كل شاشة/دالة مطابقة موجودة أصلًا تتوقّع هذين الاسمين تحديدًا
+  const newTxs=uniqueTxs.map(tx=>Object.assign({date:tx.bookingDate,desc:tx.description,matched:false,source:tx.bankName},tx));
+  if(!S.bankTx)S.bankTx=[];
+  S.bankTx.push(...newTxs);
+  const autoMatch=autoMatchBankTransactions(draft.cid,newTxs.map(tx=>tx.id));
+  logAudit('create','bank_tx','Imported '+newTxs.length+' transaction(s) from '+bankLabel+(duplicateTxs.length>0?' ('+duplicateTxs.length+' duplicates skipped)':''),draft.cid);
+  sv();closeModal();renderContent();
+  let matchNote='';
+  if(autoMatch.matchedCount>0){
+    const assisted=autoMatch.matchedByName+autoMatch.matchedByDate;
+    matchNote=` · ${autoMatch.matchedCount} ${t('auto_matched')||'auto-matched'}`+(assisted>0?` (${assisted} ${t('via_name_date')||'via name/date'})`:'');
+  }
+  toast(`✓ ${t('imported')||'Imported'}: ${newTxs.length}`+(duplicateTxs.length>0?` · ${t('skipped')||'Skipped'}: ${duplicateTxs.length} ${t('duplicates')||'duplicates'}`:'')+matchNote);
+  S.bankImportDraft=null;
 }
 
-// ── ABN AMRO CSV ──────────────────────────────────────────────
-// Header: "Transactiedatum";"Valutacode";"Beginstand";"Eindstand";"Rentedatum";"Bedrag";"Omschrijving"
-function parseABNcsv(raw,cid){
-  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
-  const txs=[];
-  for(let i=1;i<lines.length;i++){
-    const cols=splitCSV(lines[i]);
-    if(cols.length<7)continue;
-    const dateStr=cols[0].replace(/"/g,'').trim(); // YYYYMMDD or DD-MM-YYYY
-    const amtStr=(cols[5]||'').replace(/"/g,'').replace(',','.').trim();
-    const desc=(cols[6]||'').replace(/"/g,'').trim().slice(0,100);
-    const amount=parseFloat(amtStr)||0;
-    const date=parseDateNL(dateStr);
-    if(date&&!isNaN(amount)&&amount!==0)txs.push({id:UID(),cid,date,desc,amount,matched:false,source:'ABN'});
-  }
-  return txs;
-}
 
-// ── Rabobank CSV ──────────────────────────────────────────────
-// Header: "IBAN/BBAN";"Munt";"BIC";"Volgnr";"Datum";"Rentedatum";"Bedrag";"Saldo na trn";"Tegenpartij IBAN";"Tegenpartij naam";"Initiating party naam";"BIC tegenpartij";"Code";"Batch ID";"Transactiereferentie";"Machtigingskenmerk";"Incassant ID";"Betalingskenmerk";"Omschrijving-1";"Omschrijving-2";"Omschrijving-3"
-function parseRabobankCsv(raw,cid){
-  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
-  const txs=[];
-  for(let i=1;i<lines.length;i++){
-    const cols=splitCSV(lines[i]);
-    if(cols.length<7)continue;
-    const dateStr=(cols[4]||'').replace(/"/g,'').trim();
-    const amtStr=(cols[6]||'').replace(/"/g,'').replace(',','.').trim();
-    const desc=[(cols[9]||''),(cols[18]||''),(cols[19]||''),(cols[20]||'')]
-      .map(s=>s.replace(/"/g,'').trim()).filter(Boolean).join(' · ').slice(0,100);
-    const amount=parseFloat(amtStr)||0;
-    const date=parseDateNL(dateStr);
-    if(date&&!isNaN(amount)&&amount!==0)txs.push({id:UID(),cid,date,desc,amount,matched:false,source:'Rabobank'});
-  }
-  return txs;
-}
 
-// ── Bunq CSV ─────────────────────────────────────────────────
-// Header: "Date";"Amount";"Account";"Counterparty";"Name";"Description";"Category"
-function parseBunqCsv(raw,cid){
-  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
-  const txs=[];
-  for(let i=1;i<lines.length;i++){
-    const cols=splitCSV(lines[i]);
-    if(cols.length<6)continue;
-    const dateStr=(cols[0]||'').replace(/"/g,'').trim(); // YYYY-MM-DD
-    const amtStr=(cols[1]||'').replace(/"/g,'').replace(',','.').trim();
-    const name=(cols[4]||'').replace(/"/g,'').trim();
-    const memo=(cols[5]||'').replace(/"/g,'').trim();
-    const desc=[name,memo].filter(Boolean).join(' — ').slice(0,100);
-    const amount=parseFloat(amtStr)||0;
-    const date=parseDateISO(dateStr);
-    if(date&&!isNaN(amount)&&amount!==0)txs.push({id:UID(),cid,date,desc,amount,matched:false,source:'Bunq'});
-  }
-  return txs;
-}
 
-// ── Generic CSV fallback ──────────────────────────────────────
-function parseGenericCsv(raw,cid){
-  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
-  const txs=[];
-  const hdr=splitCSV(lines[0]).map(h=>h.toLowerCase().replace(/[^a-z]/g,''));
-  const dateIdx=hdr.findIndex(h=>h.includes('dat'));
-  const amtIdx=hdr.findIndex(h=>h.includes('bedrag')||h.includes('amount')||h.includes('amt'));
-  const descIdx=hdr.findIndex(h=>h.includes('desc')||h.includes('omschr')||h.includes('memo')||h.includes('naam'));
-  if(dateIdx<0||amtIdx<0){throw new Error('Could not detect date/amount columns');}
-  for(let i=1;i<lines.length;i++){
-    const cols=splitCSV(lines[i]);
-    const dateStr=(cols[dateIdx]||'').replace(/"/g,'').trim();
-    const amtStr=(cols[amtIdx]||'').replace(/"/g,'').replace(',','.').trim();
-    const desc=descIdx>=0?(cols[descIdx]||'').replace(/"/g,'').trim().slice(0,100):'Import';
-    const amount=parseFloat(amtStr)||0;
-    const date=parseDateNL(dateStr)||parseDateISO(dateStr);
-    if(date&&!isNaN(amount)&&amount!==0)txs.push({id:UID(),cid,date,desc,amount,matched:false,source:'CSV'});
-  }
-  return txs;
-}
-
-// ── MT940 parser ──────────────────────────────────────────────
-function parseMT940(raw,cid){
-  const txs=[];
-  const blocks=raw.split(/(?=:20:)/);
-  for(const block of blocks){
-    const stmts=block.split(/^:61:/m);
-    for(let i=1;i<stmts.length;i++){
-      try{
-        const stmt=stmts[i];
-        const dateMatch=stmt.match(/^(\d{6})/);
-        const amtMatch=stmt.match(/^[\d]{6}[\d]{4}?([CD])(\d+),(\d*)/);
-        if(!dateMatch||!amtMatch)continue;
-        const yy=dateMatch[1].slice(0,2),mm=dateMatch[1].slice(2,4),dd=dateMatch[1].slice(4,6);
-        const yr=parseInt(yy)<50?2000+parseInt(yy):1900+parseInt(yy);
-        const date=`${yr}-${mm}-${dd}`;
-        const sign=amtMatch[1]==='D'?-1:1;
-        const amount=sign*parseFloat(amtMatch[2]+'.'+( amtMatch[3]||'00'));
-        // :86: = description
-        const descMatch=stmt.match(/:86:([\s\S]*?)(?=\n:|$)/);
-        const desc=descMatch?descMatch[1].replace(/\n/g,' ').trim().slice(0,100):'MT940 transaction';
-        txs.push({id:UID(),cid,date,desc,amount,matched:false,source:'MT940'});
-      }catch{}
-    }
-  }
-  return txs;
-}
 
 // ── Date helpers ──────────────────────────────────────────────
 function parseDateNL(s){
