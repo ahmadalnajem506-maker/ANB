@@ -4795,107 +4795,73 @@ function getNextContractTitle(cid){
   return 'Contract Extension '+(maxExt+1);
 }
 // ══════════════════════════════════════════════════════════════════
-// ⭐⭐⭐ نظام باقات الاشتراك الثابتة (Essential/Advanced/Premium) - ثمرة نقاش
-// مطوَّل حول التسعير. كل باقة تحدِّد حجم الفواتير/المصاريف/البنك + مستوى
-// الشات + تكرار التقارير. BTW والإقرار الضريبي ثابتان بكل الباقات (خدمة
-// مهنية تلتزم بها ANB دائمًا، لا فرق بالحجم). السعر النهائي = سعر الباقة
-// (Manual أو Admin، خيار ثابت للعقد كامل) + إضافات اختيارية (ساعات/كاشير).
-// لا يظهر أي تفصيل سعري لكل بند بالعقد نفسه - فقط المجموع + قائمة الخدمات.
-// ══════════════════════════════════════════════════════════════════
+// ⭐⭐⭐ نظام التسعير الجديد (2026) - مسطَّح بلا أي حدود استخدام، ثمرة نقاش
+// مطوَّل حول المنافسة بالسوق الهولندي. بحث السوق أظهر أن أغلب المحاسبين
+// المحترفين يتجنبون تسقيف الفواتير/المصاريف/الحركات البنكية عمدًا (هذا بالضبط
+// سبب تفضيلهم SnelStart على Moneybird) لأن التسقيف يسبب احتكاكًا مع عملائهم.
+// لذلك: باقتان مسطَّحتان فقط، بلا أي حد على أي شيء، بلا فرق Manual/Admin
+// (ANB يدير كل البيانات دائمًا الآن - العميل فقط يُصدر الفواتير ويرفع
+// المصاريف، والأدمن يتولى التدقيق والهيكلة والإقرارات). التمايز الوحيد بين
+// الباقتين هو عمق الخدمة (تواتر التقارير + استشارة ضريبية ربعية)، لا الحجم.
 const SUBSCRIPTION_PACKAGES={
-  essential:{id:'essential',name:'Essential',tier:1,chatLevel:'basic',reportsFreq:'annual'},
-  advanced:{id:'advanced',name:'Advanced',tier:2,chatLevel:'advanced',reportsFreq:'quarterly'},
-  premium:{id:'premium',name:'Premium',tier:3,chatLevel:'premium',reportsFreq:'monthly'}
+  compleet:{id:'compleet',name:'ZZP Compleet',basePrice:85,reportsFreq:'quarterly',adviesEnabled:false},
+  compleetAdvies:{id:'compleetAdvies',name:'ZZP Compleet + Advies',basePrice:115,reportsFreq:'monthly',adviesEnabled:true}
 };
-const TIER_SERVICE_PRICING={
-  invoices:{1:{manual:15,adminAddon:10},2:{manual:24,adminAddon:13},3:{manual:30,adminAddon:20}},
-  expenses:{1:{manual:15,adminAddon:10},2:{manual:24,adminAddon:13},3:{manual:30,adminAddon:20}},
-  bank:{1:{manual:15,adminAddon:10},2:{manual:24,adminAddon:13},3:{manual:30,adminAddon:20}}
-};
-const TIER_LIMITS={
-  invoices:{1:10,2:30,3:60},
-  expenses:{1:25,2:50,3:100},
-  bank:{1:40,2:85,3:170}
-};
-const TIER_LIMITS_WITH_TOLERANCE={
-  invoices:{1:12,2:35,3:69},
-  expenses:{1:29,2:58,3:115},
-  bank:{1:46,2:98,3:196}
-};
-const OVERAGE_RATES={
-  invoices:{manual:7,admin:12,per:10},
-  expenses:{manual:10,admin:20,per:10},
-  bank:{manual:12,admin:20,per:30}
-};
-const CHAT_PRICING={basic:5,advanced:5,premium:8};
-const FIXED_SERVICE_PRICING={btw:5,ibAnnual:5,ibPersonalAddon:50};
-const REPORTS_PRICING={annual:5,quarterly:8,monthly:15};
-// ⭐⭐ إصلاح حسب طلب صريح: الساعات والكاشير مستقلتان عن الباقة تمامًا (لا فرض
-// تلقائي، لا شمول تلقائي بأي باقة)، وكل منهما الآن حالة تفعيل/تعطيل بسيطة
-// بسعر واحد فقط (لا مستويات Basic/Additional بعد الآن)
+// ⭐⭐ الساعات والكاشير مستقلتان عن الباقة تمامًا - حالة تفعيل/تعطيل بسيطة بسعر واحد
 const HOURS_ADDON_PRICE=10;
 const CASHIER_ADDON_PRICE=20;
-// ⭐⭐ تراجُع جزئي حسب طلب صريح: التبسيط (بلا تفاصيل) مطلوب فقط بمستند العقد
-// النهائي الذي يراه العميل - أما شاشات الأدمن (إضافة/تعديل عقد) فتحتاج تفاصيل
-// التسعير الكاملة كما كانت (مستويات حسب عدد الموظفين + خيار مخصَّص لأكثر من 7)
+// ⭐ رسم إضافي لكل شريك VOF إضافي بعد الأول - يغطي إقرار IB منفصل مستقل لكل
+// شريك (كل شريك يحتاج إقراره الخاص، بعكس البنك اللي هو حركة واحدة مشتركة
+// بغض النظر عن عدد الشركاء)
+const VOF_PARTNER_SURCHARGE=15;
+// ⭐⭐ تسعير الموظفين/الرواتب - أصبح مبلغًا واحدًا شاملًا (بدل Manual+Admin
+// add-on منفصلين) لأن ANB يدير كل شيء دائمًا الآن، فلا داعي لتمييزهما
 const EMPLOYEE_PAYROLL_PRICING={
-  1:{maxCount:2,manual:20,adminAddon:10},
-  2:{maxCount:3,manual:35,adminAddon:20},
-  3:{maxCount:7,manual:80,adminAddon:50}
+  1:{maxCount:2,price:30},
+  2:{maxCount:3,price:55},
+  3:{maxCount:7,price:130}
 };
+function computeVofSurcharge(partnerCount){
+  const n=Math.max(1,parseInt(partnerCount)||1);
+  return (n-1)*VOF_PARTNER_SURCHARGE;
+}
 // ⭐ يحسب تكلفة إضافة الموظفين/الرواتب لعرضها بشاشة الأدمن فقط (لا تظهر
 // كتفصيل بمستند العقد النهائي للعميل - فقط "موجود/غير موجود" هناك)
-function computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice){
+function computeEmployeePayrollAddon(empTier,customEmpPrice){
   if(!empTier||empTier==='none')return 0;
   if(empTier==='custom')return customEmpPrice||0;
   const tier=EMPLOYEE_PAYROLL_PRICING[empTier];
-  if(!tier)return 0;
-  // ⚠️ الأرقام الجديدة تمثِّل بالفعل السعر الإجمالي للموظفين + الرواتب معًا
-  // (لا حاجة لمضاعفته كما كان سابقًا حين كان السعر لخدمة واحدة فقط)
-  return tier.manual+(isAdminMode?tier.adminAddon:0);
+  return tier?tier.price:0;
 }
-function computeContractTotal(packageId,isAdminMode,hoursEnabled,cashierEnabled){
+function computeContractTotal(packageId,hoursEnabled,cashierEnabled,partnerCount){
   const pkg=SUBSCRIPTION_PACKAGES[packageId];
   if(!pkg)return 0;
-  const tier=pkg.tier;
-  let total=0;
-  ['invoices','expenses','bank'].forEach(svc=>{
-    const p=TIER_SERVICE_PRICING[svc][tier];
-    total+=p.manual+(isAdminMode?p.adminAddon:0);
-  });
-  total+=CHAT_PRICING[pkg.chatLevel]||0;
-  total+=FIXED_SERVICE_PRICING.btw;
-  total+=FIXED_SERVICE_PRICING.ibAnnual;
-  total+=REPORTS_PRICING[pkg.reportsFreq]||0;
+  let total=pkg.basePrice;
+  total+=computeVofSurcharge(partnerCount);
   if(hoursEnabled)total+=HOURS_ADDON_PRICE;
   if(cashierEnabled)total+=CASHIER_ADDON_PRICE;
   return total;
 }
-function getContractServiceSummaryLines(packageId,isAdminMode,hoursEnabled,cashierEnabled,hasEmployeesService){
+function getContractServiceSummaryLines(packageId,hoursEnabled,cashierEnabled,hasEmployeesService,partnerCount){
   const pkg=SUBSCRIPTION_PACKAGES[packageId];
   if(!pkg)return[];
-  const mode=isAdminMode?'ANB handles data entry on your behalf':'You enter your own data';
-  // ⚠️⚠️ حسب طلب صريح: لا يُذكر أي رقم أو حجم للباقة على الإطلاق (لا حدود
-  // فواتير/مصاريف/بنك، لا ساعات استجابة الشات، لا تكرار التقارير) - فقط اسم
-  // مستوى الباقة نفسه (Essential/Advanced/Premium) ونوع الخدمات المُتضمَّنة
-  // بصياغة موحَّدة بغضّ النظر عن المستوى. أي خدمة إضافية مُشتراة (ساعات/كاشير/
-  // موظفين ورواتب) تُذكَر كذلك بلا أي حجم أو مستوى أو سعر رقمي - فقط "موجودة".
-  // مع تنويه دائم بحق ANB بفرض رسوم إضافية عند تجاوز حدود الاستخدام الفعلية
-  // المُتضمَّنة بالباقة المُختارة.
+  // ⚠️⚠️ بلا أي حد/حجم مذكور إطلاقًا (لا فواتير، لا مصاريف، لا حركات بنكية) -
+  // بالضبط الفلسفة اللي تميّز SnelStart عن Moneybird بالسوق: بلا سقف يسبب
+  // احتكاكًا. التمايز الوحيد هو تكرار التقارير ووجود الاستشارة من عدمه.
   const lines=[
     'Package level: '+pkg.name,
-    'Invoice management ('+mode+')',
-    'Expense management ('+mode+')',
-    'Bank reconciliation ('+mode+')',
-    'Chat support',
-    'BTW (VAT) filing',
+    'Unlimited invoices (client-issued, ANB-managed)',
+    'Unlimited expense uploads / scans (ANB-managed)',
+    'Unlimited bank transaction reconciliation',
+    'BTW (VAT) quarterly filing',
     'Annual income tax return (business)',
-    'Financial reporting'
+    pkg.reportsFreq==='monthly'?'Monthly financial reporting':'Quarterly financial reporting'
   ];
+  if(pkg.adviesEnabled)lines.push('Quarterly 30-minute personal tax advisory session (held before each BTW filing)');
+  if(partnerCount&&partnerCount>1)lines.push('VOF partnership — includes '+partnerCount+' individual partner income tax filings');
   if(hoursEnabled)lines.push('Hours register');
   if(cashierEnabled)lines.push('Cashier + cash management');
   if(hasEmployeesService)lines.push('Employees & payroll management');
-  lines.push('ANB reserves the right to apply additional charges if actual usage exceeds the limits included in the selected package.');
   return lines;
 }
 
@@ -4908,10 +4874,10 @@ function openAddContract(cid){
         <div style="display:flex;flex-direction:column;gap:8px" id="pkg-cards">
           ${Object.values(SUBSCRIPTION_PACKAGES).map(pkg=>`
             <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="onPackageChange()">
-              <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id==='essential'?'checked':''} style="flex-shrink:0"/>
+              <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id==='compleet'?'checked':''} style="flex-shrink:0"/>
               <div style="flex:1">
-                <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name}</div>
-                <div style="font-size:10.5px;color:var(--t3)">Tier ${pkg.tier} · ${pkg.chatLevel} chat · ${pkg.reportsFreq} reports</div>
+                <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name} — €${pkg.basePrice}/mo</div>
+                <div style="font-size:10.5px;color:var(--t3)">${pkg.reportsFreq} reports${pkg.adviesEnabled?' · quarterly tax advisory session':''}</div>
               </div>
             </label>`).join('')}
         </div>
@@ -4919,15 +4885,10 @@ function openAddContract(cid){
       </div>
 
       <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👤 Data Entry Mode *</label>
-        <div style="display:flex;gap:8px">
-          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer">
-            <input type="radio" name="contract-mode" value="manual" checked onclick="updateContractPriceLive()"/> Manual (client enters own data)
-          </label>
-          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer">
-            <input type="radio" name="contract-mode" value="admin" onclick="updateContractPriceLive()"/> Admin (ANB enters data)
-          </label>
-        </div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 VOF Partnership</label>
+        <input type="number" id="contract-partner-count" step="1" min="1" value="1" oninput="updateContractPriceLive()"
+          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
+        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">1 for a sole eenmanszaak. For a VOF, enter the total number of partners — each needs a separate annual income tax filing (+€${VOF_PARTNER_SURCHARGE}/mo per additional partner).</div>
       </div>
 
       <div id="contract-addons"></div>
@@ -4940,7 +4901,7 @@ function openAddContract(cid){
           </label>
           ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
-            <input type="radio" name="contract-emp-tier" value="${tierNum}" onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(covers employees + payroll together)</span>
+            <input type="radio" name="contract-emp-tier" value="${tierNum}" onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.price}/mo <span style="color:var(--t3)">(covers employees + payroll together)</span>
           </label>`).join('')}
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
             <input type="radio" name="contract-emp-tier" value="custom" onclick="updateContractPriceLive()"/> More than 7 employees — <span style="color:var(--t3)">custom quote required, not auto-priced</span>
@@ -4985,17 +4946,17 @@ function openAddContract(cid){
     </div>
   `, ()=>{
     const title=getNextContractTitle(cid);
-    const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
-    const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+    const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'compleet';
     const hoursAddon=isAddonEnabled('hours');
     const cashierAddon=isAddonEnabled('cashier');
     const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
     const customEmpPrice=parseFloat(document.getElementById('contract-emp-custom-price')?.value)||0;
     const customEmpCount=parseInt(document.getElementById('contract-emp-custom-count')?.value)||0;
+    const partnerCount=Math.max(1,parseInt(document.getElementById('contract-partner-count')?.value)||1);
     const start=document.getElementById('contract-start').value;
     const discountType=document.getElementById('contract-discount-type')?.value||'none';
     const discountValue=parseFloat(document.getElementById('contract-discount-value')?.value)||0;
-    const baseTotal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+    const baseTotal=computeContractTotal(packageId,hoursAddon,cashierAddon,partnerCount)+computeEmployeePayrollAddon(empTier,customEmpPrice);
     const plan=computeDiscountedTotal(baseTotal,discountType,discountValue);
     if(empTier==='custom'&&!customEmpPrice){toast('❌ Enter the custom monthly price for employees + payroll');markFieldError('contract-emp-custom-price');return;}
 
@@ -5006,11 +4967,11 @@ function openAddContract(cid){
       title,
       desc:'',
       plan,
+      partnerCount,
       discountType,
       discountValue:discountType!=='none'?discountValue:undefined,
       type:'Standard',
       subscriptionPackage:packageId,
-      isAdminMode,
       hoursAddon,
       cashierAddon,
       employeePayrollTier:empTier,
@@ -5061,13 +5022,13 @@ function computeDiscountedTotal(baseTotal,discountType,discountValue){
   return Math.max(0,Math.round(discounted*100)/100);
 }
 function updateContractPriceLive(){
-  const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
-  const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+  const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'compleet';
   const hoursEnabled=isAddonEnabled('hours');
   const cashierEnabled=isAddonEnabled('cashier');
   const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
   const customEmpPrice=parseFloat(document.getElementById('contract-emp-custom-price')?.value)||0;
-  const baseTotal=computeContractTotal(packageId,isAdminMode,hoursEnabled,cashierEnabled)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+  const partnerCount=Math.max(1,parseInt(document.getElementById('contract-partner-count')?.value)||1);
+  const baseTotal=computeContractTotal(packageId,hoursEnabled,cashierEnabled,partnerCount)+computeEmployeePayrollAddon(empTier,customEmpPrice);
   const discountType=document.getElementById('contract-discount-type')?.value||'none';
   const discountValue=parseFloat(document.getElementById('contract-discount-value')?.value)||0;
   const finalTotal=computeDiscountedTotal(baseTotal,discountType,discountValue);
@@ -5095,47 +5056,40 @@ function updateContractPriceLive(){
 function onPackageChange(){
   updateContractPriceLive();
 }
-// ⭐ يعرض تفاصيل الباقة المُختارة فعليًا (الخدمات، الحدود، هامش التسامح،
-// ورسوم التجاوز) - شفافية كاملة للأدمن أثناء الإنشاء، حتى لو لن تظهر هذي
-// التفاصيل السعرية للعميل نفسه على مستند العقد (الذي يعرض المجموع فقط)
+// ⭐ يعرض تفاصيل الباقة المُختارة فعليًا (قائمة الخدمات فقط) - الموديل الجديد
+// بلا أي حدود/تجاوز إطلاقًا (بلا Manual/Admin، بلا حدود فواتير/مصاريف/بنك)
 function updatePackageDetailPanel(){
   const panel=document.getElementById('pkg-detail-panel');
   if(!panel)return;
-  const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
-  const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+  const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'compleet';
   const hoursEnabled=isAddonEnabled('hours');
   const cashierEnabled=isAddonEnabled('cashier');
   const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
-  const lines=getContractServiceSummaryLines(packageId,isAdminMode,hoursEnabled,cashierEnabled,empTier&&empTier!=='none');
-  const rows=['invoices','expenses','bank'].map(svc=>{
-    const limit=TIER_LIMITS[svc][SUBSCRIPTION_PACKAGES[packageId].tier];
-    const tol=TIER_LIMITS_WITH_TOLERANCE[svc][SUBSCRIPTION_PACKAGES[packageId].tier];
-    const rate=OVERAGE_RATES[svc];
-    return `<div style="display:flex;justify-content:space-between;font-size:10.5px;padding:3px 0;border-bottom:1px dashed var(--gr2)">
-      <span style="text-transform:capitalize">${svc}</span>
-      <span>${limit}/mo (up to ${tol} tolerated) — then €${isAdminMode?rate.admin:rate.manual}/${rate.per} over</span>
-    </div>`;
-  }).join('');
+  const partnerCount=Math.max(1,parseInt(document.getElementById('contract-partner-count')?.value)||1);
+  const lines=getContractServiceSummaryLines(packageId,hoursEnabled,cashierEnabled,empTier&&empTier!=='none',partnerCount);
   panel.innerHTML=`
     <div style="font-size:11px;font-weight:700;color:var(--t1);margin-bottom:6px">📋 What's included in ${SUBSCRIPTION_PACKAGES[packageId].name}</div>
-    <ul style="margin:0 0 10px;padding-left:16px;font-size:10.5px;color:var(--t2);line-height:1.7">
+    <ul style="margin:0;padding-left:16px;font-size:10.5px;color:var(--t2);line-height:1.7">
       ${lines.map(l=>`<li>${l}</li>`).join('')}
     </ul>
-    <div style="font-size:10.5px;font-weight:700;color:var(--t1);margin-bottom:4px">Monthly limits &amp; overage (not shown on client's agreement, for your reference)</div>
-    ${rows}
   `;
 }
 // ⭐ يُطبِّق تلقائيًا حدود الفواتير/المصاريف الشهرية (+ حد جديد للبنك) على
 // سجل العميل بناءً على مستوى الباقة المُختارة - بدل حقل مُدخَل يدويًا منفصل
 // قد يتعارض مع حد الباقة نفسها
+// ⭐⭐ الموديل الجديد (2026) بلا أي حد استخدام إطلاقًا - نمسح أي حد قديم متبقٍ
+// من موديل الباقات المُتدرِّجة السابق بدل حساب حد جديد. الحراس الموجودة أصلًا
+// بالتطبيق (مثل `if(cl.monthlyInvoiceLimit>0)`) تتجاهل تلقائيًا القيمة
+// الفارغة/undefined، فتتعطَّل كل تنبيهات "اقتراب من الحد" تلقائيًا بلا أي
+// تعديل إضافي مطلوب بأماكنها.
 function applyContractLimitsToClient(cid,packageId,plan){
   const pkg=SUBSCRIPTION_PACKAGES[packageId];
   if(!pkg)return;
   const c=S.clients.find(cl=>cl.id===cid);
   if(!c)return;
-  c.monthlyInvoiceLimit=TIER_LIMITS.invoices[pkg.tier];
-  c.monthlyExpenseLimit=TIER_LIMITS.expenses[pkg.tier];
-  c.monthlyBankLimit=TIER_LIMITS.bank[pkg.tier];
+  c.monthlyInvoiceLimit=undefined;
+  c.monthlyExpenseLimit=undefined;
+  c.monthlyBankLimit=undefined;
   // ⚠️⚠️ إصلاح فجوة حقيقية: فاتورة الاشتراك الشهرية الفعلية (generateAllClientInvoices)
   // تعتمد على c.monthlyFee - وهذا الحقل لم يكن يتزامن أبدًا مع سعر العقد
   // الجديد (plan) المحسوب من نظام الباقات! يعني عقدًا جديدًا بالكامل كان
@@ -5149,8 +5103,7 @@ function openEditContract(contractId,cid){
   const con=S.contracts?.find(c=>c.id===contractId);
   if(!con)return;
   const locked=con.status==='cancelled';
-  const packageId=con.subscriptionPackage||'essential';
-  const isAdminMode=!!con.isAdminMode;
+  const packageId=con.subscriptionPackage||'compleet';
 
   showModal('Edit Contract',`
     <div style="display:flex;flex-direction:column;gap:14px">
@@ -5169,8 +5122,8 @@ function openEditContract(contractId,cid){
             <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;${locked?'opacity:.5':'cursor:pointer'}" ${locked?'':'onclick="onPackageChange()"'}>
               <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id===packageId?'checked':''} ${locked?'disabled':''} style="flex-shrink:0"/>
               <div style="flex:1">
-                <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name}</div>
-                <div style="font-size:10.5px;color:var(--t3)">Tier ${pkg.tier} · ${pkg.chatLevel} chat · ${pkg.reportsFreq} reports</div>
+                <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name} — €${pkg.basePrice}/mo</div>
+                <div style="font-size:10.5px;color:var(--t3)">${pkg.reportsFreq} reports${pkg.adviesEnabled?' · quarterly tax advisory session':''}</div>
               </div>
             </label>`).join('')}
         </div>
@@ -5178,15 +5131,10 @@ function openEditContract(contractId,cid){
       </div>
 
       <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👤 Data Entry Mode *</label>
-        <div style="display:flex;gap:8px">
-          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;${locked?'opacity:.5':'cursor:pointer'}">
-            <input type="radio" name="contract-mode" value="manual" ${!isAdminMode?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> Manual
-          </label>
-          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;${locked?'opacity:.5':'cursor:pointer'}">
-            <input type="radio" name="contract-mode" value="admin" ${isAdminMode?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> Admin
-          </label>
-        </div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 VOF Partnership</label>
+        <input type="number" id="contract-partner-count" step="1" min="1" value="${con.partnerCount||1}" ${locked?'disabled':''} oninput="updateContractPriceLive()"
+          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
+        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">1 for a sole eenmanszaak. For a VOF, enter the total number of partners (+€${VOF_PARTNER_SURCHARGE}/mo per additional partner).</div>
       </div>
 
       <div id="contract-addons"></div>
@@ -5199,7 +5147,7 @@ function openEditContract(contractId,cid){
           </label>
           ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;${locked?'opacity:.5':'cursor:pointer'};font-size:11.5px">
-            <input type="radio" name="contract-emp-tier" value="${tierNum}" ${con.employeePayrollTier===tierNum?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(covers employees + payroll together)</span>
+            <input type="radio" name="contract-emp-tier" value="${tierNum}" ${con.employeePayrollTier===tierNum?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.price}/mo <span style="color:var(--t3)">(covers employees + payroll together)</span>
           </label>`).join('')}
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;${locked?'opacity:.5':'cursor:pointer'};font-size:11.5px">
             <input type="radio" name="contract-emp-tier" value="custom" ${con.employeePayrollTier==='custom'?'checked':''} ${locked?'disabled':''} onclick="updateContractPriceLive()"/> More than 7 employees — <span style="color:var(--t3)">custom quote required, not auto-priced</span>
@@ -5261,18 +5209,18 @@ function openEditContract(contractId,cid){
 
 function saveContract(contractId,cid){
   const title=document.getElementById('contract-title')?.value||'';
-  const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
-  const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+  const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'compleet';
   const hoursAddon=isAddonEnabled('hours');
   const cashierAddon=isAddonEnabled('cashier');
   const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
   const customEmpPrice=parseFloat(document.getElementById('contract-emp-custom-price')?.value)||0;
   const customEmpCount=parseInt(document.getElementById('contract-emp-custom-count')?.value)||0;
+  const partnerCount=Math.max(1,parseInt(document.getElementById('contract-partner-count')?.value)||1);
   const startDate=document.getElementById('contract-start')?.value||'';
   const endDate=document.getElementById('contract-end')?.value||'';
   const discountType=document.getElementById('contract-discount-type')?.value||'none';
   const discountValue=parseFloat(document.getElementById('contract-discount-value')?.value)||0;
-  const baseTotal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+  const baseTotal=computeContractTotal(packageId,hoursAddon,cashierAddon,partnerCount)+computeEmployeePayrollAddon(empTier,customEmpPrice);
   const plan=computeDiscountedTotal(baseTotal,discountType,discountValue);
 
   if(!title){toast('❌ Contract title required');markFieldError('contract-title');return;}
@@ -5294,7 +5242,7 @@ function saveContract(contractId,cid){
       // تغيير سعر) لا تحتاج هذا - تبقى الحالة كما هي دون قفل.
       const priceChanged=oldContract.plan!==plan;
       const newStatus=priceChanged?'draft':oldContract.status;
-      S.contracts[idx]={...oldContract,title,plan,discountType,discountValue:discountType!=='none'?discountValue:undefined,subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,startDate,endDate,status:newStatus};
+      S.contracts[idx]={...oldContract,title,plan,partnerCount,discountType,discountValue:discountType!=='none'?discountValue:undefined,subscriptionPackage:packageId,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,startDate,endDate,status:newStatus};
       const client=S.clients.find(cl=>cl.id===cid);
       logAudit('edit','contract',(priceChanged?'Updated price and locked pending re-signature for contract "':'Updated contract "')+title+'" for '+(client?.name||'')+(priceChanged?' ('+FMT(oldContract.plan)+' → '+FMT(plan)+')':''),cid);
       if(client){
@@ -5308,8 +5256,8 @@ function saveContract(contractId,cid){
   }else{
     // Add new (fallback path — openAddContract normally handles creation itself)
     S.contracts.push({
-      id:UID(),cid:cid,title:title,desc:'',plan:plan,discountType,discountValue:discountType!=='none'?discountValue:undefined,type:'Standard',
-      subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,
+      id:UID(),cid:cid,title:title,desc:'',plan:plan,partnerCount,discountType,discountValue:discountType!=='none'?discountValue:undefined,type:'Standard',
+      subscriptionPackage:packageId,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,
       startDate:startDate,endDate:endDate,status:'draft',createdDate:TODAY()
     });
     applyContractLimitsToClient(cid,packageId,plan);
@@ -5337,18 +5285,17 @@ function openProposeUpgrade(contractId,cid){
       <div style="display:flex;flex-direction:column;gap:8px">
         ${Object.values(SUBSCRIPTION_PACKAGES).map(pkg=>`
           <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="onPackageChange()">
-            <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id===(con.subscriptionPackage||'essential')?'checked':''}/>
-            <div style="flex:1"><div style="font-weight:700;font-size:13px">${pkg.name}</div><div style="font-size:10.5px;color:var(--t3)">Tier ${pkg.tier} · ${pkg.chatLevel} chat · ${pkg.reportsFreq} reports</div></div>
+            <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id===(con.subscriptionPackage||'compleet')?'checked':''}/>
+            <div style="flex:1"><div style="font-weight:700;font-size:13px">${pkg.name} — €${pkg.basePrice}/mo</div><div style="font-size:10.5px;color:var(--t3)">${pkg.reportsFreq} reports${pkg.adviesEnabled?' · quarterly tax advisory session':''}</div></div>
           </label>`).join('')}
       </div>
       <div id="pkg-detail-panel" style="background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:10px 12px;margin-top:8px"></div>
     </div>
     <div style="margin-top:12px">
-      <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👤 Data Entry Mode</label>
-      <div style="display:flex;gap:8px">
-        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer"><input type="radio" name="contract-mode" value="manual" ${!con.isAdminMode?'checked':''} onclick="updateContractPriceLive()"/> Manual</label>
-        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer"><input type="radio" name="contract-mode" value="admin" ${con.isAdminMode?'checked':''} onclick="updateContractPriceLive()"/> Admin</label>
-      </div>
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 VOF Partnership</label>
+      <input type="number" id="contract-partner-count" step="1" min="1" value="${con.partnerCount||1}" oninput="updateContractPriceLive()"
+        style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
+      <div style="font-size:10.5px;color:var(--t3);margin-top:4px">+€${VOF_PARTNER_SURCHARGE}/mo per additional partner beyond the first.</div>
     </div>
     <div id="contract-addons" style="margin-top:12px"></div>
     <div style="margin-top:12px">
@@ -5359,7 +5306,7 @@ function openProposeUpgrade(contractId,cid){
         </label>
         ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
         <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
-          <input type="radio" name="contract-emp-tier" value="${tierNum}" ${con.employeePayrollTier===tierNum?'checked':''} onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(covers employees + payroll together)</span>
+          <input type="radio" name="contract-emp-tier" value="${tierNum}" ${con.employeePayrollTier===tierNum?'checked':''} onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.price}/mo <span style="color:var(--t3)">(covers employees + payroll together)</span>
         </label>`).join('')}
         <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
           <input type="radio" name="contract-emp-tier" value="custom" ${con.employeePayrollTier==='custom'?'checked':''} onclick="updateContractPriceLive()"/> More than 7 — custom quote
@@ -5389,20 +5336,20 @@ function openProposeUpgrade(contractId,cid){
       <div id="contract-price-original" style="display:none;font-size:11px;color:var(--t3);text-decoration:line-through;margin-top:2px"></div>
     </div>
   `,()=>{
-    const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
-    const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+    const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'compleet';
     const hoursAddon=isAddonEnabled('hours');
     const cashierAddon=isAddonEnabled('cashier');
     const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
     const customEmpPrice=parseFloat(document.getElementById('contract-emp-custom-price')?.value)||0;
     const customEmpCount=parseInt(document.getElementById('contract-emp-custom-count')?.value)||0;
+    const partnerCount=Math.max(1,parseInt(document.getElementById('contract-partner-count')?.value)||1);
     if(empTier==='custom'&&!customEmpPrice){toast('❌ Enter the custom monthly price for employees + payroll');markFieldError('contract-emp-custom-price');return;}
     const discountType=document.getElementById('contract-discount-type')?.value||'none';
     const discountValue=parseFloat(document.getElementById('contract-discount-value')?.value)||0;
-    const baseTotal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+    const baseTotal=computeContractTotal(packageId,hoursAddon,cashierAddon,partnerCount)+computeEmployeePayrollAddon(empTier,customEmpPrice);
     const newPlan=computeDiscountedTotal(baseTotal,discountType,discountValue);
-    if(newPlan===con.plan&&packageId===con.subscriptionPackage&&isAdminMode===con.isAdminMode&&empTier===(con.employeePayrollTier||'none')){toast('❌ This matches the current plan already — nothing to propose');return;}
-    con.pendingUpgrade={subscriptionPackage:packageId,isAdminMode,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,discountType,discountValue:discountType!=='none'?discountValue:undefined,newPlan,
+    if(newPlan===con.plan&&packageId===con.subscriptionPackage&&partnerCount===(con.partnerCount||1)&&empTier===(con.employeePayrollTier||'none')){toast('❌ This matches the current plan already — nothing to propose');return;}
+    con.pendingUpgrade={subscriptionPackage:packageId,partnerCount,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,discountType,discountValue:discountType!=='none'?discountValue:undefined,newPlan,
       proposedDate:TODAY(),lastReminderDate:TODAY()};
     logAudit('edit','contract','Proposed an upgrade for '+(S.clients.find(cl=>cl.id===cid)?.name||'')+' — €'+con.plan+' → €'+newPlan+' (awaiting client approval)',cid);
     sv();closeModal();renderContent();
@@ -5421,7 +5368,7 @@ function approvePendingUpgrade(contractId){
   showConfirmDialog('Approve Upgrade','Switch to the new plan (€'+con.pendingUpgrade.newPlan+'/mo) now?',()=>{
     const u=con.pendingUpgrade;
     con.subscriptionPackage=u.subscriptionPackage;
-    con.isAdminMode=u.isAdminMode;
+    con.partnerCount=u.partnerCount;
     con.hoursAddon=u.hoursAddon;
     con.cashierAddon=u.cashierAddon;
     con.employeePayrollTier=u.employeePayrollTier;
@@ -7492,32 +7439,12 @@ function getActiveContractForClient(cid){
 // ⭐⭐ يحسب رسم تجاوز شهر مُحدَّد لعميل معيّن: يقارن الاستخدام الفعلي (فواتيره
 // الخاصة/مصاريفه/حركاته البنكية بذلك الشهر) بحد الباقة + هامش التسامح 15%،
 // ويحسب الرسم فقط على ما تجاوز ذلك، بمعدل Manual/Admin الصحيح حسب اختيار العقد
+// ⭐⭐ الموديل الجديد (2026) مسطَّح بلا أي حدود استخدام إطلاقًا - فلا يوجد
+// "تجاوز" (overage) بمعناه القديم بعد الآن على الإطلاق. أبقيت الدالة بشكلها
+// (بدل حذفها) فقط حتى لا تنكسر generateAllClientInvoices التي لا تزال
+// تستدعيها شهريًا - ترجع دائمًا صفر، بلا أي رسوم إضافية تلقائية على الإطلاق.
 function computeClientOverageForMonth(cid,monthStr){
-  const contract=getActiveContractForClient(cid);
-  if(!contract||!contract.subscriptionPackage)return{total:0,details:[]};
-  const pkg=SUBSCRIPTION_PACKAGES[contract.subscriptionPackage];
-  if(!pkg)return{total:0,details:[]};
-  const tier=pkg.tier;
-  const counts={
-    invoices:(S.invoices||[]).filter(i=>i.cid===cid&&!i.deleted&&!i.isCreditNote&&(i.date||'').slice(0,7)===monthStr).length,
-    expenses:(S.expenses||[]).filter(e=>e.cid===cid&&!e.deleted&&!e.isCreditNote&&(e.date||'').slice(0,7)===monthStr).length,
-    bank:(S.bankTx||[]).filter(t=>t.cid===cid&&(t.date||'').slice(0,7)===monthStr).length
-  };
-  const details=[];
-  let total=0;
-  ['invoices','expenses','bank'].forEach(svc=>{
-    const limit=TIER_LIMITS_WITH_TOLERANCE[svc][tier];
-    const count=counts[svc];
-    if(count>limit){
-      const overageUnits=count-limit;
-      const rate=OVERAGE_RATES[svc];
-      const blocks=Math.ceil(overageUnits/rate.per);
-      const fee=blocks*(contract.isAdminMode?rate.admin:rate.manual);
-      total+=fee;
-      details.push({svc,count,limit,overageUnits,fee});
-    }
-  });
-  return{total:Math.round(total*100)/100,details};
+  return{total:0,details:[]};
 }
 
 function generateAllClientInvoices(){
@@ -11912,11 +11839,121 @@ function rInfo(el,cid){
       <div class="kcard"><div class="kl">${t('rep_revenue')}</div><div class="kv" style="color:var(--green)">${FMTi(rev)}</div></div>
       <div class="kcard"><div class="kl">Hours</div><div class="kv">${hrs.toFixed(1)}h</div></div>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-xs" onclick="openEditClient('${c.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✏</span>${t('edit')} ${t('tab_client')}</button>
       <button class="btn btn-gold btn-xs" onclick="exportClientPDF('${c.id}')"><span style="font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">⬇</span>Export report</button>
+      ${(c.lijfrenteCalcEnabled&&isAdmin())?`<button class="btn btn-xs" style="background:var(--gr1);border:1px solid var(--gold);color:#8a6410" onclick="openLijfrenteCalculator('${c.id}')">🧮 ${t('lijfrente_calc_btn')||'Lijfrente Calculator'}</button>`:''}
     </div>
   </div>`;
+}
+
+// ═══ LIJFRENTE (RETIREMENT SAVINGS) CALCULATOR ═══════════════════════
+// ⭐⭐⭐ أداة إدارية داخلية بحتة (لا يراها العميل إطلاقًا) - تساعد بتحضير جلسة
+// الاستشارة الضريبية الربعية (باقة "+Advies"). تُفعَّل/تُعطَّل لكل عميل يدويًا
+// (checkbox بشاشة تعديل العميل). تحسب "jaarruimte" (مساحة الإيداع السنوية
+// المعفاة من الضريبة لحساب lijfrente تقاعدي) حسب قواعد 2026 الرسمية، وتتتبّع
+// حساب كل سنة سابقًا لعرض المقارنة والمساعدة بتقدير "reserveringsruimte"
+// (المساحة المتراكمة غير المُستخدَمة من السنوات العشر الماضية).
+//
+// ⚠️⚠️ تقريبية للنقاش فقط - ليست بديلًا عن حاسبة Belastingdienst الرسمية أو
+// مستشار معاشات متخصص. Factor A (معاش موظف سابق) مُفترَض دائمًا صفر هنا لأن
+// كل عملاء ANB الحاليين فريلانسرز/ZZP بلا معاش صاحب عمل سابق - لو تغيّر هذا
+// مستقبلًا (عميل عنده Factor A حقيقي)، هذي الحاسبة تُبالِغ بتقدير المساحة المتاحة.
+// ⚠️ الأرقام (النسبة 30%، الفرنشيز €19,172، الحد الأقصى €35,589) تخص سنة 2026
+// تحديدًا وتتغيّر سنويًا - يجب تحديثها كل سنة (نفس نمط أرقام الضريبة الأخرى بالتطبيق).
+const LIJFRENTE_RULES_2026={
+  year:2026,
+  opbouwPercentage:0.30,
+  aowFranchise:19172,
+  maxPensioengevendIncome:137800,
+  maxJaarruimte:35589,
+  reserveringsruimteMaxYears:10
+};
+function computeJaarruimte(profitIncome,rules){
+  rules=rules||LIJFRENTE_RULES_2026;
+  const cappedIncome=Math.min(Math.max(0,profitIncome||0),rules.maxPensioengevendIncome);
+  const premiegrondslag=Math.max(0,cappedIncome-rules.aowFranchise);
+  const jaarruimte=premiegrondslag*rules.opbouwPercentage;
+  return Math.round(Math.min(jaarruimte,rules.maxJaarruimte)*100)/100;
+}
+// ⭐ يقدِّر reserveringsruimte من السنوات المُسجَّلة فعليًا بالتطبيق فقط (لا
+// معرفة له بأي سنة سابقة لم تُحسَب هنا) - حتى 10 سنوات للوراء كحد أقصى قانوني
+function estimateReserveringsruimte(cid,currentYear){
+  const history=(S.lijfrenteCalcs||[]).filter(r=>r.cid===cid&&r.year<currentYear&&r.year>=currentYear-LIJFRENTE_RULES_2026.reserveringsruimteMaxYears);
+  let unused=0;
+  history.forEach(r=>{
+    const used=r.contributionMade||0;
+    unused+=Math.max(0,(r.jaarruimte||0)-used);
+  });
+  return Math.round(unused*100)/100;
+}
+function getLijfrenteHistory(cid){
+  return(S.lijfrenteCalcs||[]).filter(r=>r.cid===cid).sort((a,b)=>b.year-a.year);
+}
+function openLijfrenteCalculator(cid){
+  const c=S.clients.find(cl=>cl.id===cid);
+  if(!c)return;
+  const currentYear=new Date().getFullYear();
+  const history=getLijfrenteHistory(cid);
+  const lastYearRecord=history.find(r=>r.year===currentYear-1);
+  const existingThisYear=history.find(r=>r.year===currentYear);
+  showModal('🧮 '+(t('lijfrente_calc_title')||'Lijfrente Calculator')+' — '+escapeHtml(c.name),`
+    <div style="background:rgba(184,134,11,0.1);border:1px solid var(--gold);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#8a6410;line-height:1.6">
+      ⚠️ ${t('lijfrente_disclaimer')||'Approximate figure for the advisory conversation only — not a substitute for the official Belastingdienst calculation. Assumes Factor A = 0 (no employer pension), which applies to virtually all current ANB clients.'}
+    </div>
+    <div class="fg"><label>${t('lijfrente_year')||'Tax year'}</label>
+      <input type="number" id="lij-year" value="${currentYear}" step="1" oninput="updateLijfrenteCalc('${cid}')"/>
+    </div>
+    <div class="fg"><label>${t('lijfrente_income')||'Prior-year taxable profit (winst uit onderneming, €)'}</label>
+      <input type="number" id="lij-income" step="0.01" min="0" placeholder="e.g. 45000" value="${existingThisYear?existingThisYear.profit:''}" oninput="updateLijfrenteCalc('${cid}')"/>
+      <div class="sec-desc" style="margin:4px 0 0">${t('lijfrente_income_hint')||"Use the client's actual profit for the year BEFORE the tax year above (e.g. 2025 profit for the 2026 calculation)."}</div>
+    </div>
+    <div id="lij-result" style="background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:12px;margin:12px 0"></div>
+    ${lastYearRecord?`<div style="font-size:11px;color:var(--t3);margin-bottom:12px">${t('lijfrente_previous')||'Previous calculation'} (${lastYearRecord.year}): ${t('lijfrente_jaarruimte')||'jaarruimte'} €${lastYearRecord.jaarruimte.toFixed(2)}${lastYearRecord.contributionMade?' — '+(t('lijfrente_contributed')||'contributed')+' €'+lastYearRecord.contributionMade.toFixed(2):' — '+(t('lijfrente_not_recorded')||'no contribution recorded')}</div>`:''}
+    <div class="fg"><label>${t('lijfrente_contribution')||'Amount actually contributed (optional, fill in later once known)'}</label>
+      <input type="number" id="lij-contribution" step="0.01" min="0" placeholder="e.g. 5000" value="${existingThisYear?existingThisYear.contributionMade||'':''}"/>
+    </div>
+    ${history.length?`<div style="margin-top:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--t1);margin-bottom:6px">${t('lijfrente_history')||'History'}</div>
+      <div style="max-height:160px;overflow-y:auto;border:1px solid var(--gr2);border-radius:6px">
+        ${history.map(r=>`<div style="display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid var(--gr2);font-size:11px">
+          <span>${r.year}</span><span>${t('lijfrente_income')||'income'}: €${(r.profit||0).toFixed(0)}</span><span>${t('lijfrente_jaarruimte')||'jaarruimte'}: €${(r.jaarruimte||0).toFixed(0)}</span><span>${r.contributionMade?'✓ €'+r.contributionMade.toFixed(0):'—'}</span>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+  `,()=>saveLijfrenteCalc(cid),t('lijfrente_save')||'Save this calculation');
+  setTimeout(()=>updateLijfrenteCalc(cid),50);
+}
+function updateLijfrenteCalc(cid){
+  const year=parseInt(document.getElementById('lij-year')?.value)||new Date().getFullYear();
+  const income=parseFloat(document.getElementById('lij-income')?.value)||0;
+  const jaarruimte=computeJaarruimte(income);
+  const reserveringsruimte=estimateReserveringsruimte(cid,year);
+  const total=Math.round((jaarruimte+reserveringsruimte)*100)/100;
+  const resultEl=document.getElementById('lij-result');
+  if(!resultEl)return;
+  resultEl.innerHTML=`
+    <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0"><span>Jaarruimte (${year})</span><b>€${jaarruimte.toFixed(2)}</b></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:1px dashed var(--gr2)"><span>${t('lijfrente_reserve_estimate')||'Reserveringsruimte (estimated, tracked years only)'}</span><b>€${reserveringsruimte.toFixed(2)}</b></div>
+    <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:8px 0 0;border-top:1px solid var(--gold);color:#8a6410"><span>${t('lijfrente_total')||'Approx. total deductible this year'}</span><span>€${total.toFixed(2)}</span></div>
+  `;
+}
+function saveLijfrenteCalc(cid){
+  const year=parseInt(document.getElementById('lij-year')?.value)||new Date().getFullYear();
+  const income=parseFloat(document.getElementById('lij-income')?.value)||0;
+  const contributionMade=parseFloat(document.getElementById('lij-contribution')?.value)||0;
+  if(!income){toast('❌ '+(t('lijfrente_income_required')||'Enter the prior-year profit first'));markFieldError('lij-income');return;}
+  const jaarruimte=computeJaarruimte(income);
+  if(!S.lijfrenteCalcs)S.lijfrenteCalcs=[];
+  const existing=S.lijfrenteCalcs.find(r=>r.cid===cid&&r.year===year);
+  if(existing){
+    existing.profit=income;existing.jaarruimte=jaarruimte;existing.contributionMade=contributionMade||undefined;existing.updatedAt=new Date().toISOString();
+  }else{
+    S.lijfrenteCalcs.push({id:UID(),cid,year,profit:income,jaarruimte,contributionMade:contributionMade||undefined,createdAt:new Date().toISOString()});
+  }
+  logAudit('edit','client','Recorded lijfrente calculation for '+year+' ('+FMT(jaarruimte)+' jaarruimte)',cid);
+  sv();closeModal();renderContent();
+  toast('✓ '+(t('lijfrente_saved')||'Calculation saved')+' — €'+jaarruimte.toFixed(2)+' jaarruimte for '+year);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -13694,6 +13731,13 @@ function rEditClient(el,cid){
               <option value="individuals" ${c?.customerBase==='individuals'?'selected':''}>${t('customer_base_individuals')||'Mostly private individuals — 90%+ (B2C)'}</option>
             </select>
             <div class="sec-desc" style="margin:4px 0 0">${t('customer_base_hint')||'Determines the legal VAT accounting basis (Factuurstelsel/invoice basis for B2B, or Kasstelsel/cash basis eligible for 90%+ consumer sales — per Belastingdienst rules)'}</div>
+          </div>
+          <div class="fg">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="cf-lijfrente-enabled" ${c?.lijfrenteCalcEnabled?'checked':''}/>
+              🧮 ${t('lijfrente_toggle_label')||'Enable Lijfrente (retirement savings) calculator for this client'}
+            </label>
+            <div class="sec-desc" style="margin:4px 0 0">${t('lijfrente_toggle_hint')||'Internal admin tool only — helps prepare the quarterly tax advisory session. Never shown to the client directly.'}</div>
           </div>`:''}
         </div>
       </div>
@@ -13923,6 +13967,7 @@ function saveClientInfoTab(clientId){
     country:document.getElementById('cf-country').value,
     registrationNumber:document.getElementById('cf-regnum').value,
     customerBase:document.getElementById('cf-custbase')?.value||c.customerBase||'business',
+    lijfrenteCalcEnabled:!!document.getElementById('cf-lijfrente-enabled')?.checked,
   };
 
   logAudit('edit','client','Edited client info for '+updatedClient.name,updatedClient.id);
@@ -14047,25 +14092,20 @@ function openClientModal(c){
         <div style="display:flex;flex-direction:column;gap:8px">
           ${Object.values(SUBSCRIPTION_PACKAGES).map(pkg=>`
             <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer" onclick="onPackageChange()">
-              <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id==='essential'?'checked':''} style="flex-shrink:0"/>
+              <input type="radio" name="contract-pkg" value="${pkg.id}" ${pkg.id==='compleet'?'checked':''} style="flex-shrink:0"/>
               <div style="flex:1">
-                <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name}</div>
-                <div style="font-size:10.5px;color:var(--t3)">Tier ${pkg.tier} · ${pkg.chatLevel} chat · ${pkg.reportsFreq} reports</div>
+                <div style="font-weight:700;font-size:13px;color:var(--t1)">${pkg.name} — €${pkg.basePrice}/mo</div>
+                <div style="font-size:10.5px;color:var(--t3)">${pkg.reportsFreq} reports${pkg.adviesEnabled?' · quarterly tax advisory session':''}</div>
               </div>
             </label>`).join('')}
         </div>
         <div id="pkg-detail-panel" style="background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:10px 12px;margin-top:8px"></div>
       </div>
       <div style="margin-top:12px">
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👤 Data Entry Mode *</label>
-        <div style="display:flex;gap:8px">
-          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer">
-            <input type="radio" name="contract-mode" value="manual" checked onclick="updateContractPriceLive()"/> Manual
-          </label>
-          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--gr2);border-radius:8px;cursor:pointer">
-            <input type="radio" name="contract-mode" value="admin" onclick="updateContractPriceLive()"/> Admin
-          </label>
-        </div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 VOF Partnership</label>
+        <input type="number" id="contract-partner-count" step="1" min="1" value="1" oninput="updateContractPriceLive()"
+          style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
+        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">1 for a sole eenmanszaak. For a VOF, enter the total number of partners (+€${VOF_PARTNER_SURCHARGE}/mo per additional partner).</div>
       </div>
       <div id="contract-addons" style="margin-top:12px"></div>
       <div style="margin-top:12px">
@@ -14076,7 +14116,7 @@ function openClientModal(c){
           </label>
           ${Object.entries(EMPLOYEE_PAYROLL_PRICING).map(([tierNum,t])=>`
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
-            <input type="radio" name="contract-emp-tier" value="${tierNum}" onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.manual}/mo Manual, +€${t.adminAddon}/mo Admin add-on <span style="color:var(--t3)">(covers employees + payroll together)</span>
+            <input type="radio" name="contract-emp-tier" value="${tierNum}" onclick="updateContractPriceLive()"/> Up to ${t.maxCount} employees — €${t.price}/mo <span style="color:var(--t3)">(covers employees + payroll together)</span>
           </label>`).join('')}
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px dashed var(--gr2);border-radius:6px;cursor:pointer;font-size:11.5px">
             <input type="radio" name="contract-emp-tier" value="custom" onclick="updateContractPriceLive()"/> More than 7 — custom quote
@@ -14141,17 +14181,17 @@ function openClientModal(c){
 
     // إضافة عميل جديد: يُنشأ فورًا (متطابق مع سلوك إضافة عقد)، مع توليد اتفاقية قابلة للتوقيع تلقائيًا تظهر في Documents
     if(isN){
-      const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'essential';
-      const isAdminMode=document.querySelector('input[name="contract-mode"]:checked')?.value==='admin';
+      const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'compleet';
       const hoursAddon=isAddonEnabled('hours');
       const cashierAddon=isAddonEnabled('cashier');
       const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
       const customEmpPrice=parseFloat(document.getElementById('contract-emp-custom-price')?.value)||0;
       const customEmpCount=parseInt(document.getElementById('contract-emp-custom-count')?.value)||0;
+      const partnerCount=Math.max(1,parseInt(document.getElementById('contract-partner-count')?.value)||1);
       if(empTier==='custom'&&!customEmpPrice){toast('❌ Enter the custom monthly price for employees + payroll');markFieldError('contract-emp-custom-price');return;}
       const discountType=document.getElementById('contract-discount-type')?.value||'none';
       const discountValue=parseFloat(document.getElementById('contract-discount-value')?.value)||0;
-      const baseTotal=computeContractTotal(packageId,isAdminMode,hoursAddon,cashierAddon)+computeEmployeePayrollAddon(empTier,isAdminMode,customEmpPrice);
+      const baseTotal=computeContractTotal(packageId,hoursAddon,cashierAddon,partnerCount)+computeEmployeePayrollAddon(empTier,customEmpPrice);
       const planVal=computeDiscountedTotal(baseTotal,discountType,discountValue);
       const newClient={
         id:UID(),
@@ -14194,11 +14234,11 @@ function openClientModal(c){
         title:getNextContractTitle(newClient.id),
         desc:'',
         plan:planVal,
+        partnerCount,
         discountType,
         discountValue:discountType!=='none'?discountValue:undefined,
         type:'Standard',
         subscriptionPackage:packageId,
-        isAdminMode,
         hoursAddon,
         cashierAddon,
         employeePayrollTier:empTier,
@@ -21496,7 +21536,7 @@ function createContractAgreement(client,contract){
     // ⭐ نُدرج اختيارات الباقة نفسها بالنسخة المحفوظة من العقد، حتى يقدر
     // مستند الاتفاقية يعرض قائمة الخدمات المُتضمَّنة (بلا أي سعر لكل بند)
     subscriptionPackage:contract?.subscriptionPackage||null,
-    isAdminMode:!!contract?.isAdminMode,
+    partnerCount:contract?.partnerCount||1,
     hoursAddon:!!contract?.hoursAddon,
     cashierAddon:!!contract?.cashierAddon,
     employeePayrollTier:contract?.employeePayrollTier||'none',
@@ -21775,7 +21815,7 @@ function generateDutchContractHTML(client){
     3.4 Bij overschrijding van de betalingstermijn is Opdrachtgever van rechtswege in verzuim, zonder dat hiervoor een nadere ingebrekestelling is vereist. De wettelijke handelsrente (art. 6:119a BW) is alsdan verschuldigd, vermeerderd met de buitengerechtelijke incassokosten conform de Wet Incassokosten (WIK).
     ${client.subscriptionPackage&&SUBSCRIPTION_PACKAGES[client.subscriptionPackage]?`<br/>3.5 Dit maandbedrag omvat de volgende diensten (${SUBSCRIPTION_PACKAGES[client.subscriptionPackage].name}-pakket):
     <ul style="margin:6px 0 0;padding-left:18px">
-      ${getContractServiceSummaryLines(client.subscriptionPackage,client.isAdminMode,client.hoursAddon,client.cashierAddon,!!(client.employeePayrollTier&&client.employeePayrollTier!=='none')).map(line=>`<li>${escapeHtml(line)}</li>`).join('')}
+      ${getContractServiceSummaryLines(client.subscriptionPackage,client.hoursAddon,client.cashierAddon,!!(client.employeePayrollTier&&client.employeePayrollTier!=='none'),client.partnerCount).map(line=>`<li>${escapeHtml(line)}</li>`).join('')}
     </ul>`:''}
   </div>
 </div>
