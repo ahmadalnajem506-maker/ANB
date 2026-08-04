@@ -626,6 +626,24 @@ async function handleResolveAccount(request, env, cors) {
     isFirstTime: role === "client" ? !account.pwSet : !account.passwordHash
   }, 200, cors);
 }
+// ⭐ يتحقق من توكن Cloudflare Turnstile مع خادم Cloudflare نفسه قبل قبول أي
+// محاولة تسجيل دخول - طبقة حماية من محاولات الدخول الآلية (bots)، إضافية فوق
+// تحديد المعدل (rate limiting) الموجود أصلًا بلا استبدال له
+async function verifyTurnstileToken(token, secretKey, ip) {
+  if (!token) return { ok: false, reason: "missing_token" };
+  if (!secretKey) return { ok: false, reason: "not_configured" }; // ⚠️ لو السرّ غير مُعرَّف بعد بالخادم، لا نمنع الدخول بالخطأ - نتجاهل التحقق مؤقتًا (انظر ملاحظة الاستخدام)
+  try {
+    const resp = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: secretKey, response: token, remoteip: ip }),
+    });
+    const data = await resp.json();
+    return { ok: !!data.success, reason: data.success ? null : (data["error-codes"] || []).join(",") };
+  } catch (e) {
+    return { ok: false, reason: "verify_request_failed" };
+  }
+}
 async function handleLogin(request, env, cors) {
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
   const bucketKey = `login:${ip}`;
@@ -633,8 +651,17 @@ async function handleLogin(request, env, cors) {
   await registerAttempt(env, bucketKey);
   let body;
   try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400, cors); }
-  const { role, accountId, password } = body || {};
+  const { role, accountId, password, turnstileToken } = body || {};
   if (!role || !accountId || !password) return json({ error: "role, accountId and password are required" }, 400, cors);
+  // ⚠️⚠️ إذا كان env.TURNSTILE_SECRET_KEY معرَّفًا فعليًا، التحقق إلزامي ويرفض
+  // الطلب برسالة واضحة عند الفشل. لو السرّ غير معرَّف بعد (قبل إكمال الإعداد
+  // بلوحة Cloudflare)، يُسمح بالدخول عاديًا بلا حجب - حتى لا يُغلَق الدخول
+  // بالكامل بالخطأ لمجرد نسيان ضبط السرّ. أزل هذا الاستثناء بعد التأكد من ضبط
+  // TURNSTILE_SECRET_KEY فعليًا كـ Worker secret.
+  if (env.TURNSTILE_SECRET_KEY) {
+    const tsResult = await verifyTurnstileToken(turnstileToken, env.TURNSTILE_SECRET_KEY, ip);
+    if (!tsResult.ok) return json({ error: "Verification failed - please try again", detail: tsResult.reason }, 400, cors);
+  }
   const cloud = await fetchCloudPayload(env);
   if (!cloud) return json({ error: "Could not reach database" }, 502, cors);
   const list = listFor(cloud.payload, role);
