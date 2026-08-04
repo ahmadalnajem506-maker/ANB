@@ -853,6 +853,9 @@ window.toggleSidebar = function(){};
 var S = {lang:'en', role:null, clients:[]};
 </script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@1.21.0/dist/umd/lucide.js" defer onload="if(window.lucide)lucide.createIcons()"></script>
+<!-- ⭐ Cloudflare Turnstile - حماية صفحة الدخول من محاولات الدخول الآلية (bots) -
+     طبقة إضافية فوق تحديد المعدل (rate limiting) الموجود أصلًا بالخادم، لا بديل عنه -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
 <div id="print-receipt-area"></div>
@@ -967,6 +970,11 @@ var S = {lang:'en', role:null, clients:[]};
       <div style="display:inline-block;margin-bottom:20px;color:#B08D5A;cursor:pointer;font-weight:700;transition:all 0.3s;font-size:11px" onclick="goForgot()" onmouseover="this.style.textDecoration='underline';this.style.color='#C7A876'" onmouseout="this.style.textDecoration='none';this.style.color='#B08D5A'" data-i18n="forgot_pw">Forgot password?</div>
 
       <div id="login-err-2" style="background:rgba(184,134,11,0.12);color:#B8860B;padding:10px 12px;border-radius:8px;margin-bottom:18px;font-size:11px;display:none;border-left:3px solid #B8860B;font-weight:600;box-shadow:0 4px 12px rgba(184,134,11,0.15)"></div>
+
+      <!-- ⚠️ استبدل YOUR_TURNSTILE_SITE_KEY بالمفتاح العام الحقيقي من لوحة
+           Cloudflare (Turnstile → إنشاء widget جديد) - هذا المفتاح آمن الظهور
+           بالواجهة (عام بالتصميم)، المفتاح السرّي المقابل له يبقى بالخادم فقط -->
+      <div class="cf-turnstile" data-sitekey="YOUR_TURNSTILE_SITE_KEY" data-callback="onTurnstileSuccess" data-theme="dark" style="margin-bottom:16px;display:flex;justify-content:center"></div>
 
       <button class="login-btn" onclick="doLogin()" data-i18n="sign_in_btn" style="width:100%;padding:12px 20px;background:linear-gradient(135deg,#8f7245 0%,#B08D5A 25%,#E4CE9C 50%,#C7A876 75%,#8f7245 100%);color:#0A2218;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.35s;box-shadow:0 8px 24px rgba(176,141,90,0.4),0 0 20px rgba(176,141,90,0.2);text-transform:uppercase;letter-spacing:0.4px;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 36px rgba(176,141,90,0.5),0 0 30px rgba(176,141,90,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(176,141,90,0.4),0 0 20px rgba(176,141,90,0.2)'">
         <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:translateX(-100%);animation:shine 3s infinite"></div>
@@ -3810,18 +3818,29 @@ async function goStep2(){
 }
 
 // STEP 2: sign in (كلمة المرور تُتحقق منها في الخادم الآن فقط - لا تصل أي كلمة مرور مشفّرة أو سرّ TOTP للمتصفح إطلاقًا)
+// ⭐ Cloudflare Turnstile - يُستدعى تلقائيًا عند حل التحدي بنجاح
+let turnstileToken=null;
+function onTurnstileSuccess(token){ turnstileToken=token; }
+function resetTurnstile(){
+  turnstileToken=null;
+  // ⚠️ توكن Turnstile للاستخدام مرة واحدة فقط - لازم إعادة تصيير الودجت بعد أي
+  // محاولة فاشلة حتى تحصل المحاولة التالية على توكن جديد صالح
+  if(window.turnstile)try{window.turnstile.reset();}catch(e){}
+}
 async function doLogin(){
   const pw=document.getElementById('login-pw').value;
   showErr('login-err-2','');
   if(!pw){showErr('login-err-2','Please enter your password');return;}
+  if(!turnstileToken){showErr('login-err-2','Please complete the verification challenge above');return;}
 
   const accountId=authState.role==='admin'?authState.adminId:authState.clientId;
   try{
     const res=await fetch(R2_WORKER_URL+'/login',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({role:authState.role,accountId,password:pw}),
+      body:JSON.stringify({role:authState.role,accountId,password:pw,turnstileToken}),
     });
     const data=await res.json();
+    resetTurnstile(); // ⚠️ التوكن استُهلك بهذا الطلب (نجح أو فشل) - يلزم توكن جديد لأي محاولة تالية
 
     if(res.status===423){showErr('login-err-2','Too many attempts. Try again in '+(data.minutesRemaining||15)+' min.');return;}
     if(res.status===429){showErr('login-err-2','Too many attempts — please wait about a minute and try again.');return;}
@@ -16579,7 +16598,10 @@ function renderCashLedgerTable(cid,searchTerm){
 }
 
 function rBank(el,cid){
-  const txs=S.bankTx.filter(tx=>tx.cid===cid);
+  if(!S.bankAccountFilter)S.bankAccountFilter={};
+  const selectedAccount=S.bankAccountFilter[cid]||'all';
+  const accounts=getClientBankAccounts(cid);
+  const txs=S.bankTx.filter(tx=>tx.cid===cid&&(selectedAccount==='all'||tx.ownIban===selectedAccount||(selectedAccount==='_unassigned'&&!tx.ownIban)));
   const c=S.clients.find(c=>c.id===cid);
   const bal=txs.reduce((s,tx)=>s+(tx.amount||0),0);
   const unmatched=txs.filter(tx=>getTxMatchStatus(tx)==='none').length;
@@ -16594,6 +16616,14 @@ function rBank(el,cid){
     </button>
     <span style="font-size:11px;color:var(--t3);font-weight:500">${c?.name||'Client'}</span>
   </div>
+  ${accounts.length>0?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <select id="bank-account-filter-${cid}" onchange="S.bankAccountFilter['${cid}']=this.value;renderContent()" style="padding:8px 10px;border:1px solid var(--gr2);border-radius:6px;font-size:12px;background:var(--white);color:var(--t1);cursor:pointer">
+      <option value="all" ${selectedAccount==='all'?'selected':''}>🏦 ${t('all_accounts')||'All accounts'}</option>
+      ${accounts.map(a=>`<option value="${escapeHtml(a.iban)}" ${selectedAccount===a.iban?'selected':''}>${escapeHtml(a.label)} — ${escapeHtml(a.iban.slice(-4))}</option>`).join('')}
+      <option value="_unassigned" ${selectedAccount==='_unassigned'?'selected':''}>${t('unassigned_txs')||'Unassigned (older imports)'}</option>
+    </select>
+    ${isAdmin()?`<button class="btn btn-xs" onclick="openManageBankAccounts('${cid}')">⚙️ ${t('manage_accounts')||'Manage Accounts'}</button>`:''}
+  </div>`:''}
   <div class="kgrid">
     <div class="kcard"><div class="kl">${t('dash_transactions')}</div><div class="kv">${txs.length}</div></div>
     <div class="kcard"><div class="kl">${t('dash_balance')}</div><div class="kv" style="color:${bal>=0?'var(--green)':'var(--red)'}">${FMT(bal)}</div></div>
@@ -16645,8 +16675,13 @@ function renderBankTable(cid,searchTerm){
   const container=document.getElementById('bank-table-container');
   if(!container)return;
   const term=(searchTerm||'').toLowerCase().trim();
+  const selectedAccount=(S.bankAccountFilter&&S.bankAccountFilter[cid])||'all';
   let txs=S.bankTx.filter(tx=>{
     if(tx.cid!==cid)return false;
+    if(selectedAccount!=='all'){
+      if(selectedAccount==='_unassigned'){if(tx.ownIban)return false;}
+      else if(tx.ownIban!==selectedAccount)return false;
+    }
     if(!term)return true;
     return (tx.desc||'').toLowerCase().includes(term);
   });
@@ -16749,6 +16784,61 @@ function renderBankImportPreviewBody(result){
     }).join('')}
   </div>`;
 }
+// ⭐⭐⭐ تمييز الحسابات البنكية المتعددة - يُسجِّل تلقائيًا أي IBAN جديد يظهر
+// بملف مستورَد (الحقل ownIban متوفر أصلًا بالنموذج الموحَّد من BankImportEngine)
+// بدل تجاهله كما كان الحال سابقًا. لا يطلب من الأدمن أي إعداد مسبق - أول ملف
+// من حساب جديد يُسجِّله تلقائيًا بتسمية افتراضية (آخر 4 أرقام من IBAN)، وتقدر
+// تُعدِّل التسمية لاحقًا من "إدارة الحسابات" بشاشة البنك.
+function registerBankAccountsFromImport(cid,newTxs){
+  const c=S.clients.find(cl=>cl.id===cid);
+  if(!c)return[];
+  if(!c.bankAccounts)c.bankAccounts=[];
+  const newIbans=[...new Set(newTxs.map(tx=>tx.ownIban).filter(Boolean))];
+  const registered=[];
+  newIbans.forEach(iban=>{
+    if(c.bankAccounts.some(a=>a.iban===iban))return;
+    const label=(t('bank_account_default_label')||'Account ending in')+' '+iban.slice(-4);
+    c.bankAccounts.push({id:UID(),iban,label});
+    registered.push(iban);
+  });
+  return registered;
+}
+function getClientBankAccounts(cid){
+  const c=S.clients.find(cl=>cl.id===cid);
+  return (c&&c.bankAccounts)||[];
+}
+function openManageBankAccounts(cid){
+  const accounts=getClientBankAccounts(cid);
+  showModal((t('manage_bank_accounts')||'Manage Bank Accounts'),`
+    <div style="font-size:11px;color:var(--t3);margin-bottom:12px;line-height:1.6">${t('bank_accounts_hint')||'Accounts are added automatically the first time a statement from them is imported. Rename them here for clarity, or remove an account you no longer use (its past transactions stay untouched either way).'}</div>
+    ${accounts.length===0?`<div style="text-align:center;padding:16px;color:var(--t3);font-size:12px">${t('no_bank_accounts_yet')||'No accounts registered yet — import a statement to get started.'}</div>`:
+    accounts.map(a=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--gr2)">
+      <div style="flex:1">
+        <input type="text" value="${escapeHtml(a.label)}" onchange="renameBankAccount('${cid}','${a.id}',this.value)" style="width:100%;padding:6px 8px;border:1px solid var(--gr2);border-radius:6px;font-size:12px;background:var(--white);color:var(--t1)">
+        <div style="font-size:10px;color:var(--t3);margin-top:2px;font-family:monospace">${escapeHtml(a.iban)}</div>
+      </div>
+      <button class="btn btn-xs" style="background:var(--danger-bg);color:var(--danger)" onclick="removeBankAccount('${cid}','${a.id}')">🗑</button>
+    </div>`).join('')}
+  `,()=>closeModal(),(t('close')||'Close'));
+}
+function renameBankAccount(cid,accountId,newLabel){
+  const c=S.clients.find(cl=>cl.id===cid);
+  const acc=c&&(c.bankAccounts||[]).find(a=>a.id===accountId);
+  if(!acc||!newLabel.trim())return;
+  acc.label=newLabel.trim();
+  logAudit('edit','client','Renamed bank account to "'+acc.label+'"',cid);
+  sv();
+}
+function removeBankAccount(cid,accountId){
+  showConfirmDialog((t('remove_bank_account')||'Remove Bank Account'),(t('remove_bank_account_confirm')||'Remove this account from the list? Its past transactions stay exactly as they are — this only removes it from the filter/management list.'),()=>{
+    const c=S.clients.find(cl=>cl.id===cid);
+    if(!c)return;
+    c.bankAccounts=(c.bankAccounts||[]).filter(a=>a.id!==accountId);
+    logAudit('edit','client','Removed a registered bank account',cid);
+    sv();closeModal();openManageBankAccounts(cid);
+  });
+}
+
 function confirmBankImportFromPreview(){
   const draft=S.bankImportDraft;
   if(!draft){toast('❌ '+(t('nothing_to_import')||'Nothing to import'));return;}
@@ -16763,6 +16853,7 @@ function confirmBankImportFromPreview(){
   const newTxs=uniqueTxs.map(tx=>Object.assign({date:tx.bookingDate,desc:tx.description,matched:false,source:tx.bankName},tx));
   if(!S.bankTx)S.bankTx=[];
   S.bankTx.push(...newTxs);
+  const newAccounts=registerBankAccountsFromImport(draft.cid,newTxs);
   const autoMatch=autoMatchBankTransactions(draft.cid,newTxs.map(tx=>tx.id));
   logAudit('create','bank_tx','Imported '+newTxs.length+' transaction(s) from '+bankLabel+(duplicateTxs.length>0?' ('+duplicateTxs.length+' duplicates skipped)':''),draft.cid);
   sv();closeModal();renderContent();
@@ -16771,7 +16862,11 @@ function confirmBankImportFromPreview(){
     const assisted=autoMatch.matchedByName+autoMatch.matchedByDate;
     matchNote=` · ${autoMatch.matchedCount} ${t('auto_matched')||'auto-matched'}`+(assisted>0?` (${assisted} ${t('via_name_date')||'via name/date'})`:'');
   }
-  toast(`✓ ${t('imported')||'Imported'}: ${newTxs.length}`+(duplicateTxs.length>0?` · ${t('skipped')||'Skipped'}: ${duplicateTxs.length} ${t('duplicates')||'duplicates'}`:'')+matchNote);
+  let accountNote='';
+  if(newAccounts.length>0){
+    accountNote=` · 🏦 ${newAccounts.length} ${newAccounts.length===1?(t('new_account_detected')||'new account detected'):(t('new_accounts_detected')||'new accounts detected')}`;
+  }
+  toast(`✓ ${t('imported')||'Imported'}: ${newTxs.length}`+(duplicateTxs.length>0?` · ${t('skipped')||'Skipped'}: ${duplicateTxs.length} ${t('duplicates')||'duplicates'}`:'')+matchNote+accountNote);
   S.bankImportDraft=null;
 }
 
