@@ -395,16 +395,30 @@
           const valueDate=pathTxt(ntry,'ValDt','Dt')||pathTxt(ntry,'ValDt','DtTm').slice(0,10)||bookingDate;
           const acctSvcrRef=txt(ntry,'AcctSvcrRef')||txt(ntry,'NtryRef');
           const txDtls=path(ntry,'NtryDtls','TxDtls');
+          const btch=path(ntry,'NtryDtls','Btch');
           let counterpartyName='',iban='',endToEndId='',remit='';
           if(txDtls){
             endToEndId=pathTxt(txDtls,'Refs','EndToEndId');
             remit=pathTxt(txDtls,'RmtInf','Ustrd');
             if(isDebit){ counterpartyName=pathTxt(txDtls,'RltdPties','Cdtr','Nm'); iban=pathTxt(txDtls,'RltdPties','CdtrAcct','Id','IBAN'); }
             else{ counterpartyName=pathTxt(txDtls,'RltdPties','Dbtr','Nm'); iban=pathTxt(txDtls,'RltdPties','DbtrAcct','Id','IBAN'); }
+            // ⚠️ دفعات مجمَّعة حقيقية (batch): البنك يُبلِّغ عن الدفعة كلها كقيد
+            // واحد بلا طرف دائن/مدين فردي - فقط الجهة المُبادِرة (InitgPty، غالبًا
+            // نظام رواتب/دفع مثل Afas) - نستخدمها بديلًا معقولًا بدل ترك الحقل فارغًا
+            if(!counterpartyName)counterpartyName=pathTxt(txDtls,'RltdPties','InitgPty','Nm');
+          }
+          // ⚠️ لو ما فيه نص وصف حقيقي (RmtInf/AddtlNtryInf) - شائع جدًا بالدفعات
+          // المجمَّعة - نبني وصفًا مفيدًا من عدد المعاملات المُجمَّعة + الجهة
+          // المُبادِرة، بدل سطر فارغ تمامًا بقائمة المعاملات (وُجِد هذا فعليًا
+          // بملف حقيقي: قيد بقيمة €2,019,161.86 بلا أي وصف أو اسم طرف آخر إطلاقًا)
+          let description=remit||txt(ntry,'AddtlNtryInf');
+          if(!description&&btch){
+            const nbOfTxs=pathTxt(btch,'NbOfTxs');
+            description='Batch payment'+(nbOfTxs?' ('+nbOfTxs+' transactions)':'')+(counterpartyName?' via '+counterpartyName:'');
           }
           if(!bookingDate||isNaN(amount)||amount===0){skipped++;continue;}
           txs.push(makeUnifiedTx(cid,{
-            bookingDate,valueDate,description:(remit||txt(ntry,'AddtlNtryInf')||'').slice(0,150),
+            bookingDate,valueDate,description:(description||'').slice(0,150),
             counterpartyName,iban,ownIban,amount,currency:ccy,
             reference:acctSvcrRef,endToEndId,bankName:'CAMT053'
           }));
