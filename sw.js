@@ -1,10 +1,10 @@
-// ANB FinAdmin Pro - Service Worker v4.10
-// تاريخ الإنشاء: 26 يونيو 2026 (محدّث 3 أغسطس 2026 - إضافة الملفات الجديدة
-// (bank-import-engine.js والصور المفصولة) لقائمة التخزين المسبق + ترقية
-// رقم النسخة لإجبار كل جهاز على تحديث الكاش القديم فورًا)
+// ANB FinAdmin Pro - Service Worker v4.11
+// تاريخ الإنشاء: 26 يونيو 2026 (محدّث 4 أغسطس 2026 - ترقية النسخة بعد تعديلات
+// جوهرية على index.html هالجلسة: ربط حقل VOF بنوع العميل، رسم تجاوز اختياري
+// بالاتفاق، إعادة تصميم كروت شاشة التقارير - لضمان تحديث نظيف للكاش القديم)
 // الغرض: تفعيل PWA والعمل بدون إنترنت + استقبال إشعارات Push
 
-const CACHE_NAME = 'anb-finadmin-v4.10';
+const CACHE_NAME = 'anb-finadmin-v4.11';
 // ⚠️⚠️ إصلاح فجوة حقيقية: index.html صار يعتمد على 3 ملفات جديدة (محرك
 // استيراد البنك + الشعار + خلفية الجلد، بعد فصلها عن base64 المُضمَّن) ولم
 // تكن أيٌّ منها بقائمة التخزين المسبق - لو انقطع الإنترنت قبل أول تحميل ناجح
@@ -20,10 +20,10 @@ const urlsToCache = [
 
 // تثبيت Service Worker
 self.addEventListener('install', event => {
-  console.log('🔧 Service Worker installing v4.10...');
+  console.log('🔧 Service Worker installing v4.11...');
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log('✅ Cache opened v4.10');
+      console.log('✅ Cache opened v4.11');
       return cache.addAll(urlsToCache).catch(err => {
         console.log('⚠️ Some URLs failed to cache (offline-first strategy applied)');
       });
@@ -34,7 +34,7 @@ self.addEventListener('install', event => {
 
 // تفعيل Service Worker
 self.addEventListener('activate', event => {
-  console.log('🚀 Service Worker activating v4.10...');
+  console.log('🚀 Service Worker activating v4.11...');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -118,4 +118,4 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-console.log('✨ ANB FinAdmin Service Worker Loaded v4.10 - Cache Updated!');
+console.log('✨ ANB FinAdmin Service Worker Loaded v4.11 - Cache Updated!');

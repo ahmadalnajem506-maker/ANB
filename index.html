@@ -4862,7 +4862,59 @@ function computeContractTotal(packageId,hoursEnabled,cashierEnabled,partnerCount
   if(cashierEnabled)total+=CASHIER_ADDON_PRICE;
   return total;
 }
-function getContractServiceSummaryLines(packageId,hoursEnabled,cashierEnabled,hasEmployeesService,partnerCount){
+// ⭐⭐⭐ رسم تجاوز اختياري "بالاتفاق مع العميل" - نسبة من الباقة الأساسية أو
+// مبلغ ثابت، مُسجَّل على العقد كشرط متاح لو احتجته لاحقًا، لكن **لا يُطبَّق
+// تلقائيًا أبدًا**. التفعيل الفعلي دائمًا فعل إداري واعٍ عبر openApplyOverageCharge
+// بعد نقاش حقيقي مع العميل - يحافظ هذا على فلسفة "بلا حدود/بلا مفاجآت" للموديل
+// المسطَّح، بينما يعطي أداة حقيقية للحالات الاستثنائية النادرة فعلًا.
+function computeOverageChargeAmount(con){
+  if(!con||!con.overageEnabled)return 0;
+  if(con.overageType==='fixed')return con.overageValue||0;
+  return Math.round((con.plan||0)*((con.overageValue||0)/100)*100)/100;
+}
+function toggleOverageFieldVisibility(){
+  const enabled=document.getElementById('contract-overage-enabled')?.checked;
+  const wrap=document.getElementById('overage-fields-wrap');
+  if(wrap)wrap.style.display=enabled?'flex':'none';
+}
+// ⭐ يفتح نافذة لتطبيق رسم تجاوز مُتَّفَق عليه فعليًا لشهر مُحدَّد - إجراء يدوي
+// بحت، يقترح المبلغ من الشرط المُسجَّل بالعقد لكن يسمح بتعديله (لو كان
+// الاتفاق الفعلي هذي المرة مختلفًا شوي)، ويُدرَج تلقائيًا بالفاتورة الشهرية
+// التالية (نفس آلية computeClientOverageForMonth الموجودة أصلًا)
+function openApplyOverageCharge(contractId,cid){
+  const con=(S.contracts||[]).find(c=>c.id===contractId);
+  const client=S.clients.find(cl=>cl.id===cid);
+  if(!con||!con.overageEnabled)return;
+  const suggested=computeOverageChargeAmount(con);
+  showModal('⚠️ '+(t('apply_overage_charge')||'Apply Overage Charge')+' — '+escapeHtml(client?.name||''),`
+    <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">${t('overage_charge_hint')||'This creates a one-time additional charge, based on the agreed overage terms on this contract, added automatically to next month\u2019s invoice. Only use this after discussing it with the client — it is never applied automatically on its own.'}</div>
+    <div class="fg"><label>${t('overage_month')||'For month'}</label>
+      <input type="month" id="overage-month" value="${new Date().toISOString().slice(0,7)}">
+    </div>
+    <div class="fg"><label>${t('overage_amount')||'Amount (€)'}</label>
+      <input type="number" id="overage-amount" step="0.01" min="0" value="${suggested}">
+      <div style="font-size:10px;color:var(--t3);margin-top:4px">${t('overage_suggested_note')||'Suggested from the agreed rate on this contract — adjust if this time\u2019s agreement was different.'}</div>
+    </div>
+    <div class="fg"><label>${t('overage_note')||'Note (optional)'}</label>
+      <input type="text" id="overage-note" placeholder="${t('overage_note_placeholder')||'e.g. agreed by phone on 3 Aug for higher transaction volume'}">
+    </div>
+  `,()=>confirmApplyOverageCharge(contractId,cid),t('apply_charge')||'Apply Charge');
+}
+function confirmApplyOverageCharge(contractId,cid){
+  const con=(S.contracts||[]).find(c=>c.id===contractId);
+  if(!con)return;
+  const month=document.getElementById('overage-month')?.value;
+  const amount=parseFloat(document.getElementById('overage-amount')?.value)||0;
+  const note=document.getElementById('overage-note')?.value||'';
+  if(!month){toast('❌ '+(t('select_month')||'Select a month'));markFieldError('overage-month');return;}
+  if(!amount){toast('❌ '+(t('enter_valid_amount')||'Enter a valid amount'));markFieldError('overage-amount');return;}
+  if(!S.overageCharges)S.overageCharges=[];
+  S.overageCharges.push({id:UID(),cid,contractId,month,amount,note,invoiced:false,createdAt:new Date().toISOString(),createdBy:S.currentAdmin||null});
+  logAudit('create','contract','Applied agreed overage charge of '+FMT(amount)+' for '+month+(note?' — '+note:''),cid);
+  sv();closeModal();renderContent();
+  toast('✓ '+(t('overage_charge_recorded')||'Overage charge recorded')+' — €'+amount.toFixed(2)+' ('+(t('will_appear_next_invoice')||'will appear on next month\u2019s invoice')+')');
+}
+function getContractServiceSummaryLines(packageId,hoursEnabled,cashierEnabled,hasEmployeesService,partnerCount,overageInfo){
   const pkg=SUBSCRIPTION_PACKAGES[packageId];
   if(!pkg)return[];
   // ⚠️⚠️ بلا أي حد/حجم مذكور إطلاقًا (لا فواتير، لا مصاريف، لا حركات بنكية) -
@@ -4882,10 +4934,18 @@ function getContractServiceSummaryLines(packageId,hoursEnabled,cashierEnabled,ha
   if(hoursEnabled)lines.push('Hours register');
   if(cashierEnabled)lines.push('Cashier + cash management');
   if(hasEmployeesService)lines.push('Employees & payroll management');
+  // ⚠️ هذا الشرط اختياري بحت، غير مُفعَّل تلقائيًا أبدًا - فقط يُوثِّق الاتفاق
+  // المبدئي بالعقد نفسه؛ التفعيل الفعلي دائمًا فعل إداري واعٍ لاحقًا (openApplyOverageCharge)
+  if(overageInfo&&overageInfo.enabled){
+    const rateTxt=overageInfo.type==='fixed'?('€'+(overageInfo.value||0)):((overageInfo.value||0)+'%');
+    lines.push('By mutual agreement, an additional overage fee ('+rateTxt+(overageInfo.type==='fixed'?'':' of the base plan')+') may apply for clearly excessive usage — applied only by prior discussion, never automatically');
+  }
   return lines;
 }
 
 function openAddContract(cid){
+  const c=S.clients.find(cl=>cl.id===cid);
+  const isPartnershipForm=c&&(c.type==='VOF'||c.type==='Maatschap');
   showModal('Add Contract',`
     <div style="display:flex;flex-direction:column;gap:14px">
 
@@ -4904,11 +4964,26 @@ function openAddContract(cid){
         <div id="pkg-detail-panel" style="background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:10px 12px;margin-top:8px"></div>
       </div>
 
-      <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 VOF Partnership</label>
+      ${isPartnershipForm?`<div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 ${t('vof_partnership_label')||'VOF Partnership'}</label>
         <input type="number" id="contract-partner-count" step="1" min="1" value="1" oninput="updateContractPriceLive()"
           style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
-        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">1 for a sole eenmanszaak. For a VOF, enter the total number of partners — each needs a separate annual income tax filing (+€${VOF_PARTNER_SURCHARGE}/mo per additional partner).</div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">${t('vof_partnership_hint')||'Total number of partners — each needs a separate annual income tax filing.'} (+€${VOF_PARTNER_SURCHARGE}/mo ${t('per_additional_partner')||'per additional partner'})</div>
+      </div>`:'<input type="hidden" id="contract-partner-count" value="1">'}
+
+      <div style="margin-top:4px;padding:12px;background:var(--gr1);border-radius:8px;border:1px solid var(--gr2)">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t1)">
+          <input type="checkbox" id="contract-overage-enabled" onchange="toggleOverageFieldVisibility()"/>
+          ⚠️ ${t('overage_fee_label')||'Agreed overage fee for excessive usage'}
+        </label>
+        <div style="font-size:10px;color:var(--t3);margin:4px 0 8px">${t('overage_fee_hint')||'Never applied automatically — only charged manually, by agreement with the client, when usage is clearly excessive.'}</div>
+        <div id="overage-fields-wrap" style="display:none;gap:8px">
+          <select id="contract-overage-type" style="flex:1;padding:8px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:12px">
+            <option value="percent">${t('overage_type_percent')||'% of base plan'}</option>
+            <option value="fixed">${t('overage_type_fixed')||'Fixed amount (€)'}</option>
+          </select>
+          <input type="number" id="contract-overage-value" step="0.01" min="0" placeholder="e.g. 15" style="flex:1;padding:8px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:12px">
+        </div>
       </div>
 
       <div id="contract-addons"></div>
@@ -4973,12 +5048,16 @@ function openAddContract(cid){
     const customEmpPrice=parseFloat(document.getElementById('contract-emp-custom-price')?.value)||0;
     const customEmpCount=parseInt(document.getElementById('contract-emp-custom-count')?.value)||0;
     const partnerCount=Math.max(1,parseInt(document.getElementById('contract-partner-count')?.value)||1);
+    const overageEnabled=!!document.getElementById('contract-overage-enabled')?.checked;
+    const overageType=document.getElementById('contract-overage-type')?.value||'percent';
+    const overageValue=parseFloat(document.getElementById('contract-overage-value')?.value)||0;
     const start=document.getElementById('contract-start').value;
     const discountType=document.getElementById('contract-discount-type')?.value||'none';
     const discountValue=parseFloat(document.getElementById('contract-discount-value')?.value)||0;
     const baseTotal=computeContractTotal(packageId,hoursAddon,cashierAddon,partnerCount)+computeEmployeePayrollAddon(empTier,customEmpPrice);
     const plan=computeDiscountedTotal(baseTotal,discountType,discountValue);
     if(empTier==='custom'&&!customEmpPrice){toast('❌ Enter the custom monthly price for employees + payroll');markFieldError('contract-emp-custom-price');return;}
+    if(overageEnabled&&!overageValue){toast('❌ Enter the agreed overage rate');markFieldError('contract-overage-value');return;}
 
     if(!S.contracts)S.contracts=[];
     S.contracts.push({
@@ -4988,6 +5067,9 @@ function openAddContract(cid){
       desc:'',
       plan,
       partnerCount,
+      overageEnabled,
+      overageType:overageEnabled?overageType:undefined,
+      overageValue:overageEnabled?overageValue:undefined,
       discountType,
       discountValue:discountType!=='none'?discountValue:undefined,
       type:'Standard',
@@ -5041,6 +5123,22 @@ function computeDiscountedTotal(baseTotal,discountType,discountValue){
   else if(discountType==='fixed')discounted=baseTotal-discountValue;
   return Math.max(0,Math.round(discounted*100)/100);
 }
+// ⭐ يُستدعى فقط بنموذج إضافة/تعديل العميل الموحَّد (عند إنشاء عميل جديد مع
+// عقد بنفس الوقت) - يُظهر/يُخفي حقل شراكة VOF مباشرة عند تغيير نوع العميل،
+// بلا حاجة لإعادة فتح النافذة. الحقل يبقى موجودًا بالـDOM دائمًا (مخفيًا فقط)
+// حتى تبقى قيمته "1" الافتراضية قابلة للقراءة بأمان من كل دوال الحساب
+function toggleVofFieldVisibility(){
+  const typeVal=document.getElementById('cf-t')?.value;
+  const section=document.getElementById('vof-partnership-section');
+  if(!section)return;
+  const isPartnership=typeVal==='VOF'||typeVal==='Maatschap';
+  section.style.display=isPartnership?'block':'none';
+  if(!isPartnership){
+    const input=document.getElementById('contract-partner-count');
+    if(input)input.value='1'; // ⚠️ إعادة الضبط لـ1 تلقائيًا لو تراجع الأدمن عن اختيار VOF بعد ما كان قد أدخل عدد شركاء
+  }
+  updateContractPriceLive();
+}
 function updateContractPriceLive(){
   const packageId=document.querySelector('input[name="contract-pkg"]:checked')?.value||'compleet';
   const hoursEnabled=isAddonEnabled('hours');
@@ -5086,7 +5184,12 @@ function updatePackageDetailPanel(){
   const cashierEnabled=isAddonEnabled('cashier');
   const empTier=document.querySelector('input[name="contract-emp-tier"]:checked')?.value||'none';
   const partnerCount=Math.max(1,parseInt(document.getElementById('contract-partner-count')?.value)||1);
-  const lines=getContractServiceSummaryLines(packageId,hoursEnabled,cashierEnabled,empTier&&empTier!=='none',partnerCount);
+  const overageInfo={
+    enabled:!!document.getElementById('contract-overage-enabled')?.checked,
+    type:document.getElementById('contract-overage-type')?.value||'percent',
+    value:parseFloat(document.getElementById('contract-overage-value')?.value)||0
+  };
+  const lines=getContractServiceSummaryLines(packageId,hoursEnabled,cashierEnabled,empTier&&empTier!=='none',partnerCount,overageInfo);
   panel.innerHTML=`
     <div style="font-size:11px;font-weight:700;color:var(--t1);margin-bottom:6px">📋 What's included in ${SUBSCRIPTION_PACKAGES[packageId].name}</div>
     <ul style="margin:0;padding-left:16px;font-size:10.5px;color:var(--t2);line-height:1.7">
@@ -5124,6 +5227,8 @@ function openEditContract(contractId,cid){
   if(!con)return;
   const locked=con.status==='cancelled';
   const packageId=con.subscriptionPackage||'compleet';
+  const client=S.clients.find(cl=>cl.id===cid);
+  const isPartnershipForm=client&&(client.type==='VOF'||client.type==='Maatschap');
 
   showModal('Edit Contract',`
     <div style="display:flex;flex-direction:column;gap:14px">
@@ -5150,11 +5255,26 @@ function openEditContract(contractId,cid){
         <div id="pkg-detail-panel" style="background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:10px 12px;margin-top:8px"></div>
       </div>
 
-      <div>
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 VOF Partnership</label>
+      ${isPartnershipForm?`<div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 ${t('vof_partnership_label')||'VOF Partnership'}</label>
         <input type="number" id="contract-partner-count" step="1" min="1" value="${con.partnerCount||1}" ${locked?'disabled':''} oninput="updateContractPriceLive()"
           style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
-        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">1 for a sole eenmanszaak. For a VOF, enter the total number of partners (+€${VOF_PARTNER_SURCHARGE}/mo per additional partner).</div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">${t('vof_partnership_hint')||'Total number of partners — each needs a separate annual income tax filing.'} (+€${VOF_PARTNER_SURCHARGE}/mo ${t('per_additional_partner')||'per additional partner'})</div>
+      </div>`:`<input type="hidden" id="contract-partner-count" value="${con.partnerCount||1}">`}
+
+      <div style="margin-top:4px;padding:12px;background:var(--gr1);border-radius:8px;border:1px solid var(--gr2)">
+        <label style="display:flex;align-items:center;gap:8px;${locked?'':'cursor:pointer'};font-size:12px;font-weight:600;color:var(--t1)">
+          <input type="checkbox" id="contract-overage-enabled" ${con.overageEnabled?'checked':''} ${locked?'disabled':''} onchange="toggleOverageFieldVisibility()"/>
+          ⚠️ ${t('overage_fee_label')||'Agreed overage fee for excessive usage'}
+        </label>
+        <div style="font-size:10px;color:var(--t3);margin:4px 0 8px">${t('overage_fee_hint')||'Never applied automatically — only charged manually, by agreement with the client, when usage is clearly excessive.'}</div>
+        <div id="overage-fields-wrap" style="display:${con.overageEnabled?'flex':'none'};gap:8px">
+          <select id="contract-overage-type" ${locked?'disabled':''} style="flex:1;padding:8px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:12px">
+            <option value="percent" ${con.overageType!=='fixed'?'selected':''}>${t('overage_type_percent')||'% of base plan'}</option>
+            <option value="fixed" ${con.overageType==='fixed'?'selected':''}>${t('overage_type_fixed')||'Fixed amount (€)'}</option>
+          </select>
+          <input type="number" id="contract-overage-value" step="0.01" min="0" value="${con.overageValue||''}" ${locked?'disabled':''} placeholder="e.g. 15" style="flex:1;padding:8px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:12px">
+        </div>
       </div>
 
       <div id="contract-addons"></div>
@@ -5236,6 +5356,9 @@ function saveContract(contractId,cid){
   const customEmpPrice=parseFloat(document.getElementById('contract-emp-custom-price')?.value)||0;
   const customEmpCount=parseInt(document.getElementById('contract-emp-custom-count')?.value)||0;
   const partnerCount=Math.max(1,parseInt(document.getElementById('contract-partner-count')?.value)||1);
+  const overageEnabled=!!document.getElementById('contract-overage-enabled')?.checked;
+  const overageType=document.getElementById('contract-overage-type')?.value||'percent';
+  const overageValue=parseFloat(document.getElementById('contract-overage-value')?.value)||0;
   const startDate=document.getElementById('contract-start')?.value||'';
   const endDate=document.getElementById('contract-end')?.value||'';
   const discountType=document.getElementById('contract-discount-type')?.value||'none';
@@ -5245,6 +5368,7 @@ function saveContract(contractId,cid){
 
   if(!title){toast('❌ Contract title required');markFieldError('contract-title');return;}
   if(empTier==='custom'&&!customEmpPrice){toast('❌ Enter the custom monthly price for employees + payroll');markFieldError('contract-emp-custom-price');return;}
+  if(overageEnabled&&!overageValue){toast('❌ Enter the agreed overage rate');markFieldError('contract-overage-value');return;}
 
   if(!S.contracts)S.contracts=[];
 
@@ -5262,7 +5386,7 @@ function saveContract(contractId,cid){
       // تغيير سعر) لا تحتاج هذا - تبقى الحالة كما هي دون قفل.
       const priceChanged=oldContract.plan!==plan;
       const newStatus=priceChanged?'draft':oldContract.status;
-      S.contracts[idx]={...oldContract,title,plan,partnerCount,discountType,discountValue:discountType!=='none'?discountValue:undefined,subscriptionPackage:packageId,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,startDate,endDate,status:newStatus};
+      S.contracts[idx]={...oldContract,title,plan,partnerCount,overageEnabled,overageType:overageEnabled?overageType:undefined,overageValue:overageEnabled?overageValue:undefined,discountType,discountValue:discountType!=='none'?discountValue:undefined,subscriptionPackage:packageId,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,startDate,endDate,status:newStatus};
       const client=S.clients.find(cl=>cl.id===cid);
       logAudit('edit','contract',(priceChanged?'Updated price and locked pending re-signature for contract "':'Updated contract "')+title+'" for '+(client?.name||'')+(priceChanged?' ('+FMT(oldContract.plan)+' → '+FMT(plan)+')':''),cid);
       if(client){
@@ -5276,7 +5400,7 @@ function saveContract(contractId,cid){
   }else{
     // Add new (fallback path — openAddContract normally handles creation itself)
     S.contracts.push({
-      id:UID(),cid:cid,title:title,desc:'',plan:plan,partnerCount,discountType,discountValue:discountType!=='none'?discountValue:undefined,type:'Standard',
+      id:UID(),cid:cid,title:title,desc:'',plan:plan,partnerCount,overageEnabled,overageType:overageEnabled?overageType:undefined,overageValue:overageEnabled?overageValue:undefined,discountType,discountValue:discountType!=='none'?discountValue:undefined,type:'Standard',
       subscriptionPackage:packageId,hoursAddon,cashierAddon,employeePayrollTier:empTier,employeePayrollCustomPrice:empTier==='custom'?customEmpPrice:undefined,employeePayrollCustomCount:empTier==='custom'?customEmpCount:undefined,
       startDate:startDate,endDate:endDate,status:'draft',createdDate:TODAY()
     });
@@ -5298,6 +5422,8 @@ function saveContract(contractId,cid){
 function openProposeUpgrade(contractId,cid){
   const con=(S.contracts||[]).find(c=>c.id===contractId);
   if(!con)return;
+  const client=S.clients.find(cl=>cl.id===cid);
+  const isPartnershipForm=client&&(client.type==='VOF'||client.type==='Maatschap');
   showModal('🔼 Propose Upgrade',`
     <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">The client keeps using their current plan uninterrupted while this is pending. Nothing changes until they explicitly approve it.</div>
     <div>
@@ -5311,12 +5437,12 @@ function openProposeUpgrade(contractId,cid){
       </div>
       <div id="pkg-detail-panel" style="background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:10px 12px;margin-top:8px"></div>
     </div>
-    <div style="margin-top:12px">
-      <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 VOF Partnership</label>
+    ${isPartnershipForm?`<div style="margin-top:12px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 ${t('vof_partnership_label')||'VOF Partnership'}</label>
       <input type="number" id="contract-partner-count" step="1" min="1" value="${con.partnerCount||1}" oninput="updateContractPriceLive()"
         style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
-      <div style="font-size:10.5px;color:var(--t3);margin-top:4px">+€${VOF_PARTNER_SURCHARGE}/mo per additional partner beyond the first.</div>
-    </div>
+      <div style="font-size:10.5px;color:var(--t3);margin-top:4px">+€${VOF_PARTNER_SURCHARGE}/mo ${t('per_additional_partner')||'per additional partner'} beyond the first.</div>
+    </div>`:`<input type="hidden" id="contract-partner-count" value="${con.partnerCount||1}">`}
     <div id="contract-addons" style="margin-top:12px"></div>
     <div style="margin-top:12px">
       <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">👥 Employees &amp; Payroll</label>
@@ -5785,6 +5911,7 @@ function renderClientContractsList(cid,searchTerm,sortValue){
           <button class="btn btn-xs" onclick="exportContractPDF('${con.id}')" title="${t('view_contract_copy')||'Export as PDF'}">📄</button>
           <button class="btn btn-xs" onclick="openEditContract('${con.id}','${con.cid}')" title="${con.status==='cancelled'?(t('view')||'View'):(t('edit')||'Edit')}">${con.status==='cancelled'?'👁':'✏'}</button>
           ${con.status!=='cancelled'&&isAdmin()&&!con.pendingUpgrade&&con.subscriptionPackage?`<button class="btn btn-xs" onclick="openProposeUpgrade('${con.id}','${con.cid}')" title="Propose Upgrade">🔼</button>`:''}
+          ${con.status!=='cancelled'&&isAdmin()&&con.overageEnabled?`<button class="btn btn-xs" style="background:rgba(184,134,11,0.15);color:#8a6410" onclick="openApplyOverageCharge('${con.id}','${con.cid}')" title="${t('apply_overage_charge')||'Apply Overage Charge'}">⚠️</button>`:''}
           ${con.status!=='cancelled'?`
             ${con.status==='suspended'
               ?`<button class="btn btn-xs" onclick="resumeContract('${con.id}')" title="${t('resume')||'Resume'}">▶</button>`
@@ -7459,12 +7586,16 @@ function getActiveContractForClient(cid){
 // ⭐⭐ يحسب رسم تجاوز شهر مُحدَّد لعميل معيّن: يقارن الاستخدام الفعلي (فواتيره
 // الخاصة/مصاريفه/حركاته البنكية بذلك الشهر) بحد الباقة + هامش التسامح 15%،
 // ويحسب الرسم فقط على ما تجاوز ذلك، بمعدل Manual/Admin الصحيح حسب اختيار العقد
-// ⭐⭐ الموديل الجديد (2026) مسطَّح بلا أي حدود استخدام إطلاقًا - فلا يوجد
-// "تجاوز" (overage) بمعناه القديم بعد الآن على الإطلاق. أبقيت الدالة بشكلها
-// (بدل حذفها) فقط حتى لا تنكسر generateAllClientInvoices التي لا تزال
-// تستدعيها شهريًا - ترجع دائمًا صفر، بلا أي رسوم إضافية تلقائية على الإطلاق.
+// ⭐⭐ الموديل الجديد (2026) مسطَّح بلا أي حدود استخدام تلقائية إطلاقًا - لا يوجد
+// حساب تجاوز آلي من عدّ فواتير/مصاريف/حركات بنكية بعد الآن. لكن يوجد الآن
+// رسم تجاوز "مُتَّفَق عليه" (S.overageCharges) يُطبَّق يدويًا وعن قصد من الأدمن
+// فقط بعد نقاش فعلي مع العميل (عبر openApplyOverageCharge) - لا شيء تلقائي هنا،
+// فقط نجمع أي رسوم طُبِّقت يدويًا لهذا العميل ولهذا الشهر تحديدًا لتُضاف للفاتورة الشهرية
 function computeClientOverageForMonth(cid,monthStr){
-  return{total:0,details:[]};
+  const charges=(S.overageCharges||[]).filter(o=>o.cid===cid&&o.month===monthStr&&!o.invoiced);
+  const total=Math.round(charges.reduce((s,o)=>s+(o.amount||0),0)*100)/100;
+  const details=charges.map(o=>({desc:o.note||'Agreed overage charge',amount:o.amount}));
+  return{total,details};
 }
 
 function generateAllClientInvoices(){
@@ -7478,7 +7609,7 @@ function generateAllClientInvoices(){
   const lastMonthDate=new Date(now.getFullYear(),now.getMonth()-1,1);
   const lastMonthStr=lastMonthDate.toISOString().slice(0,7);
   const lastMonthLabel=lastMonthDate.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  showConfirmDialog('Generate All Client Invoices','Generate a subscription invoice for '+realClients.length+' client(s) for '+monthLabel+'? Any usage overage from '+lastMonthLabel+' (beyond the package limit + 15% tolerance) will be added automatically as a separate line. Clients who already have an invoice this month will be skipped.',()=>{
+  showConfirmDialog('Generate All Client Invoices','Generate a subscription invoice for '+realClients.length+' client(s) for '+monthLabel+'? Any agreed overage charge applied for '+lastMonthLabel+' will be added automatically as a separate line. Clients who already have an invoice this month will be skipped.',()=>{
     let created=0,skipped=0,withOverage=0;
     const today=TODAY();
     const thisMonth=today.slice(0,7);
@@ -7487,13 +7618,14 @@ function generateAllClientInvoices(){
       if(!fee){skipped++;return;}
       const alreadyInvoiced=S.invoices.some(i=>i.cid===ANB_SELF_ID&&i.billToId===cl.id&&(i.date||'').slice(0,7)===thisMonth&&!i.deleted);
       if(alreadyInvoiced){skipped++;return;}
-      // ⭐ تجاوز الشهر الماضي (إن وُجد) يُضاف تلقائيًا كسطر منفصل بنفس الفاتورة -
-      // يظهر للعميل بوصف الفاتورة نفسه (تنبيه ضمني)، ويُذكَر بتوست الأدمن أدناه
+      // ⭐ رسم تجاوز مُتَّفَق عليه من الشهر الماضي (إن وُجد أي تُطبِّق يدويًا عبر
+      // openApplyOverageCharge) يُضاف تلقائيًا كسطر منفصل بنفس الفاتورة - يظهر
+      // للعميل بوصف الفاتورة نفسه، ويُذكَر بتوست الأدمن أدناه
       const overage=computeClientOverageForMonth(cl.id,lastMonthStr);
       let desc='Monthly subscription — '+monthLabel;
       if(overage.total>0){
         withOverage++;
-        desc+=' + usage overage for '+lastMonthLabel+' ('+overage.details.map(d=>d.svc+': '+d.count+'/'+d.limit).join(', ')+') — €'+overage.total.toFixed(2);
+        desc+=' + agreed overage for '+lastMonthLabel+' ('+overage.details.map(d=>d.desc).join(', ')+') — €'+overage.total.toFixed(2);
       }
       const baseTotal=fee+overage.total;
       const ni={id:UID(),cid:ANB_SELF_ID,num:nextNum(ANB_SELF_ID),
@@ -7506,7 +7638,11 @@ function generateAllClientInvoices(){
       consumeInvoiceCounter(ANB_SELF_ID);
       postANBInvoiceAsApprovedExpense(ni,cl.id);
       if(overage.total>0){
-        logAudit('create','invoice','Auto-billed usage overage for '+cl.name+' — '+lastMonthLabel+': €'+overage.total.toFixed(2)+' ('+overage.details.map(d=>d.svc+' '+d.count+'/'+d.limit).join(', ')+')',cl.id);
+        // ⚠️ إصلاح خلل حقيقي: بلا هذا السطر، نفس رسوم التجاوز المُطبَّقة يدويًا
+        // كانت ستُفوتَر مرة ثانية بالشهر التالي (computeClientOverageForMonth
+        // كانت ستجدها موجودة بـS.overageCharges مجددًا لعدم وجود ما يُعلِّمها "فُوتِرَت")
+        (S.overageCharges||[]).filter(o=>o.cid===cl.id&&o.month===lastMonthStr&&!o.invoiced).forEach(o=>{o.invoiced=true;o.invoiceId=ni.id;});
+        logAudit('create','invoice','Auto-billed agreed overage charge for '+cl.name+' — '+lastMonthLabel+': €'+overage.total.toFixed(2),cl.id);
       }
       created++;
     });
@@ -14057,10 +14193,7 @@ function openClientModal(c){
       <div class="fr2">
         <div class="fg"><label>Company Name *</label><input id="cf-n" value="${escapeHtml(c?.name||'')}" placeholder="Your company name"/></div>
         <div class="fg"><label>Client Type</label>
-          <select id="cf-t">${['Eenmanszaak','VOF','Maatschap','CV','BV','NV','Stichting','Vereniging','Coöperatie','Overig'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}</select>
-        </div>
-      </div>
-      <div class="fg"><label>Email Address *</label><input id="cf-e" value="${escapeHtml(c?.email||'')}" type="email" placeholder="info@company.nl"/></div>
+          <select id="cf-t" onchange="toggleVofFieldVisibility()">${['Eenmanszaak','VOF','Maatschap','CV','BV','NV','Stichting','Vereniging','Coöperatie','Overig'].map(tp=>`<option ${c?.type===tp?'selected':''}>${tp}</option>`).join('')}</select>
       <div class="fr2">
         <div class="fg"><label>Phone Number</label><input id="cf-ph" value="${escapeHtml(c?.phone||'')}" placeholder="+31 6 12345678"/></div>
         <div class="fg"><label>Contact Person *</label><input id="cf-cp" value="${escapeHtml(c?.contactPerson||'')}" placeholder="Full name"/></div>
@@ -14121,11 +14254,11 @@ function openClientModal(c){
         </div>
         <div id="pkg-detail-panel" style="background:var(--gr1);border:1px solid var(--gr2);border-radius:8px;padding:10px 12px;margin-top:8px"></div>
       </div>
-      <div style="margin-top:12px">
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 VOF Partnership</label>
+      <div id="vof-partnership-section" style="margin-top:12px;display:${(c&&(c.type==='VOF'||c.type==='Maatschap'))?'block':'none'}">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">🤝 ${t('vof_partnership_label')||'VOF Partnership'}</label>
         <input type="number" id="contract-partner-count" step="1" min="1" value="1" oninput="updateContractPriceLive()"
           style="width:100%;padding:10px;border:2px solid var(--gr2);border-radius:6px;background:var(--white);color:var(--t1);font-size:13px">
-        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">1 for a sole eenmanszaak. For a VOF, enter the total number of partners (+€${VOF_PARTNER_SURCHARGE}/mo per additional partner).</div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">${t('vof_partnership_hint')||'Total number of partners — each needs a separate annual income tax filing.'} (+€${VOF_PARTNER_SURCHARGE}/mo ${t('per_additional_partner')||'per additional partner'})</div>
       </div>
       <div id="contract-addons" style="margin-top:12px"></div>
       <div style="margin-top:12px">
@@ -17103,19 +17236,25 @@ function applyReportPeriodFilter(){
 function rReportsList(el,cid){
   const c=S.clients.find(c=>c.id===cid);
   
+  // ⭐⭐ إعادة تصميم: لون واحد متّسق لكل قسم (بدل تدرّج مختلف لكل بطاقة على
+  // حدة، كان يتغيّر بشكل مفاجئ منتصف نفس القسم بلا أي سبب منطقي، ويتكرر نفس
+  // اللون الفاتح بين أقسام مختلفة تمامًا - يُضعف الغرض الأساسي من التجميع
+  // بالألوان). أيقونات فريدة بلا أي تكرار (كانت 💰 و📊 مُكرَّرتين بين تقارير
+  // غير مرتبطة إطلاقًا - يُربك المسح البصري السريع). ووصف سطر واحد لكل تقرير
+  // يوضّح محتواه فعليًا بدل الاعتماد على الاسم فقط قبل الدخول له.
   const reports=[
-    {id:'summary',icon:'📊',name:t('rep_summary_title'),bg:'linear-gradient(135deg, #0A2218 0%, #0F3025 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'financial'},
-    {id:'pl',icon:'📈',name:t('rep_pl_title'),bg:'linear-gradient(135deg, #0F3025 0%, #1A4A2A 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'financial'},
-    {id:'btw',icon:'💰',name:t('rep_btw_title'),bg:'linear-gradient(135deg, #1A4A2A 0%, #1a4d2e 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'financial'},
-    {id:'tax_liability',icon:'🏛️',name:t('rep_tax_liability_title')||'Tax Liability',bg:'linear-gradient(135deg, #1a4d2e 0%, #235c37 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'financial'},
-    {id:'cashflow',icon:'💵',name:t('rep_cashflow_title'),bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#B08D5A',text:'#0A2218',accent:'#D4B57E',group:'financial'},
-    {id:'income_verification',icon:'📜',name:t('rep_income_verification_title')||'Income Verification Statement',bg:'linear-gradient(135deg, #7dbfa3 0%, #B8E6D1 100%)',border:'#B08D5A',text:'#0A2218',accent:'#D4B57E',group:'financial'},
-    {id:'debtors',icon:'💵',name:t('rep_debtors_title'),bg:'linear-gradient(135deg, #1a4d2e 0%, #2d7a4f 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'detailed'},
-    {id:'expenses',icon:'🧾',name:t('rep_expenses_title'),bg:'linear-gradient(135deg, #2d7a4f 0%, #4da876 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'detailed'},
-    {id:'hours_category',icon:'🕐',name:t('rep_hours_category_title')||'Hours by Category',bg:'linear-gradient(135deg, #235c37 0%, #2d7a4f 100%)',border:'#B08D5A',text:'#ffffff',accent:'#D4B57E',group:'detailed'},
-    ...((S.assets||[]).some(a=>a.cid===cid&&a.loanFinanced&&!a.deleted)?[{id:'loans',icon:'🏦',name:t('rep_loans_title')||'Loan Overview',bg:'linear-gradient(135deg, #4da876 0%, #7dbfa3 100%)',border:'#B08D5A',text:'#0A2218',accent:'#D4B57E',group:'detailed'}]:[]),
-    {id:'emp_financial',icon:'💰',name:t('rep_emp_financial_title')||'Employee Financial Report',bg:'linear-gradient(135deg, #7dbfa3 0%, #9dd4bf 100%)',border:'#B08D5A',text:'#0A2218',accent:'#D4B57E',group:'employees'},
-    {id:'emp_stats',icon:'📊',name:t('rep_emp_stats_title')||'Employee Statistics Report',bg:'linear-gradient(135deg, #9dd4bf 0%, #B8E6D1 100%)',border:'#B08D5A',text:'#0A2218',accent:'#D4B57E',group:'employees'},
+    {id:'summary',icon:'📊',name:t('rep_summary_title'),desc:t('rep_summary_desc')||'Income, expenses & profit overview',group:'financial'},
+    {id:'pl',icon:'📈',name:t('rep_pl_title'),desc:t('rep_pl_desc')||'Full income statement',group:'financial'},
+    {id:'btw',icon:'🧾',name:t('rep_btw_title'),desc:t('rep_btw_desc')||'Return breakdown by rubriek',group:'financial'},
+    {id:'tax_liability',icon:'🏛️',name:t('rep_tax_liability_title')||'Tax Liability',desc:t('rep_tax_liability_desc_short')||'Estimated income/corporate tax',group:'financial'},
+    {id:'cashflow',icon:'💵',name:t('rep_cashflow_title'),desc:t('rep_cashflow_desc')||'Money in vs. money out over time',group:'financial'},
+    {id:'income_verification',icon:'📜',name:t('rep_income_verification_title')||'Income Verification',desc:t('rep_income_verification_desc')||'Formal statement for mortgages/visas',group:'financial'},
+    {id:'debtors',icon:'📇',name:t('rep_debtors_title'),desc:t('rep_debtors_desc')||'Outstanding & overdue invoices',group:'detailed'},
+    {id:'expenses',icon:'💳',name:t('rep_expenses_title'),desc:t('rep_expenses_desc')||'Detailed expense breakdown',group:'detailed'},
+    {id:'hours_category',icon:'⏱️',name:t('rep_hours_category_title')||'Hours by Category',desc:t('rep_hours_category_desc')||'Logged hours by type of work',group:'detailed'},
+    ...((S.assets||[]).some(a=>a.cid===cid&&a.loanFinanced&&!a.deleted)?[{id:'loans',icon:'🏦',name:t('rep_loans_title')||'Loan Overview',desc:t('rep_loans_desc')||'Financed assets & remaining balances',group:'detailed'}]:[]),
+    {id:'emp_financial',icon:'💶',name:t('rep_emp_financial_title')||'Employee Financial',desc:t('rep_emp_financial_desc_short')||'Payroll costs & liabilities',group:'employees'},
+    {id:'emp_stats',icon:'👥',name:t('rep_emp_stats_title')||'Employee Statistics',desc:t('rep_emp_stats_desc_short')||'Workforce overview & trends',group:'employees'},
   ];
   
   let html='<div style="padding:16px">';
@@ -17126,27 +17265,29 @@ function rReportsList(el,cid){
   html+='<span style="font-size:11px;color:var(--t3);font-weight:500">'+c?.name+' — '+new Date().getFullYear()+'</span>';
   html+='</div>';
 
-  // ⭐ إعادة تصميم أخيرة: أقسام مُجمَّعة منطقيًا (مالية / تفصيلية / موظفين)
-  // بدل قائمة طويلة أو شبكة واحدة غير مُصنَّفة - كل قسم بعنوان واضح، وصفوف
-  // مضغوطة (سطر واحد لكل تقرير) أسهل للمسح البصري السريع من شبكة البطاقات
-  // الكبيرة أو القائمة الطويلة السابقتين
   const groupMeta={
     financial:{icon:'💰',label:t('financial_operations')||'Financial Reports'},
     detailed:{icon:'📋',label:t('detailed_reports')||'Detailed Reports'},
     employees:{icon:'👥',label:t('employees')||'Employee Reports'},
   };
+  // ⭐ نمط واحد ثابت لكل قسم كامل - لا تدرّج عشوائي لكل بطاقة داخل نفس القسم
+  const GROUP_STYLES={
+    financial:{bg:'#0A2218',border:'#B08D5A',text:'#F6F1E4',sub:'rgba(246,241,228,0.62)',arrow:'rgba(246,241,228,0.5)'},
+    detailed:{bg:'#F6F1E4',border:'#C9BFA0',text:'#0A2218',sub:'rgba(10,34,24,0.6)',arrow:'rgba(10,34,24,0.4)'},
+    employees:{bg:'#7dbfa3',border:'#5a9e83',text:'#0A2218',sub:'rgba(10,34,24,0.62)',arrow:'rgba(10,34,24,0.4)'},
+  };
   ['financial','detailed','employees'].forEach(groupKey=>{
     const groupReports=reports.filter(r=>r.group===groupKey);
     if(groupReports.length===0)return;
     const meta=groupMeta[groupKey];
+    const s=GROUP_STYLES[groupKey];
     html+='<div style="font-size:10px;font-weight:800;letter-spacing:.5px;color:#2A6040;text-transform:uppercase;margin:14px 0 8px;display:flex;align-items:center;gap:6px">'+meta.icon+' '+meta.label+'<div style="flex:1;height:1px;background:var(--gr2)"></div></div>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">';
     groupReports.forEach(report=>{
-      const textRgb=report.text==='#ffffff'?'255,255,255':'10,34,24';
-      html+='<div style="padding:12px 10px;background:'+report.bg+';border:1.5px solid '+report.border+';border-radius:10px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:4px;min-height:64px" onclick="resetReportPeriodFilter();S.reportTab=\''+report.id+'\';renderApp()" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 10px rgba(0,0,0,0.15)\';this.style.borderColor=\''+report.accent+'\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'none\';this.style.borderColor=\''+report.border+'\'">';
-      html+='<div style="font-size:20px">'+report.icon+'</div>';
-      html+='<div style="font-size:11.5px;font-weight:700;color:'+report.text+';line-height:1.25;flex:1">'+report.name+'</div>';
-      html+='<div style="font-size:11px;color:rgba('+textRgb+',0.55);align-self:flex-end">→</div>';
+      html+='<div style="padding:14px 12px;background:'+s.bg+';border:1.5px solid '+s.border+';border-radius:10px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:5px;min-height:82px" onclick="resetReportPeriodFilter();S.reportTab=\''+report.id+'\';renderApp()" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 10px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'none\'">';
+      html+='<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:18px">'+report.icon+'</div><div style="font-size:11px;color:'+s.arrow+'">→</div></div>';
+      html+='<div style="font-size:12px;font-weight:700;color:'+s.text+';line-height:1.25">'+report.name+'</div>';
+      html+='<div style="font-size:9.5px;color:'+s.sub+';line-height:1.3">'+report.desc+'</div>';
       html+='</div>';
     });
     html+='</div>';
@@ -21633,6 +21774,9 @@ function createContractAgreement(client,contract){
     // مستند الاتفاقية يعرض قائمة الخدمات المُتضمَّنة (بلا أي سعر لكل بند)
     subscriptionPackage:contract?.subscriptionPackage||null,
     partnerCount:contract?.partnerCount||1,
+    overageEnabled:!!contract?.overageEnabled,
+    overageType:contract?.overageType||'percent',
+    overageValue:contract?.overageValue||0,
     hoursAddon:!!contract?.hoursAddon,
     cashierAddon:!!contract?.cashierAddon,
     employeePayrollTier:contract?.employeePayrollTier||'none',
@@ -21911,7 +22055,7 @@ function generateDutchContractHTML(client){
     3.4 Bij overschrijding van de betalingstermijn is Opdrachtgever van rechtswege in verzuim, zonder dat hiervoor een nadere ingebrekestelling is vereist. De wettelijke handelsrente (art. 6:119a BW) is alsdan verschuldigd, vermeerderd met de buitengerechtelijke incassokosten conform de Wet Incassokosten (WIK).
     ${client.subscriptionPackage&&SUBSCRIPTION_PACKAGES[client.subscriptionPackage]?`<br/>3.5 Dit maandbedrag omvat de volgende diensten (${SUBSCRIPTION_PACKAGES[client.subscriptionPackage].name}-pakket):
     <ul style="margin:6px 0 0;padding-left:18px">
-      ${getContractServiceSummaryLines(client.subscriptionPackage,client.hoursAddon,client.cashierAddon,!!(client.employeePayrollTier&&client.employeePayrollTier!=='none'),client.partnerCount).map(line=>`<li>${escapeHtml(line)}</li>`).join('')}
+      ${getContractServiceSummaryLines(client.subscriptionPackage,client.hoursAddon,client.cashierAddon,!!(client.employeePayrollTier&&client.employeePayrollTier!=='none'),client.partnerCount,{enabled:client.overageEnabled,type:client.overageType,value:client.overageValue}).map(line=>`<li>${escapeHtml(line)}</li>`).join('')}
     </ul>`:''}
   </div>
 </div>
