@@ -2175,6 +2175,10 @@ function sv(){window._contentDirty=false;saveLocalCache();scheduleSync();}
 // الكتابة (POST) أصبحت محمية بتوكن الدخول (نفس نظام R2) - تحسين حقيقي عن
 // الوضع السابق حيث كانت الكتابة أيضًا مفتوحة لأي حامل لمفتاح anon.
 const CLOUD_SYNC_URL='https://anb.ahmad-alnajem506.workers.dev/sync';
+// قاعدة الـ API لأي نقطة نهاية جديدة لا تتبع نمط /sync (مثل روابط توقيع
+// العقود بلا تسجيل دخول) - مشتقة من نفس رابط الـ Worker أعلاه، فتبقى كل
+// روابط الـ Backend مرتبطة بمصدر واحد بدل تكرار الدومين بكل مكان
+const API_BASE=CLOUD_SYNC_URL.replace(/\/sync$/,'');
 const CLOUD_ROW_ID='anb-main';
 // ⚠️ إصلاح خلل حرج: كانت 'serviceAgreements' (اتفاقيات العملاء الموقَّعة)
 // و'importBatches' (دفعات استيراد البيانات السابقة) محفوظتين محليًا فقط
@@ -3699,6 +3703,14 @@ function isAdmin(){return S.role==='admin';}
 let selRoleVal='admin';
 let authState={role:null,identifier:'',clientId:null,isFirstTime:false};
 
+// ── رابط توقيع العقد بلا تسجيل دخول (Magic Link): يُعترَض بدايةً قبل أي
+// محاولة استئناف جلسة أو عرض شاشة الدخول العادية - التوكن نفسه هو صك
+// الدخول لهذي الشاشة تحديدًا فقط، ولا علاقة له بجلسة تسجيل الدخول العادية ──
+const _magicSignToken=new URLSearchParams(window.location.search).get('sign');
+if(_magicSignToken){
+  renderMagicLinkSignScreen(_magicSignToken);
+} else {
+
 // ── Load logo into login page (dedicated login lockup image) ──
 (function loadLoginLogo(){
   const logoEl=document.getElementById('ll-logo');
@@ -3722,6 +3734,9 @@ setTimeout(()=>{
     launchApp();
   }
 },100);
+
+} // end of normal-boot else branch (skipped entirely when a magic-link sign token is present)
+
 
 // ⭐ إظهار/إخفاء كلمة المرور - دالة عامة واحدة تُستخدَم لكل حقول كلمة المرور
 // الثلاثة في شاشة تسجيل الدخول (لا تغيير في تخطيط الشاشة، فقط أيقونة تبديل)
@@ -21876,6 +21891,11 @@ function reviewAgreementDoc(docId){
       <button class="btn btn-p btn-xs" onclick="requestChangesInApp('${agreement.id}')">✎ Request Changes</button>
       <button class="btn btn-success btn-xs" onclick="signAgreementInApp('${agreement.id}')">✓ Sign</button>
     `;
+  }else if(isAdmin()&&agreement.status==='pending_review'){
+    footer.innerHTML=`
+      <button class="btn btn-xs" onclick="closeModal()">${t('close')||'Close'}</button>
+      <button class="btn btn-p btn-xs" onclick="sendSigningLinkForAgreement('${agreement.id}')">📧 Send Signing Link</button>
+    `;
   }else if(isAdmin()&&agreement.status==='client_signed'){
     footer.innerHTML=`
       <button class="btn btn-xs" onclick="closeModal()">${t('close')||'Close'}</button>
@@ -21884,6 +21904,34 @@ function reviewAgreementDoc(docId){
     `;
   }
 }
+
+function sendSigningLinkForAgreement(agreementId){
+  const agreement=(S.serviceAgreements||[]).find(a=>a.id===agreementId);
+  if(!agreement){toast('Agreement not found');return;}
+  const client=agreement.clientData||{};
+  if(!client.email){toast('❌ This client has no email address on file');return;}
+  showConfirmDialog('📧 Send Signing Link',
+    'Send a one-time signing link to '+escapeHtml(client.email)+'? The client will be able to review and sign this agreement without logging in. The link is valid for 7 days and can be resent anytime (which invalidates any previous link).',
+    async()=>{
+      try{
+        const res=await fetch(API_BASE+'/agreement/send-signing-link',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
+          body:JSON.stringify({agreementId})
+        });
+        const result=await res.json();
+        if(!res.ok){
+          toast('❌ '+(result.message||result.error||'Could not send the signing link'));
+          return;
+        }
+        toast('✓ Signing link sent to '+client.email);
+        closeModal();
+      }catch(e){
+        toast('❌ Could not connect — please try again');
+      }
+    },'Send Link');
+}
+
 
 function signAgreementInApp(agreementId){
   const agreement=(S.serviceAgreements||[]).find(a=>a.id===agreementId);
@@ -22145,7 +22193,114 @@ function generateDutchContractHTML(client){
 
 
 
-/* ═══════════════════════════ تسجيل الخروج التلقائي عند عدم النشاط ═══════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   رابط توقيع العقد بلا تسجيل دخول (Magic Link) — يُعرَض بدلًا من شاشة
+   الدخول العادية بالكامل عند وجود ?sign=TOKEN بالرابط. يعتمد على
+   generateDutchContractHTML أعلاه لعرض نص العقد نفسه بالضبط، ونفس نمط
+   "checkbox-based e-signature" المستخدَم أصلًا بـ signAgreementInApp -
+   فرق التنفيذ الوحيد هنا هو المصادقة (التوكن بدل جلسة تسجيل دخول)
+   ═══════════════════════════════════════════════════════════════════ */
+function _magicSignShell(innerHtml){
+  document.body.insertAdjacentHTML('beforeend',`
+    <div id="magic-sign-page" style="position:fixed;inset:0;background:#0A2218;z-index:99999;overflow-y:auto;padding:24px 16px;font-family:inherit">
+      <div style="max-width:680px;margin:0 auto">
+        <div style="text-align:center;margin-bottom:20px">
+          <span style="font-size:22px;font-weight:800;color:#C89010">ANB Financial Services</span>
+        </div>
+        <div style="background:var(--white,#fff);border-radius:10px;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,0.3)">
+          ${innerHtml}
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+async function renderMagicLinkSignScreen(token){
+  _magicSignShell(`<div style="text-align:center;padding:30px 0;color:#666;font-size:13px">⏳ Loading your agreement…</div>`);
+  const shellBody=()=>document.querySelector('#magic-sign-page > div > div');
+  let data;
+  try{
+    const res=await fetch(API_BASE+'/agreement/by-token?token='+encodeURIComponent(token));
+    data=await res.json();
+    if(!res.ok){
+      const msg=data.error==='expired'
+        ?'This signing link has expired or was already used. Please contact ANB Financial Services for a new link.'
+        :'This signing link is invalid. Please contact ANB Financial Services for a new link.';
+      shellBody().innerHTML=`<div style="text-align:center;padding:20px 0"><div style="font-size:32px;margin-bottom:10px">⚠️</div><div style="font-size:14px;color:#333;line-height:1.6">${msg}</div></div>`;
+      return;
+    }
+  }catch(e){
+    shellBody().innerHTML=`<div style="text-align:center;padding:20px 0"><div style="font-size:32px;margin-bottom:10px">⚠️</div><div style="font-size:14px;color:#333">Could not connect. Please check your internet connection and try again.</div></div>`;
+    return;
+  }
+  if(data.alreadyResolved){
+    const label=data.status==='client_signed'||data.status==='active'?'This agreement has already been signed. Thank you!':'This agreement is no longer awaiting your signature.';
+    shellBody().innerHTML=`<div style="text-align:center;padding:20px 0"><div style="font-size:32px;margin-bottom:10px">✅</div><div style="font-size:14px;color:#333">${label}</div></div>`;
+    return;
+  }
+  const client=data.clientData||{};
+  const contractHTML=generateDutchContractHTML(client);
+  shellBody().innerHTML=`
+    <div style="margin-bottom:14px;padding:12px;background:rgba(200,144,16,0.1);border-radius:6px;border-left:3px solid #C89010;font-size:12px;color:#333;line-height:1.6">
+      <strong>Signer:</strong> ${escapeHtml(client.contactPerson||'')}<br/>
+      <strong>Company:</strong> ${escapeHtml(client.name||'')}<br/>
+      <strong>Email:</strong> ${escapeHtml(client.email||'')}
+    </div>
+    <div style="max-height:340px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;padding:12px;margin-bottom:14px">${contractHTML}</div>
+    <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;margin-bottom:10px;padding:10px;background:#f7f7f5;border-radius:6px">
+      <input type="checkbox" id="ml-agree-terms" style="margin-top:2px;cursor:pointer"/>
+      <span>I have read and accept the terms of this service agreement</span>
+    </label>
+    <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;margin-bottom:16px;padding:10px;background:#f7f7f5;border-radius:6px">
+      <input type="checkbox" id="ml-agree-privacy" style="margin-top:2px;cursor:pointer"/>
+      <span>I consent to the processing of my data as described (GDPR)</span>
+    </label>
+    <div id="ml-error" style="display:none;color:#c0392b;font-size:12px;margin-bottom:10px"></div>
+    <button id="ml-sign-btn" class="btn btn-success" style="width:100%;padding:12px;font-size:13px" onclick="submitMagicLinkSignature('${token.replace(/'/g,'')}')">✓ Confirm &amp; Sign Agreement</button>
+    <div style="text-align:center;margin-top:12px;font-size:10.5px;color:#999">This is a legally binding electronic signature under eIDAS. Your IP address and timestamp will be recorded as evidence.</div>
+  `;
+}
+
+async function submitMagicLinkSignature(token){
+  const agreedTerms=document.getElementById('ml-agree-terms')?.checked;
+  const agreedPrivacy=document.getElementById('ml-agree-privacy')?.checked;
+  const errEl=document.getElementById('ml-error');
+  if(!agreedTerms||!agreedPrivacy){
+    if(errEl){errEl.textContent='❌ Please accept both checkboxes above before signing.';errEl.style.display='block';}
+    return;
+  }
+  const btn=document.getElementById('ml-sign-btn');
+  if(btn){btn.disabled=true;btn.textContent='Signing…';}
+  // نفس منطق بصمة SHA-256 للمستند المستخدَم بالتوقيع من داخل التطبيق تمامًا -
+  // يربط التوقيع تقنيًا بالنسخة بالضبط من نص العقد التي عاينها الموقِّع
+  let documentHash='';
+  try{
+    const html=document.querySelector('#magic-sign-page > div > div').innerHTML;
+    const encoded=new TextEncoder().encode(html);
+    const digest=await crypto.subtle.digest('SHA-256',encoded);
+    documentHash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){}
+  try{
+    const res=await fetch(API_BASE+'/agreement/sign-by-token',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token,documentHash})
+    });
+    const result=await res.json();
+    if(!res.ok){
+      if(errEl){errEl.textContent='❌ '+(result.error==='expired'?'This link has expired or was already used.':'Something went wrong — please try again or contact ANB.');errEl.style.display='block';}
+      if(btn){btn.disabled=false;btn.textContent='✓ Confirm & Sign Agreement';}
+      return;
+    }
+    const shellBody=document.querySelector('#magic-sign-page > div > div');
+    shellBody.innerHTML=`<div style="text-align:center;padding:30px 0"><div style="font-size:48px;margin-bottom:14px">🎉</div><div style="font-size:16px;font-weight:700;color:#0A2218;margin-bottom:8px">Agreement Signed Successfully!</div><div style="font-size:13px;color:#555;line-height:1.6">Thank you — ANB Financial Services has been notified and will finalize your account shortly.</div></div>`;
+    if(typeof celebrate==='function'){try{celebrate();}catch(e){}}
+  }catch(e){
+    if(errEl){errEl.textContent='❌ Could not connect. Please check your internet connection and try again.';errEl.style.display='block';}
+    if(btn){btn.disabled=false;btn.textContent='✓ Confirm & Sign Agreement';}
+  }
+}
+
+
 const AUTO_LOGOUT_MS=20*60*1000; // 20 دقيقة - متوازن لتطبيق محاسبي داخلي مع طبقات حماية إضافية (تشفير + حد محاولات + 2FA)
 let lastActivityTime=Date.now();
 function markActivity(){lastActivityTime=Date.now();}
