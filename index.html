@@ -839,7 +839,7 @@ body.rtl #app .main { border-right: none; border-left: 1px solid var(--gr2); }
 // If this file is opened locally (file://) instead of hosted on https,
 // these will silently fail to register and the app keeps working normally.
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
-  navigator.serviceWorker.register('sw.js?v=4.09').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=4.10').catch(()=>{});
 }
 
 // Stub functions to prevent ReferenceError when HTML is loaded
@@ -4871,8 +4871,8 @@ function getNextContractTitle(cid){
 // المصاريف، والأدمن يتولى التدقيق والهيكلة والإقرارات). التمايز الوحيد بين
 // الباقتين هو عمق الخدمة (تواتر التقارير + استشارة ضريبية ربعية)، لا الحجم.
 const SUBSCRIPTION_PACKAGES={
-  compleet:{id:'compleet',name:'ZZP Compleet',basePrice:85,reportsFreq:'quarterly',adviesEnabled:false},
-  compleetAdvies:{id:'compleetAdvies',name:'ZZP Compleet + Advies',basePrice:115,reportsFreq:'monthly',adviesEnabled:true}
+  compleet:{id:'compleet',name:'Complete',basePrice:85,reportsFreq:'quarterly',adviesEnabled:false},
+  compleetAdvies:{id:'compleetAdvies',name:'Complete+',basePrice:115,reportsFreq:'monthly',adviesEnabled:true}
 };
 // ⭐⭐ الساعات والكاشير مستقلتان عن الباقة تمامًا - حالة تفعيل/تعطيل بسيطة بسعر واحد
 const HOURS_ADDON_PRICE=10;
@@ -4931,7 +4931,7 @@ function toggleOverageFieldVisibility(){
 function openApplyOverageCharge(contractId,cid){
   const con=(S.contracts||[]).find(c=>c.id===contractId);
   const client=S.clients.find(cl=>cl.id===cid);
-  if(!con||!con.overageEnabled)return;
+  if(!con)return;
   const suggested=computeOverageChargeAmount(con);
   showModal('⚠️ '+(t('apply_overage_charge')||'Apply Overage Charge')+' — '+escapeHtml(client?.name||''),`
     <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">${t('overage_charge_hint')||'This creates a one-time additional charge, based on the agreed overage terms on this contract, added automatically to next month\u2019s invoice. Only use this after discussing it with the client — it is never applied automatically on its own.'}</div>
@@ -5965,7 +5965,7 @@ function renderClientContractsList(cid,searchTerm,sortValue){
           <button class="btn btn-xs" onclick="exportContractPDF('${con.id}')" title="${t('view_contract_copy')||'Export as PDF'}">📄</button>
           <button class="btn btn-xs" onclick="openEditContract('${con.id}','${con.cid}')" title="${con.status==='cancelled'?(t('view')||'View'):(t('edit')||'Edit')}">${con.status==='cancelled'?'👁':'✏'}</button>
           ${con.status!=='cancelled'&&isAdmin()&&!con.pendingUpgrade&&con.subscriptionPackage?`<button class="btn btn-xs" onclick="openProposeUpgrade('${con.id}','${con.cid}')" title="Propose Upgrade">🔼</button>`:''}
-          ${con.status!=='cancelled'&&isAdmin()&&con.overageEnabled?`<button class="btn btn-xs" style="background:rgba(184,134,11,0.15);color:#8a6410" onclick="openApplyOverageCharge('${con.id}','${con.cid}')" title="${t('apply_overage_charge')||'Apply Overage Charge'}">⚠️</button>`:''}
+          ${con.status!=='cancelled'&&isAdmin()?`<button class="btn btn-xs" style="background:rgba(184,134,11,0.15);color:#8a6410" onclick="openApplyOverageCharge('${con.id}','${con.cid}')" title="${t('apply_overage_charge')||'Apply Overage Charge'}">⚠️</button>`:''}
           ${con.status!=='cancelled'?`
             ${con.status==='suspended'
               ?`<button class="btn btn-xs" onclick="resumeContract('${con.id}')" title="${t('resume')||'Resume'}">▶</button>`
