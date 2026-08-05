@@ -46,9 +46,36 @@ export default {
       if (url.pathname === "/client/send-notification" && request.method === "POST") return await handleSendClientNotification(request, env, cors);
       if (url.pathname === "/forgot-password" && request.method === "POST") return await handleForgotPassword(request, env, cors);
       if (url.pathname === "/reset-password" && request.method === "POST") return await handleResetPassword(request, env, cors);
+      if (url.pathname === "/expense/bulk-ocr-enqueue" && request.method === "POST") return await handleBulkOcrEnqueue(request, env, cors);
       return json({ error: "Not found" }, 404, cors);
     } catch (err) {
       return json({ error: "Internal error", detail: String(err && err.message || err) }, 500, cors);
+    }
+  },
+  async queue(batch, env) {
+    // ⚠️ نُعالج رسائل الدفعة بالتتابع (for-of + await)، وليس بالتوازي، عمدًا -
+    // كل رسالة تقرأ/تُعدِّل/تكتب نفس ملف payload المشترك بالكامل (D1)، فالمعالجة
+    // المتوازية ممكن تُسبِّب فقدان تحديثات (last-write-wins) بين رسالتين بنفس
+    // الدفعة. نفس منطق Vision المُستخدَم بالمسار الفوري تمامًا (runVisionOcr)،
+    // فرق التنفيذ الوحيد هنا هو أن النتيجة تُخزَّن بدل ما تُعاد فورًا للعميل
+    for (const message of batch.messages) {
+      const { jobId, fileKey } = message.body || {};
+      if (!jobId || !fileKey) continue;
+      try {
+        const fileObj = await env.ANB_FILES.get(fileKey);
+        if (!fileObj) throw new Error("File not found in storage");
+        const arrayBuffer = await fileObj.arrayBuffer();
+        const base64Image = bufToBase64(arrayBuffer);
+        const ocrResult = await runVisionOcr(base64Image, env);
+        await updateOcrJobStatus(env, jobId, { status: "ready", result: ocrResult, error: null });
+      } catch (err) {
+        // ⚠️ لا نُعيد رمي الخطأ هنا عمدًا - نُسجِّل الفشل بحالة الوظيفة نفسها
+        // بدل الاعتماد على إعادة محاولة الـ Queue التلقائية، لأن صورة تالفة
+        // أو غير مقروءة تبقى كذلك دائمًا (إعادة المحاولة لن تُصلحها)، فتكرارها
+        // يستهلك حصة الاستدعاءات بلا فائدة - العميل يشوف "فشل" ويقدر يعيد
+        // المحاولة يدويًا أو يُدخل البيانات يدويًا بدلًا من ذلك
+        await updateOcrJobStatus(env, jobId, { status: "failed", error: String((err && err.message) || err) });
+      }
     }
   },
   async scheduled(event, env, ctx) {
@@ -1024,31 +1051,31 @@ async function handleSyncPost(request, env, cors) {
   const savedAt = await writeCloudPayload(env, merged);
   return json({ ok: true, updated_at: new Date(savedAt).toISOString() }, 200, cors);
 }
-async function handleOcrVision(request, env, cors) {
-  const auth = await requireValidToken(request, env);
-  if (!auth.ok) return json({ error: auth.error }, 401, cors);
-  const bucketKey = `ocr-vision:${auth.payload.aid || auth.payload.at}`;
-  if (await isRateLimited(env, bucketKey)) return json({ error: "Too many OCR requests, please wait a moment" }, 429, cors);
-  await registerAttempt(env, bucketKey);
-  if (!env.GOOGLE_VISION_API_KEY) return json({ error: "OCR service not configured" }, 503, cors);
-  let body;
-  try { body = await request.json(); } catch { return json({ error: "Invalid request body" }, 400, cors); }
-  const base64Image = (body.image || "").replace(/^data:image\/\w+;base64,/, "");
-  if (!base64Image) return json({ error: "No image provided" }, 400, cors);
-  if (base64Image.length > 2e7) return json({ error: "Image too large" }, 413, cors);
+function bufToBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+// ⭐ منطق Google Vision المشترك - يستخدمه كل من المسار الفوري (handleOcrVision،
+// أثناء المسح المباشر بالكاميرا) ومعالج الـ Queue بالخلفية (رفع بالجملة) على
+// حدٍّ سواء، لتفادي ازدواج نفس منطق تحليل استجابة Vision في مكانين
+async function runVisionOcr(base64Image, env) {
+  if (!env.GOOGLE_VISION_API_KEY) throw new Error("OCR service not configured");
+  if (base64Image.length > 2e7) throw new Error("Image too large");
   const visionRequestBody = {
     requests: [{ image: { content: base64Image }, features: [{ type: "DOCUMENT_TEXT_DETECTION" }], imageContext: { languageHints: ["en", "nl"] } }]
   };
-  let visionResponse;
-  try {
-    visionResponse = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${env.GOOGLE_VISION_API_KEY}`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(visionRequestBody)
-    });
-  } catch (err) { return json({ error: "Could not reach OCR service" }, 502, cors); }
-  if (!visionResponse.ok) return json({ error: "OCR service error" }, 502, cors);
+  const visionResponse = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${env.GOOGLE_VISION_API_KEY}`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(visionRequestBody)
+  });
+  if (!visionResponse.ok) throw new Error("OCR service error");
   const visionData = await visionResponse.json();
   const result = (visionData.responses || [])[0] || {};
-  if (result.error) return json({ error: result.error.message || "OCR processing failed" }, 502, cors);
+  if (result.error) throw new Error(result.error.message || "OCR processing failed");
   const fullText = result.fullTextAnnotation?.text || "";
   let confidenceSum = 0, confidenceCount = 0;
   const words = [];
@@ -1068,7 +1095,26 @@ async function handleOcrVision(request, env, cors) {
     });
   });
   const avgConfidence = confidenceCount > 0 ? confidenceSum / confidenceCount * 100 : 75;
-  return json({ text: fullText, confidence: avgConfidence, words }, 200, cors);
+  return { text: fullText, confidence: avgConfidence, words };
+}
+async function handleOcrVision(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  const bucketKey = `ocr-vision:${auth.payload.aid || auth.payload.at}`;
+  if (await isRateLimited(env, bucketKey)) return json({ error: "Too many OCR requests, please wait a moment" }, 429, cors);
+  await registerAttempt(env, bucketKey);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "Invalid request body" }, 400, cors); }
+  const base64Image = (body.image || "").replace(/^data:image\/\w+;base64,/, "");
+  if (!base64Image) return json({ error: "No image provided" }, 400, cors);
+  try {
+    const result = await runVisionOcr(base64Image, env);
+    return json(result, 200, cors);
+  } catch (err) {
+    const message = String((err && err.message) || err);
+    const status = message === "OCR service not configured" ? 503 : message === "Image too large" ? 413 : 502;
+    return json({ error: message }, status, cors);
+  }
 }
 async function handleUpload(request, env, cors) {
   const auth = await requireValidToken(request, env);
@@ -2170,4 +2216,63 @@ async function handleResetPassword(request, env, cors) {
   const exp = Date.now() + TOKEN_TTL_MS;
   const loginToken = await signToken({ at: "client", aid: client.id, exp, pwv: client.pwv }, env.R2_HMAC_SECRET);
   return json({ ok: true, token: loginToken, exp, clientId: client.id }, 200, cors);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ANB AutoStack — Phase 2: Bulk Receipt Upload via Cloudflare Queues
+   Lets a client (or admin) upload many receipt photos at once — e.g. right
+   after the monthly reminder email — without waiting for each one's OCR to
+   finish before selecting the next. Each file becomes a tracked "job" in
+   the normal synced payload (ocrJobs array), processed in the background
+   by the queue() consumer above, so the client can just check back later.
+   ══════════════════════════════════════════════════════════════════════ */
+
+async function updateOcrJobStatus(env, jobId, updates) {
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return;
+  const jobs = cloud.payload.ocrJobs || [];
+  const idx = jobs.findIndex((j) => j && j.id === jobId);
+  if (idx === -1) return;
+  jobs[idx] = { ...jobs[idx], ...updates, updatedAt: Date.now() };
+  await writeCloudPayload(env, { ...cloud.payload, ocrJobs: jobs });
+}
+
+// POST /expense/bulk-ocr-enqueue — admin (for any client) or a client (for
+// themselves only). Body: { cid, fileKeys: [...] } — files must already be
+// uploaded via the normal /upload endpoint; this just creates one tracked
+// job per file and pushes it to the Queue for background OCR processing.
+async function handleBulkOcrEnqueue(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400, cors);
+  }
+  const { cid, fileKeys } = body || {};
+  if (!cid || !Array.isArray(fileKeys) || fileKeys.length === 0) return json({ error: "cid and fileKeys[] are required" }, 400, cors);
+  if (fileKeys.length > 30) return json({ error: "Max 30 files per batch" }, 400, cors);
+  if (auth.payload.at !== "admin" && auth.payload.aid !== cid) return json({ error: "Clients can only upload their own receipts" }, 403, cors);
+  if (!env.OCR_QUEUE) return json({ error: "ocr_queue_not_configured", message: "OCR_QUEUE binding is not set up on this Worker yet." }, 503, cors);
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: "Could not reach database" }, 502, cors);
+  const jobs = cloud.payload.ocrJobs || [];
+  const newJobIds = [];
+  for (const fileKey of fileKeys) {
+    const jobId = crypto.randomUUID();
+    jobs.push({ id: jobId, cid, fileKey, status: "queued", result: null, error: null, createdAt: Date.now() });
+    newJobIds.push(jobId);
+  }
+  await writeCloudPayload(env, { ...cloud.payload, ocrJobs: jobs });
+  // ⚠️ نرسل الرسائل بعد حفظ الوظائف بنجاح - لو فشل إرسال رسالة معيَّنة، نُسجِّل
+  // تلك الوظيفة تحديدًا كـ"فشلت" فورًا بدل تركها "قيد الانتظار" للأبد بصمت
+  for (let i = 0; i < fileKeys.length; i++) {
+    try {
+      await env.OCR_QUEUE.send({ jobId: newJobIds[i], fileKey: fileKeys[i], cid });
+    } catch (err) {
+      await updateOcrJobStatus(env, newJobIds[i], { status: "failed", error: "Could not queue for processing" });
+    }
+  }
+  return json({ ok: true, jobIds: newJobIds }, 200, cors);
 }
