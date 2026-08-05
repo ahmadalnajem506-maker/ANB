@@ -53,6 +53,8 @@ export default {
       ctx.waitUntil(remindStaleCashierDaysServer(env));
     } else if (event.cron === "0 7 * * *") {
       ctx.waitUntil(sendDailyReminderPushes(env));
+    } else if (event.cron === "0 11 1 * *") {
+      ctx.waitUntil(sendMonthlyDocumentReminders(env));
     } else {
       ctx.waitUntil(performBackup(env, "scheduled"));
     }
@@ -1690,4 +1692,152 @@ async function handleSendSigningLink(request, env, cors) {
   });
   if (!emailResult.ok) return json({ error: "email_send_failed", message: emailResult.error }, 502, cors);
   return json({ ok: true }, 200, cors);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ANB AutoStack — Phase 1: Monthly Bank Statement & Receipts Reminder
+   Runs on the 1st of every month (cron: "0 11 1 * *" — remember to add
+   this exact cron expression to the Worker's Triggers in the Cloudflare
+   dashboard, or to the "triggers.crons" array in wrangler config, same
+   as the two existing daily crons). Emails every active client a
+   reminder, in their preferred language, to (1) email last month's bank
+   statement export and (2) upload last month's expense receipt photos
+   directly in the app.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const MONTH_NAMES = {
+  nl: ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"],
+  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  ar: ["\u064A\u0646\u0627\u064A\u0631", "\u0641\u0628\u0631\u0627\u064A\u0631", "\u0645\u0627\u0631\u0633", "\u0623\u0628\u0631\u064A\u0644", "\u0645\u0627\u064A\u0648", "\u064A\u0648\u0646\u064A\u0648", "\u064A\u0648\u0644\u064A\u0648", "\u0623\u063A\u0633\u0637\u0633", "\u0633\u0628\u062A\u0645\u0628\u0631", "\u0623\u0643\u062A\u0648\u0628\u0631", "\u0646\u0648\u0641\u0645\u0628\u0631", "\u062F\u064A\u0633\u0645\u0628\u0631"]
+};
+
+function formatPrevMonthName(lang) {
+  const now = /* @__PURE__ */ new Date();
+  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const names = MONTH_NAMES[lang] || MONTH_NAMES.nl;
+  return names[prevMonthDate.getMonth()] + " " + prevMonthDate.getFullYear();
+}
+
+const MONTHLY_REMINDER_CONTENT = {
+  nl: {
+    subjectPrefix: "ANB \u2014 Herinnering: bankafschriften & bonnetjes voor ",
+    greeting: (name) => `Beste ${name},`,
+    intro: (month) => `Het is weer zover! Zou u onderstaande gegevens voor <strong>${month}</strong> willen aanleveren, zodat wij uw administratie tijdig kunnen bijwerken?`,
+    introText: (month) => `Het is weer zover! Zou u onderstaande gegevens voor ${month} willen aanleveren, zodat wij uw administratie tijdig kunnen bijwerken?`,
+    item1Title: "1. Bankafschriften",
+    item1Body: (month) => `Stuur het afschrift van ${month} per e-mail naar info@anbfinancial.nl.`,
+    item2Title: "2. Bonnetjes / facturen",
+    item2Body: (month) => `Upload foto's van uw uitgavenbonnetjes van ${month} rechtstreeks in de app, onder "Uitgaven".`,
+    button: "Open ANB FinAdmin Pro",
+    closing: "Alvast bedankt voor uw medewerking!",
+    regards: "Met vriendelijke groet,",
+    dir: "ltr",
+    align: "left"
+  },
+  en: {
+    subjectPrefix: "ANB \u2014 Reminder: bank statement & receipts for ",
+    greeting: (name) => `Dear ${name},`,
+    intro: (month) => `It's that time again! Could you please submit the following for <strong>${month}</strong> so we can keep your bookkeeping up to date?`,
+    introText: (month) => `It's that time again! Could you please submit the following for ${month} so we can keep your bookkeeping up to date?`,
+    item1Title: "1. Bank statement",
+    item1Body: (month) => `Please email your ${month} bank statement export to info@anbfinancial.nl.`,
+    item2Title: "2. Expense receipts",
+    item2Body: (month) => `Please upload photos of your ${month} expense receipts directly in the app, under "Expenses".`,
+    button: "Open ANB FinAdmin Pro",
+    closing: "Thank you for your cooperation!",
+    regards: "Kind regards,",
+    dir: "ltr",
+    align: "left"
+  },
+  ar: {
+    subjectPrefix: "ANB \u2014 \u062A\u0630\u0643\u064A\u0631: \u0643\u0634\u0641 \u0627\u0644\u0628\u0646\u0643 \u0648\u0641\u0648\u0627\u062A\u064A\u0631 \u0627\u0644\u0645\u0635\u0627\u0631\u064A\u0641 \u0644\u0634\u0647\u0631 ",
+    greeting: (name) => `\u0639\u0632\u064A\u0632\u064A/\u0639\u0632\u064A\u0632\u062A\u064A ${name}\u060C`,
+    intro: (month) => `\u062D\u0627\u0646 \u0648\u0642\u062A \u0627\u0644\u062A\u062D\u062F\u064A\u062B \u0627\u0644\u0634\u0647\u0631\u064A! \u064A\u0631\u062C\u0649 \u062A\u0632\u0648\u064A\u062F\u0646\u0627 \u0628\u0627\u0644\u062A\u0627\u0644\u064A \u0639\u0646 \u0634\u0647\u0631 <strong>${month}</strong> \u062D\u062A\u0649 \u0646\u062A\u0645\u0643\u0646 \u0645\u0646 \u062A\u062D\u062F\u064A\u062B \u062D\u0633\u0627\u0628\u0627\u062A\u0643 \u0641\u064A \u0648\u0642\u062A\u0647\u0627:`,
+    introText: (month) => `\u062D\u0627\u0646 \u0648\u0642\u062A \u0627\u0644\u062A\u062D\u062F\u064A\u062B \u0627\u0644\u0634\u0647\u0631\u064A! \u064A\u0631\u062C\u0649 \u062A\u0632\u0648\u064A\u062F\u0646\u0627 \u0628\u0627\u0644\u062A\u0627\u0644\u064A \u0639\u0646 \u0634\u0647\u0631 ${month} \u062D\u062A\u0649 \u0646\u062A\u0645\u0643\u0646 \u0645\u0646 \u062A\u062D\u062F\u064A\u062B \u062D\u0633\u0627\u0628\u0627\u062A\u0643 \u0641\u064A \u0648\u0642\u062A\u0647\u0627:`,
+    item1Title: "1. \u0643\u0634\u0641 \u0627\u0644\u062D\u0633\u0627\u0628 \u0627\u0644\u0628\u0646\u0643\u064A",
+    item1Body: (month) => `\u0623\u0631\u0633\u0644 \u0643\u0634\u0641 \u062D\u0633\u0627\u0628 \u0634\u0647\u0631 ${month} \u0639\u0628\u0631 \u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u0625\u0644\u0649 info@anbfinancial.nl.`,
+    item2Title: "2. \u0641\u0648\u0627\u062A\u064A\u0631 \u0627\u0644\u0645\u0635\u0627\u0631\u064A\u0641",
+    item2Body: (month) => `\u0627\u0631\u0641\u0639 \u0635\u0648\u0631 \u0641\u0648\u0627\u062A\u064A\u0631 \u0645\u0635\u0627\u0631\u064A\u0641\u0643 \u0644\u0634\u0647\u0631 ${month} \u0645\u0628\u0627\u0634\u0631\u0629 \u062F\u0627\u062E\u0644 \u0627\u0644\u062A\u0637\u0628\u064A\u0642\u060C \u062A\u062D\u062A \u0642\u0633\u0645 "\u0627\u0644\u0645\u0635\u0627\u0631\u064A\u0641".`,
+    button: "\u0641\u062A\u062D ANB FinAdmin Pro",
+    closing: "\u0634\u0627\u0643\u0631\u064A\u0646 \u0644\u0643 \u062A\u0639\u0627\u0648\u0646\u0643!",
+    regards: "\u0645\u0639 \u0623\u0637\u064A\u0628 \u0627\u0644\u062A\u062D\u064A\u0627\u062A\u060C",
+    dir: "rtl",
+    align: "right"
+  }
+};
+
+function buildMonthlyReminderHtml(client, monthLabel, lang) {
+  const c = MONTHLY_REMINDER_CONTENT[lang] || MONTHLY_REMINDER_CONTENT.nl;
+  const name = escapeHtmlServer(client.contactPerson || client.name || "");
+  const appUrl = "https://app.anbfinancial.nl";
+  return `<!DOCTYPE html><html dir="${c.dir}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif" dir="${c.dir}">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f4f4"><tr><td align="center" style="padding:32px 16px">
+<table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="border-radius:8px;overflow:hidden">
+<tr><td bgcolor="#0A2218" style="padding:24px;text-align:center">
+<span style="font-size:20px;font-weight:bold;color:#C89010;font-family:Arial,Helvetica,sans-serif">ANB Financial Services</span>
+</td></tr>
+<tr><td style="padding:32px 28px;font-size:14px;line-height:1.8;color:#222222;font-family:Arial,Helvetica,sans-serif;text-align:${c.align}" dir="${c.dir}">
+<p>${c.greeting(name)}</p>
+<p>${c.intro(escapeHtmlServer(monthLabel))}</p>
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:20px 0"><tr><td style="background:#f7f7f5;border-radius:6px;padding:14px 16px;border-left:3px solid #C89010">
+<div style="font-weight:bold;margin-bottom:4px">${c.item1Title}</div>
+<div style="font-size:13px;color:#444444">${c.item1Body(escapeHtmlServer(monthLabel))}</div>
+</td></tr></table>
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 20px"><tr><td style="background:#f7f7f5;border-radius:6px;padding:14px 16px;border-left:3px solid #C89010">
+<div style="font-weight:bold;margin-bottom:4px">${c.item2Title}</div>
+<div style="font-size:13px;color:#444444">${c.item2Body(escapeHtmlServer(monthLabel))}</div>
+</td></tr></table>
+<table cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px"><tr><td bgcolor="#0A2218" style="border-radius:6px">
+<a href="${appUrl}" style="display:inline-block;padding:12px 24px;font-size:13px;font-weight:bold;color:#C89010;text-decoration:none;font-family:Arial,Helvetica,sans-serif">${c.button}</a>
+</td></tr></table>
+<p>${c.closing}</p>
+<p style="margin-top:16px">${c.regards}<br/>ANB Financial Services</p>
+</td></tr>
+<tr><td bgcolor="#f4f4f4" style="padding:16px;text-align:center;font-size:11px;color:#999999;font-family:Arial,Helvetica,sans-serif">ANB Financial Services &middot; anbfinancial.nl</td></tr>
+</table></td></tr></table>
+</body></html>`;
+}
+
+function buildMonthlyReminderText(client, monthLabel, lang) {
+  const c = MONTHLY_REMINDER_CONTENT[lang] || MONTHLY_REMINDER_CONTENT.nl;
+  const name = client.contactPerson || client.name || "";
+  return `${c.greeting(name)}
+
+${c.introText(monthLabel)}
+
+${c.item1Title}
+${c.item1Body(monthLabel)}
+
+${c.item2Title}
+${c.item2Body(monthLabel)}
+
+https://app.anbfinancial.nl
+
+${c.closing}
+
+${c.regards}
+ANB Financial Services`;
+}
+
+async function sendMonthlyDocumentReminders(env) {
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return;
+  const clients = cloud.payload.clients || [];
+  for (const client of clients) {
+    if (!client || client.id === "anb-self" || !client.email) continue;
+    if (client.accountStatus === "suspended" || client.accountStatus === "cancelled") continue;
+    const lang = (client.preferredLang === "en" || client.preferredLang === "ar") ? client.preferredLang : "nl";
+    const monthLabel = formatPrevMonthName(lang);
+    const content = MONTHLY_REMINDER_CONTENT[lang];
+    try {
+      await sendResendEmail(env, {
+        to: client.email,
+        subject: content.subjectPrefix + monthLabel,
+        html: buildMonthlyReminderHtml(client, monthLabel, lang),
+        text: buildMonthlyReminderText(client, monthLabel, lang)
+      });
+    } catch (e) {
+    }
+  }
 }
