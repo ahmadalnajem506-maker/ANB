@@ -43,6 +43,7 @@ export default {
       if (url.pathname === "/agreement/by-token" && request.method === "GET") return await handleAgreementByToken(request, env, cors, url);
       if (url.pathname === "/agreement/sign-by-token" && request.method === "POST") return await handleAgreementSignByToken(request, env, cors);
       if (url.pathname === "/agreement/send-signing-link" && request.method === "POST") return await handleSendSigningLink(request, env, cors);
+      if (url.pathname === "/client/send-notification" && request.method === "POST") return await handleSendClientNotification(request, env, cors);
       return json({ error: "Not found" }, 404, cors);
     } catch (err) {
       return json({ error: "Internal error", detail: String(err && err.message || err) }, 500, cors);
@@ -1840,4 +1841,170 @@ async function sendMonthlyDocumentReminders(env) {
     } catch (e) {
     }
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ANB AutoStack — Phase 1: Client Notifications
+   (contract approved / overage charge applied). Both are triggered by the
+   admin, from inside the app, right after the corresponding action —
+   reuses the same language-aware pattern as the other email features.
+   ══════════════════════════════════════════════════════════════════════ */
+
+function wrapNotificationEmailHtml(lang, bodyHtml) {
+  const dir = lang === "ar" ? "rtl" : "ltr";
+  const align = lang === "ar" ? "right" : "left";
+  return `<!DOCTYPE html><html dir="${dir}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif" dir="${dir}">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f4f4"><tr><td align="center" style="padding:32px 16px">
+<table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="border-radius:8px;overflow:hidden">
+<tr><td bgcolor="#0A2218" style="padding:24px;text-align:center">
+<span style="font-size:20px;font-weight:bold;color:#C89010;font-family:Arial,Helvetica,sans-serif">ANB Financial Services</span>
+</td></tr>
+<tr><td style="padding:32px 28px;font-size:14px;line-height:1.8;color:#222222;font-family:Arial,Helvetica,sans-serif;text-align:${align}" dir="${dir}">
+${bodyHtml}
+</td></tr>
+<tr><td bgcolor="#f4f4f4" style="padding:16px;text-align:center;font-size:11px;color:#999999;font-family:Arial,Helvetica,sans-serif">ANB Financial Services &middot; anbfinancial.nl</td></tr>
+</table></td></tr></table>
+</body></html>`;
+}
+
+const CLIENT_NOTIFICATION_CONTENT = {
+  contract_approved: {
+    nl: {
+      subject: "ANB \u2014 Uw contract is geactiveerd",
+      greeting: (name) => `Beste ${name},`,
+      body: (price) => `Goed nieuws! Uw dienstverleningsovereenkomst met <strong>ANB Financial Services</strong> is definitief goedgekeurd en geactiveerd.<br/><br/>Maandelijks tarief: <strong>\u20AC${price}</strong> (excl. btw).<br/><br/>U kunt nu inloggen om uw administratie te beheren.`,
+      bodyText: (price) => `Goed nieuws! Uw dienstverleningsovereenkomst met ANB Financial Services is definitief goedgekeurd en geactiveerd.
+
+Maandelijks tarief: \u20AC${price} (excl. btw).
+
+U kunt nu inloggen om uw administratie te beheren.`,
+      button: "Open ANB FinAdmin Pro",
+      regards: "Met vriendelijke groet,"
+    },
+    en: {
+      subject: "ANB \u2014 Your contract is now active",
+      greeting: (name) => `Dear ${name},`,
+      body: (price) => `Good news! Your service agreement with <strong>ANB Financial Services</strong> has been finalized and is now active.<br/><br/>Monthly fee: <strong>\u20AC${price}</strong> (excl. VAT).<br/><br/>You can now log in to manage your bookkeeping.`,
+      bodyText: (price) => `Good news! Your service agreement with ANB Financial Services has been finalized and is now active.
+
+Monthly fee: \u20AC${price} (excl. VAT).
+
+You can now log in to manage your bookkeeping.`,
+      button: "Open ANB FinAdmin Pro",
+      regards: "Kind regards,"
+    },
+    ar: {
+      subject: "ANB \u2014 \u062A\u0645 \u062A\u0641\u0639\u064A\u0644 \u0639\u0642\u062F\u0643",
+      greeting: (name) => `\u0639\u0632\u064A\u0632\u064A/\u0639\u0632\u064A\u0632\u062A\u064A ${name}\u060C`,
+      body: (price) => `\u0623\u062E\u0628\u0627\u0631 \u0633\u0627\u0631\u0629! \u062A\u0645 \u0627\u0639\u062A\u0645\u0627\u062F \u0627\u062A\u0641\u0627\u0642\u064A\u0629 \u0627\u0644\u062E\u062F\u0645\u0629 \u0627\u0644\u062E\u0627\u0635\u0629 \u0628\u0643 \u0645\u0639 <strong>ANB Financial Services</strong> \u0648\u0623\u0635\u0628\u062D\u062A \u0641\u0639\u0651\u0627\u0644\u0629 \u0627\u0644\u0622\u0646.<br/><br/>\u0627\u0644\u0631\u0633\u0648\u0645 \u0627\u0644\u0634\u0647\u0631\u064A\u0629: <strong>\u20AC${price}</strong> (\u0628\u062F\u0648\u0646 \u0627\u0644\u0636\u0631\u064A\u0628\u0629).<br/><br/>\u064A\u0645\u0643\u0646\u0643 \u0627\u0644\u0622\u0646 \u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644 \u0644\u0625\u062F\u0627\u0631\u0629 \u062D\u0633\u0627\u0628\u0627\u062A\u0643.`,
+      bodyText: (price) => `\u0623\u062E\u0628\u0627\u0631 \u0633\u0627\u0631\u0629! \u062A\u0645 \u0627\u0639\u062A\u0645\u0627\u062F \u0627\u062A\u0641\u0627\u0642\u064A\u0629 \u0627\u0644\u062E\u062F\u0645\u0629 \u0627\u0644\u062E\u0627\u0635\u0629 \u0628\u0643 \u0645\u0639 ANB Financial Services \u0648\u0623\u0635\u0628\u062D\u062A \u0641\u0639\u0651\u0627\u0644\u0629 \u0627\u0644\u0622\u0646.
+
+\u0627\u0644\u0631\u0633\u0648\u0645 \u0627\u0644\u0634\u0647\u0631\u064A\u0629: \u20AC${price} (\u0628\u062F\u0648\u0646 \u0627\u0644\u0636\u0631\u064A\u0628\u0629).
+
+\u064A\u0645\u0643\u0646\u0643 \u0627\u0644\u0622\u0646 \u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644 \u0644\u0625\u062F\u0627\u0631\u0629 \u062D\u0633\u0627\u0628\u0627\u062A\u0643.`,
+      button: "\u0641\u062A\u062D ANB FinAdmin Pro",
+      regards: "\u0645\u0639 \u0623\u0637\u064A\u0628 \u0627\u0644\u062A\u062D\u064A\u0627\u062A\u060C"
+    }
+  },
+  overage_charge: {
+    nl: {
+      subject: "ANB \u2014 Extra kosten toegevoegd aan uw volgende factuur",
+      greeting: (name) => `Beste ${name},`,
+      body: (amount, month, note) => `Zoals besproken, is er een eenmalige extra kostenpost van <strong>\u20AC${amount}</strong> toegevoegd voor <strong>${escapeHtmlServer(month)}</strong>${note ? ", betreffende: " + escapeHtmlServer(note) : ""}.<br/><br/>Dit bedrag verschijnt automatisch op uw eerstvolgende maandelijkse factuur.`,
+      bodyText: (amount, month, note) => `Zoals besproken, is er een eenmalige extra kostenpost van \u20AC${amount} toegevoegd voor ${month}${note ? ", betreffende: " + note : ""}.
+
+Dit bedrag verschijnt automatisch op uw eerstvolgende maandelijkse factuur.`,
+      button: "Open ANB FinAdmin Pro",
+      regards: "Met vriendelijke groet,"
+    },
+    en: {
+      subject: "ANB \u2014 Additional charge added to your next invoice",
+      greeting: (name) => `Dear ${name},`,
+      body: (amount, month, note) => `As discussed, a one-time additional charge of <strong>\u20AC${amount}</strong> has been added for <strong>${escapeHtmlServer(month)}</strong>${note ? ", regarding: " + escapeHtmlServer(note) : ""}.<br/><br/>This amount will appear automatically on your next monthly invoice.`,
+      bodyText: (amount, month, note) => `As discussed, a one-time additional charge of \u20AC${amount} has been added for ${month}${note ? ", regarding: " + note : ""}.
+
+This amount will appear automatically on your next monthly invoice.`,
+      button: "Open ANB FinAdmin Pro",
+      regards: "Kind regards,"
+    },
+    ar: {
+      subject: "ANB \u2014 \u0631\u0633\u0648\u0645 \u0625\u0636\u0627\u0641\u064A\u0629 \u0623ُ\u0636\u064A\u0641\u062A \u0644\u0641\u0627\u062A\u0648\u0631\u062A\u0643 \u0627\u0644\u0642\u0627\u062F\u0645\u0629",
+      greeting: (name) => `\u0639\u0632\u064A\u0632\u064A/\u0639\u0632\u064A\u0632\u062A\u064A ${name}\u060C`,
+      body: (amount, month, note) => `\u0643\u0645\u0627 \u062A\u0645 \u0627\u0644\u0627\u062A\u0641\u0627\u0642\u060C \u0623ُ\u0636\u064A\u0641 \u0631\u0633\u0645 \u0625\u0636\u0627\u0641\u064A \u0644\u0645\u0631\u0629 \u0648\u0627\u062D\u062F\u0629 \u0628\u0642\u064A\u0645\u0629 <strong>\u20AC${amount}</strong> \u0639\u0646 \u0634\u0647\u0631 <strong>${escapeHtmlServer(month)}</strong>${note ? "\u060C \u0628\u062E\u0635\u0648\u0635: " + escapeHtmlServer(note) : ""}.<br/><br/>\u0633\u064A\u0638\u0647\u0631 \u0647\u0630\u0627 \u0627\u0644\u0645\u0628\u0644\u063A \u062A\u0644\u0642\u0627\u0626\u064A\u064B\u0627 \u0641\u064A \u0641\u0627\u062A\u0648\u0631\u062A\u0643 \u0627\u0644\u0634\u0647\u0631\u064A\u0629 \u0627\u0644\u0642\u0627\u062F\u0645\u0629.`,
+      bodyText: (amount, month, note) => `\u0643\u0645\u0627 \u062A\u0645 \u0627\u0644\u0627\u062A\u0641\u0627\u0642\u060C \u0623ُ\u0636\u064A\u0641 \u0631\u0633\u0645 \u0625\u0636\u0627\u0641\u064A \u0644\u0645\u0631\u0629 \u0648\u0627\u062D\u062F\u0629 \u0628\u0642\u064A\u0645\u0629 \u20AC${amount} \u0639\u0646 \u0634\u0647\u0631 ${month}${note ? "\u060C \u0628\u062E\u0635\u0648\u0635: " + note : ""}.
+
+\u0633\u064A\u0638\u0647\u0631 \u0647\u0630\u0627 \u0627\u0644\u0645\u0628\u0644\u063A \u062A\u0644\u0642\u0627\u0626\u064A\u064B\u0627 \u0641\u064A \u0641\u0627\u062A\u0648\u0631\u062A\u0643 \u0627\u0644\u0634\u0647\u0631\u064A\u0629 \u0627\u0644\u0642\u0627\u062F\u0645\u0629.`,
+      button: "\u0641\u062A\u062D ANB FinAdmin Pro",
+      regards: "\u0645\u0639 \u0623\u0637\u064A\u0628 \u0627\u0644\u062A\u062D\u064A\u0627\u062A\u060C"
+    }
+  }
+};
+
+function formatMonthLabelFromYYYYMM(yyyyMm, lang) {
+  if (!yyyyMm || yyyyMm.indexOf("-") === -1) return yyyyMm || "";
+  const [y, m] = yyyyMm.split("-");
+  const names = MONTH_NAMES[lang] || MONTH_NAMES.nl;
+  const idx = parseInt(m, 10) - 1;
+  return (names[idx] || m) + " " + y;
+}
+
+// POST /client/send-notification — أدمن فقط. أنواع مدعومة حاليًا:
+// "contract_approved" (data: {monthlyPrice}) و "overage_charge"
+// (data: {amount, month, note}). لغة الإيميل تتبع تفضيل العميل المحفوظ.
+async function handleSendClientNotification(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== "admin") return json({ error: "Admin access required" }, 403, cors);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400, cors);
+  }
+  const { cid, type, data } = body || {};
+  if (!cid || !type) return json({ error: "cid and type are required" }, 400, cors);
+  if (!CLIENT_NOTIFICATION_CONTENT[type]) return json({ error: "unsupported_notification_type" }, 400, cors);
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: "Could not reach database" }, 502, cors);
+  const client = (cloud.payload.clients || []).find((c) => c && c.id === cid);
+  if (!client) return json({ error: "Client not found" }, 404, cors);
+  if (!client.email) return json({ error: "no_client_email" }, 400, cors);
+  if (!env.RESEND_API_KEY) return json({ error: "email_not_configured" }, 503, cors);
+  const lang = (client.preferredLang === "en" || client.preferredLang === "ar") ? client.preferredLang : "nl";
+  const c = CLIENT_NOTIFICATION_CONTENT[type][lang];
+  const name = escapeHtmlServer(client.contactPerson || client.name || "");
+  const namePlain = client.contactPerson || client.name || "";
+  let bodyHtmlInner, bodyTextInner;
+  if (type === "contract_approved") {
+    const price = (data && data.monthlyPrice != null) ? Number(data.monthlyPrice).toFixed(2) : "0.00";
+    bodyHtmlInner = `<p>${c.greeting(name)}</p><p>${c.body(price)}</p>`;
+    bodyTextInner = `${c.greeting(namePlain)}
+
+${c.bodyText(price)}`;
+  } else {
+    const amount = (data && data.amount != null) ? Number(data.amount).toFixed(2) : "0.00";
+    const monthLabel = formatMonthLabelFromYYYYMM(data && data.month, lang);
+    const note = (data && data.note) || "";
+    bodyHtmlInner = `<p>${c.greeting(name)}</p><p>${c.body(amount, monthLabel, note)}</p>`;
+    bodyTextInner = `${c.greeting(namePlain)}
+
+${c.bodyText(amount, monthLabel, note)}`;
+  }
+  const appUrl = "https://app.anbfinancial.nl";
+  const fullBodyHtml = bodyHtmlInner + `<table cellpadding="0" cellspacing="0" border="0" style="margin:20px 0"><tr><td bgcolor="#C89010" style="border-radius:6px"><a href="${appUrl}" style="display:inline-block;padding:12px 24px;font-size:13px;font-weight:bold;color:#0A2218;text-decoration:none;font-family:Arial,Helvetica,sans-serif">${c.button}</a></td></tr></table><p style="margin-top:8px">${c.regards}<br/>ANB Financial Services</p>`;
+  const fullBodyText = bodyTextInner + `
+
+${appUrl}
+
+${c.regards}
+ANB Financial Services`;
+  const emailResult = await sendResendEmail(env, {
+    to: client.email,
+    subject: c.subject,
+    html: wrapNotificationEmailHtml(lang, fullBodyHtml),
+    text: fullBodyText
+  });
+  if (!emailResult.ok) return json({ error: "email_send_failed", message: emailResult.error }, 502, cors);
+  return json({ ok: true }, 200, cors);
 }
