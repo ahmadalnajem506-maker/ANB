@@ -4934,6 +4934,13 @@ function confirmApplyOverageCharge(contractId,cid){
   logAudit('create','contract','Applied agreed overage charge of '+FMT(amount)+' for '+month+(note?' — '+note:''),cid);
   sv();closeModal();renderContent();
   toast('✓ '+(t('overage_charge_recorded')||'Overage charge recorded')+' — €'+amount.toFixed(2)+' ('+(t('will_appear_next_invoice')||'will appear on next month\u2019s invoice')+')');
+
+  // ⭐ إشعار العميل بالبريد بالرسم الإضافي المُطبَّق - بلغته المفضَّلة
+  fetch(API_BASE+'/client/send-notification',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
+    body:JSON.stringify({cid,type:'overage_charge',data:{amount,month,note}})
+  }).catch(()=>{/* الرسم سُجِّل بنجاح فعليًا - فشل إرسال إشعار البريد هنا ليس كارثيًا */});
 }
 function getContractServiceSummaryLines(packageId,hoursEnabled,cashierEnabled,hasEmployeesService,partnerCount,overageInfo){
   const pkg=SUBSCRIPTION_PACKAGES[packageId];
@@ -22070,15 +22077,25 @@ function approveAgreementInApp(agreementId){
     agreement.adminSignDate=TODAY();
     agreement.adminSignature=currentActorName();
 
+    let approvedContract=null;
     if(agreement.contractId){
       const con=(S.contracts||[]).find(c=>c.id===agreement.contractId);
-      if(con){con.status='active';con.signedDate=TODAY();}
+      if(con){con.status='active';con.signedDate=TODAY();approvedContract=con;}
     }
     const doc=(S.docs||[]).find(d=>d.agreementId===agreementId);
     if(doc)doc.status='active';
 
     sv();closeModal();renderApp();
     toast('✓ Agreement finalized — contract is now active');
+
+    // ⭐ إشعار العميل بالبريد أن عقده صار فعّالًا الآن - بلغته المفضَّلة
+    if(approvedContract){
+      fetch(API_BASE+'/client/send-notification',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
+        body:JSON.stringify({cid:agreement.cid,type:'contract_approved',data:{monthlyPrice:approvedContract.plan||0}})
+      }).catch(()=>{/* العقد فُعِّل بنجاح فعليًا - فشل إرسال إشعار البريد هنا ليس كارثيًا */});
+    }
   });
 }
 
