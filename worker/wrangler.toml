@@ -36,6 +36,20 @@ binding = "AI"
 [triggers]
 crons = ["0 3 * * *", "0 0 * * *", "0 7 * * *", "0 11 1 * *"]
 
+# ⭐ معالجة OCR بالخلفية (Cloudflare Queues) - رفع فواتير المصاريف بالجملة
+# (مثلاً بعد تذكير أول الشهر) بدل انتظار كل صورة على حدة قبل اختيار التالية.
+# ⚠️ يجب إنشاء الطابور نفسه أولًا قبل النشر (مرة واحدة فقط):
+#   npx wrangler queues create anb-ocr-queue
+[[queues.producers]]
+binding = "OCR_QUEUE"
+queue = "anb-ocr-queue"
+
+[[queues.consumers]]
+queue = "anb-ocr-queue"
+max_batch_size = 5
+max_batch_timeout = 10
+max_retries = 2
+
 # ⭐ بيئة Staging - موارد منفصلة تمامًا عن الإنتاج (D1/R2/KV مختلفة)، حتى لا
 # يلمس أي اختبار بيانات عملاء حقيقية أبدًا. تُنشَر عبر:
 #   npx wrangler deploy --env staging
