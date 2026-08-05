@@ -40,6 +40,9 @@ export default {
       if (url.pathname === "/push/vapid-public-key" && request.method === "GET") return await handlePushVapidKey(request, env, cors);
       if (url.pathname === "/push/subscribe" && request.method === "POST") return await handlePushSubscribe(request, env, cors);
       if (url.pathname === "/push/unsubscribe" && request.method === "POST") return await handlePushUnsubscribe(request, env, cors);
+      if (url.pathname === "/agreement/by-token" && request.method === "GET") return await handleAgreementByToken(request, env, cors, url);
+      if (url.pathname === "/agreement/sign-by-token" && request.method === "POST") return await handleAgreementSignByToken(request, env, cors);
+      if (url.pathname === "/agreement/send-signing-link" && request.method === "POST") return await handleSendSigningLink(request, env, cors);
       return json({ error: "Not found" }, 404, cors);
     } catch (err) {
       return json({ error: "Internal error", detail: String(err && err.message || err) }, 500, cors);
@@ -1425,4 +1428,197 @@ function corsHeaders(env) {
 }
 function json(obj, status, cors) {
   return new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json", ...cors } });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ANB AutoStack — Phase 1, Feature 1: Magic-Link Contract Signing
+   Lets a client review and sign their service agreement from an emailed
+   link, with no login required. Mirrors the existing in-app checkbox-based
+   e-signature flow (signAgreementInApp on the frontend) exactly, just
+   authenticated by a single-use token instead of a login session.
+   ══════════════════════════════════════════════════════════════════════ */
+
+// توليد توكن آمن تشفيريًا (32 بايت = 64 حرف hex) — أقوى بكثير من UID()+UID()
+// المُولَّد بالواجهة الأمامية أصلًا (Math.random، غير آمن تشفيريًا)؛ يُستبدَل
+// بهذا التوكن الجديد في كل مرة يُرسَل فيها رابط التوقيع، فتُلغى صلاحية أي
+// رابط سابق تلقائيًا عند إعادة الإرسال
+function generateSecureToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return bufToHex(bytes);
+}
+
+function escapeHtmlServer(str) {
+  return String(str == null ? "" : str)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+async function sendResendEmail(env, { to, subject, html, text, from }) {
+  if (!env.RESEND_API_KEY) return { ok: false, error: "email_not_configured" };
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + env.RESEND_API_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: from || "ANB Financial Services <info@anbfinancial.nl>",
+        to: [to],
+        subject,
+        html,
+        text
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: (data && (data.message || data.name)) || "send_failed" };
+    return { ok: true, id: data.id };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  }
+}
+
+function buildSigningEmailHtml(client, signUrl) {
+  const name = escapeHtmlServer(client.contactPerson || client.name || "");
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f4f4"><tr><td align="center" style="padding:32px 16px">
+<table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="border-radius:8px;overflow:hidden">
+<tr><td bgcolor="#0A2218" style="padding:24px;text-align:center">
+<span style="font-size:20px;font-weight:bold;color:#C89010;font-family:Arial,Helvetica,sans-serif">ANB Financial Services</span>
+</td></tr>
+<tr><td style="padding:32px 28px;font-size:14px;line-height:1.6;color:#222222;font-family:Arial,Helvetica,sans-serif">
+<p>Dear ${name},</p>
+<p>Your service agreement with <strong>ANB Financial Services</strong> is ready for review and signature.</p>
+<p>Please click the button below to review the contract and sign electronically &mdash; no login required.</p>
+<table cellpadding="0" cellspacing="0" border="0" style="margin:24px 0"><tr><td bgcolor="#C89010" style="border-radius:6px">
+<a href="${signUrl}" style="display:inline-block;padding:14px 28px;font-size:14px;font-weight:bold;color:#0A2218;text-decoration:none;font-family:Arial,Helvetica,sans-serif">Review &amp; Sign Agreement</a>
+</td></tr></table>
+<p style="font-size:12px;color:#777777">This link is valid for 7 days and can only be used once. If you did not expect this email, please contact us at info@anbfinancial.nl.</p>
+<p style="margin-top:24px">Kind regards,<br/>ANB Financial Services</p>
+</td></tr>
+<tr><td bgcolor="#f4f4f4" style="padding:16px;text-align:center;font-size:11px;color:#999999;font-family:Arial,Helvetica,sans-serif">ANB Financial Services &middot; anbfinancial.nl</td></tr>
+</table></td></tr></table>
+</body></html>`;
+}
+
+// GET /agreement/by-token?token=... — عام بلا أي مصادقة (التوكن نفسه هو صك الدخول)
+// يُعيد فقط لقطة بيانات العميل اللازمة لعرض نص العقد، لا شيء آخر من قاعدة البيانات
+async function handleAgreementByToken(request, env, cors, url) {
+  const token = url.searchParams.get("token");
+  if (!token) return json({ error: "Missing token" }, 400, cors);
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: "Could not reach database" }, 502, cors);
+  const agreement = (cloud.payload.serviceAgreements || []).find((a) => a && a.token === token);
+  if (!agreement) return json({ error: "invalid_token" }, 404, cors);
+  if (["client_signed", "active", "rejected", "client_rejected"].includes(agreement.status)) {
+    return json({ status: agreement.status, alreadyResolved: true }, 200, cors);
+  }
+  if (!agreement.tokenExpiresAt || Date.now() > agreement.tokenExpiresAt) {
+    return json({ error: "expired" }, 410, cors);
+  }
+  return json({ status: agreement.status, clientData: agreement.clientData }, 200, cors);
+}
+
+// POST /agreement/sign-by-token — عام بلا أي مصادقة، نفس منطق signAgreementInApp
+// بالضبط (checkbox-based e-signature) لكن عبر رابط بريد بدل الجلسة المسجَّلة
+async function handleAgreementSignByToken(request, env, cors) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400, cors);
+  }
+  const { token, documentHash } = body || {};
+  if (!token) return json({ error: "Missing token" }, 400, cors);
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: "Could not reach database" }, 502, cors);
+  const agreements = cloud.payload.serviceAgreements || [];
+  const idx = agreements.findIndex((a) => a && a.token === token);
+  if (idx === -1) return json({ error: "invalid_token" }, 404, cors);
+  const agreement = agreements[idx];
+  if (["client_signed", "active", "rejected", "client_rejected"].includes(agreement.status)) {
+    return json({ error: "already_resolved", status: agreement.status }, 409, cors);
+  }
+  if (!agreement.tokenExpiresAt || Date.now() > agreement.tokenExpiresAt) {
+    return json({ error: "expired" }, 410, cors);
+  }
+  const client = agreement.clientData || {};
+  agreement.status = "client_signed";
+  agreement.clientSignDate = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  agreement.clientSignature = (client.contactPerson || "") + " (" + (client.email || "") + ")";
+  agreement.signatureAudit = {
+    documentHash: documentHash || "",
+    userAgent: request.headers.get("User-Agent") || "",
+    ip: request.headers.get("CF-Connecting-IP") || "",
+    signedAtIso: (/* @__PURE__ */ new Date()).toISOString(),
+    agreedTerms: true,
+    agreedPrivacy: true,
+    viaMagicLink: true
+  };
+  // ⚠️ إبطال فوري للتوكن بعد الاستخدام — رابط لمرة واحدة، حتى لو أُعيد فتحه لاحقًا
+  agreement.tokenExpiresAt = 0;
+  agreements[idx] = agreement;
+  const docs = cloud.payload.docs || [];
+  const docIdx = docs.findIndex((d) => d && d.agreementId === agreement.id);
+  if (docIdx !== -1) docs[docIdx].status = "client_signed";
+  await writeCloudPayload(env, { ...cloud.payload, serviceAgreements: agreements, docs });
+  // إشعار الأدمن بالبريد أن العميل وقّع — لإغلاق الحلقة دون تفقّد التطبيق يدويًا
+  // (لا نُفشل عملية التوقيع نفسها لو تعذّر إرسال هذا الإشعار فقط)
+  try {
+    await sendResendEmail(env, {
+      to: env.ADMIN_NOTIFY_EMAIL || "info@anbfinancial.nl",
+      subject: "\u2713 " + (client.name || "Client") + " signed their agreement",
+      html: `<p>${escapeHtmlServer(client.name || "")} has signed their service agreement via the emailed link.</p><p>Log in to ANB FinAdmin Pro to review and finalize.</p>`,
+      text: (client.name || "") + " has signed their service agreement via the emailed link. Log in to ANB FinAdmin Pro to review and finalize."
+    });
+  } catch (e) {
+  }
+  return json({ ok: true }, 200, cors);
+}
+
+// POST /agreement/send-signing-link — أدمن فقط، يُولِّد توكن جديد آمن (يُبطل أي
+// رابط سابق تلقائيًا) ويرسل إيميل التوقيع عبر Resend
+async function handleSendSigningLink(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== "admin") return json({ error: "Admin access required" }, 403, cors);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400, cors);
+  }
+  const { agreementId } = body || {};
+  if (!agreementId) return json({ error: "agreementId is required" }, 400, cors);
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: "Could not reach database" }, 502, cors);
+  const agreements = cloud.payload.serviceAgreements || [];
+  const idx = agreements.findIndex((a) => a && a.id === agreementId);
+  if (idx === -1) return json({ error: "Agreement not found" }, 404, cors);
+  if (!env.RESEND_API_KEY) return json({ error: "email_not_configured", message: "RESEND_API_KEY is not set on the Worker yet." }, 503, cors);
+  const agreement = agreements[idx];
+  const client = agreement.clientData || {};
+  if (!client.email) return json({ error: "no_client_email" }, 400, cors);
+  agreement.token = generateSecureToken();
+  agreement.tokenExpiresAt = Date.now() + 7 * 24 * 3600 * 1e3;
+  agreements[idx] = agreement;
+  await writeCloudPayload(env, { ...cloud.payload, serviceAgreements: agreements });
+  const signUrl = (env.APP_BASE_URL || "https://app.anbfinancial.nl") + "/?sign=" + agreement.token;
+  const emailResult = await sendResendEmail(env, {
+    to: client.email,
+    subject: "ANB Financial Services \u2014 Contract Ready for Your Signature",
+    html: buildSigningEmailHtml(client, signUrl),
+    text: `Dear ${client.contactPerson || client.name || ""},
+
+Your service agreement with ANB Financial Services is ready for review and signature.
+
+Open this link to review and sign: ${signUrl}
+
+This link is valid for 7 days and can only be used once.
+
+ANB Financial Services`
+  });
+  if (!emailResult.ok) return json({ error: "email_send_failed", message: emailResult.error }, 502, cors);
+  return json({ ok: true }, 200, cors);
 }
