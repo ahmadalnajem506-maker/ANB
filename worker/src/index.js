@@ -44,6 +44,8 @@ export default {
       if (url.pathname === "/agreement/sign-by-token" && request.method === "POST") return await handleAgreementSignByToken(request, env, cors);
       if (url.pathname === "/agreement/send-signing-link" && request.method === "POST") return await handleSendSigningLink(request, env, cors);
       if (url.pathname === "/client/send-notification" && request.method === "POST") return await handleSendClientNotification(request, env, cors);
+      if (url.pathname === "/forgot-password" && request.method === "POST") return await handleForgotPassword(request, env, cors);
+      if (url.pathname === "/reset-password" && request.method === "POST") return await handleResetPassword(request, env, cors);
       return json({ error: "Not found" }, 404, cors);
     } catch (err) {
       return json({ error: "Internal error", detail: String(err && err.message || err) }, 500, cors);
@@ -2007,4 +2009,157 @@ ANB Financial Services`;
   });
   if (!emailResult.ok) return json({ error: "email_send_failed", message: emailResult.error }, 502, cors);
   return json({ ok: true }, 200, cors);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ANB AutoStack — Self-Service Password Reset (CLIENTS ONLY)
+   ⚠️ SECURITY DECISION (confirmed with Ahmad): this self-service reset-by-
+   email flow applies ONLY to client accounts. Admin accounts deliberately
+   keep the existing admin-assisted reset (Settings → Admins → Reset by
+   another admin) — admin accounts can see every client's financial data,
+   so a compromised admin inbox must not be enough on its own to take over
+   an admin account. Do NOT extend this flow to role === "admin".
+   ══════════════════════════════════════════════════════════════════════ */
+
+const PW_RESET_TTL_MS = 60 * 60 * 1e3;
+
+const PW_RESET_EMAIL_CONTENT = {
+  nl: {
+    subject: "ANB \u2014 Wachtwoord opnieuw instellen",
+    greeting: (name) => `Beste ${name},`,
+    body: "U heeft een verzoek gedaan om uw wachtwoord opnieuw in te stellen. Klik op onderstaande knop om een nieuw wachtwoord te kiezen.",
+    button: "Nieuw Wachtwoord Instellen",
+    validity: "Deze link is 1 uur geldig en kan slechts \u00E9\u00E9n keer worden gebruikt.",
+    ignore: "Heeft u dit niet aangevraagd? Dan kunt u deze e-mail veilig negeren \u2014 uw wachtwoord blijft ongewijzigd.",
+    regards: "Met vriendelijke groet,"
+  },
+  en: {
+    subject: "ANB \u2014 Reset Your Password",
+    greeting: (name) => `Dear ${name},`,
+    body: "You requested to reset your password. Click the button below to choose a new one.",
+    button: "Reset Password",
+    validity: "This link is valid for 1 hour and can only be used once.",
+    ignore: "Didn't request this? You can safely ignore this email \u2014 your password will remain unchanged.",
+    regards: "Kind regards,"
+  },
+  ar: {
+    subject: "ANB \u2014 \u0625\u0639\u0627\u062F\u0629 \u062A\u0639\u064A\u064A\u0646 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631",
+    greeting: (name) => `\u0639\u0632\u064A\u0632\u064A/\u0639\u0632\u064A\u0632\u062A\u064A ${name}\u060C`,
+    body: "لقد طلبت إعادة تعيين كلمة المرور الخاصة بك. اضغط على الزر أدناه لاختيار كلمة مرور جديدة.",
+    button: "\u0625\u0639\u0627\u062F\u0629 \u062A\u0639\u064A\u064A\u0646 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631",
+    validity: "\u0647\u0630\u0627 \u0627\u0644\u0631\u0627\u0628\u0637 \u0635\u0627\u0644\u062D \u0644\u0645\u062F\u0629 \u0633\u0627\u0639\u0629 \u0648\u0627\u062D\u062F\u0629 \u0648\u064A\u0645\u0643\u0646 \u0627\u0633\u062A\u062E\u062F\u0627\u0645\u0647 \u0645\u0631\u0629 \u0648\u0627\u062D\u062F\u0629 \u0641\u0642\u0637.",
+    ignore: "\u0644\u0645 \u062A\u0637\u0644\u0628 \u0630\u0644\u0643\u061F \u064A\u0645\u0643\u0646\u0643 \u062A\u062C\u0627\u0647\u0644 \u0647\u0630\u0627 \u0627\u0644\u0628\u0631\u064A\u062F \u0628\u0623\u0645\u0627\u0646 \u2014 \u0633\u062A\u0628\u0642\u0649 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u0643\u0645\u0627 \u0647\u064A.",
+    regards: "\u0645\u0639 \u0623\u0637\u064A\u0628 \u0627\u0644\u062A\u062D\u064A\u0627\u062A\u060C"
+  }
+};
+
+function buildPasswordResetEmail(client, resetUrl, lang) {
+  const c = PW_RESET_EMAIL_CONTENT[lang] || PW_RESET_EMAIL_CONTENT.nl;
+  const name = client.contactPerson || client.name || "";
+  const bodyHtml = `<p>${c.greeting(escapeHtmlServer(name))}</p><p>${c.body}</p>`
+    + `<table cellpadding="0" cellspacing="0" border="0" style="margin:20px 0"><tr><td bgcolor="#C89010" style="border-radius:6px"><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;font-size:13px;font-weight:bold;color:#0A2218;text-decoration:none;font-family:Arial,Helvetica,sans-serif">${c.button}</a></td></tr></table>`
+    + `<p style="font-size:12px;color:#777777">${c.validity}</p>`
+    + `<p style="font-size:12px;color:#777777">${c.ignore}</p>`
+    + `<p style="margin-top:16px">${c.regards}<br/>ANB Financial Services</p>`;
+  const html = wrapNotificationEmailHtml(lang, bodyHtml);
+  const text = `${c.greeting(name)}
+
+${c.body}
+
+${resetUrl}
+
+${c.validity}
+${c.ignore}
+
+${c.regards}
+ANB Financial Services`;
+  return { subject: c.subject, html, text };
+}
+
+// POST /forgot-password — عام بلا مصادقة، للعملاء فقط (الأدمن مستبعَد عمدًا،
+// راجع الملاحظة الأمنية أعلى هذا القسم). يُرجع دائمًا نفس الرد الناجح
+// العام بغض النظر عن وجود الحساب من عدمه، لمنع اكتشاف عناوين بريد مسجَّلة
+// (user enumeration) - الفرق الوحيد هو Rate Limiting لمنع إساءة الاستخدام
+async function handleForgotPassword(request, env, cors) {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const bucketKey = `forgot-password:${ip}`;
+  if (await isRateLimited(env, bucketKey)) return json({ error: "Too many attempts, slow down" }, 429, cors);
+  await registerAttempt(env, bucketKey);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400, cors);
+  }
+  const { identifier } = body || {};
+  const genericResponse = { ok: true, message: "If an account with that email exists, a reset link has been sent." };
+  if (!identifier) return json(genericResponse, 200, cors);
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json(genericResponse, 200, cors);
+  const id = identifier.trim().toLowerCase();
+  const clients = cloud.payload.clients || [];
+  const idx = clients.findIndex(
+    (a) => a && ((a.email && a.email.toLowerCase() === id) || (a.phone && (a.phone === identifier.trim() || a.phone.replace(/\s/g, "") === identifier.trim().replace(/\s/g, ""))))
+  );
+  // ⚠️ نتجاهل صمتًا: حساب غير موجود، حساب بلا بريد إلكتروني، أو حساب
+  // مُعلَّق/ملغى - الرد الناجح العام يبقى كما هو بكل الحالات
+  if (idx === -1) return json(genericResponse, 200, cors);
+  const client = clients[idx];
+  if (!client.email) return json(genericResponse, 200, cors);
+  if (client.accountStatus === "suspended" || client.accountStatus === "cancelled") return json(genericResponse, 200, cors);
+  if (!env.RESEND_API_KEY) return json(genericResponse, 200, cors);
+  const resetToken = generateSecureToken();
+  client.pwResetToken = resetToken;
+  client.pwResetExpiresAt = Date.now() + PW_RESET_TTL_MS;
+  clients[idx] = client;
+  await writeCloudPayload(env, { ...cloud.payload, clients });
+  const lang = (client.preferredLang === "en" || client.preferredLang === "ar") ? client.preferredLang : "nl";
+  const resetUrl = (env.APP_BASE_URL || "https://app.anbfinancial.nl") + "/?reset=" + resetToken;
+  const emailContent = buildPasswordResetEmail(client, resetUrl, lang);
+  try {
+    await sendResendEmail(env, { to: client.email, subject: emailContent.subject, html: emailContent.html, text: emailContent.text });
+  } catch (e) {
+  }
+  return json(genericResponse, 200, cors);
+}
+
+// POST /reset-password — عام بلا مصادقة (التوكن نفسه هو صك الدخول)، للعملاء
+// فقط. ينشئ التوكن نفسه صلاحية دخول جديدة فورًا بعد نجاح إعادة التعيين
+// (تسجيل دخول تلقائي)، بنفس آلية login/verify-2fa الحالية بالضبط
+async function handleResetPassword(request, env, cors) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400, cors);
+  }
+  const { token, newPassword } = body || {};
+  if (!token || !newPassword) return json({ error: "token and newPassword are required" }, 400, cors);
+  if (newPassword.length < 6) return json({ error: "Password must be at least 6 characters" }, 400, cors);
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: "Could not reach database" }, 502, cors);
+  const clients = cloud.payload.clients || [];
+  const idx = clients.findIndex((a) => a && a.pwResetToken === token);
+  if (idx === -1) return json({ error: "invalid_token" }, 404, cors);
+  const client = clients[idx];
+  if (!client.pwResetExpiresAt || Date.now() > client.pwResetExpiresAt) return json({ error: "expired" }, 410, cors);
+  const rec = await makePasswordRecord(newPassword);
+  client.passwordSalt = rec.passwordSalt;
+  client.passwordHash = rec.passwordHash;
+  client.passwordIterations = rec.passwordIterations;
+  delete client.password;
+  delete client.pwCustom;
+  delete client.pw;
+  client.pwSet = true;
+  client.mustChangePassword = false;
+  client.pwv = generatePwv();
+  clearFailedAttempts(client);
+  // ⚠️ إبطال فوري لتوكن إعادة التعيين بعد الاستخدام - رابط لمرة واحدة
+  client.pwResetToken = null;
+  client.pwResetExpiresAt = 0;
+  clients[idx] = client;
+  await writeCloudPayload(env, { ...cloud.payload, clients });
+  const exp = Date.now() + TOKEN_TTL_MS;
+  const loginToken = await signToken({ at: "client", aid: client.id, exp, pwv: client.pwv }, env.R2_HMAC_SECRET);
+  return json({ ok: true, token: loginToken, exp, clientId: client.id }, 200, cors);
 }
