@@ -1478,28 +1478,100 @@ async function sendResendEmail(env, { to, subject, html, text, from }) {
   }
 }
 
-function buildSigningEmailHtml(client, signUrl) {
+// محتوى الإيميل بثلاث لغات - النص القانوني للعقد نفسه يبقى دائمًا بالهولندية
+// (كما هو معتاد بعقود الخدمات الهولندية)، لكن نص الإيميل الحامل للرابط يُكتب
+// بلغة العميل المفضَّلة المحفوظة على حسابه (client.preferredLang)، مع تنويه
+// صريح بكل لغة أن نص العقد نفسه هولندي دائمًا بغض النظر عن هذا الإعداد
+const SIGNING_EMAIL_CONTENT = {
+  nl: {
+    subject: "ANB Financial Services \u2014 Uw contract is klaar voor ondertekening",
+    greeting: (name) => `Beste ${name},`,
+    introHtml: "Uw dienstverleningsovereenkomst met <strong>ANB Financial Services</strong> is klaar voor beoordeling en ondertekening.",
+    introText: "Uw dienstverleningsovereenkomst met ANB Financial Services is klaar voor beoordeling en ondertekening.",
+    instruction: "Klik op onderstaande knop om het contract te bekijken en elektronisch te ondertekenen \u2014 geen inloggen nodig.",
+    instructionText: "Open onderstaande link om het contract te bekijken en elektronisch te ondertekenen \u2014 geen inloggen nodig:",
+    button: "Bekijk & Onderteken Overeenkomst",
+    dutchNote: "Let op: de overeenkomst zelf is, zoals gebruikelijk bij Nederlandse dienstverleningscontracten, opgesteld in het Nederlands.",
+    validity: "Deze link is 7 dagen geldig en kan slechts \u00E9\u00E9n keer worden gebruikt.",
+    contact: "Als u deze e-mail niet verwachtte, neem dan contact met ons op via info@anbfinancial.nl.",
+    regards: "Met vriendelijke groet,",
+    dir: "ltr",
+    align: "left"
+  },
+  en: {
+    subject: "ANB Financial Services \u2014 Contract Ready for Your Signature",
+    greeting: (name) => `Dear ${name},`,
+    introHtml: "Your service agreement with <strong>ANB Financial Services</strong> is ready for review and signature.",
+    introText: "Your service agreement with ANB Financial Services is ready for review and signature.",
+    instruction: "Please click the button below to review the contract and sign electronically \u2014 no login required.",
+    instructionText: "Open the link below to review the contract and sign electronically \u2014 no login required:",
+    button: "Review & Sign Agreement",
+    dutchNote: "Please note: the agreement itself is written in Dutch, as is standard for Dutch service contracts.",
+    validity: "This link is valid for 7 days and can only be used once.",
+    contact: "If you did not expect this email, please contact us at info@anbfinancial.nl.",
+    regards: "Kind regards,",
+    dir: "ltr",
+    align: "left"
+  },
+  ar: {
+    subject: "ANB Financial Services \u2014 \u0639\u0642\u062F\u0643 \u062C\u0627\u0647\u0632 \u0644\u0644\u062A\u0648\u0642\u064A\u0639",
+    greeting: (name) => `\u0639\u0632\u064A\u0632\u064A/\u0639\u0632\u064A\u0632\u062A\u064A ${name}\u060C`,
+    introHtml: "\u0627\u062A\u0641\u0627\u0642\u064A\u0629 \u0627\u0644\u062E\u062F\u0645\u0629 \u0627\u0644\u062E\u0627\u0635\u0629 \u0628\u0643 \u0645\u0639 <strong>ANB Financial Services</strong> \u062C\u0627\u0647\u0632\u0629 \u0644\u0644\u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u0627\u0644\u062A\u0648\u0642\u064A\u0639.",
+    introText: "\u0627\u062A\u0641\u0627\u0642\u064A\u0629 \u0627\u0644\u062E\u062F\u0645\u0629 \u0627\u0644\u062E\u0627\u0635\u0629 \u0628\u0643 \u0645\u0639 ANB Financial Services \u062C\u0627\u0647\u0632\u0629 \u0644\u0644\u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u0627\u0644\u062A\u0648\u0642\u064A\u0639.",
+    instruction: "\u064A\u0631\u062C\u0649 \u0627\u0644\u0636\u063A\u0637 \u0639\u0644\u0649 \u0627\u0644\u0632\u0631 \u0623\u062F\u0646\u0627\u0647 \u0644\u0645\u0631\u0627\u062C\u0639\u0629 \u0627\u0644\u0639\u0642\u062F \u0648\u062A\u0648\u0642\u064A\u0639\u0647 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u064B\u0627 \u2014 \u0628\u0644\u0627 \u062D\u0627\u062C\u0629 \u0644\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644.",
+    instructionText: "\u0627\u0641\u062A\u062D \u0627\u0644\u0631\u0627\u0628\u0637 \u0623\u062F\u0646\u0627\u0647 \u0644\u0645\u0631\u0627\u062C\u0639\u0629 \u0627\u0644\u0639\u0642\u062F \u0648\u062A\u0648\u0642\u064A\u0639\u0647 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u064B\u0627 \u2014 \u0628\u0644\u0627 \u062D\u0627\u062C\u0629 \u0644\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644:",
+    button: "\u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u062A\u0648\u0642\u064A\u0639 \u0627\u0644\u0627\u062A\u0641\u0627\u0642\u064A\u0629",
+    dutchNote: "\u0645\u0644\u0627\u062D\u0638\u0629: \u0646\u0635 \u0627\u0644\u0639\u0642\u062F \u0646\u0641\u0633\u0647 \u0645\u0643\u062A\u0648\u0628 \u0628\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0647\u0648\u0644\u0646\u062F\u064A\u0629\u060C \u0643\u0645\u0627 \u0647\u0648 \u0645\u0639\u062A\u0627\u062F \u0641\u064A \u0639\u0642\u0648\u062F \u0627\u0644\u062E\u062F\u0645\u0627\u062A \u0627\u0644\u0647\u0648\u0644\u0646\u062F\u064A\u0629.",
+    validity: "\u0647\u0630\u0627 \u0627\u0644\u0631\u0627\u0628\u0637 \u0635\u0627\u0644\u062D \u0644\u0645\u062F\u0629 7 \u0623\u064A\u0627\u0645 \u0648\u064A\u0645\u0643\u0646 \u0627\u0633\u062A\u062E\u062F\u0627\u0645\u0647 \u0645\u0631\u0629 \u0648\u0627\u062D\u062F\u0629 \u0641\u0642\u0637.",
+    contact: "\u0625\u0630\u0627 \u0644\u0645 \u062A\u0643\u0646 \u062A\u062A\u0648\u0642\u0639 \u0647\u0630\u0627 \u0627\u0644\u0628\u0631\u064A\u062F\u060C \u064A\u0631\u062C\u0649 \u0627\u0644\u062A\u0648\u0627\u0635\u0644 \u0645\u0639\u0646\u0627 \u0639\u0628\u0631 info@anbfinancial.nl.",
+    regards: "\u0645\u0639 \u0623\u0637\u064A\u0628 \u0627\u0644\u062A\u062D\u064A\u0627\u062A\u060C",
+    dir: "rtl",
+    align: "right"
+  }
+};
+
+function buildSigningEmailHtml(client, signUrl, lang) {
+  const c = SIGNING_EMAIL_CONTENT[lang] || SIGNING_EMAIL_CONTENT.nl;
   const name = escapeHtmlServer(client.contactPerson || client.name || "");
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif">
+  return `<!DOCTYPE html><html dir="${c.dir}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif" dir="${c.dir}">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f4f4"><tr><td align="center" style="padding:32px 16px">
 <table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="border-radius:8px;overflow:hidden">
 <tr><td bgcolor="#0A2218" style="padding:24px;text-align:center">
 <span style="font-size:20px;font-weight:bold;color:#C89010;font-family:Arial,Helvetica,sans-serif">ANB Financial Services</span>
 </td></tr>
-<tr><td style="padding:32px 28px;font-size:14px;line-height:1.6;color:#222222;font-family:Arial,Helvetica,sans-serif">
-<p>Dear ${name},</p>
-<p>Your service agreement with <strong>ANB Financial Services</strong> is ready for review and signature.</p>
-<p>Please click the button below to review the contract and sign electronically &mdash; no login required.</p>
+<tr><td style="padding:32px 28px;font-size:14px;line-height:1.8;color:#222222;font-family:Arial,Helvetica,sans-serif;text-align:${c.align}" dir="${c.dir}">
+<p>${c.greeting(name)}</p>
+<p>${c.introHtml}</p>
+<p>${c.instruction}</p>
 <table cellpadding="0" cellspacing="0" border="0" style="margin:24px 0"><tr><td bgcolor="#C89010" style="border-radius:6px">
-<a href="${signUrl}" style="display:inline-block;padding:14px 28px;font-size:14px;font-weight:bold;color:#0A2218;text-decoration:none;font-family:Arial,Helvetica,sans-serif">Review &amp; Sign Agreement</a>
+<a href="${signUrl}" style="display:inline-block;padding:14px 28px;font-size:14px;font-weight:bold;color:#0A2218;text-decoration:none;font-family:Arial,Helvetica,sans-serif">${c.button}</a>
 </td></tr></table>
-<p style="font-size:12px;color:#777777">This link is valid for 7 days and can only be used once. If you did not expect this email, please contact us at info@anbfinancial.nl.</p>
-<p style="margin-top:24px">Kind regards,<br/>ANB Financial Services</p>
+<p style="font-size:12.5px;color:#555555">${c.dutchNote}</p>
+<p style="font-size:12px;color:#777777">${c.validity} ${c.contact}</p>
+<p style="margin-top:24px">${c.regards}<br/>ANB Financial Services</p>
 </td></tr>
 <tr><td bgcolor="#f4f4f4" style="padding:16px;text-align:center;font-size:11px;color:#999999;font-family:Arial,Helvetica,sans-serif">ANB Financial Services &middot; anbfinancial.nl</td></tr>
 </table></td></tr></table>
 </body></html>`;
+}
+
+function buildSigningEmailText(client, signUrl, lang) {
+  const c = SIGNING_EMAIL_CONTENT[lang] || SIGNING_EMAIL_CONTENT.nl;
+  const name = client.contactPerson || client.name || "";
+  return `${c.greeting(name)}
+
+${c.introText}
+
+${c.instructionText}
+${signUrl}
+
+${c.dutchNote}
+
+${c.validity} ${c.contact}
+
+${c.regards}
+ANB Financial Services`;
 }
 
 // GET /agreement/by-token?token=... — عام بلا أي مصادقة (التوكن نفسه هو صك الدخول)
@@ -1605,19 +1677,16 @@ async function handleSendSigningLink(request, env, cors) {
   agreements[idx] = agreement;
   await writeCloudPayload(env, { ...cloud.payload, serviceAgreements: agreements });
   const signUrl = (env.APP_BASE_URL || "https://app.anbfinancial.nl") + "/?sign=" + agreement.token;
+  // ⭐ لغة الإيميل تتبع تفضيل العميل المحفوظ (preferredLang) - نص العقد نفسه
+  // يبقى دائمًا بالهولندية بغض النظر عن هذا الإعداد (يُذكَر ذلك صراحة داخل
+  // نص الإيميل بكل لغة أيضًا)
+  const lang = (client.preferredLang === "en" || client.preferredLang === "ar") ? client.preferredLang : "nl";
+  const emailContent = SIGNING_EMAIL_CONTENT[lang];
   const emailResult = await sendResendEmail(env, {
     to: client.email,
-    subject: "ANB Financial Services \u2014 Contract Ready for Your Signature",
-    html: buildSigningEmailHtml(client, signUrl),
-    text: `Dear ${client.contactPerson || client.name || ""},
-
-Your service agreement with ANB Financial Services is ready for review and signature.
-
-Open this link to review and sign: ${signUrl}
-
-This link is valid for 7 days and can only be used once.
-
-ANB Financial Services`
+    subject: emailContent.subject,
+    html: buildSigningEmailHtml(client, signUrl, lang),
+    text: buildSigningEmailText(client, signUrl, lang)
   });
   if (!emailResult.ok) return json({ error: "email_send_failed", message: emailResult.error }, 502, cors);
   return json({ ok: true }, 200, cors);
