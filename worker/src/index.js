@@ -1003,6 +1003,17 @@ async function handleSyncPost(request, env, cors) {
     if (!existingAccount) return incomingAccount;
     return { ...incomingAccount, passwordHash: existingAccount.passwordHash, passwordSalt: existingAccount.passwordSalt, pwv: existingAccount.pwv };
   }
+  // إصلاح: منع مزامنة العميل/الأدمن القديمة محلياً من مسح توكن رابط
+  // التوقيع (token/tokenExpiresAt) الذي يضبطه الخادم في handleSendSigningLink -
+  // نفس مبدأ حماية passwordHash أعلاه بالضبط.
+  function mergeAgreementTokenFields(existingList, incomingList) {
+    return (incomingList || []).map((incomingItem) => {
+      if (!incomingItem || incomingItem.id == null) return incomingItem;
+      const existingItem = (existingList || []).find((a) => a && a.id === incomingItem.id);
+      if (!existingItem) return incomingItem;
+      return { ...incomingItem, token: existingItem.token, tokenExpiresAt: existingItem.tokenExpiresAt };
+    });
+  }
   if (role === "admin") {
     Object.keys(incomingPayload).forEach((key) => {
       if (key === "clients" || key === "admins") {
@@ -1019,6 +1030,9 @@ async function handleSyncPost(request, env, cors) {
         merged[key] = mergeAppendOnlyArray(existingPayload[key], incomingPayload[key], null);
       } else if (key === "settings") {
         merged[key] = incomingPayload[key];
+      } else if (key === "serviceAgreements") {
+        const preserved = mergeAgreementTokenFields(existingPayload[key], incomingPayload[key]);
+        merged[key] = mergeArrayByIdUpsert(existingPayload[key], preserved);
       } else {
         merged[key] = mergeArrayByIdUpsert(existingPayload[key], incomingPayload[key]);
       }
@@ -1040,7 +1054,10 @@ async function handleSyncPost(request, env, cors) {
         merged[key] = mergeAppendOnlyArray(existingPayload[key], incomingPayload[key], aid);
         return;
       }
-      const { allowed, blocked } = enforcePeriodLockOnClientArray(key, existingPayload[key], incomingPayload[key], aid, existingPayload.yearClosings);
+      const incomingForKey = key === "serviceAgreements"
+        ? mergeAgreementTokenFields(existingPayload[key], incomingPayload[key])
+        : incomingPayload[key];
+      const { allowed, blocked } = enforcePeriodLockOnClientArray(key, existingPayload[key], incomingForKey, aid, existingPayload.yearClosings);
       blocked.forEach((item) => blockedByPeriodLock.push({ key, id: item.id }));
       merged[key] = mergeClientScopedArray(existingPayload[key], allowed, aid);
     });
