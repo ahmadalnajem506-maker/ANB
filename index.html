@@ -6921,9 +6921,8 @@ function rClientsLis(el){
     <select id="plan-filter" style="flex:1;min-width:110px;padding:9px 10px;border:1px solid var(--gr2);border-radius:8px;font-size:12.5px;background:var(--white);color:var(--t1);cursor:pointer"
       onchange="filterClients(document.getElementById('client-search').value)">
       <option value="">All Plans</option>
-      <option value="100">Basic</option>
-      <option value="150">Plus</option>
-      <option value="200">Pro</option>
+      <option value="compleet">Complete</option>
+      <option value="compleetAdvies">Complete+</option>
       <option value="none">${t('no_subscription')||'No subscription'}</option>
     </select>
     <select id="contract-status-filter" style="flex:1;min-width:110px;padding:9px 10px;border:1px solid var(--gr2);border-radius:8px;font-size:12.5px;background:var(--white);color:var(--t1);cursor:pointer"
@@ -6985,8 +6984,12 @@ function renderClientsList(searchTerm){
   const filtered=S.clients.filter(c=>{
     if(c.deleted||c.isANBSelf)return false;
     const matchesSearch=term===''||(c.name||'').toLowerCase().includes(term)||(c.email||'').toLowerCase().includes(term)||(c.phone||'').includes(term);
+    // ⚠️ إصلاح: الفلترة كانت تقارن السعر الثابت (c.monthlyFee) بأرقام باقات
+    // قديمة (100/150/200) لم تعد موجودة - الآن نقارن معرّف الباقة الفعلي
+    // (compleet/compleetAdvies) من عقد العميل الحالي مباشرة.
+    const clientCon=(S.contracts||[]).find(x=>x.cid===c.id&&!x.deleted);
     const matchesPlan=planFilter===''||
-      (planFilter==='none'?!(parseInt(c.monthlyFee)>0):parseInt(c.monthlyFee)===parseInt(planFilter));
+      (planFilter==='none'?!clientCon:clientCon?.subscriptionPackage===planFilter);
     return matchesSearch&&matchesPlan&&matchesContractStatus(c);
   });
   
@@ -6998,32 +7001,20 @@ function renderClientsList(searchTerm){
     return;
   }
   
-  // ألوان الباقات - محسّنة وأكثر تمييزاً
+  // ألوان الباقات - مبنية على معرّفات الباقات الفعلية (SUBSCRIPTION_PACKAGES)
   const planColors={
-    'Basic':'#0A2218',
-    'Plus':'#4da876',
-    'Pro':'#C7A876',
-    100:'#0A2218',
-    150:'#4da876',
-    200:'#C7A876'
+    compleet:'#0A2218',
+    compleetAdvies:'#4da876'
   };
   
   const planBgColors={
-    'Basic':'#E8F4F0',    // تفاحي أخضر فاتح
-    'Plus':'#E0F5ED',    // نعناعي فاتح
-    'Pro':'#FDF8EC',     // بنفسجي فاتح
-    100:'#E8F4F0',
-    150:'#E0F5ED',
-    200:'#FDF8EC'
+    compleet:'#E8F4F0',    // تفاحي أخضر فاتح
+    compleetAdvies:'#E0F5ED'    // نعناعي فاتح
   };
   
   const planBorderColors={
-    'Basic':'#2d7a4f',    // أخضر متوسط
-    'Plus':'#3FA384',    // أخضر ناعم متوسط
-    'Pro':'#B08D5A',     // بنفسجي متوسط
-    100:'#2d7a4f',
-    150:'#3FA384',
-    200:'#B08D5A'
+    compleet:'#2d7a4f',    // أخضر متوسط
+    compleetAdvies:'#3FA384'    // أخضر ناعم متوسط
   };
   
   container.innerHTML=sorted.map(c=>{
@@ -7044,16 +7035,20 @@ function renderClientsList(searchTerm){
       ?{icon:'🔔',label:t('needs_renewal')||'Needs Renewal',bg:'#FDF8EC',color:'#8a6410'}
       :null;
 
-    // نوع الباقة
-    const planNames={100:'Basic',150:'Plus',200:'Pro'};
-    const monthlyFeeInt=parseInt(c.monthlyFee)||0;
-    const hasSubscription=monthlyFeeInt>0;
-    const isExpired=hasSubscription&&c.planExpiry&&new Date(c.planExpiry)<new Date(new Date().toDateString());
+    // نوع الباقة - يُشتق الآن من باقة عقد العميل الفعلية (SUBSCRIPTION_PACKAGES)
+    // بدل جدول أسعار قديم (Basic/Plus/Pro عند 100/150/200) لم يعد يطابق
+    // النظام الحالي أبدًا - الأسعار الحقيقية تُحسب ديناميكيًا من الباقة +
+    // الإضافات + رسوم الشركاء، فنادرًا ما تطابق رقمًا ثابتًا، ما كان يجعل كل
+    // عميل يظهر بباقة "Basic" افتراضيًا بغض النظر عن باقته الحقيقية.
+    const pkgInfo=clientContract?.subscriptionPackage?SUBSCRIPTION_PACKAGES[clientContract.subscriptionPackage]:null;
+    const hasSubscription=!!clientContract&&clientContract.status!=='cancelled';
+    const isExpired=contractNeedsRenewal;
+    const planKey=clientContract?.subscriptionPackage||'';
     const planType=!hasSubscription?(t('no_subscription')||'No subscription'):
-      isExpired?(t('expired')||'Expired'):(planNames[monthlyFeeInt]||'Basic');
-    const planColor=isExpired?'#7A4A00':hasSubscription?(planColors[monthlyFeeInt]||'#0A2218'):'#888070';
-    const planBg=isExpired?'#FEF3E2':hasSubscription?(planBgColors[monthlyFeeInt]||'#E8F4F0'):'#F4F2EC';
-    const planBorder=isExpired?'var(--red)':hasSubscription?(planBorderColors[monthlyFeeInt]||'#2d7a4f'):'#C4C0B0';
+      isExpired?(t('expired')||'Expired'):(pkgInfo?.name||'—');
+    const planColor=isExpired?'#7A4A00':hasSubscription?(planColors[planKey]||'#0A2218'):'#888070';
+    const planBg=isExpired?'#FEF3E2':hasSubscription?(planBgColors[planKey]||'#E8F4F0'):'#F4F2EC';
+    const planBorder=isExpired?'var(--red)':hasSubscription?(planBorderColors[planKey]||'#2d7a4f'):'#C4C0B0';
 
     return `
     <div onclick="selClient('${c.id}')" style="padding:10px 12px;background:var(--white);border:1px solid var(--gr2);border-left:3px solid ${planBorder};border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .15s ease;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,0.05)"
@@ -22749,7 +22744,7 @@ function _magicSignShell(innerHtml){
         <div style="text-align:center;margin-bottom:20px">
           <span style="font-size:22px;font-weight:800;color:#C89010">ANB Financial Services</span>
         </div>
-        <div style="background:var(--white,#fff);border-radius:10px;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,0.3)">
+        <div id="magic-sign-card" style="background:var(--white,#fff);border-radius:10px;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,0.3)">
           ${innerHtml}
         </div>
       </div>
@@ -22759,7 +22754,7 @@ function _magicSignShell(innerHtml){
 
 async function renderMagicLinkSignScreen(token){
   _magicSignShell(`<div style="text-align:center;padding:30px 0;color:#666;font-size:13px">⏳ Loading your agreement…</div>`);
-  const shellBody=()=>document.querySelector('#magic-sign-page > div > div');
+  const shellBody=()=>document.getElementById('magic-sign-card');
   let data;
   try{
     const res=await fetch(API_BASE+'/agreement/by-token?token='+encodeURIComponent(token));
@@ -22798,9 +22793,49 @@ async function renderMagicLinkSignScreen(token){
       <span>I consent to the processing of my data as described (GDPR)</span>
     </label>
     <div id="ml-error" style="display:none;color:#c0392b;font-size:12px;margin-bottom:10px"></div>
-    <button id="ml-sign-btn" class="btn btn-success" style="width:100%;padding:12px;font-size:13px" onclick="submitMagicLinkSignature('${token.replace(/'/g,'')}')">✓ Confirm &amp; Sign Agreement</button>
+    <div id="ml-changes-form" style="display:none;margin-bottom:14px;padding:12px;background:#f7f7f5;border-radius:6px">
+      <div style="margin-bottom:8px;font-size:11px;color:#555;line-height:1.6">Describe what needs to change in this agreement. ANB will review your request.</div>
+      <textarea id="ml-changes-notes" placeholder="e.g. please change the monthly fee to..." style="width:100%;height:90px;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;resize:none;box-sizing:border-box"></textarea>
+      <button id="ml-changes-send-btn" class="btn btn-p btn-xs" style="width:100%;padding:10px;font-size:12.5px;margin-top:8px" onclick="submitMagicLinkChangeRequest('${token.replace(/'/g,'')}')">Send Request</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button id="ml-sign-btn" class="btn btn-success" style="flex:2;padding:12px;font-size:13px" onclick="submitMagicLinkSignature('${token.replace(/'/g,'')}')">✓ Confirm &amp; Sign Agreement</button>
+      <button id="ml-request-changes-btn" class="btn" style="flex:1;padding:12px;font-size:12.5px;background:#fff;color:#0A2218;border:1.5px solid #0A2218" onclick="toggleMagicLinkChangesForm()">✎ Request Changes</button>
+    </div>
     <div style="text-align:center;margin-top:12px;font-size:10.5px;color:#999">This is a legally binding electronic signature under eIDAS. Your IP address and timestamp will be recorded as evidence.</div>
   `;
+}
+
+function toggleMagicLinkChangesForm(){
+  const form=document.getElementById('ml-changes-form');
+  if(form)form.style.display=form.style.display==='none'?'block':'none';
+}
+
+async function submitMagicLinkChangeRequest(token){
+  const notes=document.getElementById('ml-changes-notes')?.value?.trim();
+  const errEl=document.getElementById('ml-error');
+  if(!notes){
+    if(errEl){errEl.textContent='❌ Please describe the requested changes.';errEl.style.display='block';}
+    return;
+  }
+  const btn=document.getElementById('ml-changes-send-btn');
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  try{
+    const res=await fetch(API_BASE+'/agreement/request-changes-by-token',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token,notes})
+    });
+    const result=await res.json();
+    if(!res.ok){
+      if(errEl){errEl.textContent='❌ '+(result.error==='expired'?'This link has expired or was already used.':'Something went wrong — please try again or contact ANB.');errEl.style.display='block';}
+      if(btn){btn.disabled=false;btn.textContent='Send Request';}
+      return;
+    }
+    document.getElementById('magic-sign-card').innerHTML=`<div style="text-align:center;padding:30px 0"><div style="font-size:48px;margin-bottom:14px">✎</div><div style="font-size:16px;font-weight:700;color:#0A2218;margin-bottom:8px">Change Request Sent</div><div style="font-size:13px;color:#555;line-height:1.6">Thank you — ANB Financial Services has received your request and will follow up with you shortly.</div></div>`;
+  }catch(e){
+    if(errEl){errEl.textContent='❌ Could not connect. Please check your internet connection and try again.';errEl.style.display='block';}
+    if(btn){btn.disabled=false;btn.textContent='Send Request';}
+  }
 }
 
 async function submitMagicLinkSignature(token){
@@ -22817,7 +22852,7 @@ async function submitMagicLinkSignature(token){
   // يربط التوقيع تقنيًا بالنسخة بالضبط من نص العقد التي عاينها الموقِّع
   let documentHash='';
   try{
-    const html=document.querySelector('#magic-sign-page > div > div').innerHTML;
+    const html=document.getElementById('magic-sign-card').innerHTML;
     const encoded=new TextEncoder().encode(html);
     const digest=await crypto.subtle.digest('SHA-256',encoded);
     documentHash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -22833,7 +22868,7 @@ async function submitMagicLinkSignature(token){
       if(btn){btn.disabled=false;btn.textContent='✓ Confirm & Sign Agreement';}
       return;
     }
-    const shellBody=document.querySelector('#magic-sign-page > div > div');
+    const shellBody=document.getElementById('magic-sign-card');
     shellBody.innerHTML=`<div style="text-align:center;padding:30px 0"><div style="font-size:48px;margin-bottom:14px">🎉</div><div style="font-size:16px;font-weight:700;color:#0A2218;margin-bottom:8px">Agreement Signed Successfully!</div><div style="font-size:13px;color:#555;line-height:1.6">Thank you — ANB Financial Services has been notified and will finalize your account shortly.</div></div>`;
     if(typeof celebrate==='function'){try{celebrate();}catch(e){}}
   }catch(e){
