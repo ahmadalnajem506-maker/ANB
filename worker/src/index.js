@@ -42,6 +42,7 @@ export default {
       if (url.pathname === "/push/unsubscribe" && request.method === "POST") return await handlePushUnsubscribe(request, env, cors);
       if (url.pathname === "/agreement/by-token" && request.method === "GET") return await handleAgreementByToken(request, env, cors, url);
       if (url.pathname === "/agreement/sign-by-token" && request.method === "POST") return await handleAgreementSignByToken(request, env, cors);
+      if (url.pathname === "/agreement/request-changes-by-token" && request.method === "POST") return await handleAgreementRequestChangesByToken(request, env, cors);
       if (url.pathname === "/agreement/send-signing-link" && request.method === "POST") return await handleSendSigningLink(request, env, cors);
       if (url.pathname === "/client/send-notification" && request.method === "POST") return await handleSendClientNotification(request, env, cors);
       if (url.pathname === "/forgot-password" && request.method === "POST") return await handleForgotPassword(request, env, cors);
@@ -1003,15 +1004,30 @@ async function handleSyncPost(request, env, cors) {
     if (!existingAccount) return incomingAccount;
     return { ...incomingAccount, passwordHash: existingAccount.passwordHash, passwordSalt: existingAccount.passwordSalt, pwv: existingAccount.pwv };
   }
-  // إصلاح: منع مزامنة العميل/الأدمن القديمة محلياً من مسح توكن رابط
-  // التوقيع (token/tokenExpiresAt) الذي يضبطه الخادم في handleSendSigningLink -
-  // نفس مبدأ حماية passwordHash أعلاه بالضبط.
+  // إصلاح: منع مزامنة العميل/الأدمن القديمة محلياً من مسح نتيجة توقيع
+  // العميل عبر رابط التوكن (token/tokenExpiresAt/status/توقيعه) التي يضبطها
+  // الخادم في handleSendSigningLink و handleAgreementSignByToken و
+  // handleAgreementRequestChangesByToken - نفس مبدأ حماية passwordHash تمامًا.
+  // نسمح فقط بأن يتجاوزها قرار أدمن نهائي صريح (active/rejected) لأن هذا
+  // تقدّم شرعي في سير العمل، وليس نسخة قديمة عالقة في متصفح الأدمن.
+  var CLIENT_TOKEN_RESOLVED_STATUSES = ["client_signed", "changes_requested", "client_rejected"];
+  var ADMIN_FINAL_RESOLUTION_STATUSES = ["active", "rejected"];
   function mergeAgreementTokenFields(existingList, incomingList) {
     return (incomingList || []).map((incomingItem) => {
       if (!incomingItem || incomingItem.id == null) return incomingItem;
       const existingItem = (existingList || []).find((a) => a && a.id === incomingItem.id);
       if (!existingItem) return incomingItem;
-      return { ...incomingItem, token: existingItem.token, tokenExpiresAt: existingItem.tokenExpiresAt };
+      const merged = { ...incomingItem, token: existingItem.token, tokenExpiresAt: existingItem.tokenExpiresAt };
+      const serverResolvedViaToken = CLIENT_TOKEN_RESOLVED_STATUSES.includes(existingItem.status);
+      const incomingIsAdminFinalDecision = ADMIN_FINAL_RESOLUTION_STATUSES.includes(incomingItem.status);
+      if (serverResolvedViaToken && !incomingIsAdminFinalDecision) {
+        merged.status = existingItem.status;
+        merged.clientSignDate = existingItem.clientSignDate;
+        merged.clientSignature = existingItem.clientSignature;
+        merged.signatureAudit = existingItem.signatureAudit;
+        merged.clientNotes = existingItem.clientNotes;
+      }
+      return merged;
     });
   }
   if (role === "admin") {
@@ -1720,6 +1736,54 @@ async function handleAgreementSignByToken(request, env, cors) {
       subject: "\u2713 " + (client.name || "Client") + " signed their agreement",
       html: `<p>${escapeHtmlServer(client.name || "")} has signed their service agreement via the emailed link.</p><p>Log in to ANB FinAdmin Pro to review and finalize.</p>`,
       text: (client.name || "") + " has signed their service agreement via the emailed link. Log in to ANB FinAdmin Pro to review and finalize."
+    });
+  } catch (e) {
+  }
+  return json({ ok: true }, 200, cors);
+}
+
+// POST /agreement/request-changes-by-token — عام بلا أي مصادقة، نفس منطق
+// requestChangesInApp لكن عبر رابط بريد بدل الجلسة المسجَّلة (رابط لمرة واحدة
+// يُبطَل بعد الاستخدام مثل التوقيع تمامًا)
+async function handleAgreementRequestChangesByToken(request, env, cors) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400, cors);
+  }
+  const { token, notes } = body || {};
+  if (!token) return json({ error: "Missing token" }, 400, cors);
+  if (!notes || typeof notes !== "string" || !notes.trim()) return json({ error: "notes_required" }, 400, cors);
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: "Could not reach database" }, 502, cors);
+  const agreements = cloud.payload.serviceAgreements || [];
+  const idx = agreements.findIndex((a) => a && a.token === token);
+  if (idx === -1) return json({ error: "invalid_token" }, 404, cors);
+  const agreement = agreements[idx];
+  if (["client_signed", "active", "rejected", "client_rejected"].includes(agreement.status)) {
+    return json({ error: "already_resolved", status: agreement.status }, 409, cors);
+  }
+  if (!agreement.tokenExpiresAt || Date.now() > agreement.tokenExpiresAt) {
+    return json({ error: "expired" }, 410, cors);
+  }
+  const client = agreement.clientData || {};
+  agreement.status = "changes_requested";
+  agreement.clientNotes = notes.trim().slice(0, 2000);
+  agreement.clientSignDate = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  // \u26A0\uFE0F \u0625\u0628\u0637\u0627\u0644 \u0641\u0648\u0631\u064A \u0644\u0644\u062A\u0648\u0643\u0646 \u0628\u0639\u062F \u0627\u0644\u0627\u0633\u062A\u062E\u062F\u0627\u0645 - \u0646\u0641\u0633 \u0645\u0628\u062F\u0623 handleAgreementSignByToken
+  agreement.tokenExpiresAt = 0;
+  agreements[idx] = agreement;
+  const docs = cloud.payload.docs || [];
+  const docIdx = docs.findIndex((d) => d && d.agreementId === agreement.id);
+  if (docIdx !== -1) docs[docIdx].status = "changes_requested";
+  await writeCloudPayload(env, { ...cloud.payload, serviceAgreements: agreements, docs });
+  try {
+    await sendResendEmail(env, {
+      to: env.ADMIN_NOTIFY_EMAIL || "info@anbfinancial.nl",
+      subject: "\u270E " + (client.name || "Client") + " requested changes to their agreement",
+      html: `<p>${escapeHtmlServer(client.name || "")} requested changes to their service agreement via the emailed link:</p><blockquote style="margin:12px 0;padding:10px 14px;background:#f7f7f5;border-left:3px solid #C89010">${escapeHtmlServer(agreement.clientNotes)}</blockquote><p>Log in to ANB FinAdmin Pro to review and respond.</p>`,
+      text: (client.name || "") + " requested changes to their service agreement via the emailed link:\n\n" + agreement.clientNotes + "\n\nLog in to ANB FinAdmin Pro to review and respond."
     });
   } catch (e) {
   }
