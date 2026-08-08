@@ -45,6 +45,7 @@ export default {
       if (url.pathname === "/agreement/request-changes-by-token" && request.method === "POST") return await handleAgreementRequestChangesByToken(request, env, cors);
       if (url.pathname === "/agreement/send-signing-link" && request.method === "POST") return await handleSendSigningLink(request, env, cors);
       if (url.pathname === "/client/send-notification" && request.method === "POST") return await handleSendClientNotification(request, env, cors);
+      if (url.pathname === "/client/send-welcome-password-link" && request.method === "POST") return await handleSendWelcomePasswordLink(request, env, cors);
       if (url.pathname === "/forgot-password" && request.method === "POST") return await handleForgotPassword(request, env, cors);
       if (url.pathname === "/reset-password" && request.method === "POST") return await handleResetPassword(request, env, cors);
       if (url.pathname === "/expense/bulk-ocr-enqueue" && request.method === "POST") return await handleBulkOcrEnqueue(request, env, cors);
@@ -2158,6 +2159,100 @@ ANB Financial Services`;
    ══════════════════════════════════════════════════════════════════════ */
 
 const PW_RESET_TTL_MS = 60 * 60 * 1e3;
+// ⭐ صلاحية أطول لرابط "تعيين كلمة المرور لأول مرة" بعد الموافقة على العقد
+// (7 أيام، بنفس مدة رابط توقيع العقد) - بعكس إعادة تعيين كلمة مرور حساسة
+// أمنيًا يجب أن تنتهي سريعًا، هذا رابط ترحيبي قد لا يفتحه العميل فورًا
+const WELCOME_PW_TTL_MS = 7 * 24 * 3600 * 1e3;
+
+const WELCOME_PASSWORD_EMAIL_CONTENT = {
+  nl: {
+    subject: "ANB \u2014 Uw account is actief, stel uw wachtwoord in",
+    greeting: (name) => `Beste ${name},`,
+    body: "Uw dienstverleningsovereenkomst met ANB Financial Services is goedgekeurd en uw account is nu actief. Stel hieronder uw eigen wachtwoord in om voor het eerst in te loggen.",
+    button: "Wachtwoord Instellen & Inloggen",
+    validity: "Deze link is 7 dagen geldig en kan slechts \u00E9\u00E9n keer worden gebruikt.",
+    ignore: "Vragen? Neem contact met ons op via info@anbfinancial.nl.",
+    regards: "Met vriendelijke groet,"
+  },
+  en: {
+    subject: "ANB \u2014 Your account is active, set your password",
+    greeting: (name) => `Dear ${name},`,
+    body: "Your service agreement with ANB Financial Services has been approved and your account is now active. Set your own password below to log in for the first time.",
+    button: "Set Password & Log In",
+    validity: "This link is valid for 7 days and can only be used once.",
+    ignore: "Questions? Contact us at info@anbfinancial.nl.",
+    regards: "Kind regards,"
+  },
+  ar: {
+    subject: "ANB \u2014 حسابك أصبح فعّالاً، عيّن كلمة المرور",
+    greeting: (name) => `عزيزي/عزيزتي ${name}،`,
+    body: "تمت الموافقة على اتفاقية الخدمة الخاصة بك مع ANB Financial Services وأصبح حسابك فعّالاً الآن. عيّن كلمة المرور الخاصة بك أدناه لتسجيل الدخول لأول مرة.",
+    button: "تعيين كلمة المرور وتسجيل الدخول",
+    validity: "هذا الرابط صالح لمدة 7 أيام ويمكن استخدامه مرة واحدة فقط.",
+    ignore: "لديك أسئلة؟ تواصل معنا عبر info@anbfinancial.nl.",
+    regards: "مع أطيب التحيات،"
+  }
+};
+
+function buildWelcomePasswordEmail(client, setPwUrl, lang) {
+  const c = WELCOME_PASSWORD_EMAIL_CONTENT[lang] || WELCOME_PASSWORD_EMAIL_CONTENT.nl;
+  const name = client.contactPerson || client.name || "";
+  const bodyHtml = `<p>${c.greeting(escapeHtmlServer(name))}</p><p>${c.body}</p>`
+    + `<table cellpadding="0" cellspacing="0" border="0" style="margin:20px 0"><tr><td bgcolor="#C89010" style="border-radius:6px"><a href="${setPwUrl}" style="display:inline-block;padding:12px 24px;font-size:13px;font-weight:bold;color:#0A2218;text-decoration:none;font-family:Arial,Helvetica,sans-serif">${c.button}</a></td></tr></table>`
+    + `<p style="font-size:12px;color:#777777">${c.validity}</p>`
+    + `<p style="font-size:12px;color:#777777">${c.ignore}</p>`
+    + `<p style="margin-top:16px">${c.regards}<br/>ANB Financial Services</p>`;
+  const html = wrapNotificationEmailHtml(lang, bodyHtml);
+  const text = `${c.greeting(name)}
+
+${c.body}
+
+${setPwUrl}
+
+${c.validity}
+${c.ignore}
+
+${c.regards}
+ANB Financial Services`;
+  return { subject: c.subject, html, text };
+}
+
+// POST /client/send-welcome-password-link — أدمن فقط، يُستدعى تلقائيًا فور
+// الموافقة على عقد عميل جديد وتفعيله. يُعيد استخدام نفس بنية التوكن الخاصة
+// بـ pwResetToken/handleResetPassword بالكامل (بلا تكرار منطق) - فرق السياق
+// الوحيد هو صياغة البريد (ترحيب بدل استرجاع) ومدة الصلاحية الأطول.
+async function handleSendWelcomePasswordLink(request, env, cors) {
+  const auth = await requireValidToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, cors);
+  if (auth.payload.at !== "admin") return json({ error: "Admin access required" }, 403, cors);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400, cors);
+  }
+  const { cid } = body || {};
+  if (!cid) return json({ error: "cid is required" }, 400, cors);
+  const cloud = await fetchCloudPayload(env);
+  if (!cloud) return json({ error: "Could not reach database" }, 502, cors);
+  const clients = cloud.payload.clients || [];
+  const idx = clients.findIndex((c) => c && c.id === cid);
+  if (idx === -1) return json({ error: "Client not found" }, 404, cors);
+  const client = clients[idx];
+  if (!client.email) return json({ error: "no_client_email" }, 400, cors);
+  if (!env.RESEND_API_KEY) return json({ error: "email_not_configured" }, 503, cors);
+  const setPwToken = generateSecureToken();
+  client.pwResetToken = setPwToken;
+  client.pwResetExpiresAt = Date.now() + WELCOME_PW_TTL_MS;
+  clients[idx] = client;
+  await writeCloudPayload(env, { ...cloud.payload, clients });
+  const lang = (client.preferredLang === "en" || client.preferredLang === "ar") ? client.preferredLang : "nl";
+  const setPwUrl = (env.APP_BASE_URL || "https://app.anbfinancial.nl") + "/?reset=" + setPwToken;
+  const emailContent = buildWelcomePasswordEmail(client, setPwUrl, lang);
+  const emailResult = await sendResendEmail(env, { to: client.email, subject: emailContent.subject, html: emailContent.html, text: emailContent.text });
+  if (!emailResult.ok) return json({ error: "email_send_failed", message: emailResult.error }, 502, cors);
+  return json({ ok: true }, 200, cors);
+}
 
 const PW_RESET_EMAIL_CONTENT = {
   nl: {
