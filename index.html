@@ -22381,13 +22381,21 @@ function contractMonthsBetween(start,end){
 }
 
 // ── مراجعة/توقيع اتفاقية من داخل التطبيق مباشرة (بدون رابط بريد خارجي - المستخدم مسجّل دخوله أصلًا) ──
-function reviewAgreementDoc(docId){
+// ⚠️ إصلاح خلل حقيقي: كانت هذه الدالة تقرأ agreement.status من الحالة
+// المحلية المخزَّنة في المتصفح (S.serviceAgreements) مباشرة بلا أي تحديث -
+// فإذا وقّع العميل عبر رابط بريد ماجيك لينك (على جهاز/جلسة مختلفة تمامًا عن
+// جلسة الأدمن)، يستمر الأدمن برؤية الحالة القديمة (Pending Review) إلى أن
+// يُعاد تحميل التطبيق بالكامل يدويًا. الآن نسحب أحدث نسخة من الخادم أولًا
+// في كل مرة يُفتَح فيها عقد للمراجعة تحديدًا، لأنه مستند حسّاس/قانوني يستحق
+// ضمان الحداثة دائمًا، بعكس بقية الشاشات المُزامَنة بشكل دوري عادي.
+async function reviewAgreementDoc(docId){
+  await syncNow().catch(()=>{});
   const doc=(S.docs||[]).find(d=>d.id===docId);
   if(!doc||!doc.agreementId){toast('Agreement not found');return;}
   const agreement=(S.serviceAgreements||[]).find(a=>a.id===doc.agreementId);
   if(!agreement){toast('Agreement not found');return;}
   const client=agreement.clientData;
-  const contractHTML=generateDutchContractHTML(client);
+  const contractHTML=generateDutchContractHTML(client,agreement);
 
   const statusLabels={pending_review:'Pending Review',client_signed:'Signed — Awaiting Approval',changes_requested:'Changes Requested',active:'✓ Signed & Active',client_rejected:'Rejected by Client',rejected:'Rejected'};
 
@@ -22584,6 +22592,15 @@ function approveAgreementInApp(agreementId){
         body:JSON.stringify({cid:agreement.cid,type:'contract_approved',data:{monthlyPrice:approvedContract.plan||0}})
       }).catch(()=>{/* العقد فُعِّل بنجاح فعليًا - فشل إرسال إشعار البريد هنا ليس كارثيًا */});
     }
+    // ⭐ رابط تعيين كلمة المرور لأول مرة - يصل للعميل تلقائيًا فور تفعيل حسابه،
+    // بدل الاعتماد فقط على كلمة مرور مؤقتة يشاركها الأدمن يدويًا. يُعاد
+    // استخدام نفس آلية "نسيت كلمة المرور" الموجودة بالفعل (نفس شاشة
+    // renderPasswordResetScreen)، فقط بصياغة بريد ترحيبية وصلاحية أطول (7 أيام).
+    fetch(API_BASE+'/client/send-welcome-password-link',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getValidR2Token()},
+      body:JSON.stringify({cid:agreement.cid})
+    }).catch(()=>{/* العقد فُعِّل بنجاح فعليًا - فشل إرسال رابط الترحيب هنا ليس كارثيًا، يقدر الأدمن مشاركة كلمة مرور مؤقتة يدويًا كبديل */});
   });
 }
 
@@ -22593,7 +22610,7 @@ function approveAgreementInApp(agreementId){
 
 
 
-function generateDutchContractHTML(client){
+function generateDutchContractHTML(client,agreement){
   const s=S.settings||{};
   const anbSelf=(S.clients||[]).find(cl=>cl.id===ANB_SELF_ID)||{};
   const startDate=client.contractStartDate||TODAY();
@@ -22719,8 +22736,20 @@ function generateDutchContractHTML(client){
     • EU-Verordening (EU) 910/2014 (eIDAS) — gekwalificeerde elektronische handtekening niet vereist voor deze overeenkomst<br/>
     • Nederlandse Private Law (Privaatrecht)<br/>
     <br/>
-    <strong>Handtekening geregistreerd op:</strong> ${TODAY()} om ${new Date().toLocaleTimeString('nl-NL')}<br/>
-    <strong>Unieke referentie:</strong> ${UID()}
+    ${(()=>{
+      // ⚠️ إصلاح خلل قانوني حقيقي: كان هذا القسم يولّد تاريخ/وقت "الآن" ومرجعًا
+      // عشوائيًا جديدًا (UID) في كل مرة يُعرَض فيها العقد - حتى قبل أي توقيع
+      // فعلي! هذا يجعله عديم القيمة كدليل توقيع (يتغيّر بكل فتح/إغلاق)، ويظهر
+      // العقد كأنه "وُقِّع للتو" دائمًا. الآن يُعرَض فقط عند وجود توقيع فعلي
+      // محفوظ (agreement.signatureAudit)، وبقيم ثابتة من لحظة التوقيع الحقيقية.
+      const isSigned=agreement&&['client_signed','active'].includes(agreement.status)&&agreement.signatureAudit;
+      if(isSigned){
+        const dt=new Date(agreement.signatureAudit.signedAtIso||agreement.clientSignDate||Date.now());
+        return `<strong>Handtekening geregistreerd op:</strong> ${dt.toLocaleDateString('nl-NL')} om ${dt.toLocaleTimeString('nl-NL')}<br/>
+    <strong>Unieke referentie:</strong> ${escapeHtml(agreement.id||'')}`;
+      }
+      return `<em>Dit document is nog niet elektronisch ondertekend — dit gedeelte wordt na ondertekening aangevuld met de definitieve handtekeninggegevens.</em>`;
+    })()}
   </div>
 </div>
   `;
@@ -22798,10 +22827,8 @@ async function renderMagicLinkSignScreen(token){
       <textarea id="ml-changes-notes" placeholder="e.g. please change the monthly fee to..." style="width:100%;height:90px;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;resize:none;box-sizing:border-box"></textarea>
       <button id="ml-changes-send-btn" class="btn btn-p btn-xs" style="width:100%;padding:10px;font-size:12.5px;margin-top:8px" onclick="submitMagicLinkChangeRequest('${token.replace(/'/g,'')}')">Send Request</button>
     </div>
-    <div style="display:flex;gap:8px">
-      <button id="ml-sign-btn" class="btn btn-success" style="flex:2;padding:12px;font-size:13px" onclick="submitMagicLinkSignature('${token.replace(/'/g,'')}')">✓ Confirm &amp; Sign Agreement</button>
-      <button id="ml-request-changes-btn" class="btn" style="flex:1;padding:12px;font-size:12.5px;background:#fff;color:#0A2218;border:1.5px solid #0A2218" onclick="toggleMagicLinkChangesForm()">✎ Request Changes</button>
-    </div>
+    <button id="ml-sign-btn" class="btn btn-success" style="width:100%;padding:13px;font-size:13px;margin-bottom:8px;white-space:normal" onclick="submitMagicLinkSignature('${token.replace(/'/g,'')}')">✓ Confirm &amp; Sign Agreement</button>
+    <button id="ml-request-changes-btn" class="btn" style="width:100%;padding:11px;font-size:12.5px;background:#fff;color:#0A2218;border:1.5px solid #0A2218;white-space:normal" onclick="toggleMagicLinkChangesForm()">✎ Request Changes</button>
     <div style="text-align:center;margin-top:12px;font-size:10.5px;color:#999">This is a legally binding electronic signature under eIDAS. Your IP address and timestamp will be recorded as evidence.</div>
   `;
 }
